@@ -1,4 +1,4 @@
-import { ProspectContext, ProspectStrategy } from './prospect-intelligence-types';
+import { ProspectContext, ProspectStrategy, KnowledgeStrategy } from './prospect-intelligence-types';
 
 /**
  * P4: Strategy & Next Best Action
@@ -15,36 +15,43 @@ export class ProspectStrategyService {
     const authorizedTopics: string[] = ['Academy Programs', 'Tokenization Basics'];
     const restrictedTopics: string[] = ['Discounts', 'Internal Metrics'];
     let commercialObjective = 'Educate and assess fit.';
+    
+    const knowledgeStrategy: KnowledgeStrategy = {
+      retrieveTopics: [],
+      avoidTopics: ['Advanced Tokenomics', 'Generic Introductory Content']
+    };
 
-    // 1. Academy Journey rules
-    if (context.journey.academyStatus === 'CERTIFIED') {
-      nextBestAction = 'BOOK_MEETING';
-      commercialObjective = 'Schedule a technical or commercial onboarding call.';
-      authorizedTopics.push('Onboarding', 'Enterprise Features');
-    } else if (context.assessment && context.assessment.readinessScore < 50) {
+    // 1. Academic vs Commercial Split
+    const isAcademicLow = context.academicReadiness && context.academicReadiness.score < 50;
+    const isCommercialHigh = context.commercialReadiness && ['QUALIFIED', 'SALES_READY'].includes(context.commercialReadiness.stage);
+
+    if (isAcademicLow && !isCommercialHigh) {
       nextBestAction = 'SEND_CASE_STUDY';
-      commercialObjective = 'Build foundational knowledge to overcome low readiness score.';
-    }
-
-    // 2. CRM Stage rules override
-    if (context.journey.crmStage === 'QUALIFIED') {
+      commercialObjective = 'Build foundational knowledge to overcome academic gap.';
+      knowledgeStrategy.retrieveTopics.push('Basics', 'Introduction');
+    } else if (isCommercialHigh) {
       nextBestAction = 'BOOK_MEETING';
-      commercialObjective = 'Close the prospect via meeting.';
+      commercialObjective = 'Schedule a commercial onboarding call due to high intent.';
+      authorizedTopics.push('Onboarding', 'Enterprise Features');
+      knowledgeStrategy.retrieveTopics.push('Implementation', 'Enterprise');
     }
 
-    // 3. Objections Handling
+    // 2. Objections Handling
     const hasTrustObjection = context.objections.some(o => o.category === 'trust' && o.status === 'active');
     if (hasTrustObjection) {
       nextBestAction = 'NURTURE';
       commercialObjective = 'Build trust before proposing a meeting. Emphasize social proof and regulation.';
       authorizedTopics.push('Case Studies', 'Regulatory Compliance');
+      knowledgeStrategy.retrieveTopics.push('Regulatory Framework', 'Case Study');
     }
 
     return {
       nextBestAction,
+      actionAuthority: 'PROPOSE_ONLY',
       authorizedTopics,
       restrictedTopics,
-      commercialObjective
+      commercialObjective,
+      knowledgeStrategy
     };
   }
 
@@ -55,15 +62,18 @@ export class ProspectStrategyService {
   static generateContextSummary(context: ProspectContext): string {
     const lines: string[] = [];
     
-    lines.push(`--- PROSPECT INTELLIGENCE SUMMARY ---`);
-    lines.push(`Identity: ${context.identity.canonicalId}`);
+    lines.push(`--- SERVER-SIDE SCOPED INTELLIGENCE ---`);
+    lines.push(`Canonical Identity: ${context.identity.canonicalId}`);
     lines.push(`CRM Stage: ${context.journey.crmStage} (${context.journey.daysInStage} days)`);
     
     if (context.journey.academyStatus) {
       lines.push(`Academy Status: ${context.journey.academyStatus}`);
     }
-    if (context.assessment) {
-      lines.push(`Readiness Score: ${context.assessment.readinessScore}/100`);
+    if (context.academicReadiness) {
+      lines.push(`Academic Readiness: ${context.academicReadiness.score}/100`);
+    }
+    if (context.commercialReadiness) {
+      lines.push(`Commercial Readiness: ${context.commercialReadiness.stage} (Score: ${context.commercialReadiness.score})`);
     }
 
     if (context.signals.length > 0) {
@@ -77,7 +87,8 @@ export class ProspectStrategyService {
     if (context.strategy) {
       lines.push(`\n--- STRATEGIC DIRECTIVES ---`);
       lines.push(`Objective: ${context.strategy.commercialObjective}`);
-      lines.push(`Next Best Action (REQUIRED): ${context.strategy.nextBestAction}`);
+      lines.push(`Recommended Next Best Action: ${context.strategy.nextBestAction}`);
+      lines.push(`Action Authority: ${context.strategy.actionAuthority}`);
       lines.push(`Authorized Topics: ${context.strategy.authorizedTopics.join(', ')}`);
       lines.push(`Restricted Topics: ${context.strategy.restrictedTopics.join(', ')}`);
     }

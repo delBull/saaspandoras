@@ -29,7 +29,8 @@ export class ProspectIntelligenceService {
     let crmStage = 'LEAD';
     let daysInStage = 0;
     let academyStatus: string | undefined;
-    let assessmentSummary = undefined;
+    let academicReadiness = undefined;
+    let commercialReadiness = undefined;
     const facts: IntelligenceFact[] = [];
     const signals: ProspectSignal[] = [];
     const objections: ProspectObjection[] = [];
@@ -67,7 +68,7 @@ export class ProspectIntelligenceService {
       });
     }
 
-    // 2. Academy Resolution (using email)
+    // 2. Academy Resolution (using email as legacy matching attribute, Canonical is root)
     const searchEmail = identity.email || lead?.email;
     if (searchEmail) {
       const [candidate] = await db
@@ -88,25 +89,34 @@ export class ProspectIntelligenceService {
           .limit(1);
 
         if (assessment) {
-          assessmentSummary = {
+          academicReadiness = {
             programId: assessment.programId,
-            readinessScore: assessment.overallReadinessScore || 0,
-            primaryGaps: [], // MVP: Would be derived from answers
+            score: assessment.overallReadinessScore || 0,
+            primaryGaps: [] as string[], 
             recommendedModules: [], 
             lastEvaluatedAt: assessment.startedAt
           };
 
-          // Objections heuristic
           if (assessment.overallReadinessScore && assessment.overallReadinessScore < 50) {
-            objections.push({
-              category: 'trust',
-              description: 'Low readiness score implies lack of foundational trust or knowledge.',
-              status: 'active'
-            });
+             academicReadiness.primaryGaps.push('ACADEMIC_GAP');
           }
         }
       }
     }
+    
+    // Evaluate Commercial Readiness based on Intent and Engagement
+    const hasHighIntent = signals.some(s => s.type === 'intent' && s.level === 'high');
+    const hasHighEngagement = signals.some(s => s.type === 'engagement' && s.level === 'high');
+    
+    const stage = hasHighIntent ? 'QUALIFIED' : (hasHighEngagement ? 'ENGAGED' : 'EXPLORING');
+
+    commercialReadiness = {
+      score: hasHighIntent ? 90 : (hasHighEngagement ? 50 : 10),
+      stage: stage as 'QUALIFIED' | 'ENGAGED' | 'EXPLORING',
+      evidence: facts.filter(f => f.category === 'journey'),
+      blockers: objections.map(o => o.category),
+      confidence: 0.8
+    };
 
     const journey: ProspectJourneyState = {
       crmStage,
@@ -117,7 +127,8 @@ export class ProspectIntelligenceService {
     return {
       identity,
       journey,
-      assessment: assessmentSummary,
+      academicReadiness,
+      commercialReadiness,
       signals,
       objections,
       facts,

@@ -29,12 +29,20 @@ export interface ProspectJourneyState {
   daysInStage: number;
 }
 
-export interface AssessmentSummary {
+export interface AcademicReadiness {
   programId: string;
-  readinessScore: number;
+  score: number;
   primaryGaps: string[];
   recommendedModules: string[];
   lastEvaluatedAt: Date;
+}
+
+export interface CommercialReadiness {
+  score: number;
+  stage: 'UNQUALIFIED' | 'EXPLORING' | 'ENGAGED' | 'QUALIFIED' | 'SALES_READY';
+  evidence: IntelligenceFact[];
+  blockers: string[];
+  confidence: number;
 }
 
 export interface ProspectSignal {
@@ -49,11 +57,18 @@ export interface ProspectObjection {
   status: 'active' | 'mitigated';
 }
 
+export interface KnowledgeStrategy {
+  retrieveTopics: string[];
+  avoidTopics: string[];
+}
+
 export interface ProspectStrategy {
   nextBestAction: 'QUALIFY' | 'BOOK_MEETING' | 'SEND_CASE_STUDY' | 'NURTURE' | 'WAIT';
+  actionAuthority: 'PROPOSE_ONLY' | 'EXECUTE';
   authorizedTopics: string[];
   restrictedTopics: string[];
   commercialObjective: string;
+  knowledgeStrategy: KnowledgeStrategy;
 }
 
 /**
@@ -63,7 +78,8 @@ export interface ProspectStrategy {
 export interface ProspectContext {
   identity: ProspectIdentity;
   journey: ProspectJourneyState;
-  assessment?: AssessmentSummary;
+  academicReadiness?: AcademicReadiness;
+  commercialReadiness?: CommercialReadiness;
   signals: ProspectSignal[];
   objections: ProspectObjection[];
   facts: IntelligenceFact[];

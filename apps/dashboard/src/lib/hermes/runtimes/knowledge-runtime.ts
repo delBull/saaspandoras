@@ -20,18 +20,27 @@ export class KnowledgeRuntime implements IPipelineRuntime {
     }
 
     // 2. Query the AST
-    // We filter the nodes that contain the detected topics
+    // We filter the nodes that contain the detected topics OR the strategy retrieveTopics
     const detectedTopics = manifest.events
       .filter(e => e.type === 'intent_detected' && e.topic)
       .map(e => e.topic);
 
-    if (detectedTopics.length > 0) {
-      const relevantNodes = contentManifest.nodes.filter(node => 
-        node.topics && node.topics.some((t: string) => detectedTopics.includes(t))
-      );
+    const strategyTopics = manifest.prospectContext?.strategy?.knowledgeStrategy?.retrieveTopics || [];
+    const avoidTopics = manifest.prospectContext?.strategy?.knowledgeStrategy?.avoidTopics || [];
+
+    const allSearchTopics = [...detectedTopics, ...strategyTopics];
+
+    if (allSearchTopics.length > 0) {
+      const relevantNodes = contentManifest.nodes.filter(node => {
+        if (!node.topics) return false;
+        // Ignore nodes that match avoidTopics
+        if (node.topics.some((t: string) => avoidTopics.includes(t))) return false;
+        // Include nodes that match search topics
+        return node.topics.some((t: string) => allSearchTopics.includes(t));
+      });
       
       manifest.relevantKnowledge.push(...relevantNodes);
-      console.log(`[KnowledgeRuntime] Injected ${relevantNodes.length} nodes into execution manifest for topics: ${detectedTopics.join(', ')}.`);
+      console.log(`[KnowledgeRuntime] Injected ${relevantNodes.length} nodes (Topics: ${allSearchTopics.join(', ')} | Avoided: ${avoidTopics.join(', ')}).`);
     }
   }
 }
