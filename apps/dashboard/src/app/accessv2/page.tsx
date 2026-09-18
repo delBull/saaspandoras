@@ -19,7 +19,7 @@ import React, { Suspense } from 'react';
 
 import { NFTGate } from '@/components/nft-gate';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { useActiveAccount, useConnectModal } from 'thirdweb/react';
+import { useActiveAccount, useConnectModal, useDisconnect, useActiveWallet } from 'thirdweb/react';
 import { client } from '@/lib/thirdweb-client';
 import { wallets } from '@/lib/wallets';
 import { config } from '@/config';
@@ -137,6 +137,7 @@ function LoadingSpinner() {
 
 function AccessV2Inner() {
   const { connect } = useConnectModal();
+  const { disconnect } = useDisconnect();
   const { status: authStatus, runAuthFlow, user: authUser } = useAuth();
   const {
     state,
@@ -148,6 +149,7 @@ function AccessV2Inner() {
     isLoading: isOracleLoading,
     refresh,
   } = useAccessState();
+  const activeWallet = useActiveWallet();
   const account = useActiveAccount();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -469,6 +471,18 @@ function AccessV2Inner() {
                         >
                           Autenticar identidad
                         </motion.button>
+                        
+                        <button
+                          onClick={() => {
+                            if (activeWallet) {
+                              disconnect(activeWallet);
+                              localStorage.setItem('wallet-logged-out', 'true');
+                            }
+                          }}
+                          className="w-full text-center py-2 text-[9px] text-zinc-600 hover:text-zinc-400 uppercase tracking-widest transition-colors"
+                        >
+                          Cambiar de cuenta
+                        </button>
                       </motion.div>
                     )}
                   </AnimatePresence>
