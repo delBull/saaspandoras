@@ -258,52 +258,7 @@ export class OllamaReasoningProvider implements ReasoningProvider {
       console.warn('[OllamaReasoningProvider] /v1/chat/completions attempt failed...', v1Err);
     }
 
-    // 3. Resilient Fallback to OpenAI API if available in environment
-    const openaiKey = process.env.OPENAI_API_KEY;
-    if (openaiKey) {
-      try {
-        console.log('🔄 [OllamaReasoningProvider] Falling back to OpenAI gpt-4o-mini...');
-        const ctrl3 = new AbortController();
-        const t3 = setTimeout(() => ctrl3.abort(), 20_000); // OpenAI can be slower
-        try {
-          const oaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${openaiKey}`,
-            },
-            signal: ctrl3.signal,
-            body: JSON.stringify({
-              model: 'gpt-4o-mini',
-              messages: prompt.messages,
-              temperature,
-            }),
-          });
-
-          if (oaiRes.ok) {
-            const data = await oaiRes.json();
-            const content = data.choices?.[0]?.message?.content || '';
-            return {
-              content,
-              meta: {
-                provider: 'openai-fallback',
-                model: 'gpt-4o-mini',
-                promptTokens: data.usage?.prompt_tokens || 0,
-                completionTokens: data.usage?.completion_tokens || 0,
-                durationMs: Date.now() - start,
-              },
-            };
-          } else {
-            const errorText = await oaiRes.text();
-            console.error('[OllamaReasoningProvider] OpenAI fallback returned non-OK status:', oaiRes.status, errorText);
-          }
-        } finally {
-          clearTimeout(t3);
-        }
-      } catch (oaiErr) {
-        console.error('[OllamaReasoningProvider] OpenAI fallback error:', oaiErr);
-      }
-    }
+    // 3. (OpenAI Fallback Removed as per request)
 
     // 4. Safe Default Fallback Response
     return {

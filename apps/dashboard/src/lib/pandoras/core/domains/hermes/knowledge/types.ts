@@ -127,7 +127,7 @@ export interface ControlPlaneContext {
   canonicalIdentity?: import('@/lib/identity/types').CanonicalIdentityRecord;
   tenantContext?: import('@/lib/identity/tenant-context-resolver').TenantContextRecord;
   surfaceContext?: {
-    surface: 'ONBOARDING' | 'GROWTH_OS' | 'TREASURY' | 'GOVERNANCE' | 'ACADEMY' | 'DEMAND_DISTRIBUTION';
+    surface: string;
     section?: string;
     mode: 'GUIDE' | 'ANALYZE' | 'PROPOSE' | 'EXECUTE';
     capabilities: import('../capabilities/types').CapabilityResolution[];

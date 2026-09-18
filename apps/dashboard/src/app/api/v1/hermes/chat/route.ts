@@ -18,9 +18,6 @@ import { checkTenantRateLimit, buildRateLimitHeaders } from '@/lib/hermes/auth/r
 import { SessionTokenService } from '@/lib/hermes/auth/session-token.service';
 import { resolveCanonicalAuthSession } from '@/lib/hermes/auth/canonical-resolver';
 import { setupProgressService } from '@/lib/mesh/setup-progress.service';
-import { ONBOARDING_SURFACE } from '@/lib/pandoras/core/domains/hermes/context/surface-definition';
-import { OnboardingIntelligenceEngine } from '@/lib/pandoras/core/domains/hermes/onboarding/onboarding-intelligence';
-
 export const dynamic = 'force-dynamic';
 
 const sessionTokenService = new SessionTokenService();
@@ -125,40 +122,34 @@ export async function POST(req: NextRequest) {
       interlocutor,
     };
 
-    if (surface === 'ONBOARDING') {
+    if (surface) {
       try {
-        const dbState = await setupProgressService.getEcosystemSetupState(effectiveOrgId) as any;
-        const reconciledState = OnboardingIntelligenceEngine.reconcileState({}, dbState);
-        const capabilities = OnboardingIntelligenceEngine.discoverCapabilities(controlPlaneContext.tenantContext);
-        const objective = OnboardingIntelligenceEngine.computeObjective(objectiveHint, undefined, reconciledState);
-        const journey = OnboardingIntelligenceEngine.computeJourney(reconciledState);
+        const { SurfaceRegistry } = await import('@/lib/pandoras/core/domains/hermes/context/surface-definition');
+        const surfaceDef = SurfaceRegistry.getSurface(surface);
 
-        controlPlaneContext.onboardingState = reconciledState;
         controlPlaneContext.surfaceContext = {
-          surface: 'ONBOARDING',
-          mode: 'PROPOSE',
-          capabilities: capabilities ? capabilities.resolvedCapabilities : [],
-          objective,
-          journeyState: journey,
+          surface: surfaceDef.surface,
+          mode: 'PROPOSE', // Default mode, actual capabilities are resolved by the Runtime
+          capabilities: [],
         };
 
         // Adversarial Gate: Handoff validation
         if (handoffTarget) {
-          if (!ONBOARDING_SURFACE.handoffTargets.includes(handoffTarget)) {
+          if (!surfaceDef.handoffTargets.includes(handoffTarget)) {
             return NextResponse.json(
-              { success: false, error: 'UNAUTHORIZED_HANDOFF', message: `Cannot handoff from ONBOARDING to ${handoffTarget}` },
+              { success: false, error: 'UNAUTHORIZED_HANDOFF', message: `Cannot handoff from ${surface} to ${handoffTarget}` },
               { status: 403 }
             );
           }
-          // Here we would create a Handoff Proposal Event in DB, but for now we transition memory
-          controlPlaneContext.surfaceContext.surface = handoffTarget as any;
+          controlPlaneContext.surfaceContext!.surface = handoffTarget as any;
         }
-
-      } catch (e) {
-        console.warn('[Chat API] Failed to fetch onboarding state:', e);
+      } catch (e: any) {
+        return NextResponse.json(
+          { success: false, error: 'INVALID_SURFACE', message: e.message },
+          { status: 400 }
+        );
       }
     }
-
 
     // 5. Canonical Runtime (respects HERMES_REASONING_PROVIDER or Mock default)
     const runtime = getDefaultRuntime();

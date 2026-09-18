@@ -35,121 +35,15 @@ export interface NexusOperation {
   payload?: any;
 }
 
-// ─── Action Button ───────────────────────────────────────────────────
-type ActionState = 'AVAILABLE' | 'CONFIRMING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
-
-function ActionButton({ onClick, label, variant = 'accent' }: { onClick: () => Promise<void>, label: string, variant?: string }) {
-  const [state, setState] = useState<ActionState>('AVAILABLE');
-
-  const handleClick = async () => {
-    if (state === 'AVAILABLE') {
-      setState('CONFIRMING');
-      return;
-    }
-    if (state === 'CONFIRMING') {
-      setState('PROCESSING');
-      try {
-        await onClick();
-        setState('COMPLETED');
-      } catch (err) {
-        setState('FAILED');
-        setTimeout(() => setState('AVAILABLE'), 3000);
-      }
-    }
-  };
-
-  const getLabel = () => {
-    switch (state) {
-      case 'AVAILABLE': return label;
-      case 'CONFIRMING': return '¿Confirmar?';
-      case 'PROCESSING': return 'Procesando...';
-      case 'COMPLETED': return '✓ Listo';
-      case 'FAILED': return '❌ Error';
-    }
-  };
-
-  return (
-    <button
-      className={`btn btn-${state === 'CONFIRMING' ? 'danger' : state === 'COMPLETED' ? 'success' : variant} w-full`}
-      onClick={handleClick}
-      disabled={state === 'PROCESSING' || state === 'COMPLETED'}
-      style={{ transition: 'all 0.2s', padding: 'var(--space-2)', borderRadius: 'var(--radius-sm)', fontWeight: 600, fontSize: '0.875rem' }}
-    >
-      {getLabel()}
-    </button>
-  );
-}
-
-// ─── Operation Card ───────────────────────────────────────────────────
-function OperationCard({ op, onAction }: { op: NexusOperation, onAction: (op: NexusOperation, action: string) => Promise<void> }) {
-  const getDomainIcon = () => {
-    switch(op.domain) {
-      case 'TREASURY': return '🏦';
-      case 'GROWTH': return '🚀';
-      case 'HERMES': return '🧠';
-      case 'GOVERNANCE': return '⚖️';
-      default: return '⚡';
-    }
-  };
-
-  const getPriorityColor = () => {
-    switch(op.priority) {
-      case 'CRITICAL': return 'var(--color-danger)';
-      case 'HIGH': return 'var(--color-warning)';
-      case 'NORMAL': return 'var(--color-accent)';
-      case 'LOW': return 'var(--color-text-muted)';
-      default: return 'var(--color-accent)';
-    }
-  };
-
-  return (
-    <div className="card flex-col gap-3" style={{ 
-      marginBottom: 'var(--space-3)', 
-      borderLeft: `4px solid ${getPriorityColor()}`
-    }}>
-      <div className="flex justify-between items-start">
-        <div className="flex items-center gap-2">
-          <span style={{ fontSize: '1.25rem' }}>{getDomainIcon()}</span>
-          <div>
-            <h4 className="font-semibold" style={{ fontSize: '1rem', lineHeight: 1.2 }}>{op.title}</h4>
-            <span className="text-secondary text-xs">{op.domain} • {op.type}</span>
-          </div>
-        </div>
-        {op.priority === 'CRITICAL' && (
-           <span className="badge badge-danger text-xs text-white">Critical</span>
-        )}
-      </div>
-
-      {op.description && (
-        <p className="text-sm text-secondary line-clamp-2">{op.description}</p>
-      )}
-
-      {op.actions && op.actions.length > 0 && (
-        <div className="flex gap-2 mt-2">
-          {op.actions.map((act, i) => (
-            <div key={i} className="flex-1">
-              <ActionButton 
-                label={act.label}
-                variant={act.intent}
-                onClick={() => onAction(op, act.action)}
-              />
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
+import { ActionSheet } from '../components/nexus/ActionSheet';
+import { AttentionItemCard } from '../components/nexus/AttentionItemCard';
 
 
 // ─── Main View ────────────────────────────────────────────────────────────────
 export function CommandCenter({ session, hasCapability }: CommandCenterProps) {
   
-  const [buckets, setBuckets] = useState<{
-    NEEDS_ATTENTION: NexusOperation[],
-    TODAY: NexusOperation[],
-    RECENT: NexusOperation[]
-  }>({ NEEDS_ATTENTION: [], TODAY: [], RECENT: [] });
+  const [inboxItems, setInboxItems] = useState<any[]>([]);
+  const [selectedItem, setSelectedItem] = useState<any | null>(null);
 
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -184,9 +78,9 @@ export function CommandCenter({ session, hasCapability }: CommandCenterProps) {
         }
       }
 
-      // 2. Load standard hub
-      const data = await nexusGet<{ operations: any }>('/api/v1/tma/nexus/operations/my-work', session.token);
-      setBuckets(data.operations || { NEEDS_ATTENTION: [], TODAY: [], RECENT: [] });
+      // 2. Load standard hub via new Inbox endpoint
+      const data = await nexusGet<{ items: any[] }>('/api/v1/nexus/inbox', session.token);
+      setInboxItems(data.items || []);
 
       // 3. Load next 2 agenda items
       try {
@@ -208,28 +102,14 @@ export function CommandCenter({ session, hasCapability }: CommandCenterProps) {
     fetchOperations();
   }, [fetchOperations]);
 
-  const handleAction = async (op: NexusOperation, action: string) => {
-    try {
-      if (op.domain === 'HERMES' && action === 'TAKEOVER') {
-        await nexusPost('/api/v1/tma/nexus/hermes/hitl/takeover', { itemId: op.id }, session.token);
-      } else if (op.domain === 'TREASURY' && action === 'APPROVE') {
-        const reqId = op.payload?.actionRequestId || op.id; 
-        await nexusPost('/api/v1/tma/nexus/finance/deposits/approve', { actionRequestId: reqId, actionToken: op.id }, session.token);
-      } else {
-        console.log('Action unhandled in TMA:', op.domain, action);
-        // Fallback for unhandled actions
-      }
-      
-      // If we were focusing on a deep link, clear it
-      if (deepLinkOp && deepLinkOp.id === op.id) {
-        setDeepLinkOp(null);
-      }
-      
-      // Refresh list to pull updated state from server
-      await fetchOperations();
-    } catch (err: any) {
-      throw err; 
-    }
+  const handleItemClick = (item: any) => {
+    setSelectedItem(item);
+  };
+
+  const handleActionSuccess = async () => {
+    setSelectedItem(null);
+    if (deepLinkOp) setDeepLinkOp(null);
+    await fetchOperations();
   };
 
   const getGreeting = () => {
@@ -239,7 +119,7 @@ export function CommandCenter({ session, hasCapability }: CommandCenterProps) {
     return 'Good evening';
   };
 
-  const totalOps = buckets.NEEDS_ATTENTION.length + buckets.TODAY.length + buckets.RECENT.length;
+  const totalOps = inboxItems.length;
 
   if (showAgenda) {
     return <AgendaView session={session} onBack={() => setShowAgenda(false)} />;
@@ -400,7 +280,13 @@ export function CommandCenter({ session, hasCapability }: CommandCenterProps) {
                </h3>
                <button onClick={() => setDeepLinkOp(null)} className="text-xs text-secondary underline">Volver al Hub</button>
              </div>
-             <OperationCard op={deepLinkOp} onAction={handleAction} />
+             <ActionSheet 
+               isOpen={true} 
+               onClose={() => setDeepLinkOp(null)} 
+               item={deepLinkOp} 
+               sessionToken={session.token} 
+               onSuccess={handleActionSuccess} 
+             />
           </div>
         ) : (
           <>
@@ -449,38 +335,25 @@ export function CommandCenter({ session, hasCapability }: CommandCenterProps) {
               </div>
             )}
 
-            {buckets.NEEDS_ATTENTION.length > 0 && (
-              <div>
-                <h3 className="font-bold text-sm text-danger mb-3 flex items-center gap-2">
-                  <span>🚨</span> NEEDS ATTENTION
+            {inboxItems.length > 0 && (
+              <div className="flex flex-col gap-3 mt-4">
+                <h3 className="font-bold text-sm text-gray-800 mb-2 flex items-center gap-2">
+                  <span>📥</span> REQUIRES ATTENTION
                 </h3>
-                {buckets.NEEDS_ATTENTION.map(op => (
-                  <OperationCard key={op.id} op={op} onAction={handleAction} />
+                {inboxItems.map(item => (
+                  <AttentionItemCard key={item.id} item={item} onClick={handleItemClick} />
                 ))}
               </div>
             )}
 
-            {buckets.TODAY.length > 0 && (
-              <div>
-                <h3 className="font-bold text-sm text-secondary mb-3 flex items-center gap-2">
-                  <span>📅</span> TODAY
-                </h3>
-                {buckets.TODAY.map(op => (
-                  <OperationCard key={op.id} op={op} onAction={handleAction} />
-                ))}
-              </div>
-            )}
-
-            {buckets.RECENT.length > 0 && (
-              <div>
-                <h3 className="font-bold text-sm text-secondary mb-3 flex items-center gap-2">
-                  <span>🕒</span> RECENT
-                </h3>
-                {buckets.RECENT.map(op => (
-                  <OperationCard key={op.id} op={op} onAction={handleAction} />
-                ))}
-              </div>
-            )}
+            {/* Action Sheet for selected item */}
+            <ActionSheet 
+              isOpen={selectedItem !== null} 
+              onClose={() => setSelectedItem(null)} 
+              item={selectedItem} 
+              sessionToken={session.token} 
+              onSuccess={handleActionSuccess} 
+            />
           </>
         )}
       </div>

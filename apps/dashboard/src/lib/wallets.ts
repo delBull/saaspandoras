@@ -44,6 +44,8 @@ export const wallets = [
         },
     }),
     createWallet("io.metamask"),
+    createWallet("com.brave.wallet"), // 🔥 Explicit Brave Wallet support to prevent "invalid address" deep link errors on mobile
+    createWallet("com.trustwallet.app"),
     createWallet("io.rabby"),
     createWallet("com.coinbase.wallet"),
     createWallet("app.phantom"),

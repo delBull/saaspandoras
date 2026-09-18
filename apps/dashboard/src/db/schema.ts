@@ -4199,6 +4199,24 @@ export const nexusActionRequests = pgTable("nexus_action_requests", {
 export type NexusActionRequest = typeof nexusActionRequests.$inferSelect;
 export type NewNexusActionRequest = typeof nexusActionRequests.$inferInsert;
 
+export const nexusAuditEvents = pgTable("nexus_audit_events", {
+  id: serial("id").primaryKey(),
+  actorIdentityId: integer("actor_identity_id").notNull(),
+  canonicalOrgId: varchar("canonical_org_id", { length: 128 }).notNull(),
+  eventType: varchar("event_type", { length: 64 }).notNull(),
+  resourceType: varchar("resource_type", { length: 64 }).notNull(),
+  resourceId: varchar("resource_id", { length: 128 }).notNull(),
+  action: varchar("action", { length: 64 }).notNull(),
+  previousState: jsonb("previous_state"),
+  newState: jsonb("new_state"),
+  result: varchar("result", { length: 64 }).notNull(),
+  correlationId: varchar("correlation_id", { length: 128 }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export type NexusAuditEvent = typeof nexusAuditEvents.$inferSelect;
+export type NewNexusAuditEvent = typeof nexusAuditEvents.$inferInsert;
+
 export const projectCollaborators = pgTable("project_collaborators", {
   projectId: varchar("project_id", { length: 256 }).notNull().references(() => projects.slug, { onDelete: 'cascade' }),
   collaboratorId: integer("collaborator_id").notNull().references(() => nexusCollaborators.id, { onDelete: 'cascade' }),

@@ -200,8 +200,12 @@ export class HermesRuntime implements HermesCognitiveRuntime {
       // --- PROSPECT INTELLIGENCE INJECTION (P1-P5) ---
       try {
         const { IdentityResolver } = await import('@/lib/marketing/identity-resolver');
+        // Check if actorId is a valid UUID to avoid foreign key constraint error
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(controlPlaneContext.actorId);
+        
         const identityId = await IdentityResolver.resolveIdentity({
-          userId: controlPlaneContext.actorId
+          userId: isUUID ? controlPlaneContext.actorId : undefined,
+          fingerprint: !isUUID ? controlPlaneContext.actorId : undefined
         });
 
         if (identityId) {
@@ -250,6 +254,80 @@ export class HermesRuntime implements HermesCognitiveRuntime {
 
       // Forward interlocutor, Boss executive authority and Sovereign Canonical Identity Context (F6)
       const rawInterlocutor = (controlPlaneContext as any).interlocutor || controlPlaneContext.identity;
+      
+      // --- PHASE 2: SURFACE INTELLIGENCE ENGINES ---
+      const surfaceNameForIntelligence = input.controlPlaneContext?.surfaceContext?.surface;
+      if (surfaceNameForIntelligence) {
+        try {
+          // 1. Resolve Effective Capabilities via CapabilityResolver (done outside Intelligence)
+          const { CapabilityResolver } = await import('./capability-resolver');
+          const effectiveCapabilities = CapabilityResolver.resolveEffectiveCapabilities({
+            role: controlPlaneContext.role,
+            isBoss: (rawInterlocutor as any)?.isBoss,
+            surface: surfaceNameForIntelligence
+          });
+
+          // 2. Build Strict Resource Scope
+          // We extract this from the canonical identity/tenant context.
+          const canonicalOrgId = (rawInterlocutor as any)?.tenantContext?.organizationId || 'default-org-id';
+          const projectId = (rawInterlocutor as any)?.tenantContext?.projectId;
+          const walletAddress = (rawInterlocutor as any)?.walletAddress;
+
+          const { SurfaceRegistry } = await import('../context/surface-definition');
+          const surfaceDef = SurfaceRegistry.getSurface(surfaceNameForIntelligence);
+
+          if (input.controlPlaneContext.surfaceContext) {
+            input.controlPlaneContext.surfaceContext.capabilities = effectiveCapabilities.map(c => ({ id: c, name: c, status: 'GRANTED', source: surfaceNameForIntelligence })) as any;
+          }
+
+          if (surfaceDef.getIntelligenceProvider) {
+            const IntelligenceProviderClass = await surfaceDef.getIntelligenceProvider();
+            
+            // Build the generic resource scope for all surfaces
+            // Specific engines can interpret or narrow this scope as needed.
+            let genericScope: any = {
+              canonicalOrgId,
+              projectId,
+              walletAddress,
+              authorizedWallets: walletAddress ? [walletAddress] : [],
+              scopeType: projectId ? 'PROJECT' : 'ORGANIZATION',
+            };
+
+            if (surfaceNameForIntelligence === 'NEXUS_OPERATOR') {
+              const { NexusAuthorizationService } = await import('../../nexus/nexus-authorization');
+              const trustedActorId = (controlPlaneContext as any).actorId || (rawInterlocutor as any)?.canonicalIdentity?.id;
+              const telegramUserId = (controlPlaneContext as any).telegramUserId; // Optional contextual auth
+              
+              const secureNexusScope = await NexusAuthorizationService.resolveCollaboratorScope(
+                canonicalOrgId,
+                trustedActorId,
+                telegramUserId
+              );
+              
+              if (!secureNexusScope) {
+                // Fail-closed explicitly
+                throw new Error('UNAUTHORIZED: Nexus resource scope resolution failed for this canonical identity.');
+              }
+              
+              genericScope = secureNexusScope;
+            } else {
+              // Legacy generic scope fallback
+              genericScope.collaboratorId = (rawInterlocutor as any)?.collaboratorId || null;
+            }
+
+            const context = await IntelligenceProviderClass.buildContext(genericScope, effectiveCapabilities);
+            const facts = IntelligenceProviderClass.formatKnowledgeSummary(context);
+            
+            facts.forEach(fact => {
+              effectiveContext.knowledge.push(fact as any);
+            });
+          }
+        } catch (engineErr) {
+          console.warn(`[HermesRuntime] Failed to inject Intelligence Engine for ${surfaceNameForIntelligence}:`, engineErr);
+        }
+      }
+      // --- END SURFACE INTELLIGENCE ENGINES ---
+
       if (rawInterlocutor) {
         (effectiveContext as any).interlocutor = rawInterlocutor;
         if ((rawInterlocutor as any).canonicalIdentity) {
@@ -583,40 +661,35 @@ export class HermesRuntime implements HermesCognitiveRuntime {
       const { runtimeId, organizationId, canonicalTenantId, conversationId, reasoningInput, traceInfo, suggestedActions } = setup;
 
       // 🛑 0. SURFACE ADVERSARIAL GATE (Pre-Intent Execution)
-      if (input.controlPlaneContext?.surfaceContext?.surface === 'ONBOARDING') {
-        const { ProposalEngine } = await import('../onboarding/proposal-engine');
-        const { ONBOARDING_SURFACE } = await import('../context/surface-definition');
+      const surfaceName = input.controlPlaneContext?.surfaceContext?.surface;
+      if (surfaceName) {
+        const { SurfaceRegistry } = await import('../context/surface-definition');
+        const { UniversalSecurityGates } = await import('./universal-security-gates');
+        
+        const surfaceDef = SurfaceRegistry.getSurface(surfaceName);
         const rawUserMsg = input.message?.content?.trim() || '';
-
-        // If it's an execution intent that violates ONBOARDING strict PROPOSE_ONLY
-        const isExecutionAttempt = /(?:activa|ejecuta|aprueba|confirma|cancela|prepara distribuci[oó]n|diagnostica|convierte|asigna|haz|promueve|env[ií]a|manda|agrega|registra)/i.test(rawUserMsg);
-        if (isExecutionAttempt) {
-          // Block via ProposalEngine interface to respect the pipeline
-          const validationResult = ProposalEngine.processProposal(
-            { action: 'EXECUTE_ACTION', authority: 'EXECUTE', proposalId: '', reason: 'User requested execution', confidence: 1, prerequisites: { met: [], missing: [] } },
-            ONBOARDING_SURFACE.allowedActions
-          );
-          
-          if (validationResult.status === 'BLOCKED') {
-            await this.traceRecorder.complete(traceHandle, { success: true, durationMs: Date.now() - start });
-            return {
-              responseId: `blocked_surf_${crypto.randomUUID()}`,
+        
+        const preIntentCheck = UniversalSecurityGates.evaluatePreIntentGate(rawUserMsg, surfaceDef);
+        
+        if (preIntentCheck.blocked) {
+          await this.traceRecorder.complete(traceHandle, { success: true, durationMs: Date.now() - start });
+          return {
+            responseId: `blocked_surf_${crypto.randomUUID()}`,
+            organizationId,
+            conversationId,
+            content: `🚫 **Acción Bloqueada (Surface Gate)**\n\nEn la superficie actual (\`${surfaceName}\`), no se permite la ejecución directa de comandos. (Razón: \`${preIntentCheck.blockReason}\`).\nSi deseas ejecutar acciones, por favor solicita un Handoff a la superficie correspondiente.`,
+            suggestedActions: ['/briefing', 'Solicitar Handoff'],
+            providerMeta: { provider: 'surface-gate', model: 'universal-enforcer', promptTokens: 0, completionTokens: 0, durationMs: Date.now() - start },
+            trace: {
+              ...traceInfo,
+              runtimeId,
               organizationId,
               conversationId,
-              content: `🚫 **Acción Bloqueada (Surface Gate)**\n\nEn la superficie actual (\`ONBOARDING\`), no se permite la ejecución directa de comandos. (Razón: \`${validationResult.blockReason}\`).\nSi deseas ejecutar acciones, por favor completa el onboarding o solicita un Handoff a la superficie correspondiente.`,
-              suggestedActions: ['/briefing', 'Solicitar Handoff a Growth OS'],
-              providerMeta: { provider: 'surface-gate', model: 'onboarding-enforcer', promptTokens: 0, completionTokens: 0, durationMs: Date.now() - start },
-              trace: {
-                ...traceInfo,
-                runtimeId,
-                organizationId,
-                conversationId,
-                createdAt: new Date(),
-                policyValidation: { validatedAt: new Date(), policyVersion: '1.1', claimsChecked: 1, violationsDetected: 1 },
-              },
-              policyViolations: [{ code: 'UNAUTHORIZED_CAPABILITY', message: `Execution blocked by Surface Envelope. Reason: ${validationResult.blockReason || 'SURFACE_VIOLATION'}`, severity: 'BLOCK' }],
-            };
-          }
+              createdAt: new Date(),
+              policyValidation: { validatedAt: new Date(), policyVersion: '1.2', claimsChecked: 1, violationsDetected: 1 },
+            },
+            policyViolations: [{ code: 'UNAUTHORIZED_CAPABILITY', message: preIntentCheck.blockReason || 'SURFACE_VIOLATION', severity: 'BLOCK' }],
+          };
         }
       }
 
@@ -1340,10 +1413,13 @@ export class HermesRuntime implements HermesCognitiveRuntime {
         }
       });
 
-      // Step 5.5: Surface Proposal Enforcement (ONBOARDING PROPOSE_ONLY)
-      if (input.controlPlaneContext?.surfaceContext?.surface === 'ONBOARDING' && reasoningOutput.content) {
+      // Step 5.5: Surface Proposal Enforcement (Post-LLM Intent Gate)
+      if (surfaceName && reasoningOutput.content) {
         const { ProposalEngine } = await import('../onboarding/proposal-engine');
-        const { ONBOARDING_SURFACE } = await import('../context/surface-definition');
+        const { SurfaceRegistry } = await import('../context/surface-definition');
+        const { UniversalSecurityGates } = await import('./universal-security-gates');
+        
+        const surfaceDef = SurfaceRegistry.getSurface(surfaceName);
         let parsedProposal = null;
         try {
           const match = reasoningOutput.content.match(/```json\s*(\{[\s\S]*?\})\s*```/);
@@ -1357,14 +1433,17 @@ export class HermesRuntime implements HermesCognitiveRuntime {
         }
 
         if (parsedProposal && parsedProposal.proposalId && parsedProposal.action) {
-          const validationResult = ProposalEngine.processProposal(parsedProposal, ONBOARDING_SURFACE.allowedActions);
-          if (validationResult.status === 'BLOCKED') {
+          const validationResult = ProposalEngine.processProposal(parsedProposal, surfaceDef.allowedActions);
+          const postIntentCheck = UniversalSecurityGates.evaluatePostIntentGate(parsedProposal.action, surfaceDef);
+          
+          if (validationResult.status === 'BLOCKED' || postIntentCheck.blocked) {
+            const blockReason = postIntentCheck.blocked ? postIntentCheck.blockReason : validationResult.blockReason;
             await this.traceRecorder.complete(traceHandle, { success: true, durationMs: Date.now() - start });
             return {
               responseId: `blocked_prop_${crypto.randomUUID()}`,
               organizationId,
               conversationId,
-              content: `🚫 **Propuesta Bloqueada (Adversarial Gate)**\n\nRazón: \`${validationResult.blockReason}\`\n\nEl LLM intentó generar una propuesta no válida o fuera del alcance autorizado para esta superficie.`,
+              content: `🚫 **Propuesta Bloqueada (Adversarial Gate)**\n\nRazón: \`${blockReason}\`\n\nEl LLM intentó generar una propuesta no válida o fuera del alcance autorizado para esta superficie.`,
               suggestedActions,
               providerMeta: { ...reasoningOutput.meta, durationMs: Date.now() - start },
               trace: {
