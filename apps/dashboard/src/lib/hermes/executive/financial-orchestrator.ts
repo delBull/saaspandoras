@@ -13,7 +13,7 @@ import { ethers } from 'ethers';
 import { InterlocutorResolver } from '@/lib/hermes/identity/interlocutor-resolver';
 import { SecurityAuditLogger } from '@/lib/pandoras/core/domains/hermes/runtime/security-audit-logger';
 
-export const MARCO_CANONICAL_WALLET = '0x00c9f7ee9252cbe5eb7b370605a9b7c44756f40b'.toLowerCase();
+export const MARCO_CANONICAL_WALLET = (process.env.MARCO_ADMIN_WALLET || '0x00c9f7ee9252cbe5eb7b370605a9b7c44756f40b').toLowerCase();
 
 export type FinancialActionType = 'USDC_DISTRIBUTION' | 'TREASURY_TRANSFER' | 'AGORA_MINT_APPROVAL';
 

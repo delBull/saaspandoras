@@ -6,8 +6,8 @@ async function syncAdmins() {
     console.log("🚀 Starting Admin Sync...");
 
     const adminsToSync = [
-        { walletAddress: "0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9", name: "Marco Admin" },
-        { walletAddress: "0x96631d6c5295f1f08334888c5d6f3a246fa9c3ba", name: "Deployer Admin" }
+        { walletAddress: (process.env.SUPER_ADMIN_WALLET || "0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9").toLowerCase(), name: "Deployer Admin" },
+        { walletAddress: (process.env.MARCO_ADMIN_WALLET || "0x96631d6c5295f1f08334888c5d6f3a246fa9c3ba").toLowerCase(), name: "Marco Admin" }
     ];
 
     try {

@@ -93,12 +93,7 @@ function extractGrantedPermissions(perms: NexusPermissions | Record<string, any>
     .map(([perm]) => perm);
 }
 
-const CANONICAL_ADMIN_WALLETS = [
-  '0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9',
-  '0x00c9f7ee9252cbe5eb7b370605a9b7c44756f40b',
-  '0x121a897f0f5a9b7c44756f40bdb2c8e87d2834fa',
-  '0x96631d6c5295f1f08334888c5d6f3a246fa9c3ba',
-];
+
 
 function cleanDigits(phone?: string | null): string {
   return (phone || '').replace(/\D/g, '');
@@ -184,7 +179,6 @@ export class InterlocutorResolver {
     // 1. Wallet check
     if (walletAddress) {
       const lowerWallet = walletAddress.toLowerCase();
-      if (CANONICAL_ADMIN_WALLETS.includes(lowerWallet)) return true;
       const marcoWallet = (process.env.MARCO_ADMIN_WALLET || '').toLowerCase();
       if (marcoWallet && lowerWallet === marcoWallet) return true;
       const superWallet = (process.env.SUPER_ADMIN_WALLET || process.env.NEXT_PUBLIC_SUPER_ADMIN_WALLET || '').toLowerCase();
@@ -357,7 +351,7 @@ export class InterlocutorResolver {
         actorId: 'marco_founder',
         phone: rawPhone || undefined,
         telegramId: rawTgId || undefined,
-        walletAddress: rawWallet || '0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9',
+        walletAddress: rawWallet || process.env.MARCO_ADMIN_WALLET || undefined,
         email: rawEmail || 'admin@pandoras.finance',
         executivePrivilege: true,
         capabilities: ALL_FOUNDER_CAPABILITIES,
@@ -373,7 +367,7 @@ export class InterlocutorResolver {
         const isDbAdmin = await isAdmin(rawWallet);
         if (isDbAdmin) {
           // If it's one of the primary wallets or admin, treat as Boss / Executive
-          const isPrimaryAdmin = CANONICAL_ADMIN_WALLETS.includes(rawWallet) || rawWallet === (process.env.MARCO_ADMIN_WALLET || '').toLowerCase();
+          const isPrimaryAdmin = rawWallet === (process.env.SUPER_ADMIN_WALLET || '').toLowerCase() || rawWallet === (process.env.MARCO_ADMIN_WALLET || '').toLowerCase();
           const adminPerms = isPrimaryAdmin 
             ? ALL_BOSS_PERMISSIONS 
             : extractGrantedPermissions(resolveEffectivePermissions('ADMIN'));
@@ -500,7 +494,7 @@ export class InterlocutorResolver {
               telegramId: user.telegramId ?? undefined,
               telegramUsername: user.telegramUsername ?? undefined,
             }) ||
-            (user.role === 'admin' && CANONICAL_ADMIN_WALLETS.includes(user.walletAddress || ''));
+            (user.role === 'admin' && (user.walletAddress === (process.env.SUPER_ADMIN_WALLET || '').toLowerCase() || user.walletAddress === (process.env.MARCO_ADMIN_WALLET || '').toLowerCase()));
           const displayName = user.name || user.firstName || user.username || query.nameHint || 'Usuario';
 
           let canonicalRole = user.role ? user.role.toUpperCase() : 'USER';

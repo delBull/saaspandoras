@@ -9,8 +9,8 @@ const targetEnv = process.argv[2] || 'LOCAL'; // LOCAL or STAGING
 const dbUrl = targetEnv === 'STAGING' ? process.env.DATABASE_URL_STAGING : process.env.DATABASE_URL;
 
 const ADMIN_WALLETS = [
-  "0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9",
-  "0x96631d6c5295f1f08334888c5d6f3a246f9c3ba"
+  (process.env.SUPER_ADMIN_WALLET || "0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9").toLowerCase(),
+  (process.env.MARCO_ADMIN_WALLET || "0x96631d6c5295f1f08334888c5d6f3a246fa9c3ba").toLowerCase()
 ];
 
 const TABLES_TO_TRUNCATE = [
