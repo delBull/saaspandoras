@@ -126,6 +126,24 @@ export interface ControlPlaneContext {
   };
   canonicalIdentity?: import('@/lib/identity/types').CanonicalIdentityRecord;
   tenantContext?: import('@/lib/identity/tenant-context-resolver').TenantContextRecord;
+  surfaceContext?: {
+    surface: 'ONBOARDING' | 'GROWTH_OS' | 'TREASURY' | 'GOVERNANCE' | 'ACADEMY' | 'DEMAND_DISTRIBUTION';
+    section?: string;
+    mode: 'GUIDE' | 'ANALYZE' | 'PROPOSE' | 'EXECUTE';
+    capabilities: import('../capabilities/types').CapabilityResolution[];
+    objective?: {
+      value: string;
+      source: 'USER_EXPLICIT' | 'PERSISTED' | 'DB_STATE' | 'LLM_INFERENCE' | 'UNKNOWN';
+      confidence: number;
+    };
+    journeyState?: {
+      currentState: string;
+      requiredState: string;
+      missingSteps: string[];
+      nextBestStep: string;
+    };
+  };
+  onboardingState?: import('../memory/types').TenantOperationalState;
 }
 
 // -------------------------------------

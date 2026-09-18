@@ -76,6 +76,8 @@ export default async function EcosystemPage({ params }: EcosystemPageProps) {
         organizationName={context.organization.name}
         initialSummary={setupSummary} 
         experienceContext={experienceContext}
+        tenantRole={context.tenant.role}
+        actorId={context.tenant.actorId}
       />
     </div>
   );

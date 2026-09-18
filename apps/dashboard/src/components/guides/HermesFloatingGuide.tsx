@@ -9,8 +9,9 @@
  * without breaking DOM layouts or using fragile spotlights.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import ReactMarkdown from 'react-markdown';
 import {
   Handshake,
   Briefcase,
@@ -36,7 +37,6 @@ import {
   EcosystemStation,
   EcosystemTourRole,
   getStationsForRole,
-  getHermesAnswerForStation,
 } from '@/lib/guides/ecosystem-guides.data';
 
 interface HermesFloatingGuideProps {
@@ -48,6 +48,7 @@ interface HermesFloatingGuideProps {
   onClose: () => void;
   onFinish?: () => void;
   initialStationIndex?: number;
+  organizationSlug?: string;
 }
 
 export function HermesFloatingGuide({
@@ -59,12 +60,24 @@ export function HermesFloatingGuide({
   onClose,
   onFinish,
   initialStationIndex = 0,
+  organizationSlug,
 }: HermesFloatingGuideProps) {
   const stations = customStations && customStations.length > 0 ? customStations : getStationsForRole(role);
   const [currentIndex, setCurrentIndex] = useState(initialStationIndex);
   const [userQuery, setUserQuery] = useState('');
   const [hermesReply, setHermesReply] = useState<string | null>(null);
   const [isAsking, setIsAsking] = useState(false);
+  const [loadingStateIdx, setLoadingStateIdx] = useState(0);
+  const [conversationId, setConversationId] = useState<string>('');
+
+  const loadingInterval = useRef<NodeJS.Timeout | null>(null);
+
+  const SEMANTIC_LOADING_STATES = [
+    'Identificando contexto...',
+    'Analizando tu situación en el Tenant...',
+    'Consultando conocimiento operativo...',
+    'Preparando recomendación...'
+  ];
 
   if (!isOpen || stations.length === 0) return null;
 
@@ -115,18 +128,59 @@ export function HermesFloatingGuide({
     }
   };
 
-  const handleAskHermes = (queryText?: string) => {
+  const handleAskHermes = async (queryText?: string) => {
     const textToAsk = queryText || userQuery;
     if (!textToAsk.trim()) return;
 
     setIsAsking(true);
-    // Instant smart response from station knowledge engine
-    const answer = getHermesAnswerForStation(currentStation, textToAsk);
-    setTimeout(() => {
-      setHermesReply(answer);
+    setLoadingStateIdx(0);
+    setHermesReply(null);
+    
+    // Rotate semantic states
+    let i = 0;
+    loadingInterval.current = setInterval(() => {
+      i = (i + 1) % SEMANTIC_LOADING_STATES.length;
+      setLoadingStateIdx(i);
+    }, 1500);
+
+    try {
+      const response = await fetch('/api/v1/hermes/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: textToAsk,
+          organizationId: organizationSlug,
+          authProvider: 'PORTAL_INTERNAL',
+          channelType: 'INTERNAL_WORKBENCH',
+          surface: 'ONBOARDING',
+          conversationId: conversationId || undefined
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setHermesReply(data.message);
+        if (data.conversationId && !conversationId) {
+          setConversationId(data.conversationId);
+        }
+      } else {
+        setHermesReply('Ocurrió un error al consultar mi red cognitiva. Inténtalo nuevamente o revisa tu conexión.');
+      }
+    } catch (e) {
+      setHermesReply('Ocurrió un error de red. No pude conectar con el runtime de Hermes OS.');
+    } finally {
       setIsAsking(false);
-    }, 200);
+      if (loadingInterval.current) {
+        clearInterval(loadingInterval.current);
+      }
+    }
   };
+
+  useEffect(() => {
+    return () => {
+      if (loadingInterval.current) clearInterval(loadingInterval.current);
+    };
+  }, []);
 
   const handleResetDialog = () => {
     setHermesReply(null);
@@ -225,9 +279,18 @@ export function HermesFloatingGuide({
                 <span>{currentStation.hermesGreeting}</span>
               </div>
 
-              <p className="text-zinc-300 text-xs sm:text-[13px] leading-relaxed font-sans">
-                {hermesReply ? hermesReply : currentStation.hermesNarrative}
-              </p>
+              <div className="text-zinc-300 text-xs sm:text-[13px] leading-relaxed font-sans prose prose-invert max-w-none">
+                {isAsking ? (
+                  <span className="flex items-center gap-2 text-amber-300/80 italic font-medium animate-pulse">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                    {SEMANTIC_LOADING_STATES[loadingStateIdx]}
+                  </span>
+                ) : hermesReply ? (
+                  <ReactMarkdown>{hermesReply}</ReactMarkdown>
+                ) : (
+                  currentStation.hermesNarrative
+                )}
+              </div>
 
               {hermesReply && (
                 <button

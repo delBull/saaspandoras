@@ -582,6 +582,44 @@ export class HermesRuntime implements HermesCognitiveRuntime {
       traceHandle = setup.traceHandle;
       const { runtimeId, organizationId, canonicalTenantId, conversationId, reasoningInput, traceInfo, suggestedActions } = setup;
 
+      // 🛑 0. SURFACE ADVERSARIAL GATE (Pre-Intent Execution)
+      if (input.controlPlaneContext?.surfaceContext?.surface === 'ONBOARDING') {
+        const { ProposalEngine } = await import('../onboarding/proposal-engine');
+        const { ONBOARDING_SURFACE } = await import('../context/surface-definition');
+        const rawUserMsg = input.message?.content?.trim() || '';
+
+        // If it's an execution intent that violates ONBOARDING strict PROPOSE_ONLY
+        const isExecutionAttempt = /(?:activa|ejecuta|aprueba|confirma|cancela|prepara distribuci[oó]n|diagnostica|convierte|asigna|haz|promueve|env[ií]a|manda|agrega|registra)/i.test(rawUserMsg);
+        if (isExecutionAttempt) {
+          // Block via ProposalEngine interface to respect the pipeline
+          const validationResult = ProposalEngine.processProposal(
+            { action: 'EXECUTE_ACTION', authority: 'EXECUTE', proposalId: '', reason: 'User requested execution', confidence: 1, prerequisites: { met: [], missing: [] } },
+            ONBOARDING_SURFACE.allowedActions
+          );
+          
+          if (validationResult.status === 'BLOCKED') {
+            await this.traceRecorder.complete(traceHandle, { success: true, durationMs: Date.now() - start });
+            return {
+              responseId: `blocked_surf_${crypto.randomUUID()}`,
+              organizationId,
+              conversationId,
+              content: `🚫 **Acción Bloqueada (Surface Gate)**\n\nEn la superficie actual (\`ONBOARDING\`), no se permite la ejecución directa de comandos. (Razón: \`${validationResult.blockReason}\`).\nSi deseas ejecutar acciones, por favor completa el onboarding o solicita un Handoff a la superficie correspondiente.`,
+              suggestedActions: ['/briefing', 'Solicitar Handoff a Growth OS'],
+              providerMeta: { provider: 'surface-gate', model: 'onboarding-enforcer', promptTokens: 0, completionTokens: 0, durationMs: Date.now() - start },
+              trace: {
+                ...traceInfo,
+                runtimeId,
+                organizationId,
+                conversationId,
+                createdAt: new Date(),
+                policyValidation: { validatedAt: new Date(), policyVersion: '1.1', claimsChecked: 1, violationsDetected: 1 },
+              },
+              policyViolations: [{ code: 'UNAUTHORIZED_CAPABILITY', message: `Execution blocked by Surface Envelope. Reason: ${validationResult.blockReason || 'SURFACE_VIOLATION'}`, severity: 'BLOCK' }],
+            };
+          }
+        }
+      }
+
       // Tier 0 & Tier 2: Executive Mode direct fulfillment for Marco
       const interlocutor = (reasoningInput.reasoningContext as any).interlocutor;
       if (interlocutor?.isBoss || interlocutor?.founderExecutiveMode) {
@@ -1301,6 +1339,47 @@ export class HermesRuntime implements HermesCognitiveRuntime {
           provider: { name: reasoningOutput.meta?.provider ?? 'unknown', model: reasoningOutput.meta?.model ?? 'unknown' }
         }
       });
+
+      // Step 5.5: Surface Proposal Enforcement (ONBOARDING PROPOSE_ONLY)
+      if (input.controlPlaneContext?.surfaceContext?.surface === 'ONBOARDING' && reasoningOutput.content) {
+        const { ProposalEngine } = await import('../onboarding/proposal-engine');
+        const { ONBOARDING_SURFACE } = await import('../context/surface-definition');
+        let parsedProposal = null;
+        try {
+          const match = reasoningOutput.content.match(/```json\s*(\{[\s\S]*?\})\s*```/);
+          if (match && match[1]) {
+            parsedProposal = JSON.parse(match[1]);
+          } else {
+            parsedProposal = JSON.parse(reasoningOutput.content);
+          }
+        } catch(e) {
+          // If it's not JSON, it might just be conversational, but we should ensure it's not trying to execute.
+        }
+
+        if (parsedProposal && parsedProposal.proposalId && parsedProposal.action) {
+          const validationResult = ProposalEngine.processProposal(parsedProposal, ONBOARDING_SURFACE.allowedActions);
+          if (validationResult.status === 'BLOCKED') {
+            await this.traceRecorder.complete(traceHandle, { success: true, durationMs: Date.now() - start });
+            return {
+              responseId: `blocked_prop_${crypto.randomUUID()}`,
+              organizationId,
+              conversationId,
+              content: `🚫 **Propuesta Bloqueada (Adversarial Gate)**\n\nRazón: \`${validationResult.blockReason}\`\n\nEl LLM intentó generar una propuesta no válida o fuera del alcance autorizado para esta superficie.`,
+              suggestedActions,
+              providerMeta: { ...reasoningOutput.meta, durationMs: Date.now() - start },
+              trace: {
+                ...traceInfo,
+                runtimeId,
+                organizationId,
+                conversationId,
+                createdAt: new Date(),
+                policyValidation: { validatedAt: new Date(), policyVersion: '1.1', claimsChecked: 1, violationsDetected: 1 },
+              },
+              policyViolations: [{ code: 'UNAUTHORIZED_CAPABILITY', message: `Proposal Engine Block. Reason: ${validationResult.blockReason || 'PROPOSAL_BLOCKED'}`, severity: 'BLOCK' }],
+            };
+          }
+        }
+      }
 
       // Step 6: Policy Boundary (K12-A29, K12-A30)
       const policyValidator = new DefaultRuntimePolicyValidator();

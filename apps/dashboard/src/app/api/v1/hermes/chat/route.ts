@@ -15,91 +15,17 @@ import { HermesRuntime, getDefaultRuntime } from '@/lib/pandoras/core/domains/he
 import { ActorIdentityBindingService } from '@/lib/pandoras/core/domains/hermes/runtime/prompt-hygiene-contract';
 import type { ControlPlaneContext } from '@/lib/pandoras/core/domains/hermes/knowledge/types';
 import { checkTenantRateLimit, buildRateLimitHeaders } from '@/lib/hermes/auth/rate-limiter';
-import { TenantAuthorityService } from '@/lib/pandoras/core/domains/hermes/tenants/tenant-authority';
-import { validatePortalSession } from '@/lib/platform/portal-auth';
-import { OrganizationSDK } from '@/lib/platform/organization-sdk';
 import { SessionTokenService } from '@/lib/hermes/auth/session-token.service';
+import { resolveCanonicalAuthSession } from '@/lib/hermes/auth/canonical-resolver';
+import { setupProgressService } from '@/lib/mesh/setup-progress.service';
+import { ONBOARDING_SURFACE } from '@/lib/pandoras/core/domains/hermes/context/surface-definition';
+import { OnboardingIntelligenceEngine } from '@/lib/pandoras/core/domains/hermes/onboarding/onboarding-intelligence';
 
 export const dynamic = 'force-dynamic';
 
 const sessionTokenService = new SessionTokenService();
 
-interface ResolvedChatAuth {
-  canonicalOrgId: string;
-  projectSlug: string;
-  actorId: string;
-  sessionId: string;
-  role: 'TENANT_ADMIN' | 'OPERATOR';
-}
-
-async function resolveChatSession(req: NextRequest, bodyTenantHint?: string): Promise<ResolvedChatAuth | null> {
-  let tenantIdentifier: string | null = null;
-  let actorId = 'anonymous_actor';
-  let sessionId = '';
-  let role: 'TENANT_ADMIN' | 'OPERATOR' = 'OPERATOR';
-
-  // 1. Check portal session cookie
-  const cookie = req.cookies?.get?.('pandoras_portal_session')?.value;
-  if (cookie) {
-    const session = await validatePortalSession(cookie);
-    if (session) {
-      const org = await OrganizationSDK.resolve(session.projectId, session.product as any);
-      if (org) {
-        tenantIdentifier = org.slug || org.organizationId;
-        actorId = `session_${session.installedProductId}`;
-        sessionId = cookie;
-        role = 'TENANT_ADMIN';
-      }
-    }
-  }
-
-  // 2. Check Bearer token if no cookie
-  if (!tenantIdentifier) {
-    const authHeader = req.headers.get('authorization') || '';
-    const bearerToken = authHeader.replace(/^Bearer\s+/i, '').trim();
-    if (bearerToken) {
-      try {
-        const payload = sessionTokenService.verifyToken(bearerToken);
-        tenantIdentifier = payload.organizationId;
-        actorId = (payload as any).actorId || (payload as any).sub || 'tma_actor';
-        sessionId = bearerToken;
-        role = 'OPERATOR';
-      } catch {
-        return null;
-      }
-    }
-  }
-
-  if (!tenantIdentifier) {
-    return null;
-  }
-
-  // Resolve Canonical Tenant Identity via TenantAuthorityService (fail-closed)
-  const canonical = await TenantAuthorityService.resolveCanonicalTenant(tenantIdentifier);
-  if (!canonical) {
-    return null;
-  }
-
-  // If the caller passed a body hint, reject any cross-tenant switching
-  if (bodyTenantHint) {
-    const cleanHint = bodyTenantHint.toLowerCase().replace(/^org_/, '').trim();
-    if (
-      cleanHint !== canonical.projectSlug.toLowerCase() &&
-      cleanHint !== canonical.canonicalOrgId.toLowerCase()
-    ) {
-      console.warn(`[Chat API] Cross-tenant spoofing attempt rejected: session=${canonical.projectSlug}, body=${bodyTenantHint}`);
-      return null;
-    }
-  }
-
-  return {
-    canonicalOrgId: canonical.canonicalOrgId,
-    projectSlug: canonical.projectSlug,
-    actorId,
-    sessionId,
-    role,
-  };
-}
+// resolveChatSession has been replaced by resolveCanonicalAuthSession
 
 export async function POST(req: NextRequest) {
   const start = Date.now();
@@ -110,13 +36,16 @@ export async function POST(req: NextRequest) {
       organizationId: bodyOrgId,
       message,
       conversationId,
-      actorId: bodyActorId,
+      // bodyActorId is completely ignored for authority. Identity is 100% server-derived.
       authProvider = 'PORTAL_INTERNAL',
       channelType = 'AUTHENTICATED_WEB',
+      surface,
+      handoffTarget,
+      objectiveHint,
     } = body;
 
     // 1. Session & Canonical Tenant Verification (Fail-Closed)
-    const auth = await resolveChatSession(req, bodyOrgId);
+    const auth = await resolveCanonicalAuthSession(req, bodyOrgId);
     if (!auth) {
       return NextResponse.json(
         {
@@ -129,7 +58,8 @@ export async function POST(req: NextRequest) {
     }
 
     const effectiveOrgId = auth.canonicalOrgId;
-    const effectiveActorId = auth.actorId !== 'anonymous_actor' ? auth.actorId : (bodyActorId || 'session_actor');
+    // Client identity hint is ignored. Authority comes strictly from auth resolver.
+    const effectiveActorId = auth.actorId;
 
     // 2. Rate Limiting by Canonical Tenant Identity
     const rateLimit = checkTenantRateLimit(effectiveOrgId, 120, 60_000);
@@ -195,13 +125,50 @@ export async function POST(req: NextRequest) {
       interlocutor,
     };
 
+    if (surface === 'ONBOARDING') {
+      try {
+        const dbState = await setupProgressService.getEcosystemSetupState(effectiveOrgId) as any;
+        const reconciledState = OnboardingIntelligenceEngine.reconcileState({}, dbState);
+        const capabilities = OnboardingIntelligenceEngine.discoverCapabilities(controlPlaneContext.tenantContext);
+        const objective = OnboardingIntelligenceEngine.computeObjective(objectiveHint, undefined, reconciledState);
+        const journey = OnboardingIntelligenceEngine.computeJourney(reconciledState);
+
+        controlPlaneContext.onboardingState = reconciledState;
+        controlPlaneContext.surfaceContext = {
+          surface: 'ONBOARDING',
+          mode: 'PROPOSE',
+          capabilities: capabilities ? capabilities.resolvedCapabilities : [],
+          objective,
+          journeyState: journey,
+        };
+
+        // Adversarial Gate: Handoff validation
+        if (handoffTarget) {
+          if (!ONBOARDING_SURFACE.handoffTargets.includes(handoffTarget)) {
+            return NextResponse.json(
+              { success: false, error: 'UNAUTHORIZED_HANDOFF', message: `Cannot handoff from ONBOARDING to ${handoffTarget}` },
+              { status: 403 }
+            );
+          }
+          // Here we would create a Handoff Proposal Event in DB, but for now we transition memory
+          controlPlaneContext.surfaceContext.surface = handoffTarget as any;
+        }
+
+      } catch (e) {
+        console.warn('[Chat API] Failed to fetch onboarding state:', e);
+      }
+    }
+
+
     // 5. Canonical Runtime (respects HERMES_REASONING_PROVIDER or Mock default)
     const runtime = getDefaultRuntime();
 
+    const resolvedConversationId = conversationId || `conv_${effectiveOrgId}_${effectiveActorId}`;
+    
     // 6. Execute Governed Cognitive Turn
     const response = await runtime.respond({
       organizationId: effectiveOrgId,
-      conversationId: conversationId || `conv_${effectiveOrgId}_${effectiveActorId}`,
+      conversationId: resolvedConversationId,
       message: {
         id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
         role: 'USER',
@@ -216,6 +183,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         success: isAllowed,
+        conversationId: resolvedConversationId,
         responseId: response.responseId,
         message: response.content,
         suggestedActions: response.suggestedActions,

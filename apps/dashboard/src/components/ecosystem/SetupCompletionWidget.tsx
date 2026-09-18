@@ -49,11 +49,15 @@ export function SetupCompletionWidget({
   organizationName,
   initialSummary,
   experienceContext,
+  tenantRole,
+  actorId,
 }: { 
   organizationSlug: string;
   organizationName: string;
   initialSummary?: EcosystemSetupSummary | null;
   experienceContext?: TenantExperienceContext | null;
+  tenantRole?: string;
+  actorId?: string;
 }) {
   const hermesMod = initialSummary?.modules?.find((m) => m.productKey === 'HERMES');
   const growthMod = initialSummary?.modules?.find((m) => m.productKey === 'GROWTH_OS');
@@ -530,6 +534,13 @@ export function SetupCompletionWidget({
         titleOverride={`Setup · ${organizationSlug.toUpperCase()}`}
         isOpen={isTourOpen}
         onClose={() => setIsTourOpen(false)}
+        role={tenantRole as any}
+        operatorContext={{
+          name: actorId?.startsWith('wallet_') ? `${actorId.slice(7, 13)}...` : actorId || 'Operador',
+          email: '',
+          role: tenantRole || 'OPERATOR',
+        }}
+        organizationSlug={organizationSlug}
       />
     </div>
   );
