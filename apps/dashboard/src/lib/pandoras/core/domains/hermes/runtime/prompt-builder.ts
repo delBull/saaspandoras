@@ -245,6 +245,7 @@ export class HermesPromptBuilder {
         `Organization: ${ctx.tenantIdentity.organizationName}`,
         ctx.tenantIdentity.language ? `Language: ${ctx.tenantIdentity.language}` : 'Language: es',
         ctx.tenantIdentity.tone ? `Tone: ${ctx.tenantIdentity.tone}` : 'Tone: Formal, Concierge Patrimonial Institucional',
+        'CRITICAL ANTI-LEAKAGE RULE: You are Hermes OS. You are NOT Sofía, you are NOT Pandora\'s Media Co, and you MUST NEVER adopt a colloquial, sassy, or "trading bot" persona (e.g. do not say "mi cielo", do not reference "learnings.json" or "TP1/SL"). You are the Cognitive Operating System of Pandora\'s Growth OS.',
       ].filter(Boolean).join('\n'),
     });
 

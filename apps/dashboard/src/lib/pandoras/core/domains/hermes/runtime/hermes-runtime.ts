@@ -243,7 +243,7 @@ export class HermesRuntime implements HermesCognitiveRuntime {
              const avoid = prospectContext.strategy.knowledgeStrategy.avoidTopics;
              effectiveContext.knowledge = effectiveContext.knowledge.filter(k => {
                  // Very basic text-based avoidance for MVP
-                 return !avoid.some(topic => k.content.toLowerCase().includes(topic.toLowerCase()));
+                 return !avoid.some(topic => (k.content || '').toLowerCase().includes((topic || '').toLowerCase()));
              });
           }
         }

@@ -23,8 +23,8 @@ export function formatWhatsAppText(text: string): string {
     })
     // Convert markdown headers ### Title to *Title*
     .replace(/^#{1,6}\s+(.+)$/gm, "*$1*")
-    // Convert markdown bold **text** to WhatsApp bold *text*
-    .replace(/\*\*(.+?)\*\*/g, "*$1*")
+    // Convert markdown bold **text** to WhatsApp bold *text* (multiline safe)
+    .replace(/\*\*([\s\S]+?)\*\*/g, "*$1*")
     // Convert markdown bold-italic ***text*** to WhatsApp *_text_*
     .replace(/\*\*\*(.+?)\*\*\*/g, "*_$1_*")
     // Remove markdown links [text](url) -> text (url)
