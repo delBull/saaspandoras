@@ -15,11 +15,17 @@ export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
     const scopeParam = url.searchParams.get("scope");
-    const scope = (scopeParam === "all" || scopeParam === "shared") ? scopeParam : "mine";
     const isSuperAdmin = session?.role === "SUPER_ADMIN";
 
-    const userIdentifier = session?.address || session?.userId || "";
-    const email = session?.email;
+    // SUPER_ADMIN always gets all rooms regardless of scope param
+    const scope = isSuperAdmin
+      ? "all"
+      : (scopeParam === "all" || scopeParam === "shared") ? scopeParam : "mine";
+
+    // Normalize wallet to lowercase for consistent matching with created_by
+    const rawAddress = session?.address || session?.userId || "";
+    const userIdentifier = rawAddress.toLowerCase();
+    const email = session?.email?.toLowerCase();
 
     const rooms = await listRoomsForUser({
       userIdentifier,
