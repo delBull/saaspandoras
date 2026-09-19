@@ -90,6 +90,7 @@
         "@pandoras/agora-engine": "workspace:*",
         "@pandoras/capability-sdk": "workspace:*",
         "@pandoras/core-webhooks": "workspace:*",
+        "@pandoras/display-engine": "workspace:*",
         "@pandoras/gamification": "workspace:*",
         "@pandoras/hermes-console": "workspace:*",
         "@pandoras/identity-sdk": "workspace:*",
@@ -428,6 +429,24 @@
         "prettier": "3.2.5",
         "prisma": "5.9.1",
         "prisma-kysely": "1.7.1",
+        "tsup": "^8.5.1",
+        "typescript": "5.4.5",
+      },
+    },
+    "packages/display-engine": {
+      "name": "@pandoras/display-engine",
+      "version": "0.1.0",
+      "dependencies": {
+        "react": "^19.1.0",
+        "react-dom": "^19.1.0",
+      },
+      "devDependencies": {
+        "@saasfly/eslint-config": "workspace:*",
+        "@saasfly/prettier-config": "workspace:*",
+        "@saasfly/typescript-config": "workspace:*",
+        "@types/react": "18.3.3",
+        "eslint": "8.57.0",
+        "prettier": "3.2.5",
         "tsup": "^8.5.1",
         "typescript": "5.4.5",
       },
@@ -1505,6 +1524,8 @@
     "@pandoras/capability-sdk": ["@pandoras/capability-sdk@workspace:packages/capability-sdk"],
 
     "@pandoras/core-webhooks": ["@pandoras/core-webhooks@workspace:packages/core-webhooks"],
+
+    "@pandoras/display-engine": ["@pandoras/display-engine@workspace:packages/display-engine"],
 
     "@pandoras/gamification": ["@pandoras/gamification@workspace:packages/gamification"],
 

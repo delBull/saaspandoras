@@ -35,6 +35,7 @@
     "@pandoras/agora-engine": "workspace:*",
     "@pandoras/capability-sdk": "workspace:*",
     "@pandoras/core-webhooks": "workspace:*",
+    "@pandoras/display-engine": "workspace:*",
     "@pandoras/gamification": "workspace:*",
     "@pandoras/hermes-console": "workspace:*",
     "@pandoras/identity-sdk": "workspace:*",

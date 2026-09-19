@@ -20,6 +20,8 @@ import { usePathname } from 'next/navigation';
 import { InspectorProvider } from './InspectorContext';
 import { TrialCockpitBanner } from './trial/TrialCockpitBanner';
 import { SimulationAlert } from './SimulationAlert';
+import { PortalProvider } from '@pandoras/display-engine';
+import '@pandoras/display-engine/styles.css';
 
 interface PortalShellProps {
   context: PortalContext;
@@ -64,8 +66,9 @@ export function PortalShell({ context, children, activeModules = [] }: PortalShe
   }, [mobileMenuOpen]);
 
   return (
-    <InspectorProvider>
-      <div className="h-screen w-screen bg-[#08080A] text-white font-sans flex relative overflow-hidden">
+    <PortalProvider>
+      <InspectorProvider>
+        <div className="h-screen w-screen bg-[#08080A] text-white font-sans flex relative overflow-hidden">
       
       {/* Mobile Top Bar */}
       <div className="md:hidden flex items-center justify-between px-4 h-14 bg-[#0C0C12] border-b border-white/[0.08] fixed top-0 w-full z-40 backdrop-blur-md shrink-0">
@@ -169,5 +172,6 @@ export function PortalShell({ context, children, activeModules = [] }: PortalShe
 
     </div>
     </InspectorProvider>
+    </PortalProvider>
   );
 }

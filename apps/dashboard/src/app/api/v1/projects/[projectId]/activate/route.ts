@@ -48,7 +48,7 @@ export async function POST(
       organizationId: project.organizationId,
       actorId: walletAddress,
       eventType: 'EXECUTIVE_TENANT_STATUS_UPDATED',
-      severity: 'INFO',
+      severity: 'WARN',
       policyDecision: 'ALLOW',
       correlationId: `activate-${project.id}-${Date.now()}`,
       metadata: {

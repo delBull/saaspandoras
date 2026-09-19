@@ -12,7 +12,6 @@ import {
   ClipboardDocumentIcon,
   FolderIcon
 } from '@heroicons/react/24/outline';
-import { snaraiMaterials } from '@/lib/marketing/snarai-materials';
 import { PartnerHub } from '@/components/marketing/PartnerHub';
 
 interface Briefing {

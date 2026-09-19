@@ -302,7 +302,7 @@ export function DealEnvelopeSignerClient({ envelope: initialEnvelope, initialSig
               </div>
 
               {/* Visual Simulated Legal Content Notice */}
-              <div className="p-6 rounded-xl border border-white/[0.06] bg-black/40 space-y-3">
+              <div data-magnifier-target="true" className="p-6 rounded-xl border border-white/[0.06] bg-black/40 space-y-3">
                 <div className="flex items-center gap-2 text-xs font-semibold text-zinc-200">
                   <FileText className="w-4 h-4 text-indigo-400" />
                   Declaración de Voluntad & Objeto del Acuerdo
@@ -323,6 +323,7 @@ export function DealEnvelopeSignerClient({ envelope: initialEnvelope, initialSig
                   {envelope.signers.map((signer, idx) => (
                     <div 
                       key={signer.signerId}
+                      data-magnifier-target="true"
                       className={`p-4 rounded-xl border transition-all ${
                         signer.status === 'SIGNED'
                           ? 'bg-emerald-500/[0.03] border-emerald-500/30'
@@ -368,7 +369,7 @@ export function DealEnvelopeSignerClient({ envelope: initialEnvelope, initialSig
             </div>
 
             {/* Footer Watermark */}
-            <div className="bg-[#0C0C12] border-t border-white/[0.06] p-4 text-center text-[10px] font-mono text-zinc-500">
+            <div data-magnifier-target="true" className="bg-[#0C0C12] border-t border-white/[0.06] p-4 text-center text-[10px] font-mono text-zinc-500">
               HASH SHA-256: {envelope.documentHash} &bull; ANCLADO EN SOVEREIGN IPFS
             </div>
           </div>

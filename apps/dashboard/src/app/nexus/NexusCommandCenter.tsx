@@ -23,6 +23,7 @@ import {
   Code2,
   GraduationCap,
   Bell,
+  Sliders,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { NexusAuthContext } from "@/lib/nexus/nexus-rbac";
@@ -33,6 +34,7 @@ import { OperationsHubModal } from "@/components/nexus/OperationsHubModal";
 import { NexusCentralNotificationModal, NexusBroadcastItem } from "@/components/nexus/NexusCentralNotificationModal";
 import { INITIAL_TASKS, TaskItem } from "@/components/nexus/taskTypes";
 import Link from "next/link";
+import { DisplayControlsWidget } from "@pandoras/display-engine";
 
 interface NexusCommandCenterProps {
   auth: NexusAuthContext;
@@ -194,6 +196,7 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [showWelcomePanel, setShowWelcomePanel] = useState(false);
   const [isOpsModalOpen, setIsOpsModalOpen] = useState(false);
+  const [showDisplayControls, setShowDisplayControls] = useState(false);
   const sidebarOpen = showGuideSidebar === true;
 
   // Sincronización simétrica de sesión para que nunca se pierda el token al navegar entre páginas
@@ -450,6 +453,26 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
         </div>
 
         <div className="pt-4 mt-auto border-t border-white/10">
+          <div className="mb-2.5">
+            <button
+              onClick={() => setShowDisplayControls((prev) => !prev)}
+              className={`w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border text-[10px] tracking-wider transition-all ${
+                showDisplayControls
+                  ? 'border-amber-500/40 bg-amber-500/10 text-amber-300'
+                  : 'border-zinc-800 bg-zinc-900/60 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
+              }`}
+              title="Controles Visuales y Accesibilidad"
+            >
+              <Sliders className="w-3 h-3 text-amber-400" />
+              SOVEREIGN DISPLAY
+            </button>
+            {showDisplayControls && (
+              <div className="mt-2 p-1 bg-black/95 border border-zinc-800 rounded-xl shadow-2xl">
+                <DisplayControlsWidget />
+              </div>
+            )}
+          </div>
+
           <div className="flex gap-2">
             <Link
               href="/nexus/settings"

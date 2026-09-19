@@ -53,6 +53,12 @@
       ],
       "@pandoras/core-webhooks/*": [
         "../../packages/core-webhooks/src/*"
+      ],
+      "@pandoras/display-engine": [
+        "../../packages/display-engine/src"
+      ],
+      "@pandoras/display-engine/*": [
+        "../../packages/display-engine/src/*"
       ]
     }
   },

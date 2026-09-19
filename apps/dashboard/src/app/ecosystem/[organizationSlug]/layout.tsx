@@ -5,6 +5,8 @@ import { SovereignHeader } from '@/components/sovereign-mesh/SovereignHeader';
 import { EcosystemFooter } from '@/components/ecosystem/EcosystemFooter';
 import { setupProgressService } from '@/lib/mesh/setup-progress.service';
 import { SimulationAlert } from '@/components/hermes-portal/SimulationAlert';
+import { DashboardProvider } from '@pandoras/display-engine';
+import '@pandoras/display-engine/styles.css';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,28 +44,30 @@ export default async function EcosystemLayout({
   }
 
   return (
-    <div className="min-h-screen bg-[#060608] text-zinc-100 flex flex-col font-sans relative overflow-x-hidden selection:bg-amber-500/20 selection:text-amber-300">
-      {/* Top Navbar */}
-      <SovereignHeader 
-        organization={context.organization} 
-        organizationSlug={organizationSlug} 
-        activeModules={activeModules}
-      />
-
-      {context.organization.isSimulationMode && (
-        <SimulationAlert 
-          projectId={context.organization.slug} 
-          isSimulationMode={context.organization.isSimulationMode} 
+    <DashboardProvider>
+      <div className="min-h-screen bg-[#060608] text-zinc-100 flex flex-col font-sans relative overflow-x-hidden selection:bg-amber-500/20 selection:text-amber-300">
+        {/* Top Navbar */}
+        <SovereignHeader 
+          organization={context.organization} 
+          organizationSlug={organizationSlug} 
+          activeModules={activeModules}
         />
-      )}
 
-      {/* Main Orchestration Viewport */}
-      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-20">
-        {children}
-      </main>
+        {context.organization.isSimulationMode && (
+          <SimulationAlert 
+            projectId={context.organization.slug} 
+            isSimulationMode={context.organization.isSimulationMode} 
+          />
+        )}
 
-      {/* Bottom Footbar */}
-      <EcosystemFooter organization={context.organization} />
-    </div>
+        {/* Main Orchestration Viewport */}
+        <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-20">
+          {children}
+        </main>
+
+        {/* Bottom Footbar */}
+        <EcosystemFooter organization={context.organization} />
+      </div>
+    </DashboardProvider>
   );
 }

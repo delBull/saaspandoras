@@ -1,0 +1,52 @@
+{
+  "name": "@pandoras/display-engine",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    },
+    "./styles.css": "./styles.css"
+  },
+  "typesVersions": {
+    "*": {
+      "*": [
+        "src/*"
+      ]
+    }
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format esm,cjs --dts --clean",
+    "clean": "rm -rf .turbo node_modules dist",
+    "format": "prettier --check '**/*.{ts,tsx}' ",
+    "lint": "eslint .",
+    "dev": "tsup src/index.ts --format esm,cjs --watch"
+  },
+  "dependencies": {
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@saasfly/eslint-config": "workspace:*",
+    "@saasfly/prettier-config": "workspace:*",
+    "@saasfly/typescript-config": "workspace:*",
+    "@types/react": "18.3.3",
+    "eslint": "8.57.0",
+    "prettier": "3.2.5",
+    "tsup": "^8.5.1",
+    "typescript": "5.4.5"
+  },
+  "prettier": "@saasfly/prettier-config",
+  "eslintConfig": {
+    "root": true,
+    "extends": [
+      "@saasfly/eslint-config/base",
+      "@saasfly/eslint-config/react"
+    ]
+  }
+}

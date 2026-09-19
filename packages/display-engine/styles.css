@@ -1,0 +1,82 @@
+/* Base theme (defaults to system or light) */
+:root {
+  --display-bg: #ffffff;
+  --display-surface: #f8fafc;
+  --display-text: #0f172a;
+  --display-text-muted: #64748b;
+  --display-border: #e2e8f0;
+  --display-primary: #3b82f6;
+}
+
+/* High Contrast Mode */
+:root[data-display-theme="high-contrast"] {
+  --display-bg: #000000;
+  --display-surface: #111111;
+  --display-text: #ffffff;
+  --display-text-muted: #cccccc;
+  --display-border: #ffffff;
+  --display-primary: #ffff00;
+  filter: contrast(140%) brightness(110%);
+}
+
+/* Sepia Mode (for reading) */
+:root[data-display-theme="sepia"] {
+  --display-bg: #f4ecd8;
+  --display-surface: #e9dec0;
+  --display-text: #5b4636;
+  --display-text-muted: #7b6656;
+  --display-border: #d3c4a1;
+  --display-primary: #8c5b3f;
+  filter: sepia(45%) contrast(95%) brightness(95%);
+}
+
+/* Grayscale Mode */
+:root[data-display-theme="grayscale"] {
+  --display-bg: #ffffff;
+  --display-surface: #f0f0f0;
+  --display-text: #000000;
+  --display-text-muted: #666666;
+  --display-border: #cccccc;
+  --display-primary: #555555;
+  filter: grayscale(100%);
+}
+
+/* Low Light Mode (Dark Mode Soft) */
+:root[data-display-theme="low-light"] {
+  --display-bg: #0f172a;
+  --display-surface: #1e293b;
+  --display-text: #f1f5f9;
+  --display-text-muted: #94a3b8;
+  --display-border: #334155;
+  --display-primary: #60a5fa;
+  filter: brightness(80%) contrast(95%);
+}
+
+/* 
+  Reduced Motion (a11y)
+  Disables all animations and smooth scrolling safely.
+*/
+body.display-reduced-motion *,
+body.display-reduced-motion *::before,
+body.display-reduced-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* 
+  Safe Magnifier
+  Only targets explicit elements with data-magnifier-target.
+  Leaves iframes, canvas, Web3 wallets and other sensitive UI intact.
+*/
+body.display-magnifier-active [data-magnifier-target]:hover {
+  transform: scale(1.15);
+  transform-origin: center;
+  transition: transform 0.2s ease-in-out;
+  z-index: 50;
+  position: relative;
+  background-color: var(--display-bg); /* Prevents overlapping transparent text */
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  border-radius: 4px;
+}

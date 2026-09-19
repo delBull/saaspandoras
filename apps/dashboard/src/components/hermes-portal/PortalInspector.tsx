@@ -9,6 +9,7 @@ import {
   ChevronLeftIcon 
 } from '@heroicons/react/24/outline';
 import { useInspector } from './InspectorContext';
+import { DisplayControlsWidget } from '@pandoras/display-engine';
 
 export function PortalInspector({ 
   children, 
@@ -261,7 +262,7 @@ export function PortalInspector({
             </h4>
             <div className="space-y-2">
               {Object.entries(dynamicAttributes).map(([key, val]) => (
-                <div key={key} className="bg-black/40 border border-white/[0.06] p-2.5 rounded-xl space-y-0.5 hover:border-white/10 transition-colors">
+                <div key={key} data-magnifier-target="true" className="bg-black/40 border border-white/[0.06] p-2.5 rounded-xl space-y-0.5 hover:border-white/10 transition-colors">
                   <div className="text-[10px] text-zinc-500 uppercase tracking-wider font-mono">{key}</div>
                   <div className="text-xs text-zinc-200 font-mono break-all">{String(val)}</div>
                 </div>
@@ -269,6 +270,19 @@ export function PortalInspector({
             </div>
           </div>
         )}
+
+        {/* Sovereign Display Controls Panel */}
+        <div className="pt-2 border-t border-white/[0.06]">
+          <details className="group">
+            <summary className="text-[10px] font-mono font-bold text-zinc-500 uppercase tracking-wider cursor-pointer list-none flex items-center justify-between hover:text-zinc-300 transition-colors py-1">
+              <span>Sovereign Display Controls</span>
+              <span className="text-zinc-600 group-open:rotate-90 transition-transform">▸</span>
+            </summary>
+            <div className="mt-2">
+              <DisplayControlsWidget />
+            </div>
+          </details>
+        </div>
 
         {children}
 
