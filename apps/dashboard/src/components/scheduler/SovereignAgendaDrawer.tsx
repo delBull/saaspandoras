@@ -258,7 +258,22 @@ export function SovereignAgendaDrawer({
       return;
     }
 
-    addCliLog(`Comando desconocido: "${cmd}". Escribe "help" para ver opciones.`, 'error');
+    addCliLog(`Consultando a Hermes...`, 'system');
+    try {
+      const res = await fetch('/api/nexus/hermes-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: cmd, context: 'SovereignAgendaDrawer' }),
+      });
+      const data = await res.json();
+      if (res.ok && data.reply) {
+        addCliLog(data.reply, 'system');
+      } else {
+        addCliLog(`Error de Hermes: ${data.error || 'Respuesta desconocida'}`, 'error');
+      }
+    } catch (err: any) {
+      addCliLog(`Fallo de conexión con Hermes: ${err.message}`, 'error');
+    }
   }
 
   const publicLink = typeof window !== 'undefined'
