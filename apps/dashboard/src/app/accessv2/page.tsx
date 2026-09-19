@@ -159,6 +159,7 @@ function AccessV2Inner() {
 
   // Context from landing page
   const projectSlug = searchParams?.get('project') || null;
+  const returnTarget = searchParams?.get('return') || null;
   const isReturning = searchParams?.get('returning') === 'true';
   const origin = searchParams?.get('origin') || null;
   const bypass = searchParams?.get('bypass') || null;
@@ -236,8 +237,10 @@ function AccessV2Inner() {
         }).catch(console.error);
       }
 
-      // Route to project or home (Smooth client transition to protect extension streams)
-      if (projectSlug) {
+      // Route to return target, project or home (Smooth client transition to protect extension streams)
+      if (returnTarget && returnTarget.startsWith('/') && !returnTarget.startsWith('/accessv2')) {
+        router.push(returnTarget);
+      } else if (projectSlug) {
         router.push(`/projects/${projectSlug}`);
       } else {
         router.push('/');

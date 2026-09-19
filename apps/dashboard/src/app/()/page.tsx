@@ -51,16 +51,30 @@ export default async function RootDashboardPage({ searchParams }: PageProps) {
 
   // 1. Resolve explicit slug from URL or cookies
   let explicitSlug = params.slug;
-  if (!explicitSlug) {
-    try {
-      const cookieStore = await cookies();
-      const cookieSlug =
-        cookieStore.get('pd_current_tenant')?.value ||
-        cookieStore.get('portal_slug')?.value ||
-        cookieStore.get('snarai_project_slug')?.value;
-      if (cookieSlug) explicitSlug = cookieSlug;
-    } catch (err) {}
-  }
+  let portalSessionSlug: string | undefined;
+
+  try {
+    const cookieStore = await cookies();
+    const cookieSlug =
+      cookieStore.get('pd_current_tenant')?.value ||
+      cookieStore.get('portal_slug')?.value ||
+      cookieStore.get('snarai_project_slug')?.value;
+    if (cookieSlug) explicitSlug = cookieSlug;
+
+    // Check if user has an active portal session cookie (Hermes/Magic Link user)
+    const portalSession = cookieStore.get('pandoras_portal_session')?.value;
+    if (portalSession) {
+      const { validatePortalSession } = await import('@/lib/platform/portal-auth');
+      const session = await validatePortalSession(portalSession);
+      if (session?.projectId) {
+        const { OrganizationSDK } = await import('@/lib/platform/organization-sdk');
+        const org = await OrganizationSDK.resolve(session.projectId, session.product as any).catch(() => null);
+        if (org?.slug) {
+          portalSessionSlug = org.slug;
+        }
+      }
+    }
+  } catch (err) {}
 
   // 2. Fetch auth state
   const { getAuth, isAdmin } = await import('@/lib/auth');
@@ -74,7 +88,7 @@ export default async function RootDashboardPage({ searchParams }: PageProps) {
   const userIsAdmin = callerWallet ? await isAdmin(callerWallet) : false;
 
   // 3. Resolve final target slug dynamically
-  let resolvedSlug = explicitSlug;
+  let resolvedSlug = explicitSlug || portalSessionSlug;
 
   if (!resolvedSlug) {
     if (userIsAdmin) {
