@@ -10,13 +10,44 @@ export async function GET(request: Request) {
       searchParams.get('sessionToken') ||
       (request.headers.get('authorization')?.replace(/^Bearer\s+/i, '').trim() || '');
 
-    if (!sessionToken) {
-      return NextResponse.json({ error: 'sessionToken is required' }, { status: 400 });
+    let session: any = null;
+    let fallbackProjectId = null;
+    let fallbackProduct = 'HERMES';
+
+    if (sessionToken && sessionToken !== 'null' && sessionToken !== 'undefined') {
+      session = await validatePortalSession(sessionToken);
     }
 
-    const session = await validatePortalSession(sessionToken);
     if (!session) {
-      return NextResponse.json({ error: 'Invalid or expired session' }, { status: 401 });
+      // Fallback: Check Wallet Auth
+      const reqHeaders = request.headers;
+      let wallet = reqHeaders.get('x-wallet-address') || reqHeaders.get('x-thirdweb-address');
+      
+      if (!wallet) {
+        try {
+          const { getAuth } = await import('@/lib/auth');
+          const auth = await getAuth(reqHeaders);
+          if (auth?.session?.address) wallet = auth.session.address;
+        } catch {}
+      }
+
+      if (wallet) {
+        const { getTenantsForWallet } = await import('@/lib/hermes/auth/wallet-tenant-membership');
+        const tenants = await getTenantsForWallet(wallet);
+        const firstTenant = tenants[0];
+        if (firstTenant) {
+          // Use the first tenant as fallback to resolve organization
+          session = { 
+            projectId: firstTenant.organizationId, 
+            product: fallbackProduct,
+            isTrial: false 
+          };
+        }
+      }
+    }
+
+    if (!session) {
+      return NextResponse.json({ error: 'Invalid or expired session and no authorized wallet found' }, { status: 401 });
     }
 
     const organization = await OrganizationSDK.resolve(session.projectId, session.product as any);

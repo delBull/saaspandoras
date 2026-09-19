@@ -8,10 +8,8 @@ export default function PortalRedirect() {
 
   useEffect(() => {
     const sessionToken = localStorage.getItem('pandoras_portal_session');
-    if (!sessionToken) {
-      router.push('/portal/login');
-      return;
-    }
+    // REMOVED: instant client-side redirect if local storage is empty
+    // The server can still resolve via cookies or wallet auth.
 
     fetch('/api/v1/portal/session', {
       headers: { 'Authorization': `Bearer ${sessionToken}` }

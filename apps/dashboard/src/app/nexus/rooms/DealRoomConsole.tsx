@@ -184,7 +184,7 @@ export default function DealRoomConsole() {
   const [flash, setFlash] = useState<string | null>(null);
 
   // Multi-collaborator isolation & scope filters
-  const [scopeFilter, setScopeFilter] = useState<"mine" | "shared" | "all">("mine");
+  const [scopeFilter, setScopeFilter] = useState<"mine" | "shared" | "all">("all");
   const [isSuperAdminUser, setIsSuperAdminUser] = useState(false);
   const [currentUserIdent, setCurrentUserIdent] = useState<string | null>(null);
 

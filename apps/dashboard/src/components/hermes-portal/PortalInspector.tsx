@@ -278,7 +278,10 @@ export function PortalInspector({
               <span>Sovereign Display Controls</span>
               <span className="text-zinc-600 group-open:rotate-90 transition-transform">▸</span>
             </summary>
-            <div className="mt-2">
+            <div className="mt-2 space-y-3">
+              <p className="text-[10px] text-zinc-400 leading-relaxed">
+                Ajusta el zoom, activa la lupa focal asistida y cambia los filtros de contraste para facilitar la lectura de evidencia criptográfica y registros.
+              </p>
               <DisplayControlsWidget />
             </div>
           </details>

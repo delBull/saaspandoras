@@ -10,7 +10,7 @@ import {
   nexusDealSigners,
   nexusNdaAcceptances,
 } from "@/db/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, or, desc } from "drizzle-orm";
 import type { SignerInput, DealKind } from "./types";
 import { newRoomId, generatePublicId, defaultSections } from "./types";
 import { sendDealRoomActionRequiredAlert, sendDealRoomChainedReleaseAlert, sendSignatureAlert } from "./discord";
@@ -706,12 +706,16 @@ export async function convertToAgreement(roomId: string, actor: string) {
  * Returns the acceptance record if found, null otherwise.
  */
 export async function hasEmailSignedNda(
-  email: string,
+  identifier: string,
   ndaVersion = "v1.0"
 ): Promise<{ acceptedAt: Date; wallet: string | null } | null> {
+  const normalized = identifier.toLowerCase();
   const row = await db.query.nexusNdaAcceptances.findFirst({
     where: and(
-      eq(nexusNdaAcceptances.email, email.toLowerCase()),
+      or(
+        eq(nexusNdaAcceptances.email, normalized),
+        eq(nexusNdaAcceptances.wallet, normalized)
+      ),
       eq(nexusNdaAcceptances.ndaVersion, ndaVersion)
     ),
     columns: { acceptedAt: true, wallet: true },

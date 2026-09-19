@@ -353,8 +353,22 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
             <p className="text-[10px] text-zinc-500 truncate">{room.publicId}</p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <DisplayControlsWidget />
+        <div className="flex items-center gap-3 relative">
+          <button
+            onClick={() => {
+              const el = document.getElementById("display-controls-dropdown");
+              if (el) el.classList.toggle("hidden");
+            }}
+            className="p-1.5 rounded-xl border border-white/10 text-zinc-400 hover:text-white hover:bg-white/[0.06] transition-all cursor-pointer flex items-center"
+            title="Controles Visuales"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-sliders"><line x1="4" x2="20" y1="21" y2="14"/><line x1="4" x2="20" y1="10" y2="3"/><line x1="12" x2="12" y1="21" y2="12"/><line x1="12" x2="12" y1="8" y2="3"/><line x1="2" x2="22" y1="14" y2="14"/><line x1="2" x2="22" y1="8" y2="8"/></svg>
+          </button>
+          
+          <div id="display-controls-dropdown" className="hidden absolute top-full right-0 mt-2 z-50">
+            <DisplayControlsWidget />
+          </div>
+
           <span className="hidden sm:flex items-center gap-1.5 text-[10px] text-zinc-500">
             <span className="relative flex h-1.5 w-1.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-60" />

@@ -79,3 +79,39 @@ export async function isWalletAuthorizedForTenant(
 
   return false;
 }
+
+export async function getTenantsForWallet(wallet: string): Promise<{slug: string, organizationId: string}[]> {
+  if (!wallet) return [];
+  const normalizedWallet = wallet.toLowerCase();
+  
+  const results: {slug: string, organizationId: string}[] = [];
+  try {
+    const ownedProjects = await db
+      .select({ slug: projects.slug, organizationId: projects.organizationId })
+      .from(projects)
+      .where(eq(projects.applicantWalletAddress, normalizedWallet));
+      
+    for (const p of ownedProjects) {
+      if (p.slug && p.organizationId) {
+        results.push({ slug: p.slug, organizationId: p.organizationId });
+      }
+    }
+    
+    // Also add projects where the user is a DAO member
+    const memberProjects = await db
+      .select({ slug: projects.slug, organizationId: projects.organizationId })
+      .from(daoMembers)
+      .innerJoin(projects, eq(daoMembers.projectId, projects.id))
+      .where(eq(daoMembers.wallet, normalizedWallet));
+      
+    for (const p of memberProjects) {
+      if (p.slug && p.organizationId && !results.some(r => r.organizationId === p.organizationId)) {
+        results.push({ slug: p.slug, organizationId: p.organizationId });
+      }
+    }
+  } catch (err) {
+    console.error('[WalletTenantMembership] Error looking up tenants for wallet:', err);
+  }
+  
+  return results;
+}
