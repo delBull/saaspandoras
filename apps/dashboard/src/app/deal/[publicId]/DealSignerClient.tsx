@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Handshake, Lock, Mail, Check, FileSignature, Loader2, Wallet, ShieldCheck, ChevronDown, ChevronUp, AlertTriangle, Download, XCircle } from "lucide-react";
+import { Handshake, Lock, Mail, Check, FileSignature, Loader2, Wallet, ShieldCheck, ChevronDown, ChevronUp, AlertTriangle, Download, XCircle, ChevronRight, Activity } from "lucide-react";
 import { useActiveAccount, useActiveWallet, ConnectButton, darkTheme, useDisconnect } from "thirdweb/react";
 import { inAppWallet, createWallet } from "thirdweb/wallets";
 import { client } from "@/lib/thirdweb-client";
@@ -108,6 +108,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
   const [magicError, setMagicError] = useState<string | null>(null);
 
   const [openSection, setOpenSection] = useState(room.sections[0]?.code ?? "01");
+  const [showCover, setShowCover] = useState(true);
   const [dealScope, setDealScope] = useState<"B2B" | "B2C">("B2B");
   const [signName, setSignName] = useState("");
   const [signCompany, setSignCompany] = useState("");
@@ -449,9 +450,45 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
 
       {unlocked ? (
         <div className="flex-1 flex flex-col md:flex-row min-h-0 print:block">
-          {/* Document */}
-          <div className="flex-1 overflow-y-auto p-4 md:p-8 print:p-0 print:overflow-visible">
-          <div className="max-w-3xl mx-auto">
+          {showCover ? (
+            <div className="flex-1 flex flex-col items-center justify-center p-8 bg-gradient-to-b from-[#08080A] to-[#121217] text-center print:hidden relative overflow-hidden">
+              <div className="absolute inset-0 bg-[url('/noise.png')] opacity-[0.03] mix-blend-overlay pointer-events-none"></div>
+              
+              <div className="relative z-10 max-w-2xl mx-auto flex flex-col items-center">
+                <div className="w-16 h-16 rounded-2xl border border-amber-500/30 bg-amber-500/10 flex items-center justify-center mb-8 shadow-[0_0_40px_-10px_rgba(245,158,11,0.3)]">
+                  <Handshake className="w-8 h-8 text-amber-400" />
+                </div>
+                
+                <h4 className="text-[11px] font-mono text-amber-500/80 tracking-widest uppercase mb-3">
+                  {KIND_LABEL[room.kind]} · {room.relation}
+                </h4>
+                
+                <h1 className="text-3xl md:text-5xl font-semibold text-white tracking-tight leading-tight mb-4">
+                  {room.summary || KIND_LABEL[room.kind]}
+                </h1>
+                
+                <p className="text-sm text-zinc-400 mb-10 max-w-md">
+                  Preparado exclusivamente para <span className="text-zinc-200 font-medium">{dynamicPartyName}</span>. Este documento se encuentra asegurado criptográficamente bajo la jurisdicción soberana de Pandora's.
+                </p>
+                
+                <button
+                  onClick={() => setShowCover(false)}
+                  className="group flex items-center gap-3 px-8 py-4 rounded-full bg-amber-500 text-black font-semibold text-sm hover:bg-amber-400 transition-all shadow-[0_0_30px_-5px_rgba(245,158,11,0.4)] hover:shadow-[0_0_40px_0px_rgba(245,158,11,0.6)] hover:-translate-y-0.5"
+                >
+                  INICIAR LECTURA
+                  <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </button>
+              </div>
+              
+              <div className="absolute bottom-8 left-0 right-0 text-center">
+                <p className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest flex items-center justify-center gap-2">
+                  <ShieldCheck className="w-3 h-3 text-zinc-500" /> Sovereign Deal Room Protocol
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex-1 overflow-y-auto p-4 md:p-8 print:p-0 print:overflow-visible">
+              <div className="max-w-3xl mx-auto">
             <div className="mb-6">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2 flex-wrap">
@@ -476,7 +513,40 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
               <h1 className="text-2xl md:text-3xl font-semibold text-white print:text-black tracking-tight">
                 {room.summary || KIND_LABEL[room.kind]}
               </h1>
-              <div className="mt-3 mb-4 p-3.5 rounded-xl border border-white/10 bg-white/[0.02]">
+
+              <div className="mt-6 mb-2 p-5 rounded-2xl border border-indigo-500/30 bg-indigo-500/[0.04] relative overflow-hidden group print:hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2 group-hover:bg-indigo-500/20 transition-colors"></div>
+                <div className="flex items-start gap-4 relative z-10">
+                  <div className="w-8 h-8 rounded-lg border border-indigo-500/40 bg-indigo-500/20 flex items-center justify-center shrink-0">
+                    <Activity className="w-4 h-4 text-indigo-300" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-semibold text-indigo-300 font-mono tracking-widest uppercase mb-1 flex items-center gap-2">
+                      Hermes Cognitive Summary
+                      <span className="px-1.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-200 text-[8px] leading-none">AI GENERATED</span>
+                    </h3>
+                    <p className="text-[13px] text-zinc-300 leading-relaxed mb-3">
+                      He analizado este acuerdo. Los puntos críticos para <strong className="text-zinc-100">{dynamicPartyName}</strong> son:
+                    </p>
+                    <ul className="space-y-2">
+                      <li className="flex items-start gap-2 text-[12px] text-zinc-400">
+                        <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 mt-1.5 shrink-0"></div>
+                        <span>El acuerdo establece una comisión operativa tope del <strong>15% al 20%</strong> sujeta al margen final.</span>
+                      </li>
+                      <li className="flex items-start gap-2 text-[12px] text-zinc-400">
+                        <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 mt-1.5 shrink-0"></div>
+                        <span>Los costos de manufactura tecnológica (Solution Shaping) se deducen previo al cálculo de comisión.</span>
+                      </li>
+                      <li className="flex items-start gap-2 text-[12px] text-zinc-400">
+                        <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 mt-1.5 shrink-0"></div>
+                        <span>Acuerdo de Confidencialidad y principios del Sovereign Knowledge Vault aplicables inmediatamente.</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 mb-4 p-3.5 rounded-xl border border-white/10 bg-white/[0.02]">
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] font-mono uppercase tracking-widest text-amber-400">
                     {isB2B ? "Contraparte B2B:" : "Contraparte Individual (B2C):"}
@@ -580,7 +650,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
               </div>
             ) : (
               <div className="space-y-2">
-                {room.sections.map((sec) => (
+                {room.sections.map((sec, sectionIndex) => (
                   <div key={sec.code} className="rounded-xl border border-white/10 bg-[#0C0C10] overflow-hidden">
                     <button
                       onClick={() => setOpenSection(openSection === sec.code ? "" : sec.code)}
@@ -602,10 +672,25 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                           const renderedLine = line
                             .replace(/{{COUNTERPARTY_COMPANY}}/g, dynamicPartyName)
                             .replace(/{{COUNTERPARTY}}/g, dynamicPartyName);
+                          
+                          if (renderedLine.startsWith("## ")) {
+                            return <h2 key={i} className="text-[15px] font-bold text-white mt-4 mb-2">{renderedLine.slice(3)}</h2>;
+                          }
+                          if (renderedLine.startsWith("### ")) {
+                            return <h3 key={i} className="text-[13px] font-semibold text-amber-200 mt-3 mb-1">{renderedLine.slice(4)}</h3>;
+                          }
+
+                          const parts = renderedLine.split(/(\*\*.*?\*\*)/g);
+
                           return (
-                            <p key={i} className="text-[12px] text-zinc-300 print:text-black leading-relaxed">
+                            <p key={i} className="text-[12px] text-zinc-300 print:text-black leading-relaxed mb-2">
                               <span className="text-zinc-600 print:text-black font-mono mr-2">{String(i + 1).padStart(2, "0")}</span>
-                              {renderedLine}
+                              {parts.map((p, j) => {
+                                if (p.startsWith("**") && p.endsWith("**")) {
+                                  return <strong key={j} className="text-white font-semibold">{p.slice(2, -2)}</strong>;
+                                }
+                                return <span key={j}>{p}</span>;
+                              })}
                             </p>
                           );
                         })}
@@ -614,6 +699,22 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                             <DealComments publicId={publicId} sectionCode={sec.code} rawToken={rawToken} />
                           </div>
                         )}
+                        
+                        {/* Next Button */}
+                        {(() => {
+                          const nextSec = room.sections[sectionIndex + 1];
+                          if (!nextSec) return null;
+                          return (
+                            <button
+                              onClick={() => {
+                                setOpenSection(nextSec.code);
+                              }}
+                              className="w-full mt-4 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[11px] font-mono hover:bg-amber-500/20 transition-colors shadow-sm"
+                            >
+                              SIGUIENTE: {nextSec.title} <ChevronDown className="w-4 h-4" />
+                            </button>
+                          );
+                        })()}
                       </div>
                     )}
                   </div>
@@ -692,7 +793,8 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
             onClose={() => setNdaModalOpen(false)} 
             version={ndaVersion} 
           />
-        </div>
+          </div>
+          )}
 
           {/* Sidebar / Sign Box */}
           <div className="w-full md:w-[320px] shrink-0 border-t md:border-t-0 md:border-l border-white/10 p-4 md:p-6 bg-[#08080A] print:hidden flex flex-col">

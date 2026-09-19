@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
 import { getRoomByPublicId, getRoom, publicRoomView, hasEmailSignedNda } from "@/lib/nexus-deals/repo";
 import { verifyDealToken } from "@/lib/nexus-deals/tokens";
 import { KIND_LABEL } from "@/lib/nexus-deals/types";
+import { getNexusAuthContext } from "@/lib/nexus/nexus-rbac";
 import DealSignerClient from "./DealSignerClient";
 
 export const dynamic = "force-dynamic";
@@ -11,22 +13,38 @@ export default async function DealPublicPage({
   searchParams,
 }: {
   params: Promise<{ publicId: string }>;
-  searchParams: Promise<{ token?: string }>;
+  searchParams: Promise<{ token?: string; preview?: string }>;
 }) {
   const { publicId } = await params;
-  const { token } = await searchParams;
+  const { token, preview } = await searchParams;
 
   const room = await getRoomByPublicId(publicId);
   if (!room) notFound();
 
-  // Token mágico válido → identidad del firmante (solo se muestra a su dueño)
   let signerEmail: string | null = null;
   let expectedWallet: string | null = null;
+  let rawTokenForClient: string | null = null;
 
-  if (typeof token === "string" && token) {
+  // Creator / Admin Preview Bypass
+  if (preview === "true") {
+    const reqHeaders = await headers();
+    const auth = await getNexusAuthContext(reqHeaders);
+    
+    const isAuthorizedRole = ["SUPER_ADMIN", "ADMIN", "MARKETING", "MANAGER", "OPERATOR"].includes(auth.role || "");
+    const isCreator = auth.email === room.createdBy || auth.wallet?.toLowerCase() === room.createdBy?.toLowerCase();
+    
+    if (auth.isAuthenticated && (isAuthorizedRole || isCreator)) {
+      signerEmail = auth.email || "creator@pandoras.finance";
+      rawTokenForClient = "creator-preview-token";
+    }
+  }
+
+  // Regular Magic Link Flow
+  if (!signerEmail && typeof token === "string" && token) {
     const payload = verifyDealToken(token);
     if (payload && payload.sub === publicId && payload.type === "deal_access") {
       signerEmail = payload.email;
+      rawTokenForClient = token;
       
       const signer = room.signers.find((s) => s.email === signerEmail);
       if (signer?.wallet) {
@@ -67,7 +85,7 @@ export default async function DealPublicPage({
       publicId={publicId}
       room={view}
       initialEmail={signerEmail}
-      rawToken={signerEmail ? token ?? null : null}
+      rawToken={rawTokenForClient}
       expectedWallet={expectedWallet}
     />
   );

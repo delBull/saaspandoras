@@ -20,6 +20,8 @@ import {
   ChevronRight,
   Eye,
   Scale,
+  ChevronDown,
+  Layout,
   ShieldCheck,
   XCircle,
   Ban,
@@ -1007,6 +1009,15 @@ export default function DealRoomConsole() {
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-amber-500/30 bg-amber-500/10 text-[9px] font-mono text-amber-200 hover:bg-amber-500/20 transition-colors"
                     >
                       <Copy className="w-3 h-3" /> LINK PÚBLICO
+                    </button>
+                    <button
+                      onClick={() => {
+                        window.open(`${window.location.origin}/deal/${selected.publicId}?preview=true`, '_blank');
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-indigo-500/30 bg-indigo-500/10 text-[9px] font-mono text-indigo-200 hover:bg-indigo-500/20 transition-colors"
+                      title="Abrir como creador (sin Magic Link)"
+                    >
+                      <ExternalLink className="w-3 h-3" /> VER COMO CREADOR
                     </button>
                     {selected.ndaEnabled && (
                       <button
