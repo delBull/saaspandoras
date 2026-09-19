@@ -90,7 +90,23 @@ export class DatabaseSecretResolver implements SecretResolver {
         if (project) {
           const config = project.tenantRuntimeConfig as any;
           if (config?.secrets?.telegramBotToken) {
-            return config.secrets.telegramBotToken;
+            const tokenData = config.secrets.telegramBotToken;
+            if (typeof tokenData === 'object' && tokenData.encryptedPayload) {
+              const { KnowledgeEnvelopeVault } = await import('@/lib/pandoras/core/domains/hermes/knowledge/envelope-vault');
+              const vault = new KnowledgeEnvelopeVault();
+              try {
+                return await vault.decryptArtifact(tokenData, {
+                  tenantId: project.organizationId,
+                  artifactId: 'telegram-bot-token',
+                  version: 1,
+                  classification: 'SECRET'
+                });
+              } catch (e) {
+                console.error('[DatabaseSecretResolver] Decryption failed for telegramBotToken', e);
+                throw new Error('Decryption failed');
+              }
+            }
+            return tokenData;
           }
         }
       } catch (err) {

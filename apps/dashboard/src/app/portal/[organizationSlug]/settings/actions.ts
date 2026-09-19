@@ -20,7 +20,7 @@ export async function updateTenantSettingsAction(
   organizationSlug: string,
   data: TenantSettingsFormData
 ) {
-  await DashApi.settings.update(data);
+  await DashApi.settings.update(data, { organizationSlug });
   revalidatePath(`/portal/${organizationSlug}/settings`);
   revalidatePath(`/portal/${organizationSlug}`);
   return { success: true };

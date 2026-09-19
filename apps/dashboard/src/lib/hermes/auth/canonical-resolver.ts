@@ -16,6 +16,8 @@ export interface CanonicalAuthSession {
   projectSlug: string;
   role: 'TENANT_ADMIN' | 'OPERATOR' | 'OWNER';
   isTrial: boolean;
+  /** Real EVM wallet of the caller when resolved via the wallet branch (owner gate for secrets). */
+  actorWallet?: string | null;
 }
 
 /**
@@ -62,6 +64,7 @@ export async function resolveCanonicalAuthSession(
             projectSlug: organization.slug,
             role: 'OWNER',
             isTrial: organization.tenantType === 'TRIAL',
+            actorWallet: callerWallet,
           };
         }
       }
@@ -112,7 +115,7 @@ export async function resolveCanonicalAuthSession(
     if (!isAuthorized) {
        // Could be that tenantIdentifier is the UUID and requested is slug, we resolve it safely
        const org = await OrganizationSDK.resolve(tenantIdentifier, 'HERMES');
-       if (org.slug !== requestedOrganizationSlug && org.organizationId !== requestedOrganizationSlug) {
+       if (!org || (org.slug !== requestedOrganizationSlug && org.organizationId !== requestedOrganizationSlug)) {
           return null; // Cross-tenant spoofing rejected
        }
        tenantIdentifier = org.organizationId;
@@ -131,6 +134,7 @@ export async function resolveCanonicalAuthSession(
   
   // Resolve completely
   const org = await OrganizationSDK.resolve(tenantIdentifier, 'HERMES');
+  if (!org) return null;
   return {
     actorId,
     sessionId,

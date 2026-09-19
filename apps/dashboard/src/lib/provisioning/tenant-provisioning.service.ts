@@ -168,7 +168,7 @@ export class TenantProvisioningService {
       }
     }
 
-    let projectId: number;
+    let projectId: number | undefined;
     let orgTitle = req.organization.name.trim();
     let wasCreated = false;
 
@@ -190,9 +190,11 @@ export class TenantProvisioningService {
             applicantEmail: req.organization.applicantEmail || null,
             applicantPhone: req.organization.applicantPhone || null,
             status: 'approved',
+            isSimulationMode: true,
             isDeleted: false,
             extraConfig: {
               idempotencyKey,
+              provisioningStatus: 'PROVISIONING',
               provisionedAt: new Date().toISOString(),
               provisionedBy: cleanWallet,
               initialProducts: productsToInstall,
@@ -271,6 +273,12 @@ export class TenantProvisioningService {
         }
       }
 
+      await db.update(projects)
+        .set({
+          extraConfig: sql`jsonb_set(${projects.extraConfig}::jsonb, '{provisioningStatus}', '"SUCCESS"')`
+        })
+        .where(eq(projects.id, projectId));
+
       return {
         success: true,
         organizationId: `org_${cleanSlug}`,
@@ -287,6 +295,17 @@ export class TenantProvisioningService {
         isIdempotentReplay: false,
       };
     } catch (err) {
+      if (projectId) {
+        try {
+          await db.update(projects)
+            .set({
+              extraConfig: sql`jsonb_set(${projects.extraConfig}::jsonb, '{provisioningStatus}', '"FAILED"')`
+            })
+            .where(eq(projects.id, projectId));
+        } catch (e) {
+          console.error('[TenantProvisioning] Failed to update provisioningStatus to FAILED', e);
+        }
+      }
       if (wasCreated && projectId!) {
         // Compensating cleanup on partial failure
         try {

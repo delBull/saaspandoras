@@ -11,6 +11,7 @@ import { validatePortalSession } from '@/lib/platform/portal-auth';
 import { OrganizationSDK } from '@/lib/platform/organization-sdk';
 import { SessionTokenService } from '@/lib/hermes/auth/session-token.service';
 import { checkRateLimit, clientIpFromHeaders } from '@/lib/hermes/auth/rate-limiter';
+import { resolveCanonicalAuthSession } from '@/lib/hermes/auth/canonical-resolver';
 import type { GetSettingsResponseDTO, ApiKeyItemDTO, TenantSettingsDataDTO } from '@/lib/dash-contracts/settings';
 import crypto from 'crypto';
 
@@ -32,50 +33,6 @@ function buildProjectMatchCondition(targetSlug: string, orgId?: string) {
   );
 }
 
-async function resolveAuthorizedTenant(req: NextRequest, requestedSlug?: string | null): Promise<{
-  organizationId: string;
-  organizationSlug: string;
-  projectId: number | null;
-} | null> {
-  const portalSessionCookie = req.cookies.get('pandoras_portal_session')?.value;
-  if (portalSessionCookie) {
-    const session = await validatePortalSession(portalSessionCookie);
-    if (session) {
-      const org = await OrganizationSDK.resolve(session.projectId, session.product as any);
-      if (org) {
-        if (requestedSlug && requestedSlug !== org.slug && requestedSlug !== org.organizationId) {
-          return null;
-        }
-        return {
-          organizationId: org.organizationId,
-          organizationSlug: org.slug,
-          projectId: session.projectId,
-        };
-      }
-    }
-  }
-
-  const authHeader = req.headers.get('authorization') || '';
-  const bearerToken = authHeader.replace(/^Bearer\s+/i, '').trim();
-  if (bearerToken) {
-    try {
-      const payload = sessionTokenService.verifyToken(bearerToken);
-      const cleanTenant = payload.organizationId.toLowerCase().replace(/^org_/, '');
-      if (requestedSlug && requestedSlug !== cleanTenant && requestedSlug !== payload.organizationId) {
-        return null;
-      }
-      return {
-        organizationId: payload.organizationId,
-        organizationSlug: cleanTenant,
-        projectId: null,
-      };
-    } catch {
-      return null;
-    }
-  }
-
-  return null;
-}
 
 export async function GET(req: NextRequest) {
   try {
@@ -85,15 +42,14 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ code: 'RATE_LIMITED', message: 'Too many requests.' }, { status: 429 });
     }
 
-    const { searchParams } = new URL(req.url);
-    const requestedSlug = searchParams.get('organizationSlug');
-
-    const auth = await resolveAuthorizedTenant(req, requestedSlug);
+    const url = new URL(req.url);
+    const requestedSlug = url.searchParams.get('slug');
+    const auth = await resolveCanonicalAuthSession(req, requestedSlug || undefined);
     if (!auth) {
       return NextResponse.json({ code: 'UNAUTHENTICATED', message: 'Hermes session required.' }, { status: 401 });
     }
 
-    const rows = await db.select().from(projects).where(buildProjectMatchCondition(auth.organizationSlug, auth.organizationId)).limit(1);
+    const rows = await db.select().from(projects).where(buildProjectMatchCondition(auth.projectSlug, auth.canonicalOrgId)).limit(1);
     const project = rows[0];
     if (!project) {
       return NextResponse.json({ code: 'NOT_FOUND', message: 'Project not found' }, { status: 404 });
@@ -127,6 +83,13 @@ export async function GET(req: NextRequest) {
       twitterUrl: runtimeCfg.twitterUrl || '',
       linkedinUrl: runtimeCfg.linkedinUrl || '',
       contactEmail: runtimeCfg.contactEmail || '',
+      channels: [
+        {
+          provider: 'telegram',
+          configured: !!runtimeCfg.secrets?.telegramBotToken,
+          status: runtimeCfg.secrets?.telegramBotToken ? 'READY' : 'NOT_CONFIGURED',
+        }
+      ],
     };
 
     const response: GetSettingsResponseDTO = { settings, apiKeys };
@@ -145,20 +108,22 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ code: 'RATE_LIMITED', message: 'Too many requests.' }, { status: 429 });
     }
 
-    const auth = await resolveAuthorizedTenant(req);
+    const url = new URL(req.url);
+    const requestedSlug = url.searchParams.get('slug');
+    const auth = await resolveCanonicalAuthSession(req, requestedSlug || undefined);
     if (!auth) {
       return NextResponse.json({ code: 'UNAUTHENTICATED', message: 'Hermes session required.' }, { status: 401 });
     }
 
     const body = await req.json();
-    const rows = await db.select().from(projects).where(buildProjectMatchCondition(auth.organizationSlug, auth.organizationId)).limit(1);
+    const rows = await db.select().from(projects).where(buildProjectMatchCondition(auth.projectSlug, auth.canonicalOrgId)).limit(1);
     const project = rows[0];
     if (!project) {
       return NextResponse.json({ code: 'NOT_FOUND', message: 'Project not found' }, { status: 404 });
     }
 
     const currentRuntime = (project.tenantRuntimeConfig as Record<string, any>) || {};
-    const updatedRuntime = {
+    const updatedRuntime: Record<string, any> = {
       ...currentRuntime,
       ...(body.twitterUrl !== undefined ? { twitterUrl: body.twitterUrl } : {}),
       ...(body.linkedinUrl !== undefined ? { linkedinUrl: body.linkedinUrl } : {}),
@@ -168,6 +133,36 @@ export async function PUT(req: NextRequest) {
       ...(body.humanHandoffContact !== undefined ? { humanHandoffContact: body.humanHandoffContact } : {}),
       ...(body.maxResponseTokens !== undefined ? { maxResponseTokens: body.maxResponseTokens } : {}),
     };
+
+    if (body.telegramBotToken !== undefined) {
+      // Owner gate: write only by verified owner wallet (communicator branch) OR the
+      // tenant's own portal admin session (TENANT_ADMIN, already slug-matched above).
+      const isOwnerWallet = auth.actorWallet?.toLowerCase() === project.applicantWalletAddress?.toLowerCase();
+      if (!isOwnerWallet && auth.role !== 'TENANT_ADMIN') {
+        return NextResponse.json({ code: 'FORBIDDEN', message: 'Capability telegram.bot.manage required. Only tenant owner can update Telegram secrets.' }, { status: 403 });
+      }
+
+      const res = await fetch(`https://api.telegram.org/bot${body.telegramBotToken}/getMe`, {
+        signal: AbortSignal.timeout(8000),
+      }).catch(() => null);
+      if (!res || !res.ok) {
+        return NextResponse.json({ code: 'INVALID_TOKEN', message: 'The provided Telegram bot token is invalid or inactive.' }, { status: 400 });
+      }
+
+      const { KnowledgeEnvelopeVault } = await import('@/lib/pandoras/core/domains/hermes/knowledge/envelope-vault');
+      const vault = new KnowledgeEnvelopeVault();
+      const encrypted = await vault.encryptArtifact(body.telegramBotToken, {
+        tenantId: project.organizationId,
+        artifactId: 'telegram-bot-token',
+        version: 1,
+        classification: 'SECRET'
+      });
+
+      updatedRuntime.secrets = {
+        ...(updatedRuntime.secrets || {}),
+        telegramBotToken: encrypted,
+      };
+    }
 
     await db.update(projects)
       .set({
@@ -197,7 +192,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ code: 'RATE_LIMITED', message: 'Too many requests.' }, { status: 429 });
     }
 
-    const auth = await resolveAuthorizedTenant(req);
+    const auth = await resolveCanonicalAuthSession(req);
     if (!auth) {
       return NextResponse.json({ code: 'UNAUTHENTICATED', message: 'Hermes session required.' }, { status: 401 });
     }
@@ -205,7 +200,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { name, permissions = ['hermes.chat', 'knowledge.read'] } = body;
 
-    const rows = await db.select().from(projects).where(buildProjectMatchCondition(auth.organizationSlug, auth.organizationId)).limit(1);
+    const rows = await db.select().from(projects).where(buildProjectMatchCondition(auth.projectSlug, auth.canonicalOrgId)).limit(1);
     const project = rows[0];
     if (!project) {
       return NextResponse.json({ code: 'NOT_FOUND', message: 'Project not found' }, { status: 404 });
@@ -238,7 +233,7 @@ export async function POST(req: NextRequest) {
 
     const { SecurityAuditLogger } = await import('@/lib/pandoras/core/domains/hermes/runtime/security-audit-logger');
     await SecurityAuditLogger.logEvent({
-      organizationId: auth.organizationSlug,
+      organizationId: auth.canonicalOrgId,
       eventType: 'CREDENTIAL_ISSUED',
       severity: 'INFO',
       policyDecision: 'ALLOW',
@@ -267,7 +262,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ code: 'RATE_LIMITED', message: 'Too many requests.' }, { status: 429 });
     }
 
-    const auth = await resolveAuthorizedTenant(req);
+    const auth = await resolveCanonicalAuthSession(req);
     if (!auth) {
       return NextResponse.json({ code: 'UNAUTHENTICATED', message: 'Hermes session required.' }, { status: 401 });
     }
@@ -278,7 +273,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ code: 'VALIDATION_ERROR', message: 'keyId parameter required' }, { status: 400 });
     }
 
-    const rows = await db.select().from(projects).where(buildProjectMatchCondition(auth.organizationSlug, auth.organizationId)).limit(1);
+    const rows = await db.select().from(projects).where(buildProjectMatchCondition(auth.projectSlug, auth.canonicalOrgId)).limit(1);
     const project = rows[0];
     if (!project) {
       return NextResponse.json({ code: 'NOT_FOUND', message: 'Project not found' }, { status: 404 });
@@ -307,7 +302,7 @@ export async function DELETE(req: NextRequest) {
 
     const { SecurityAuditLogger } = await import('@/lib/pandoras/core/domains/hermes/runtime/security-audit-logger');
     await SecurityAuditLogger.logEvent({
-      organizationId: auth.organizationSlug,
+      organizationId: auth.canonicalOrgId,
       eventType: 'CREDENTIAL_REVOKED',
       severity: 'WARN',
       policyDecision: 'DENY',

@@ -94,10 +94,7 @@ export class SetupProgressService {
         .select({ count: sql<number>`count(*)::int` })
         .from(hermesKnowledge)
         .where(
-          or(
-            eq(hermesKnowledge.organizationId, cleanSlug),
-            eq(hermesKnowledge.organizationId, `org_${cleanSlug}`)
-          )
+          eq(hermesKnowledge.organizationId, project.organizationId)
         ),
       this.db
         .select({ count: sql<number>`count(*)::int` })

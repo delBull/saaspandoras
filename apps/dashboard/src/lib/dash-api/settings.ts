@@ -39,9 +39,10 @@ export class DashApiSettingsClient {
     return await res.json();
   }
 
-  async update(settings: Partial<TenantSettingsDataDTO>, init?: RequestInit): Promise<{ success: boolean }> {
+  async update(settings: Partial<TenantSettingsDataDTO>, init?: RequestInit & { organizationSlug?: string }): Promise<{ success: boolean }> {
     const authHeaders = await getServerAuthHeaders();
-    const url = `${this.baseUrl}/api/v1/hermes/settings`;
+    const slugQuery = init?.organizationSlug ? `?slug=${encodeURIComponent(init.organizationSlug)}` : '';
+    const url = `${this.baseUrl}/api/v1/hermes/settings${slugQuery}`;
     const res = await fetch(url, {
       ...init,
       method: 'PUT',

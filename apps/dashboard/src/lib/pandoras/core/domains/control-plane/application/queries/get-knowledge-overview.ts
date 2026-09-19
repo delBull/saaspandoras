@@ -1,6 +1,6 @@
 import { db } from '@/db';
-import { knowledgeSources, hermesKnowledge, hermesKnowledgeRegistry, projects } from '@/db/schema';
-import { eq, or, desc } from 'drizzle-orm';
+import { knowledgeSources, hermesKnowledge, hermesKnowledgeRegistry } from '@/db/schema';
+import { eq, desc } from 'drizzle-orm';
 import type { ControlPlaneContext } from '../context';
 import type { KnowledgeSourceView } from '../../view-models';
 
@@ -26,7 +26,6 @@ export interface KnowledgeOverviewView {
 export class GetKnowledgeOverviewQuery {
   async execute(ctx: ControlPlaneContext, organizationId: string): Promise<KnowledgeOverviewView> {
     const scope = ctx.requireOrganizationScope(organizationId);
-    const orgSlug = scope.organizationId.replace(/^org_/, '');
     const canonicalOrgId = scope.organizationId;
 
     let records: any[] = [];
@@ -34,45 +33,16 @@ export class GetKnowledgeOverviewQuery {
     let registryRecords: any[] = [];
 
     try {
-      // Resolve human-readable project slug from UUID if necessary
-      let projectSlug = orgSlug;
-      try {
-        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(canonicalOrgId);
-        const cleanOrgId = canonicalOrgId.replace(/^org_/, '').trim();
-        const proj = await db.query.projects.findFirst({
-          where: or(
-            ...(isUuid ? [eq(projects.organizationId, canonicalOrgId)] : []),
-            eq(projects.slug, canonicalOrgId),
-            eq(projects.slug, cleanOrgId),
-            eq(projects.slug, orgSlug)
-          ),
-          columns: { slug: true, organizationId: true },
-        });
-        if (proj?.slug) projectSlug = proj.slug;
-      } catch {}
-
       records = await db.select().from(knowledgeSources).where(
-        or(
-          eq(knowledgeSources.tenantId, orgSlug),
-          eq(knowledgeSources.tenantId, canonicalOrgId),
-          eq(knowledgeSources.tenantId, projectSlug)
-        )
+        eq(knowledgeSources.tenantId, canonicalOrgId)
       );
 
       knowledgeRecords = await db.select().from(hermesKnowledge).where(
-        or(
-          eq(hermesKnowledge.organizationId, orgSlug),
-          eq(hermesKnowledge.organizationId, canonicalOrgId),
-          eq(hermesKnowledge.organizationId, projectSlug)
-        )
+        eq(hermesKnowledge.organizationId, canonicalOrgId)
       );
 
       registryRecords = await db.select().from(hermesKnowledgeRegistry).where(
-        or(
-          eq(hermesKnowledgeRegistry.tenantId, orgSlug),
-          eq(hermesKnowledgeRegistry.tenantId, canonicalOrgId),
-          eq(hermesKnowledgeRegistry.tenantId, projectSlug)
-        )
+        eq(hermesKnowledgeRegistry.tenantId, canonicalOrgId)
       ).orderBy(desc(hermesKnowledgeRegistry.updatedAt));
     } catch (error) {
       console.warn('[GetKnowledgeOverviewQuery] Error querying knowledge sources:', error);

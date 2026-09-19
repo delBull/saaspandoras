@@ -13,6 +13,12 @@ export interface ApiKeyItemDTO {
   createdAt: string;
 }
 
+export interface ChannelStatusDTO {
+  provider: string;
+  configured: boolean;
+  status: 'READY' | 'NOT_CONFIGURED' | 'UNAVAILABLE';
+}
+
 export interface TenantSettingsDataDTO {
   title: string;
   tagline: string;
@@ -23,6 +29,7 @@ export interface TenantSettingsDataDTO {
   twitterUrl?: string;
   linkedinUrl?: string;
   contactEmail?: string;
+  channels?: ChannelStatusDTO[];
 }
 
 export interface GetSettingsResponseDTO {

@@ -66,17 +66,27 @@ export async function GET(
       );
     }
 
+    if (!activeContract.ipfsCid || !activeContract.agentWalletAddress || !activeContract.agentSignature) {
+      return NextResponse.json(
+        {
+          error: 'INCOMPLETE_MANIFEST',
+          message: `The claim contract for tenant "${cleanTenant}" is missing critical cryptographic data.`,
+        },
+        { status: 404 }
+      );
+    }
+
     const manifest: TenantAuthorityManifest = {
       manifestVersion: '1.0.0',
       tenantId: cleanTenant,
       version: activeContract.version,
-      claimContractCid: activeContract.ipfsCid || `mock_bafkrei_contract_${activeContract.version}_${cleanTenant}`,
-      identityManifestCid: `mock_bafkrei_identity_${cleanTenant}`,
-      agentWalletAddress: activeContract.agentWalletAddress || '0x8515Fb0F706DfE8Bf271ad453c01976ed568a4aD',
+      claimContractCid: activeContract.ipfsCid,
+      identityManifestCid: activeContract.ipfsCid, // Map identity to same contract for now
+      agentWalletAddress: activeContract.agentWalletAddress,
       governanceStatus: activeContract.governanceStatus || 'ACTIVE',
       merkleRoot: activeContract.contractHash,
       signedAt: (activeContract as any).updatedAt ? String((activeContract as any).updatedAt) : new Date().toISOString(),
-      agentSignature: activeContract.agentSignature || '0x_sig_placeholder',
+      agentSignature: activeContract.agentSignature,
     };
 
     return NextResponse.json(
