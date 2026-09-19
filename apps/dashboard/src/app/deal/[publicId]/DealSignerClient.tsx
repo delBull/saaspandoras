@@ -361,7 +361,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
       </header>
 
       {/* ── GLOBAL FULL-WIDTH NDA SIGNING BANNER (PROMINENT & SPATIOUS) ────────── */}
-      {effectiveNdaEnabled && ndaStep === "required" && (
+      {unlocked && effectiveNdaEnabled && ndaStep === "required" && (
         <div className="bg-[#0D0D12] border-b border-amber-500/30 px-4 md:px-8 py-5 print:hidden shrink-0 shadow-lg shadow-black/40">
           <div className="max-w-6xl mx-auto space-y-4">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">

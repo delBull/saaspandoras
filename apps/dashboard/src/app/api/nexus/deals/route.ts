@@ -17,10 +17,8 @@ export async function GET(request: Request) {
     const scopeParam = url.searchParams.get("scope");
     const isSuperAdmin = session?.role === "SUPER_ADMIN";
 
-    // SUPER_ADMIN always gets all rooms regardless of scope param
-    const scope = isSuperAdmin
-      ? "all"
-      : (scopeParam === "all" || scopeParam === "shared") ? scopeParam : "mine";
+    // Let the frontend tab decide the scope
+    const scope = (scopeParam === "all" || scopeParam === "shared") ? scopeParam : "mine";
 
     // Normalize wallet to lowercase for consistent matching with created_by
     const rawAddress = session?.address || session?.userId || "";
