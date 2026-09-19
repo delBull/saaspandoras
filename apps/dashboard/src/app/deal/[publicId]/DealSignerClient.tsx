@@ -11,6 +11,7 @@ import { buildCombinedSignMessage, buildNdaSignMessage } from "@/lib/nexus-deals
 import { NDAModal } from "@/components/modals/NDAModal";
 import { DealAttachments } from "./DealAttachments";
 import { DealComments } from "./DealComments";
+import { DisplayControlsWidget } from "@pandoras/display-engine";
 
 interface PublicSection {
   code: string;
@@ -352,13 +353,16 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
             <p className="text-[10px] text-zinc-500 truncate">{room.publicId}</p>
           </div>
         </div>
-        <span className="hidden sm:flex items-center gap-1.5 text-[10px] text-zinc-500">
-          <span className="relative flex h-1.5 w-1.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-60" />
-            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500" />
+        <div className="flex items-center gap-3">
+          <DisplayControlsWidget />
+          <span className="hidden sm:flex items-center gap-1.5 text-[10px] text-zinc-500">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-60" />
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500" />
+            </span>
+            CONFIDENTIAL
           </span>
-          CONFIDENTIAL
-        </span>
+        </div>
       </header>
 
       {/* ── GLOBAL FULL-WIDTH NDA SIGNING BANNER (PROMINENT & SPATIOUS) ────────── */}

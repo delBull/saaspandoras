@@ -9,6 +9,8 @@ import { setupProgressService } from '@/lib/mesh/setup-progress.service';
 import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
 import { PortalAuthorizationError } from '@/lib/portal/portal-types';
 import { SimulationAlert } from '@/components/hermes-portal/SimulationAlert';
+import { DashboardProvider } from '@pandoras/display-engine';
+import '@pandoras/display-engine/styles.css';
 
 export default async function ControlPlaneLayout({ 
   children, 
@@ -71,35 +73,37 @@ export default async function ControlPlaneLayout({
   }
 
   return (
-    <div className="h-screen w-screen bg-[#050505] text-white flex flex-col font-sans overflow-hidden select-none">
-      {/* Top Header Navbar */}
-      <SovereignHeader 
-        organization={overview} 
-        organizationSlug={slugId} 
-        activeModules={activeModules} 
-      />
-
-      {portalContext?.organization?.isSimulationMode && (
-        <SimulationAlert 
-          projectId={portalContext.organization.slug} 
-          isSimulationMode={portalContext.organization.isSimulationMode} 
+    <DashboardProvider>
+      <div className="h-screen w-screen bg-[#050505] text-white flex flex-col font-sans overflow-hidden select-none">
+        {/* Top Header Navbar */}
+        <SovereignHeader 
+          organization={overview} 
+          organizationSlug={slugId} 
+          activeModules={activeModules} 
         />
-      )}
 
-      {/* Main Workspace Frame */}
-      <div className="flex-1 flex flex-row min-w-0 overflow-hidden relative">
-        <GrowthOsSidebar 
-          slugId={slugId} 
-          orgName={overview.name} 
-          hasHermes={overview.hasHermes} 
-        />
-        <main className="flex-1 h-full min-w-0 bg-[#050505] text-zinc-100 overflow-y-auto p-4 sm:p-6 lg:p-8">
-          {children}
-        </main>
+        {portalContext?.organization?.isSimulationMode && (
+          <SimulationAlert 
+            projectId={portalContext.organization.slug} 
+            isSimulationMode={portalContext.organization.isSimulationMode} 
+          />
+        )}
+
+        {/* Main Workspace Frame */}
+        <div className="flex-1 flex flex-row min-w-0 overflow-hidden relative">
+          <GrowthOsSidebar 
+            slugId={slugId} 
+            orgName={overview.name} 
+            hasHermes={overview.hasHermes} 
+          />
+          <main className="flex-1 h-full min-w-0 bg-[#050505] text-zinc-100 overflow-y-auto p-4 sm:p-6 lg:p-8">
+            {children}
+          </main>
+        </div>
+
+        {/* Bottom Status Footer */}
+        <GrowthOsFooter slugId={slugId} />
       </div>
-
-      {/* Bottom Status Footer */}
-      <GrowthOsFooter slugId={slugId} />
-    </div>
+    </DashboardProvider>
   );
 }
