@@ -15,6 +15,7 @@ import {
   Handshake,
   Bot,
   Settings,
+  Eye,
 } from "lucide-react";
 import {
   CollaboratorPermissionsDrawer,
@@ -24,6 +25,7 @@ import type { NexusRole } from "@/lib/nexus/nexus-rbac";
 import { CognitiveAgentsManager } from "./CognitiveAgentsManager";
 import { NexusHermesTerminal } from "./NexusHermesTerminal";
 import { ConfigureAgendaButton } from "@/components/scheduler/ConfigureAgendaButton";
+import { DisplayControlsWidget } from "@pandoras/display-engine";
 
 export interface OperatorContext {
   name: string;
@@ -53,7 +55,7 @@ export default function NexusSettingsPage({ isUserAdmin = false, userRole = "OPE
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   // Tabs state - SuperAdmin inicia en "team", los demás colaboradores inician en "terminal"
-  const [activeTab, setActiveTab] = useState<"team" | "agents" | "terminal">(isUserAdmin ? "team" : "terminal");
+  const [activeTab, setActiveTab] = useState<"team" | "agents" | "terminal" | "display">(isUserAdmin ? "team" : "terminal");
 
   const canManageAgenda = isUserAdmin || userRole === "ADMIN" || !!operatorContext?.permissions?.["calendar.manage"];
   const canManageAgents = isUserAdmin || userRole === "ADMIN" || !!operatorContext?.permissions?.["agents.manage"];
@@ -245,6 +247,17 @@ export default function NexusSettingsPage({ isUserAdmin = false, userRole = "OPE
           >
             <Settings className="w-4 h-4" />
             Hermes Terminal
+          </button>
+          <button
+            onClick={() => setActiveTab("display")}
+            className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 ${
+              activeTab === "display"
+                ? "border-amber-400 text-amber-400"
+                : "border-transparent text-zinc-500 hover:text-zinc-300"
+            }`}
+          >
+            <Eye className="w-4 h-4" />
+            Accesibilidad & Visualización
           </button>
         </div>
 
@@ -442,6 +455,54 @@ export default function NexusSettingsPage({ isUserAdmin = false, userRole = "OPE
           </>
         ) : activeTab === "agents" ? (
           <CognitiveAgentsManager canManage={canManageAgents} />
+        ) : activeTab === "display" ? (
+          /* ── ACCESIBILIDAD & VISUALIZACIÓN TAB ── */
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-6 bg-zinc-900/40 border border-zinc-800 p-6 rounded-2xl"
+          >
+            <div className="border-b border-zinc-800 pb-4">
+              <h2 className="text-base font-bold text-white flex items-center gap-2">
+                <Eye className="w-4 h-4 text-amber-400" />
+                Sovereign Display Engine — Nexus & Deal Rooms Confort
+              </h2>
+              <p className="text-xs text-zinc-400 mt-1">
+                Ajusta el zoom, la lupa focal asistida y los filtros de contraste para lectura de contratos, cláusulas y registros de auditoría.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              <div className="lg:col-span-6 bg-black/40 border border-white/5 p-5 rounded-xl">
+                <h3 className="text-xs font-mono font-bold text-zinc-400 uppercase tracking-wider mb-3">
+                  Controles de Confort
+                </h3>
+                <DisplayControlsWidget />
+              </div>
+
+              <div className="lg:col-span-6 space-y-4 text-xs text-zinc-400 leading-relaxed">
+                <div className="bg-black/40 border border-white/5 p-4 rounded-xl space-y-2">
+                  <div className="flex items-center gap-2 font-bold text-amber-300 font-mono">
+                    <span>🔍</span>
+                    <span>Lupa Focal en Deal Rooms & Contratos</span>
+                  </div>
+                  <p>
+                    Actívala para leer letras pequeñas en contratos legales, hashes de e-sign y CIDs de IPFS. Pasa el cursor sobre las cláusulas y la lupa aumentará el texto automáticamente.
+                  </p>
+                </div>
+
+                <div className="bg-black/40 border border-white/5 p-4 rounded-xl space-y-2">
+                  <div className="flex items-center gap-2 font-bold text-indigo-300 font-mono">
+                    <span>🔠</span>
+                    <span>Escala Visual (100% - 130%)</span>
+                  </div>
+                  <p>
+                    Aumenta toda la interfaz de Nexus y Transaction Rooms sin romper tablas ni modales.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
         ) : (
           /* ── HERMES TERMINAL TAB ── */
           <div className="flex flex-col" style={{ height: '600px' }}>

@@ -21,9 +21,11 @@ import {
   ExternalLink,
   Info,
   Server,
-  Cpu
+  Cpu,
+  Eye,
 } from 'lucide-react';
 import { updateTenantSettingsAction, generateApiKeyAction, revokeApiKeyAction, TenantSettingsFormData } from './actions';
+import { DisplayControlsWidget } from '@pandoras/display-engine';
 import { toast } from 'sonner';
 
 export interface ApiKeyItem {
@@ -60,7 +62,7 @@ export function SettingsClient({
   organizationSlug: string;
   initialData: TenantSettingsData;
 }) {
-  const [activeTab, setActiveTab] = useState<'GENERAL' | 'KERNEL' | 'API_KEYS' | 'VAULT'>('GENERAL');
+  const [activeTab, setActiveTab] = useState<'GENERAL' | 'KERNEL' | 'API_KEYS' | 'VAULT' | 'DISPLAY'>('GENERAL');
   const [isPending, startTransition] = useTransition();
 
   // Form states
@@ -168,6 +170,7 @@ export function SettingsClient({
             { id: 'KERNEL', label: 'Hermes AI Kernel', icon: Cpu },
             { id: 'API_KEYS', label: 'API Keys & Integraciones', icon: Key },
             { id: 'VAULT', label: 'Bóveda Criptográfica', icon: Shield },
+            { id: 'DISPLAY', label: 'Lectura & Accesibilidad', icon: Eye },
           ] as const
         ).map((tab) => {
           const Icon = tab.icon;
@@ -443,6 +446,63 @@ export function SettingsClient({
                 </p>
                 <div className="text-[10px] font-mono text-purple-300 bg-purple-500/10 px-2.5 py-1 rounded inline-block">
                   ESTADO: SOVEREIGN PROVENANCE ACTIVO
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* TAB 5: DISPLAY */}
+        {activeTab === 'DISPLAY' && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-6 bg-[#0C0C12] border border-white/5 p-6 rounded-2xl"
+          >
+            <div className="border-b border-white/5 pb-4">
+              <h2 className="text-base font-bold text-white">Sovereign Display Engine — Confort Visual & Accesibilidad</h2>
+              <p className="text-xs text-zinc-400">Personaliza la escala tipográfica, filtros de contraste y la lupa asistida para lectura de contratos y métricas.</p>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              {/* Controles interactivos */}
+              <div className="lg:col-span-6 bg-black/40 border border-white/5 p-5 rounded-xl">
+                <h3 className="text-xs font-mono font-bold text-zinc-400 uppercase tracking-wider mb-3">
+                  Configuración de tu Perfil Visual
+                </h3>
+                <DisplayControlsWidget />
+              </div>
+
+              {/* Guía explicativa */}
+              <div className="lg:col-span-6 space-y-4">
+                <div className="bg-black/40 border border-white/5 p-4 rounded-xl space-y-2">
+                  <div className="flex items-center gap-2 text-xs font-bold text-amber-300 font-mono">
+                    <span>🔍</span>
+                    <span>Lupa Focal Segura (Smart Magnifier)</span>
+                  </div>
+                  <p className="text-xs text-zinc-400 leading-relaxed">
+                    Diseñada para auditar acuerdos legales, contratos de inversión (Deal Rooms) y hashes criptográficos de e-sign. Al activarla, simplemente sitúa el cursor sobre cualquier texto denso o balance para desplegar una ventana de aumento sin romper la diagramación de la página.
+                  </p>
+                </div>
+
+                <div className="bg-black/40 border border-white/5 p-4 rounded-xl space-y-2">
+                  <div className="flex items-center gap-2 text-xs font-bold text-indigo-300 font-mono">
+                    <span>🔠</span>
+                    <span>Escala Proporcional Universal (100% - 130%)</span>
+                  </div>
+                  <p className="text-xs text-zinc-400 leading-relaxed">
+                    Aumenta el tamaño de la interfaz preservando la cuadrícula, los modales y los menús laterales de los tres planos (Hermes AI, Growth OS y Deal Rooms).
+                  </p>
+                </div>
+
+                <div className="bg-black/40 border border-white/5 p-4 rounded-xl space-y-2">
+                  <div className="flex items-center gap-2 text-xs font-bold text-emerald-300 font-mono">
+                    <span>☁️</span>
+                    <span>Persistencia Dual (Cloud & Local)</span>
+                  </div>
+                  <p className="text-xs text-zinc-400 leading-relaxed">
+                    Tus preferencias se guardan al instante en tu navegador y se respaldan en tu cuenta soberana para que disfrutes de la misma ergonomía en cualquier dispositivo.
+                  </p>
                 </div>
               </div>
             </div>

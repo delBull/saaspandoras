@@ -79,6 +79,37 @@ export const DisplayControlsWidget = () => {
         </label>
       </div>
 
+      {/* Guía rápida: ¿Cómo usarlo? */}
+      <div className="pt-3 mb-4 border-t border-[var(--display-border)]">
+        <details className="group text-xs">
+          <summary className="font-semibold text-[var(--display-primary)] cursor-pointer list-none flex items-center justify-between hover:opacity-80 transition-opacity py-1 select-none">
+            <span className="flex items-center gap-1.5">
+              <span>💡</span>
+              <span>¿Cómo funciona Sovereign Display?</span>
+            </span>
+            <span className="text-[10px] text-[var(--display-text-muted)] group-open:rotate-180 transition-transform">▼</span>
+          </summary>
+          <div className="mt-2.5 p-3 rounded-lg bg-[var(--display-bg)] border border-[var(--display-border)] space-y-2 text-[11px] leading-relaxed text-[var(--display-text-muted)]">
+            <div>
+              <strong className="text-[var(--display-text)] block mb-0.5">🔍 Lupa Focal Segura:</strong>
+              Actívala y pasa el cursor sobre contratos, cláusulas legales, hashes criptográficos o balances para activar el zoom de alta precisión.
+            </div>
+            <div>
+              <strong className="text-[var(--display-text)] block mb-0.5">🔠 Escala Proporcional:</strong>
+              Aumenta el tamaño al 115% o 130% para lectura descansada sin descuadrar botones ni paneles.
+            </div>
+            <div>
+              <strong className="text-[var(--display-text)] block mb-0.5">🎨 Temas y Filtros:</strong>
+              Usa <em>Sepia</em> para lectura nocturna prolongada o <em>Escala de Grises</em> para reducir fatiga visual en auditorías.
+            </div>
+            <div>
+              <strong className="text-[var(--display-text)] block mb-0.5">☁️ Sincronización Automática:</strong>
+              Tus preferencias se guardan en tu cuenta y se aplican en todos tus dispositivos.
+            </div>
+          </div>
+        </details>
+      </div>
+
       <button 
         onClick={resetToDefaults}
         className="w-full py-2 text-sm text-[var(--display-text-muted)] hover:text-[var(--display-text)] border border-transparent hover:border-[var(--display-border)] rounded focus:outline-none focus:ring-2 focus:ring-[var(--display-primary)] transition-colors"
