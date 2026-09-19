@@ -1,4 +1,4 @@
-import { randomUUID } from "crypto";
+import { randomUUID, randomBytes } from "crypto";
 import type { nexusDealKindEnum, nexusDealStatusEnum } from "@/db/schema";
 
 export type DealKind = (typeof nexusDealKindEnum.enumValues)[number];
@@ -161,7 +161,7 @@ export function defaultSections(kind: DealKind, note?: string): DealSectionInput
 }
 
 export function generatePublicId(): string {
-  const rand = Math.random().toString(36).slice(2, 8).toUpperCase();
+  const rand = randomBytes(4).toString("hex").slice(0, 6).toUpperCase();
   return `PDR-${rand}`;
 }
 

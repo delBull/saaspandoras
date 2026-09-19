@@ -106,7 +106,7 @@ export class SovereignCalendarEngine {
       minAdvanceHours: 24,
       maxDaysInFuture: 14,
       meetingType: 'video',
-      defaultMeetingLink: 'https://meet.google.com/pdr-sovereign-call',
+      defaultMeetingLink: '',
       notificationChannels: ['email', 'whatsapp'],
       availability: { ...DEFAULT_AVAILABILITY },
     };
@@ -485,10 +485,6 @@ export class SovereignCalendarEngine {
     }
   }
 
-  /**
-   * Idempotent Booking Execution.
-   * Finalizes the hold into a confirmed booking, absorbing duplicate submissions safely.
-   */
   public static async executeIdempotentBooking(params: {
     holdId: string;
     idempotencyKey?: string;
@@ -543,6 +539,15 @@ export class SovereignCalendarEngine {
         };
       }
 
+      // 3.5. Resolve configuration to find the default meeting link
+      const resolved = await this.resolveConfig({ hostUserId: slot.userId });
+      let finalMeetingLink = params.meetingLink || resolved.config.defaultMeetingLink;
+      
+      if (!finalMeetingLink || finalMeetingLink === 'https://meet.google.com/pdr-sovereign-call') {
+        // Fallback to automatic Jitsi link if none configured or if it's the old hardcoded default
+        finalMeetingLink = `https://meet.jit.si/pandoras-sovereign-${bookingId}`;
+      }
+
       // 4. Mark slot as permanently booked and clear transient hold
       const [updated] = await db
         .update(schedulingSlots)
@@ -576,7 +581,7 @@ export class SovereignCalendarEngine {
         leadPhone: params.leadPhone || null,
         notificationPreference: params.notificationPreference || 'email',
         status: 'confirmed',
-        meetingLink: params.meetingLink || 'https://meet.google.com/pdr-sovereign-call',
+        meetingLink: finalMeetingLink,
         notes: params.notes || 'Agendado vía Hermes Sovereign Agenda',
         confirmedAt: new Date(),
       });
@@ -584,7 +589,7 @@ export class SovereignCalendarEngine {
       return {
         success: true,
         bookingId,
-        meetingLink: params.meetingLink || 'https://meet.google.com/pdr-sovereign-call',
+        meetingLink: finalMeetingLink,
       };
     } catch (err: any) {
       console.error('[SovereignCalendarEngine] executeIdempotentBooking error:', err);

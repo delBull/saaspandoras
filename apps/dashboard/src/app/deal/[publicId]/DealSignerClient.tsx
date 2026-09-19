@@ -38,6 +38,15 @@ interface PublicRoom {
   nextRoomPublicId?: string | null;
   nextRoomKind?: string | null;
   nextRoomKindLabel?: string | null;
+  signers?: {
+    status: string;
+    signedAt: string | null;
+    signatureName: string | null;
+    signatureCompany: string | null;
+    signatureRole: string | null;
+    wallet: string | null;
+    signature?: string | null;
+  }[];
 }
 
 const KIND_LABEL: Record<PublicRoom["kind"], string> = {
@@ -627,6 +636,55 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                   </div>
                 </div>
               </motion.div>
+            )}
+
+            {room.signers && room.signers.length > 0 && (
+              <div className="mt-8 pt-8 border-t border-white/10 print:border-black/20">
+                <h3 className="text-sm font-semibold text-white print:text-black mb-4 flex items-center gap-2">
+                  <FileSignature className="w-4 h-4 text-amber-500" />
+                  Estado de Firmas
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {room.signers.map((s, i) => (
+                    <div key={i} className="p-4 rounded-xl border border-white/5 bg-white/[0.02] print:border-black/10 print:bg-transparent">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[12px] font-medium text-white print:text-black">
+                          {s.signatureName || s.wallet || "Pendiente"}
+                        </span>
+                        {s.status === "SIGNED" ? (
+                          <span className="flex items-center gap-1 text-[10px] font-mono text-emerald-400 print:text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded">
+                            <Check className="w-3 h-3" /> Firmado
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-mono text-amber-400/70 bg-amber-500/10 px-2 py-0.5 rounded">
+                            Pendiente
+                          </span>
+                        )}
+                      </div>
+                      {s.signatureRole && s.signatureCompany && (
+                        <p className="text-[10px] text-zinc-400 print:text-black mt-1">
+                          {s.signatureRole} en {s.signatureCompany}
+                        </p>
+                      )}
+                      {s.wallet && (
+                        <p className="text-[10px] font-mono text-zinc-500 print:text-zinc-600 mt-2 truncate">
+                          Wallet: {s.wallet.slice(0, 8)}...{s.wallet.slice(-6)}
+                        </p>
+                      )}
+                      {s.signedAt && (
+                        <p className="text-[9px] font-mono text-zinc-600 print:text-zinc-500 mt-1">
+                          {new Date(s.signedAt).toLocaleString()}
+                        </p>
+                      )}
+                      {s.signature && (
+                        <p className="text-[9px] font-mono text-emerald-400/80 print:text-emerald-600 mt-1 truncate" title={s.signature}>
+                          Sig: {s.signature.slice(0, 16)}...{s.signature.slice(-16)}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
           <NDAModal 

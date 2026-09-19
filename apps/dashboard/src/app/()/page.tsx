@@ -85,9 +85,15 @@ export default async function RootDashboardPage({ searchParams }: PageProps) {
     }
   }
 
-  // 4. If absolutely no slug can be resolved, they have no access. Send to login.
+  // 4. If absolutely no slug can be resolved, they have no tenant.
   if (!resolvedSlug) {
-    redirect('/accessv2');
+    if (callerWallet) {
+      // Authenticated but no tenant -> send to onboarding
+      redirect('/onboarding');
+    } else {
+      // Not authenticated -> send to login
+      redirect('/accessv2');
+    }
   }
 
   // 5. Try to resolve the portal context for the resolved slug

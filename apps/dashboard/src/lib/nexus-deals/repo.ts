@@ -573,6 +573,15 @@ export function publicRoomView(room: NonNullable<Awaited<ReturnType<typeof getRo
     nextRoomPublicId: null as string | null,
     nextRoomKind: null as string | null,
     nextRoomKindLabel: null as string | null,
+    signers: room.signers.map(s => ({
+      status: s.status,
+      signedAt: s.signedAt ? s.signedAt.toISOString() : null,
+      signatureName: s.signatureName,
+      signatureCompany: s.signatureCompany,
+      signatureRole: s.signatureRole,
+      wallet: s.wallet,
+      signature: s.signature,
+    })),
   };
 }
 

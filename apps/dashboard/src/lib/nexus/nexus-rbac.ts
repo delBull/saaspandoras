@@ -339,6 +339,7 @@ export async function getNexusAuthContext(
         let whatsappPhone: string | null = null;
         let collaboratorId: number | null = null;
         let canonicalOrgId: string | null = null;
+        let collaboratorStatus: string | null = null;
 
         if (user.email) {
           try {
@@ -357,6 +358,7 @@ export async function getNexusAuthContext(
             if (collabRecords.length > 0 && collabRecords[0]) {
               const c = collabRecords[0];
               collaboratorId = c.id;
+              collaboratorStatus = c.status;
 
               const [projCollab] = await db
                 .select({ projectId: projectCollaborators.projectId })
@@ -367,8 +369,8 @@ export async function getNexusAuthContext(
                 canonicalOrgId = projCollab.projectId;
               }
               if (c.status !== 'REJECTED' && c.status !== 'DISABLED') {
-                if (!effectiveRole && c.role) {
-                  effectiveRole = c.role.toUpperCase() as NexusRole;
+                if (!effectiveRole) {
+                  effectiveRole = (c.role ? c.role.toUpperCase() : 'VIEWER') as NexusRole;
                 }
                 if (c.permissions) {
                   collaboratorOverrides = c.permissions as NexusPermissionsOverride;
@@ -396,10 +398,69 @@ export async function getNexusAuthContext(
             whatsappPhone,
             collaboratorId,
             canonicalOrgId,
+            provisionStatus: (collaboratorStatus || 'ACTIVE') as NexusProvisionStatus,
             permissions: resolveEffectivePermissions(
               effectiveRole, 
               collaboratorOverrides
             ),
+          };
+        } else {
+          // Si conectan su wallet pero no tienen un rol válido ni email enlazado,
+          // Y NO tienen un Magic Link Token, los dejamos pasar como PENDING
+          // para que puedan llenar el formulario de registro (requireCompletion=true).
+          // PERO si tienen un token, dejamos que pase al paso 2 (Magic Link).
+          let cookieToken: string | null = null;
+          try {
+            const cookieStore = await nextCookies();
+            cookieToken = cookieStore.get('pandoras_nexus_token')?.value || cookieStore.get('nexus_token')?.value || null;
+          } catch {
+            const rawCookie = reqHeaders.get('cookie') || '';
+            const match = rawCookie.match(/(?:pandoras_nexus_token|nexus_token)=([^;]+)/);
+            if (match && match[1]) cookieToken = decodeURIComponent(match[1]);
+          }
+          const hasToken = !!(tokenParam || cookieToken || reqHeaders.get('x-nexus-token') || reqHeaders.get('authorization')?.replace(/^Bearer\s+/i, ''));
+
+          if (!hasToken) {
+            return {
+              isAuthenticated: true,
+              role: null,
+              wallet: sessionWallet,
+              email: user.email,
+              name: user.name,
+              whatsappPhone: null,
+              collaboratorId: null,
+              canonicalOrgId: null,
+              provisionStatus: 'PENDING',
+              permissions: DEFAULT_EMPTY_PERMISSIONS,
+            };
+          }
+        }
+      } else {
+        // El usuario no existe en la tabla users todavía (wallet nueva).
+        // Los dejamos pasar como PENDING para el auto-registro, a menos que tengan token.
+        let cookieToken: string | null = null;
+        try {
+          const cookieStore = await nextCookies();
+          cookieToken = cookieStore.get('pandoras_nexus_token')?.value || cookieStore.get('nexus_token')?.value || null;
+        } catch {
+          const rawCookie = reqHeaders.get('cookie') || '';
+          const match = rawCookie.match(/(?:pandoras_nexus_token|nexus_token)=([^;]+)/);
+          if (match && match[1]) cookieToken = decodeURIComponent(match[1]);
+        }
+        const hasToken = !!(tokenParam || cookieToken || reqHeaders.get('x-nexus-token') || reqHeaders.get('authorization')?.replace(/^Bearer\s+/i, ''));
+
+        if (!hasToken) {
+          return {
+            isAuthenticated: true,
+            role: null,
+            wallet: sessionWallet,
+            email: null,
+            name: null,
+            whatsappPhone: null,
+            collaboratorId: null,
+            canonicalOrgId: null,
+            provisionStatus: 'PENDING',
+            permissions: DEFAULT_EMPTY_PERMISSIONS,
           };
         }
       }

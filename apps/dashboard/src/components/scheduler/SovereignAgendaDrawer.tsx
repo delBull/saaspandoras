@@ -77,7 +77,7 @@ export function SovereignAgendaDrawer({
     minAdvanceHours: 24,
     maxDaysInFuture: 14,
     meetingType: 'video',
-    defaultMeetingLink: 'https://meet.google.com/pdr-sovereign-call',
+    defaultMeetingLink: '',
     notificationChannels: ['email', 'whatsapp'],
     availability: {
       monday: { enabled: true, start: '09:00', end: '18:00' },
@@ -467,12 +467,15 @@ export function SovereignAgendaDrawer({
                       <Video className="w-4 h-4 text-zinc-500 absolute left-3 top-2.5" />
                       <input
                         type="url"
-                        placeholder="https://meet.google.com/xyz-abc"
+                        placeholder="Deja en blanco para Jitsi automático (Sovereign Meet)"
                         value={config.defaultMeetingLink || ''}
                         onChange={(e) => setConfig({ ...config, defaultMeetingLink: e.target.value })}
                         className="w-full bg-zinc-900 border border-zinc-800 rounded-lg pl-9 pr-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-[#D4A853]/40"
                       />
                     </div>
+                    <span className="text-[10px] text-zinc-500 mt-1 block">
+                      Si lo dejas en blanco, se generará una sala segura de Jitsi (Sovereign Meet) para cada cita automáticamente.
+                    </span>
                   </div>
 
                   {/* Branding & Custom Copy */}

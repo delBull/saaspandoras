@@ -42,6 +42,16 @@ export default async function DealPublicPage({
 
   const view = publicRoomView(room);
 
+  // If no magic link token is provided, obscure PII from the signers to prevent unauthorized enumeration
+  if (!signerEmail) {
+    view.signers = view.signers.map(s => ({
+      ...s,
+      signatureName: s.signatureName ? s.signatureName.charAt(0) + '***' : null,
+      signatureCompany: s.signatureCompany ? s.signatureCompany.charAt(0) + '***' : null,
+      signatureRole: s.signatureRole ? s.signatureRole.charAt(0) + '***' : null,
+    }));
+  }
+
   // Room chaining: resolve next room's publicId
   if (room.nextRoomId) {
     const nextRoom = await getRoom(room.nextRoomId);
