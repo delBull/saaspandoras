@@ -262,6 +262,7 @@ export const businessCategoryEnum = pgEnum("business_category", [
 export const projects = pgTable("projects", {
   id: serial("id").primaryKey(),
   organizationId: uuid("organization_id").notNull().unique().defaultRandom(),
+  isSimulationMode: boolean("is_simulation_mode"), // True for new tenants, false for prod
 
   // Sección 1: Identidad del Proyecto
   title: varchar("title", { length: 256 }).notNull(),

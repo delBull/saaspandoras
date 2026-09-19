@@ -61,7 +61,7 @@ export function AdminAccessGate({ reason }: AdminAccessGateProps) {
 
           {/* Thirdweb Connect Button */}
           <div className="pt-2 flex justify-center">
-            <ConnectButton
+            <ConnectButton connectModal={{ showThirdwebBranding: false }} 
               client={client}
               theme="dark"
               wallets={wallets}

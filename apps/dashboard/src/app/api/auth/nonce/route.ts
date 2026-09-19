@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { authChallenges } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import crypto from "crypto";
+import { withRetry } from "@/lib/database";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,8 +25,6 @@ export async function GET(request: Request) {
 
         // 2. Invalidate previous nonces for this address (upsert/delete logic)
         // Wrapped in withRetry to handle transient DB connectivity issues (ECONNRESET)
-        const { withRetry } = await import("@/lib/database");
-        
         await withRetry(async () => {
             await db
                 .insert(authChallenges)
@@ -45,8 +44,8 @@ export async function GET(request: Request) {
         });
 
         return NextResponse.json({ nonce });
-    } catch (error) {
-        console.error("Error generating nonce:", error);
-        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    } catch (error: any) {
+        console.error("Error generating nonce:", error?.message || error);
+        return NextResponse.json({ error: error?.message || "Internal Server Error" }, { status: 500 });
     }
 }

@@ -289,8 +289,8 @@ export function NexusLoginGate({ requireCompletion = false, initialAuth = null }
                 </label>
                 <div className="flex justify-center w-full">
                   {client ? (
-                    <div className="w-full space-y-1.5">
-                      <ConnectButton
+                    <div className="w-full space-y-1.5 flex flex-col items-center">
+                      <ConnectButton connectModal={{ showThirdwebBranding: false }} 
                         client={client}
                         chain={config.chain}
                         theme="dark"

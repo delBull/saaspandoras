@@ -53,6 +53,7 @@ export interface OrganizationContext {
   trialStartedAt?: Date | null;
   trialEndsAt?: Date | null;
   trialStatus?: string | null;
+  isSimulationMode?: boolean | null;
 
   // All installed products for this org
   installedProducts: InstalledProductContext[];
@@ -95,6 +96,7 @@ export const OrganizationSDK = {
       trialStartedAt: true,
       trialEndsAt: true,
       trialStatus: true,
+      isSimulationMode: true,
     };
 
     if (typeof projectIdOrTenant === 'number') {
@@ -200,6 +202,7 @@ export const OrganizationSDK = {
       trialStartedAt: project.trialStartedAt || null,
       trialEndsAt: project.trialEndsAt || null,
       trialStatus: project.trialStatus || null,
+      isSimulationMode: project.isSimulationMode ?? null,
       installedProducts: enrichedProducts,
       activeProduct,
       // Convenience accessors

@@ -4,6 +4,7 @@ import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
 import { SovereignHeader } from '@/components/sovereign-mesh/SovereignHeader';
 import { EcosystemFooter } from '@/components/ecosystem/EcosystemFooter';
 import { setupProgressService } from '@/lib/mesh/setup-progress.service';
+import { SimulationAlert } from '@/components/hermes-portal/SimulationAlert';
 
 export const dynamic = 'force-dynamic';
 
@@ -48,6 +49,13 @@ export default async function EcosystemLayout({
         organizationSlug={organizationSlug} 
         activeModules={activeModules}
       />
+
+      {context.organization.isSimulationMode && (
+        <SimulationAlert 
+          projectId={context.organization.slug} 
+          isSimulationMode={context.organization.isSimulationMode} 
+        />
+      )}
 
       {/* Main Orchestration Viewport */}
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-20">

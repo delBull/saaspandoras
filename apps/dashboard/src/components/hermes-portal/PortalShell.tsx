@@ -19,6 +19,7 @@ import { Menu, X } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { InspectorProvider } from './InspectorContext';
 import { TrialCockpitBanner } from './trial/TrialCockpitBanner';
+import { SimulationAlert } from './SimulationAlert';
 
 interface PortalShellProps {
   context: PortalContext;
@@ -131,6 +132,15 @@ export function PortalShell({ context, children, activeModules = [] }: PortalShe
               trial={context.trial}
               organizationSlug={context.organization.slug}
               organizationName={context.organization.name}
+            />
+          </div>
+        )}
+
+        {context.organization?.isSimulationMode && (
+          <div className="z-20 shrink-0">
+            <SimulationAlert 
+              projectId={context.organization.slug} 
+              isSimulationMode={context.organization.isSimulationMode} 
             />
           </div>
         )}

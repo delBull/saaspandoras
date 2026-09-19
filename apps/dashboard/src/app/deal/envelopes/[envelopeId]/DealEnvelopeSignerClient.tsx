@@ -469,7 +469,7 @@ export function DealEnvelopeSignerClient({ envelope: initialEnvelope, initialSig
                         1. CONECTA TU WALLET O IN-APP ACCOUNT
                       </label>
                       <div className="w-full flex justify-center">
-                        <ConnectButton
+                        <ConnectButton connectModal={{ showThirdwebBranding: false }} 
                           client={client}
                           wallets={signerWallets}
                           theme={darkTheme({

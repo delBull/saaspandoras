@@ -35,8 +35,15 @@ export interface PortalOrganization {
   slug: string;
   name: string;
   logoUrl: string | null;
+
+  // Relation backward to project metadata
   projectId: number;
+  
+  // Active product resolution (used by modules)
   activeProduct: string | null;
+
+  // Tenant state
+  isSimulationMode?: boolean | null;
 }
 
 /** Trial State and Quota Metadata for Governed Trial Tenants */

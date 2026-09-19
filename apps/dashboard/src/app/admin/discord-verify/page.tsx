@@ -77,7 +77,7 @@ function DiscordVerifyContent() {
       ) : (
         <>
           <div className="w-full flex justify-center mb-6">
-            <ConnectButton client={client} wallets={wallets} theme="dark" />
+            <ConnectButton connectModal={{ showThirdwebBranding: false }}  client={client} wallets={wallets} theme="dark" />
           </div>
 
           {account && status === "idle" && (

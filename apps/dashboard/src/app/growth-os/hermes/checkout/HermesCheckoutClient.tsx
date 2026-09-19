@@ -162,7 +162,7 @@ export default function HermesCheckoutClient({ lead, project, plan = 'monthly' }
                                         </div>
                                     </div>
                                     <div className="pt-2">
-                                        <ConnectButton 
+                                        <ConnectButton connectModal={{ showThirdwebBranding: false }}  
                                             client={client} 
                                             wallets={wallets}
                                             theme={darkTheme({ colors: { primaryButtonBg: "#10b981", primaryButtonText: "#000" } })}

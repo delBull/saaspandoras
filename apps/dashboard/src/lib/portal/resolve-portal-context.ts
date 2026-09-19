@@ -164,6 +164,7 @@ export async function resolvePortalContext(
     logoUrl: organization.logoUrl ?? null,
     projectId: organization.projectId,
     activeProduct: session.product,
+    isSimulationMode: organization.isSimulationMode ?? null,
   };
 
   // Gate 7: Enforce server-side PRESERVED state on expired trial

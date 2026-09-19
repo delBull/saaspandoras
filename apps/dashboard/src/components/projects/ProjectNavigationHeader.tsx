@@ -40,7 +40,7 @@ export default function ProjectNavigationHeader() {
               <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Growth OS Secure</span>
             </div>
             
-            <ConnectButton 
+            <ConnectButton connectModal={{ showThirdwebBranding: false }}  
               client={client}
               theme="dark"
               wallets={wallets}
