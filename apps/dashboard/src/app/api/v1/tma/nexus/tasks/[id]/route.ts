@@ -10,15 +10,15 @@ import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
  * Transitions a task's state.
  * Actions: CLAIM, COMPLETE, CANCEL
  */
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const authCtx = await getNexusAuthContext(new Headers(req.headers));
 
     if (!authCtx.isAuthenticated || !authCtx.collaboratorId || !authCtx.canonicalOrgId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id } = params;
     const body = await req.json();
     const { action } = body; // 'CLAIM' | 'COMPLETE' | 'CANCEL'
 
@@ -104,7 +104,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
     return NextResponse.json({ task: updatedTask });
   } catch (error: any) {
-    console.error(`[NexusTasks PATCH ${params.id}] Error:`, error.message);
+    console.error(`[NexusTasks PATCH] Error:`, error.message);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

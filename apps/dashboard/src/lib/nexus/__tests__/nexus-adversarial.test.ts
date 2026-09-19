@@ -73,7 +73,7 @@ describe('Nexus Adversarial Tests (Phase 3)', () => {
       json: async () => ({})
     } as any;
 
-    const response = await depositApprovePost(mockRequest, { params: { id: 'dep-123' } });
+    const response = await depositApprovePost(mockRequest, { params: Promise.resolve({ id: 'dep-123' }) });
     const data = await response.json();
 
     expect(response.status).toBe(403);

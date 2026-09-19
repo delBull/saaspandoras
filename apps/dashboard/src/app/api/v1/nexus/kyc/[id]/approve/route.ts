@@ -4,9 +4,10 @@ import { nexusActionRequests, nexusAuditEvents } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { NexusAuthorizationService } from '@/lib/pandoras/core/domains/nexus/nexus-authorization';
 
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const actionRequestId = parseInt(params.id);
+    const { id } = await params;
+    const actionRequestId = parseInt(id);
     if (isNaN(actionRequestId)) {
       return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
     }

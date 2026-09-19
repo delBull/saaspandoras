@@ -4,8 +4,9 @@ import { db } from '@/db';
 import { eq, and } from 'drizzle-orm';
 import { nexusActionRequests, purchases } from '@/db/schema';
 
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const authCtx = await getNexusAuthContext();
     
     if (!authCtx.isAuthenticated || !authCtx.collaboratorId) {
@@ -17,7 +18,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       return NextResponse.json({ error: 'Forbidden. Requires finance execution capability.' }, { status: 403 });
     }
 
-    const depositId = params.id;
+    const depositId = id;
     if (!depositId) {
       return NextResponse.json({ error: 'Deposit ID is required' }, { status: 400 });
     }

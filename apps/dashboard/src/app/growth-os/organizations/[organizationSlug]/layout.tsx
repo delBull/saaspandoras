@@ -8,6 +8,7 @@ import { redirect } from 'next/navigation';
 import { setupProgressService } from '@/lib/mesh/setup-progress.service';
 import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
 import { PortalAuthorizationError } from '@/lib/portal/portal-types';
+import { SimulationAlert } from '@/components/hermes-portal/SimulationAlert';
 
 export default async function ControlPlaneLayout({ 
   children, 
@@ -77,6 +78,13 @@ export default async function ControlPlaneLayout({
         organizationSlug={slugId} 
         activeModules={activeModules} 
       />
+
+      {portalContext?.organization?.isSimulationMode && (
+        <SimulationAlert 
+          projectId={portalContext.organization.slug} 
+          isSimulationMode={portalContext.organization.isSimulationMode} 
+        />
+      )}
 
       {/* Main Workspace Frame */}
       <div className="flex-1 flex flex-row min-w-0 overflow-hidden relative">

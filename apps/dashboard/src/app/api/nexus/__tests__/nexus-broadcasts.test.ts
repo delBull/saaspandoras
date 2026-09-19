@@ -14,7 +14,8 @@
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { NextRequest } from 'next/server';
-import { GET, POST, PATCH, formatBroadcastWhatsAppMessage } from '../broadcasts/route';
+import { GET, POST, PATCH } from '../broadcasts/route';
+import { formatBroadcastWhatsAppMessage } from '@/lib/nexus/broadcast-formatter';
 import { db } from '@/db';
 import { nexusCollaborators, nexusBroadcasts } from '@/db/schema';
 import { eq, inArray } from 'drizzle-orm';

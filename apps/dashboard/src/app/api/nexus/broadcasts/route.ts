@@ -19,6 +19,7 @@ import { nexusBroadcasts, nexusCollaborators } from '@/db/schema';
 import { eq, desc, and, or, isNull, isNotNull, gt } from 'drizzle-orm';
 import { sendWhatsAppMessage } from '@/lib/whatsapp/utils/client';
 import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
+import { formatBroadcastWhatsAppMessage } from '@/lib/nexus/broadcast-formatter';
 
 export const dynamic = 'force-dynamic';
 
@@ -237,51 +238,7 @@ export async function POST(req: NextRequest) {
 }
 
 /**
- * Formats a broadcast alert for WhatsApp delivery with clear origin, title, and structure.
- * Includes length guard to protect against WhatsApp Cloud API body truncation.
- */
-export function formatBroadcastWhatsAppMessage(
-  broadcast: {
-    title: string;
-    content: string;
-    type: string;
-    targetType: string;
-    authorName: string;
-    authorRole?: string | null;
-  },
-  recipientName: string
-): string {
-  const typeLabels: Record<string, string> = {
-    ANNOUNCEMENT: '📢 ANUNCIO OFICIAL',
-    ALERT: '⚠️ AVISO IMPORTANTE',
-    UPDATE: '💡 ACTUALIZACIÓN',
-    URGENT: '🚨 ALERTA URGENTE',
-  };
-
-  const badge = typeLabels[broadcast.type] || '📢 COMUNICADO';
-  const authorBadge = broadcast.authorRole
-    ? `${broadcast.authorName} (${broadcast.authorRole})`
-    : broadcast.authorName;
-
-  // Length guard for WhatsApp Cloud API (4096 char limit)
-  let safeContent = broadcast.content;
-  if (safeContent.length > 3000) {
-    safeContent = safeContent.slice(0, 3000) + '\n\n...[Ver mensaje completo en Nexus]';
-  }
-
-  return `*🔔 NEXUS OPERATIONS HUB · ${badge}*
-
-Hola *${recipientName}*,
-
-*${broadcast.title}*
-
-${safeContent}
-
-━━━━━━━━━━━━━━━━━━━━
-👤 *De parte de:* ${authorBadge}
-🌐 *Acceso Nexus:* https://nexus.pandoras.finance
-_Notificación oficial emitida desde Nexus Operations Hub_`;
-}
+import { formatBroadcastWhatsAppMessage } from '@/lib/nexus/broadcast-formatter';
 
 /**
  * PATCH /api/nexus/broadcasts
