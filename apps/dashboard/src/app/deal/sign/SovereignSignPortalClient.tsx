@@ -269,7 +269,7 @@ export function SovereignSignPortalClient() {
   };
 
   return (
-    <div className="min-h-screen bg-[#07070B] text-zinc-100 font-sans flex flex-col selection:bg-amber-500/30 selection:text-amber-200">
+    <div className="fixed inset-0 overflow-hidden bg-[#07070B] text-zinc-100 font-sans flex flex-col selection:bg-amber-500/30 selection:text-amber-200">
       
       {/* Top Navbar */}
       <header className="h-16 shrink-0 bg-[#0C0C12] border-b border-white/[0.08] px-4 md:px-8 flex items-center justify-between z-20">

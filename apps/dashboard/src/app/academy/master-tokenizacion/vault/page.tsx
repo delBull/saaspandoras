@@ -350,7 +350,7 @@ Para que un proyecto inmobiliario califique para ser tokenizado en Pandora's OS 
   }).filter((cat) => cat.items.length > 0);
 
   return (
-    <div className="min-h-screen bg-black text-white selection:bg-[#D4A853]/30 selection:text-white font-sans antialiased">
+    <div className="fixed inset-0 overflow-y-auto bg-black text-white selection:bg-[#D4A853]/30 selection:text-white font-sans antialiased">
       {/* ─── PRINT-ONLY FORMAL NOTARIAL DOCUMENT (Triggered by window.print()) ─── */}
       <div className="hidden print:block text-black bg-white p-8 font-serif leading-relaxed">
         <div className="border-b-2 border-black pb-4 mb-6 flex justify-between items-end">

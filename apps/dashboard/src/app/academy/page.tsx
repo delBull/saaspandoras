@@ -112,7 +112,7 @@ export default function AcademyPublicLanding() {
   };
 
   return (
-    <div className="min-h-screen bg-[#08080A] text-zinc-100 font-sans selection:bg-purple-500/30">
+    <div className="fixed inset-0 overflow-y-auto bg-[#08080A] text-zinc-100 font-sans selection:bg-purple-500/30">
       
       {/* Background Ambient Glow */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">

@@ -233,7 +233,7 @@ export default function CandidateAssessmentPage({ params }: Props) {
 
   if (loading && !data) {
     return (
-      <main className="min-h-screen bg-[#08080A] text-zinc-100 flex items-center justify-center p-6 font-sans">
+      <main className="fixed inset-0 overflow-y-auto bg-[#08080A] text-zinc-100 flex items-center justify-center p-6 font-sans">
         <div className="text-center space-y-3">
           <Loader2 className="w-10 h-10 text-purple-400 animate-spin mx-auto" />
           <p className="text-xs font-mono text-zinc-400">Verificando enlace institucional con Hermes...</p>
@@ -244,7 +244,7 @@ export default function CandidateAssessmentPage({ params }: Props) {
 
   if (error && !data) {
     return (
-      <main className="min-h-screen bg-[#08080A] text-zinc-100 flex items-center justify-center p-6 font-sans">
+      <main className="fixed inset-0 overflow-y-auto bg-[#08080A] text-zinc-100 flex items-center justify-center p-6 font-sans">
         <div className="max-w-md w-full p-8 rounded-3xl bg-[#0C0C10] border border-rose-500/30 text-center space-y-4 shadow-2xl">
           <AlertCircle className="w-12 h-12 text-rose-400 mx-auto" />
           <h2 className="text-xl font-bold text-white">Acceso No Válido</h2>
@@ -263,7 +263,7 @@ export default function CandidateAssessmentPage({ params }: Props) {
   // ─── CANDIDATE IDENTITY GATE ────────────────────────────────────────────────
   if (data?.requiresVerification) {
     return (
-      <main className="min-h-screen bg-[#08080A] text-zinc-100 font-sans flex flex-col selection:bg-purple-500/30">
+      <main className="fixed inset-0 overflow-y-auto bg-[#08080A] text-zinc-100 font-sans flex flex-col selection:bg-purple-500/30">
         <div
           className="pointer-events-none fixed inset-0 z-0 opacity-[0.025]"
           style={{
@@ -378,7 +378,7 @@ export default function CandidateAssessmentPage({ params }: Props) {
   const activeQuestion = currentModule?.assessments[0];
 
   return (
-    <main className="min-h-screen bg-[#08080A] text-zinc-100 font-sans flex flex-col selection:bg-purple-500/30">
+    <main className="fixed inset-0 overflow-y-auto bg-[#08080A] text-zinc-100 font-sans flex flex-col selection:bg-purple-500/30">
       {/* Subtle Grid Background */}
       <div
         className="pointer-events-none fixed inset-0 z-0 opacity-[0.025]"

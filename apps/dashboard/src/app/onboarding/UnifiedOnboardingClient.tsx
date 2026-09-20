@@ -191,7 +191,7 @@ export function UnifiedOnboardingClient() {
   };
 
   return (
-    <div className="min-h-screen bg-[#07080D] text-white flex flex-col items-center justify-center p-4 sm:p-6 lg:p-12 relative overflow-hidden">
+    <div className="fixed inset-0 overflow-y-auto bg-[#07080D] text-white flex flex-col items-center justify-center p-4 sm:p-6 lg:p-12 relative">
       {/* Background Ambient Aura */}
       <div className="absolute top-[-20%] left-[20%] w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[140px] pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[10%] w-[450px] h-[450px] bg-emerald-600/10 rounded-full blur-[140px] pointer-events-none" />

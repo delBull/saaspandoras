@@ -80,7 +80,7 @@ export function OnboardingClient({ organizationSlug, organizationName }: { organ
 
   if (isVerifying) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center min-h-screen">
+      <div className="flex-1 flex flex-col items-center justify-center fixed inset-0 overflow-y-auto">
         <Loader2 className="w-10 h-10 animate-spin text-indigo-500 mb-4" />
         <p className="text-zinc-400 animate-pulse font-medium">Sincronizando contexto...</p>
       </div>

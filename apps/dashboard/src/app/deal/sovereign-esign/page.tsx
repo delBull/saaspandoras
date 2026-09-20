@@ -13,7 +13,7 @@ export const metadata = {
 
 export default function SovereignEsignPage() {
   return (
-    <div className="min-h-screen bg-[#07070B] text-white font-sans selection:bg-indigo-500/30 selection:text-indigo-200">
+    <div className="fixed inset-0 overflow-hidden bg-[#07070B] text-white font-sans selection:bg-indigo-500/30 selection:text-indigo-200">
       
       {/* Subtle Background Glows */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">

@@ -410,7 +410,7 @@ export function SimulatorClient() {
   // ---------------------------------------------------------------------------
 
   return (
-    <div className="min-h-screen bg-[#07070B] text-white flex flex-col font-sans relative overflow-hidden">
+    <div className="fixed inset-0 overflow-hidden bg-[#07070B] text-white flex flex-col font-sans relative">
       {/* Background Ambient Glows */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[450px] bg-gradient-to-b from-purple-500/10 via-indigo-500/5 to-transparent blur-[140px] pointer-events-none" />
 

@@ -115,7 +115,7 @@ export default function CertifiedAgentsDirectoryPage() {
   );
 
   return (
-    <div className="min-h-screen bg-black text-white selection:bg-[#D4A853]/30 selection:text-white font-sans antialiased">
+    <div className="fixed inset-0 overflow-y-auto bg-black text-white selection:bg-[#D4A853]/30 selection:text-white font-sans antialiased">
       {/* ─── Top Bar ─── */}
       <div className="bg-zinc-950 border-b border-zinc-900 py-3 px-6">
         <div className="max-w-7xl mx-auto flex items-center justify-between">

@@ -88,7 +88,7 @@ export function ExperienceClient() {
   };
 
   return (
-    <div className="min-h-screen bg-[#07070B] text-zinc-100 flex flex-col selection:bg-purple-500/30">
+    <div className="fixed inset-0 overflow-hidden bg-[#07070B] text-zinc-100 flex flex-col selection:bg-purple-500/30">
       {/* Top Navigation */}
       <header className="w-full border-b border-zinc-850 bg-black/40 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">

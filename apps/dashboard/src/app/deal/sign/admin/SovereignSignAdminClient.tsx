@@ -176,7 +176,7 @@ export function SovereignSignAdminClient() {
 
   if (isAdmin === null) {
     return (
-      <div className="min-h-screen bg-[#07070B] flex items-center justify-center text-zinc-400 font-mono text-xs">
+      <div className="fixed inset-0 overflow-hidden bg-[#07070B] flex items-center justify-center text-zinc-400 font-mono text-xs">
         <RefreshCw className="w-5 h-5 animate-spin text-amber-400 mr-2" />
         Verificando privilegios de administrador...
       </div>
@@ -185,7 +185,7 @@ export function SovereignSignAdminClient() {
 
   if (isAdmin === false) {
     return (
-      <div className="min-h-screen bg-[#07070B] flex flex-col items-center justify-center p-6 text-center">
+      <div className="fixed inset-0 overflow-hidden bg-[#07070B] flex flex-col items-center justify-center p-6 text-center">
         <div className="w-14 h-14 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-400 mb-4 shadow-xl shadow-red-500/10">
           <ShieldAlert className="w-7 h-7" />
         </div>
@@ -204,7 +204,7 @@ export function SovereignSignAdminClient() {
   }
 
   return (
-    <div className="min-h-screen bg-[#07070B] text-zinc-100 font-sans flex flex-col selection:bg-amber-500/30 selection:text-amber-200">
+    <div className="fixed inset-0 overflow-hidden bg-[#07070B] text-zinc-100 font-sans flex flex-col selection:bg-amber-500/30 selection:text-amber-200">
       
       {/* Top Admin Navbar */}
       <header className="h-16 shrink-0 bg-[#0C0C12] border-b border-white/[0.08] px-4 md:px-8 flex items-center justify-between z-20">

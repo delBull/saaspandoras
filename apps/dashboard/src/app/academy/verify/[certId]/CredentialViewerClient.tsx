@@ -170,7 +170,7 @@ export function CredentialViewerClient({ cert }: CredentialViewerProps) {
   ];
 
   return (
-    <div className="min-h-screen bg-[#08080A] text-zinc-100 p-4 md:p-8 font-sans selection:bg-purple-500/30">
+    <div className="fixed inset-0 overflow-y-auto bg-[#08080A] text-zinc-100 p-4 md:p-8 font-sans selection:bg-purple-500/30">
       <div className="max-w-6xl mx-auto space-y-6">
         
         {/* Top Header Bar */}

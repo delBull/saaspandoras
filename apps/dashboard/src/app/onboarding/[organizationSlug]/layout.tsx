@@ -25,7 +25,7 @@ export default async function OnboardingLayout({ children, params }: OnboardingL
 
   // We don't render PortalShell here, giving us a clean slate for the onboarding flow.
   return (
-    <div className="min-h-screen bg-[#08080A] text-white font-sans flex flex-col relative overflow-hidden">
+    <div className="fixed inset-0 overflow-y-auto bg-[#08080A] text-white font-sans flex flex-col relative">
       {children}
     </div>
   );

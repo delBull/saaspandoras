@@ -163,7 +163,7 @@ export default function MasterTokenizacionLanding() {
   ];
 
   return (
-    <div className="min-h-screen bg-black text-white selection:bg-[#D4A853]/30 selection:text-white font-sans antialiased">
+    <div className="fixed inset-0 overflow-y-auto bg-black text-white selection:bg-[#D4A853]/30 selection:text-white font-sans antialiased">
       {/* ─── Top Bar: Urgency & Genesis Cohort Status ─── */}
       <div className="bg-gradient-to-r from-zinc-950 via-zinc-900 to-zinc-950 border-b border-[#D4A853]/20 py-2.5 px-4 text-center">
         <div className="max-w-7xl mx-auto flex items-center justify-center gap-3 text-xs">

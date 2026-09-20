@@ -15,7 +15,7 @@ export default function DealError({
   }, [error]);
 
   return (
-    <div className="min-h-screen bg-[#08080A] flex flex-col items-center justify-center text-white p-6">
+    <div className="fixed inset-0 overflow-hidden bg-[#08080A] flex flex-col items-center justify-center text-white p-6">
       <div className="max-w-md w-full bg-[#121217] border border-white/10 rounded-2xl p-8 text-center shadow-xl">
         <div className="w-16 h-16 rounded-full bg-rose-500/10 border border-rose-500/30 flex items-center justify-center mx-auto mb-6">
           <AlertTriangle className="w-8 h-8 text-rose-500" />
