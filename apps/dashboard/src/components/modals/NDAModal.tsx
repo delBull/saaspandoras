@@ -45,7 +45,7 @@ export function NDAModal({ isOpen, onClose, version = NDA_VERSION }: NDAModalPro
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="fixed inset-0 z-[9999] w-screen h-screen md:w-full md:h-[85vh] md:max-w-4xl md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 bg-[#0C0C10] border-0 md:border md:border-zinc-800/60 rounded-none md:rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+            className="fixed inset-0 z-[9999] w-full h-full md:w-full md:h-[85vh] md:max-w-4xl md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 bg-[#0C0C10] border-0 md:border md:border-zinc-800/60 rounded-none md:rounded-2xl shadow-2xl flex flex-col overflow-hidden"
           >
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800/60 bg-zinc-900/40 shrink-0">
@@ -84,7 +84,7 @@ export function NDAModal({ isOpen, onClose, version = NDA_VERSION }: NDAModalPro
                 </div>
 
                 {/* Full NDA Text Single Source of Truth */}
-                <div className="p-6 bg-black/40 rounded-xl border border-white/10 font-mono text-xs leading-relaxed text-zinc-300 whitespace-pre-wrap selection:bg-amber-500/30">
+                <div className="p-6 bg-black/40 rounded-xl border border-white/10 font-mono text-xs leading-relaxed text-zinc-300 whitespace-pre-wrap selection:bg-amber-500/30 break-words [overflow-wrap:anywhere]">
                   {cfg.fullText}
                 </div>
               </div>

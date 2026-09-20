@@ -14,7 +14,7 @@ export function ProjectApplicationModal({ isOpen, onClose, isAdminMode = false }
 
   return (
     <div className="fixed inset-0 z-[9999] bg-zinc-950 overflow-hidden">
-      <div className="h-screen flex flex-col text-white bg-zinc-950">
+      <div className="h-full flex flex-col text-white bg-zinc-950">
         {/* Header with Cancel Button */}
         <div className="flex items-center p-6 backdrop-blur border-b border-zinc-800 flex-shrink-0">
           <button

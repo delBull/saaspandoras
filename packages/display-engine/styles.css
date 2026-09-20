@@ -52,6 +52,17 @@
   filter: brightness(80%) contrast(95%);
 }
 
+/* Blancos Mode (Light Mode / Invert) */
+:root[data-display-theme="blancos"] {
+  --display-bg: #ffffff;
+  --display-surface: #f8fafc;
+  --display-text: #0f172a;
+  --display-text-muted: #64748b;
+  --display-border: #e2e8f0;
+  --display-primary: #3b82f6;
+  filter: invert(100%) hue-rotate(180deg) brightness(105%) contrast(105%);
+}
+
 /* 
   Reduced Motion (a11y)
   Disables all animations and smooth scrolling safely.

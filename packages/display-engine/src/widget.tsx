@@ -69,6 +69,7 @@ export const DisplayControlsWidget = ({ variant = "card", className = "", onClos
           <option value="sepia">Sepia (Lectura)</option>
           <option value="grayscale">Escala de Grises</option>
           <option value="low-light">Baja Luminosidad</option>
+          <option value="blancos">Blancos (Modo Claro)</option>
         </select>
       </div>
 

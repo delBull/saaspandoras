@@ -218,7 +218,7 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
 
   return (
     <PlatformInspectorProvider>
-      <div className="h-screen w-screen bg-[#08080A] text-white font-sans flex relative overflow-hidden">
+      <div className="fixed inset-0 bg-[#08080A] text-white font-sans flex overflow-hidden">
         {/* Responsive Sidebar */}
         <aside
           className={`h-full bg-[#0C0C12] border-r border-white/[0.08] flex flex-col justify-between transition-all duration-300 z-30 shrink-0 select-none ${

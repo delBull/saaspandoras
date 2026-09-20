@@ -1,5 +1,5 @@
 export type SovereignDisplayScale = "100" | "115" | "130";
-export type SovereignDisplayTheme = "base" | "high-contrast" | "sepia" | "grayscale" | "low-light";
+export type SovereignDisplayTheme = "base" | "high-contrast" | "sepia" | "grayscale" | "low-light" | "blancos";
 
 export type SovereignDisplayProfile = {
   scale: SovereignDisplayScale;

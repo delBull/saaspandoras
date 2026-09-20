@@ -60,7 +60,7 @@ export function PlatformInspectorDrawer() {
         animate={{ x: 0 }}
         exit={{ x: '100%' }}
         transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-        className={`fixed top-0 right-0 h-screen w-full ${
+        className={`fixed inset-y-0 right-0 h-full w-full ${
           data.drawerSize === 'full' 
             ? 'lg:w-[90vw]' 
             : data.drawerSize === 'large' 

@@ -93,7 +93,7 @@ export function MissionControlDashboard({ projects, initialProject }: MissionCon
     const governorAddress = config.governorAddress || (project as any).governorContractAddress;
 
     return (
-        <div className="min-h-screen text-white selection:bg-purple-500/30 font-sans pb-24 relative overflow-hidden bg-[#07080D]">
+        <div className="min-h-full text-white selection:bg-purple-500/30 font-sans pb-24 relative bg-[#07080D]">
             {/* Background Ambient Glows */}
             <div className="absolute w-[40%] h-[40%] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />
             <div className="absolute w-[40%] h-[40%] bg-purple-600/10 rounded-full blur-[120px] pointer-events-none" />

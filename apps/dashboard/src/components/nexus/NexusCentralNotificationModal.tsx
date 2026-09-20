@@ -46,10 +46,7 @@ export function NexusCentralNotificationModal({
 }: NexusCentralNotificationModalProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  if (!isOpen || broadcasts.length === 0) return null;
-
   const currentBroadcast = broadcasts[currentIndex] || broadcasts[0];
-  if (!currentBroadcast) return null;
 
   const typeConfig = {
     ANNOUNCEMENT: {
@@ -76,7 +73,7 @@ export function NexusCentralNotificationModal({
       icon: <Flame className="w-4 h-4 text-rose-400" />,
       borderGlow: 'shadow-[0_0_60px_rgba(244,63,94,0.25)] border-rose-500/40',
     },
-  }[currentBroadcast.type] || {
+  }[currentBroadcast?.type || 'UPDATE'] || {
     label: 'COMUNICADO',
     badgeClass: 'border-zinc-500/30 bg-zinc-500/10 text-zinc-300',
     icon: <Info className="w-4 h-4 text-zinc-400" />,
@@ -84,7 +81,9 @@ export function NexusCentralNotificationModal({
   };
 
   const handleDismissCurrent = () => {
-    onDismiss(currentBroadcast.id);
+    if (currentBroadcast) {
+      onDismiss(currentBroadcast.id);
+    }
     if (broadcasts.length > 1) {
       if (currentIndex >= broadcasts.length - 1) {
         setCurrentIndex(Math.max(0, broadcasts.length - 2));
@@ -94,25 +93,26 @@ export function NexusCentralNotificationModal({
     }
   };
 
-  const formattedDate = new Date(currentBroadcast.createdAt).toLocaleDateString('es-MX', {
+  const formattedDate = currentBroadcast ? new Date(currentBroadcast.createdAt).toLocaleDateString('es-MX', {
     day: 'numeric',
     month: 'short',
     hour: '2-digit',
     minute: '2-digit',
-  });
+  }) : '';
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 bg-black/80 backdrop-blur-md">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 15 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 15 }}
-          transition={{ duration: 0.2, ease: 'easeOut' }}
-          className={`relative w-full max-w-2xl bg-[#0B0B0E] border rounded-2xl overflow-hidden flex flex-col ${typeConfig.borderGlow}`}
-        >
-          {/* Top Bar Header */}
-          <div className="flex items-center justify-between px-5 py-4 border-b border-white/10 bg-[#0F0F14]">
+      {isOpen && broadcasts.length > 0 && currentBroadcast && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 bg-black/80 backdrop-blur-md">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 15 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 15 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            className={`relative w-full max-w-2xl bg-[#0B0B0E] border rounded-2xl overflow-hidden flex flex-col ${typeConfig.borderGlow}`}
+          >
+            {/* Top Bar Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-white/10 bg-[#0F0F14]">
             <div className="flex items-center gap-2.5">
               <span className={`px-2.5 py-1 rounded-lg border font-mono text-[11px] font-bold tracking-wider flex items-center gap-1.5 ${typeConfig.badgeClass}`}>
                 {typeConfig.icon}
@@ -219,8 +219,9 @@ export function NexusCentralNotificationModal({
               </button>
             </div>
           </div>
-        </motion.div>
-      </div>
+          </motion.div>
+        </div>
+      )}
     </AnimatePresence>
   );
 }

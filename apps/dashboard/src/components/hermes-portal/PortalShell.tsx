@@ -68,7 +68,7 @@ export function PortalShell({ context, children, activeModules = [] }: PortalShe
   return (
     <PortalProvider>
       <InspectorProvider>
-        <div className="h-screen w-screen bg-[#08080A] text-white font-sans flex relative overflow-hidden">
+        <div className="fixed inset-0 bg-[#08080A] text-white font-sans flex overflow-hidden">
       
       {/* Mobile Top Bar */}
       <div className="md:hidden flex items-center justify-between px-4 h-14 bg-[#0C0C12] border-b border-white/[0.08] fixed top-0 w-full z-40 backdrop-blur-md shrink-0">
@@ -117,7 +117,7 @@ export function PortalShell({ context, children, activeModules = [] }: PortalShe
       </div>
 
       {/* Main content area (including Header and Inspector) */}
-      <div className="flex-1 flex flex-col h-screen max-h-screen w-full relative pt-14 md:pt-0 overflow-hidden min-w-0">
+      <div className="flex-1 flex flex-col h-full max-h-full w-full relative pt-14 md:pt-0 overflow-hidden min-w-0">
         
         {/* Global Top Bar (Spans full width above Inspector) */}
         <div className="hidden md:block z-30 shrink-0 border-b border-white/[0.06]">

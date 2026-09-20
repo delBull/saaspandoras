@@ -342,7 +342,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
   };
 
   return (
-    <main className="min-h-screen bg-[#08080A] print:bg-white text-zinc-100 print:text-black font-sans flex flex-col">
+    <main className="fixed inset-0 bg-[#08080A] print:bg-white text-zinc-100 print:text-black font-sans flex flex-col overflow-hidden">
       <header className="h-14 shrink-0 flex items-center justify-between px-4 md:px-6 bg-[#0C0C10] print:hidden border-b border-white/10 font-mono">
         <div className="flex items-center gap-3 min-w-0">
           <span className="flex items-center justify-center w-8 h-8 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-300 shrink-0">
@@ -467,9 +467,9 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
       )}
 
       {unlocked ? (
-        <div className="flex-1 flex flex-col md:flex-row min-h-0 print:block">
+        <div className="flex-1 flex flex-col md:flex-row min-h-0 print:block overflow-y-auto md:overflow-hidden">
           {showCover ? (
-            <div className="flex-1 flex flex-col items-center justify-center p-8 bg-gradient-to-b from-[#08080A] to-[#121217] text-center print:hidden relative overflow-hidden">
+            <div className="flex-1 flex flex-col items-center justify-center p-8 bg-gradient-to-b from-[#08080A] to-[#121217] text-center print:hidden relative overflow-hidden min-h-[100dvh] md:min-h-0">
               <div className="absolute inset-0 bg-[url('/noise.png')] opacity-[0.03] mix-blend-overlay pointer-events-none"></div>
               
               <div className="relative z-10 max-w-2xl mx-auto flex flex-col items-center">
@@ -505,7 +505,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
               </div>
             </div>
           ) : (
-            <div className="flex-1 overflow-y-auto p-4 md:p-8 print:p-0 print:overflow-visible">
+            <div className="flex-1 md:overflow-y-auto p-4 md:p-8 print:p-0 print:overflow-visible">
               <div className="max-w-3xl mx-auto">
             <div className="mb-6">
               <div className="flex items-center justify-between mb-2">
@@ -786,8 +786,8 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                         </p>
                       )}
                       {s.wallet && (
-                        <p className="text-[10px] font-mono text-zinc-500 print:text-zinc-600 mt-2 truncate">
-                          Wallet: {s.wallet.slice(0, 8)}...{s.wallet.slice(-6)}
+                        <p className="text-[10px] font-mono text-zinc-500 print:text-zinc-600 mt-2 break-all [overflow-wrap:anywhere]">
+                          Wallet: {s.wallet}
                         </p>
                       )}
                       {s.signedAt && (
@@ -796,8 +796,8 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                         </p>
                       )}
                       {s.signature && (
-                        <p className="text-[9px] font-mono text-emerald-400/80 print:text-emerald-600 mt-1 truncate" title={s.signature}>
-                          Sig: {s.signature.slice(0, 16)}...{s.signature.slice(-16)}
+                        <p className="text-[9px] font-mono text-emerald-400/80 print:text-emerald-600 mt-1 break-all [overflow-wrap:anywhere]" title={s.signature}>
+                          Sig: {s.signature}
                         </p>
                       )}
                     </div>

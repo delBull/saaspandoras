@@ -2,7 +2,7 @@ import { SovereignDisplayProfile } from "./types";
 import { DEFAULT_DISPLAY_PROFILE } from "./constants";
 
 export const VALID_SCALES = ["100", "115", "130"] as const;
-export const VALID_THEMES = ["base", "high-contrast", "sepia", "grayscale", "low-light"] as const;
+export const VALID_THEMES = ["base", "high-contrast", "sepia", "grayscale", "low-light", "blancos"] as const;
 
 /**
  * Sanitiza cualquier payload de perfil asegurando un contrato defensivo,

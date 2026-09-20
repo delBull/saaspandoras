@@ -378,7 +378,7 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
   };
 
   return (
-    <div className="relative w-full h-screen overflow-hidden bg-[#050508] text-white selection:bg-amber-500/30 flex flex-col">
+    <div className="fixed inset-0 w-full overflow-hidden bg-[#050508] text-white selection:bg-amber-500/30 flex flex-col font-sans">
       
       {/* ── AMBIENT GLOW + GRID (Atmósfera Obsidian Institucional) ── */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">

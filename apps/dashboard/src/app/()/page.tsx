@@ -92,7 +92,7 @@ export default async function RootDashboardPage({ searchParams }: PageProps) {
 
   if (!resolvedSlug) {
     if (userIsAdmin) {
-      resolvedSlug = 'pandoras'; // Master tenant for superadmins
+      redirect('/nexus');
     } else if (callerWallet) {
       // Find what tenant they belong to
       resolvedSlug = (await getDefaultTenantForWallet(callerWallet)) || undefined;
