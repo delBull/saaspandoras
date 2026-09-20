@@ -687,32 +687,54 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                       <span className={`text-zinc-600 transition-transform ${openSection === sec.code ? "rotate-180" : ""}`}>▾</span>
                     </button>
                     <div className={`px-4 pb-4 space-y-1.5 ${openSection === sec.code ? "block" : "hidden print:block"}`}>
-                        {sec.content.split("\n").filter(Boolean).map((line, i) => {
-                          const renderedLine = line
-                            .replace(/{{COUNTERPARTY_COMPANY}}/g, dynamicPartyName)
-                            .replace(/{{COUNTERPARTY}}/g, dynamicPartyName);
-                          
-                          if (renderedLine.startsWith("## ")) {
-                            return <h2 key={i} className="text-[15px] font-bold text-white mt-4 mb-2">{renderedLine.slice(3)}</h2>;
-                          }
-                          if (renderedLine.startsWith("### ")) {
-                            return <h3 key={i} className="text-[13px] font-semibold text-amber-200 mt-3 mb-1">{renderedLine.slice(4)}</h3>;
-                          }
+                        {(() => {
+                          let inCodeBlock = false;
+                          return sec.content.split("\n").map((line, i) => {
+                            if (!line && !inCodeBlock) return null;
+                            const renderedLine = line
+                              .replace(/{{COUNTERPARTY_COMPANY}}/g, dynamicPartyName)
+                              .replace(/{{COUNTERPARTY}}/g, dynamicPartyName);
 
-                          const parts = renderedLine.split(/(\*\*.*?\*\*)/g);
+                            if (renderedLine.trim().startsWith("```")) {
+                              inCodeBlock = !inCodeBlock;
+                              return (
+                                <p key={i} className="text-[12px] text-zinc-500 font-mono leading-relaxed mb-1">
+                                  <span className="text-zinc-600 print:text-black font-mono mr-2">{String(i + 1).padStart(2, "0")}</span>
+                                  {renderedLine}
+                                </p>
+                              );
+                            }
 
-                          return (
-                            <p key={i} className="text-[12px] text-zinc-300 print:text-black leading-relaxed mb-2">
-                              <span className="text-zinc-600 print:text-black font-mono mr-2">{String(i + 1).padStart(2, "0")}</span>
-                              {parts.map((p, j) => {
-                                if (p.startsWith("**") && p.endsWith("**")) {
-                                  return <strong key={j} className="text-white font-semibold">{p.slice(2, -2)}</strong>;
-                                }
-                                return <span key={j}>{p}</span>;
-                              })}
-                            </p>
-                          );
-                        })}
+                            if (inCodeBlock) {
+                              return (
+                                <p key={i} className="text-[12px] text-zinc-400 font-mono whitespace-pre print:text-black leading-relaxed mb-1 overflow-x-auto">
+                                  <span className="text-zinc-600 print:text-black font-mono mr-2">{String(i + 1).padStart(2, "0")}</span>
+                                  {renderedLine}
+                                </p>
+                              );
+                            }
+
+                            if (renderedLine.startsWith("## ")) {
+                              return <h2 key={i} className="text-[15px] font-bold text-white mt-4 mb-2">{renderedLine.slice(3)}</h2>;
+                            }
+                            if (renderedLine.startsWith("### ")) {
+                              return <h3 key={i} className="text-[13px] font-semibold text-amber-200 mt-3 mb-1">{renderedLine.slice(4)}</h3>;
+                            }
+
+                            const parts = renderedLine.split(/(\*\*.*?\*\*)/g);
+                            return (
+                              <p key={i} className="text-[12px] text-zinc-300 print:text-black leading-relaxed mb-2">
+                                <span className="text-zinc-600 print:text-black font-mono mr-2">{String(i + 1).padStart(2, "0")}</span>
+                                {parts.map((p, j) => {
+                                  if (p.startsWith("**") && p.endsWith("**")) {
+                                    return <strong key={j} className="text-white font-semibold">{p.slice(2, -2)}</strong>;
+                                  }
+                                  return <span key={j}>{p}</span>;
+                                })}
+                              </p>
+                            );
+                          });
+                        })()}
                         {unlocked && (
                           <div className="print:hidden">
                             <DealComments publicId={publicId} sectionCode={sec.code} rawToken={rawToken} />

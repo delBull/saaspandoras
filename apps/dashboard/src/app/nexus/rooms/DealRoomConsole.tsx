@@ -1483,12 +1483,51 @@ export default function DealRoomConsole() {
                           />
                         ) : (
                           <div className="space-y-1.5">
-                            {activeSection.content.split("\n").filter(Boolean).map((line, i) => (
-                              <p key={i} className="text-[11px] text-zinc-300 leading-relaxed">
-                                <span className="text-zinc-600 font-mono mr-2">{String(i + 1).padStart(2, "0")}</span>
-                                {line}
-                              </p>
-                            ))}
+                            {(() => {
+                              let inCodeBlock = false;
+                              return activeSection.content.split("\n").map((line, i) => {
+                                if (!line && !inCodeBlock) return null;
+
+                                if (line.trim().startsWith("```")) {
+                                  inCodeBlock = !inCodeBlock;
+                                  return (
+                                    <p key={i} className="text-[11px] text-zinc-500 font-mono leading-relaxed mb-1">
+                                      <span className="text-zinc-600 font-mono mr-2">{String(i + 1).padStart(2, "0")}</span>
+                                      {line}
+                                    </p>
+                                  );
+                                }
+
+                                if (inCodeBlock) {
+                                  return (
+                                    <p key={i} className="text-[11px] text-zinc-400 font-mono whitespace-pre leading-relaxed mb-1 overflow-x-auto">
+                                      <span className="text-zinc-600 font-mono mr-2">{String(i + 1).padStart(2, "0")}</span>
+                                      {line}
+                                    </p>
+                                  );
+                                }
+
+                                if (line.startsWith("## ")) {
+                                  return <h2 key={i} className="text-[13px] font-bold text-white mt-4 mb-2">{line.slice(3)}</h2>;
+                                }
+                                if (line.startsWith("### ")) {
+                                  return <h3 key={i} className="text-[12px] font-semibold text-amber-200 mt-3 mb-1">{line.slice(4)}</h3>;
+                                }
+
+                                const parts = line.split(/(\*\*.*?\*\*)/g);
+                                return (
+                                  <p key={i} className="text-[11px] text-zinc-300 leading-relaxed mb-2">
+                                    <span className="text-zinc-600 font-mono mr-2">{String(i + 1).padStart(2, "0")}</span>
+                                    {parts.map((p, j) => {
+                                      if (p.startsWith("**") && p.endsWith("**")) {
+                                        return <strong key={j} className="text-white font-semibold">{p.slice(2, -2)}</strong>;
+                                      }
+                                      return <span key={j}>{p}</span>;
+                                    })}
+                                  </p>
+                                );
+                              });
+                            })()}
                           </div>
                         )}
                       </div>
