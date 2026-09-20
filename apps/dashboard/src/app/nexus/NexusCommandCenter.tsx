@@ -267,13 +267,26 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
 
   const handleDismissBroadcast = (broadcastId: string) => {
     try {
-      const dismissed: string[] = JSON.parse(localStorage.getItem('nexus_dismissed_broadcasts') || '[]');
+      let dismissed: string[] = [];
+      try {
+        const stored = localStorage.getItem('nexus_dismissed_broadcasts');
+        if (stored && stored !== 'undefined') {
+          dismissed = JSON.parse(stored);
+          if (!Array.isArray(dismissed)) dismissed = [];
+        }
+      } catch (e) {
+        dismissed = [];
+      }
+      
       if (!dismissed.includes(broadcastId)) {
         dismissed.push(broadcastId);
         localStorage.setItem('nexus_dismissed_broadcasts', JSON.stringify(dismissed));
       }
+    } catch (err) {
+      console.warn("Failed to update dismissed broadcasts in local storage", err);
+    } finally {
       setUnreadBroadcasts((prev) => prev.filter((b) => b.id !== broadcastId));
-    } catch {}
+    }
   };
 
   const validRoles: EcosystemTourRole[] = ["SUPER_ADMIN", "ADMIN", "MARKETING", "VIEWER"];
@@ -466,11 +479,6 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
               <Sliders className="w-3 h-3 text-amber-400" />
               SOVEREIGN DISPLAY
             </button>
-            {showDisplayControls && (
-              <div className="mt-2 p-1 bg-black/95 border border-zinc-800 rounded-xl shadow-2xl">
-                <DisplayControlsWidget />
-              </div>
-            )}
           </div>
 
           <div className="flex gap-2">
@@ -497,10 +505,32 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
               LOGOUT
             </button>
           </div>
-          <div className="text-[9px] text-zinc-600 font-mono text-center mt-4">
-            Powered by Hermes AI Kernel
-          </div>
+          <div className="pt-4 text-center">
+          <p className="text-[9px] font-mono text-zinc-600">Powered by Hermes AI Kernel</p>
         </div>
+
+        {/* OVERLAY: Sovereign Display Controls */}
+        {showDisplayControls && (
+          <div className="absolute inset-0 z-50 bg-[#0A0A0C]/95 backdrop-blur-3xl flex flex-col animate-in fade-in slide-in-from-bottom-10 duration-300">
+            <div className="flex items-center justify-between p-5 border-b border-white/10">
+              <div className="flex items-center gap-2">
+                <Sliders className="w-5 h-5 text-amber-400" />
+                <h3 className="font-bold text-white tracking-widest text-sm">SOVEREIGN DISPLAY</h3>
+              </div>
+              <button
+                onClick={() => setShowDisplayControls(false)}
+                className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                title="Cerrar controles"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto flex-1">
+              <DisplayControlsWidget variant="minimal" />
+            </div>
+          </div>
+        )}
+      </div>
       </div>
 
       {/* ── TOGGLE BUTTON ── */}
@@ -605,6 +635,7 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
                     layoutId={`card-${sec.id}`}
                     key={sec.id}
                     onClick={() => setActiveSection(sec.id)}
+                    data-magnifier-target="true"
                     className={`group relative overflow-hidden rounded-3xl border ${sec.border} bg-[#0A0A0E]/90 backdrop-blur-md p-6 md:p-7 flex flex-col justify-between min-h-[280px] md:min-h-[340px] xl:min-h-0 cursor-pointer transition-all hover:scale-[1.015] hover:shadow-2xl hover:shadow-black/70 hover:border-white/25`}
                   >
                     {/* glow de color (identidad oscura vieja) */}

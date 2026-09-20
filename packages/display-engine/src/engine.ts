@@ -53,13 +53,16 @@ export function applyProfileToDom(
 
   if (!root || !body) return;
 
-  // 1. Escala discreta de tipografía / layout
+  // 1. Escala discreta de tipografía / layout (Usando zoom para no romper grids/flex)
   if (profile.scale === "115") {
-    root.style.fontSize = "18.4px"; // 115% de 16px
+    root.style.fontSize = ""; // reset
+    (root.style as any).zoom = "1.15";
   } else if (profile.scale === "130") {
-    root.style.fontSize = "20.8px"; // 130% de 16px
+    root.style.fontSize = ""; // reset
+    (root.style as any).zoom = "1.30";
   } else {
-    root.style.fontSize = ""; // default 100%
+    root.style.fontSize = ""; 
+    (root.style as any).zoom = "";
   }
 
   // 2. Tokens semánticos mediante data attribute

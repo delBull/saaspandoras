@@ -142,12 +142,21 @@ export function NexusCentralNotificationModal({
             </div>
           </div>
 
-          {/* Main Body */}
-          <div className="p-6 md:p-7 space-y-4 max-h-[65vh] overflow-y-auto">
-            {/* Title with native Emojis */}
-            <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight leading-snug">
-              {currentBroadcast.title}
-            </h2>
+          {/* Main Body with Animation Key */}
+          <div className="p-6 md:p-7 space-y-4 max-h-[65vh] overflow-y-auto relative">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentBroadcast.id}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.15 }}
+                className="space-y-4"
+              >
+                {/* Title with native Emojis */}
+                <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight leading-snug">
+                  {currentBroadcast.title}
+                </h2>
 
             {/* Author & Timestamp Bar */}
             <div className="flex items-center gap-3 text-xs text-zinc-500 border-b border-white/5 pb-3">
@@ -164,10 +173,12 @@ export function NexusCentralNotificationModal({
               <span className="font-mono text-[11px]">{formattedDate}</span>
             </div>
 
-            {/* Formatted Content with Enters & Clickable Links */}
-            <div className="py-2">
-              <NexusBroadcastRenderer content={currentBroadcast.content} />
-            </div>
+                {/* Formatted Content with Enters & Clickable Links */}
+                <div className="py-2">
+                  <NexusBroadcastRenderer content={currentBroadcast.content} />
+                </div>
+              </motion.div>
+            </AnimatePresence>
           </div>
 
           {/* Footer Controls */}
@@ -177,14 +188,16 @@ export function NexusCentralNotificationModal({
               {broadcasts.length > 1 && (
                 <>
                   <button
-                    onClick={() => setCurrentIndex((prev) => Math.max(0, prev - 1))}
+                    type="button"
+                    onClick={(e) => { e.preventDefault(); setCurrentIndex((prev) => Math.max(0, prev - 1)); }}
                     disabled={currentIndex === 0}
                     className="p-2 rounded-lg border border-white/10 text-zinc-400 hover:text-white disabled:opacity-30 disabled:hover:text-zinc-400 transition-colors"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => setCurrentIndex((prev) => Math.min(broadcasts.length - 1, prev + 1))}
+                    type="button"
+                    onClick={(e) => { e.preventDefault(); setCurrentIndex((prev) => Math.min(broadcasts.length - 1, prev + 1)); }}
                     disabled={currentIndex === broadcasts.length - 1}
                     className="p-2 rounded-lg border border-white/10 text-zinc-400 hover:text-white disabled:opacity-30 disabled:hover:text-zinc-400 transition-colors"
                   >
@@ -197,7 +210,8 @@ export function NexusCentralNotificationModal({
             {/* Dismiss CTA */}
             <div className="flex items-center gap-2">
               <button
-                onClick={handleDismissCurrent}
+                type="button"
+                onClick={(e) => { e.preventDefault(); handleDismissCurrent(); }}
                 className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold text-xs flex items-center gap-2 shadow-lg shadow-purple-600/20 transition-all cursor-pointer"
               >
                 <CheckCircle2 className="w-4 h-4" />

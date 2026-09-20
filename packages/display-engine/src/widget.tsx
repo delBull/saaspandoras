@@ -4,7 +4,13 @@ import React from "react";
 import { useSovereignDisplay } from "./provider";
 import { SovereignDisplayScale, SovereignDisplayTheme } from "./types";
 
-export const DisplayControlsWidget = () => {
+export interface DisplayControlsWidgetProps {
+  variant?: "card" | "minimal";
+  className?: string;
+  onClose?: () => void;
+}
+
+export const DisplayControlsWidget = ({ variant = "card", className = "", onClose }: DisplayControlsWidgetProps) => {
   const { profile, setProfile, resetToDefaults } = useSovereignDisplay();
 
   const handleScaleChange = (scale: SovereignDisplayScale) => {
@@ -17,11 +23,20 @@ export const DisplayControlsWidget = () => {
 
   return (
     <div 
-      className="p-4 bg-[var(--display-surface)] text-[var(--display-text)] border border-[var(--display-border)] rounded-lg shadow-sm w-full max-w-sm"
+      className={`${variant === 'card' ? 'p-4 bg-[var(--display-surface)] border border-[var(--display-border)] rounded-lg shadow-sm max-w-sm' : 'py-2'} text-[var(--display-text)] w-full flex flex-col ${className}`}
       role="region"
       aria-label="Controles de visualización y accesibilidad"
     >
-      <h3 className="font-semibold mb-3">Sovereign Display</h3>
+      {variant === 'card' && (
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-semibold">Sovereign Display</h3>
+          {onClose && (
+            <button onClick={onClose} className="p-1 hover:bg-[var(--display-bg)] rounded text-[var(--display-text-muted)] hover:text-[var(--display-text)] transition-colors">
+              ✕
+            </button>
+          )}
+        </div>
+      )}
       
       {/* Escala (Typography/Layout Scale) */}
       <div className="mb-4">

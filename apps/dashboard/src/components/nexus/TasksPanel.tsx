@@ -193,6 +193,7 @@ export default function TasksPanel({ tasks, setTasks, role = 'VIEWER' }: Props) 
     return (
       <div
         key={task.id}
+        data-magnifier-target="true"
         className={`p-3.5 rounded-xl border transition-all ${
           task.completed
             ? 'border-white/[0.04] bg-black/40 opacity-50'

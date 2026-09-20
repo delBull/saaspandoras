@@ -154,7 +154,7 @@ export class TenantContextResolver {
     // 4. Query Tenant-Scoped Ingestion & Nurturing (marketingLeads)
     try {
       const orClauses = [];
-      if (identity.identityId) orClauses.push(eq(marketingLeads.identityId, identity.identityId));
+      if (identity.identityId && isUuid(identity.identityId)) orClauses.push(eq(marketingLeads.identityId, identity.identityId));
       if (wallet) orClauses.push(eq(marketingLeads.walletAddress, wallet));
       if (identity.identifiers.email) orClauses.push(eq(marketingLeads.email, identity.identifiers.email.toLowerCase()));
       if (identity.identifiers.phone) {

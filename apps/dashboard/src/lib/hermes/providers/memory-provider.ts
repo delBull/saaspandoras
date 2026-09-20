@@ -1,6 +1,7 @@
 import { db } from "@/db";
 import { platformEvents, hermesCognitiveProfiles } from "@/db/schema";
 import { eq, or, and, desc } from "drizzle-orm";
+import { validate as isUuid } from "uuid";
 
 export interface ConversationMessage {
   role: "user" | "assistant";
@@ -22,7 +23,7 @@ export class MemoryProvider {
    * Abstracts away the DB layer so HermesCognitiveLayer doesn't know about Drizzle/Postgres.
    */
   static async getRecentHistory(identityId: string, limit: number = 10): Promise<MemoryContext> {
-    const events = await db.query.platformEvents.findMany({
+    const events = isUuid(identityId) ? await db.query.platformEvents.findMany({
       where: and(
         eq(platformEvents.identityId, identityId),
         or(
@@ -32,7 +33,7 @@ export class MemoryProvider {
       ),
       orderBy: [desc(platformEvents.occurredAt)],
       limit
-    });
+    }) : [];
 
     // Reverse to chronological order (oldest first)
     const chronologicalEvents = events.reverse();

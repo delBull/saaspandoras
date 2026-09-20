@@ -207,7 +207,7 @@ export function getNdaConfig(version?: string): NdaConfig {
 
   // Default: Master NDA v2.2
   return {
-    version: NDA_VERSION,
+    version: version || NDA_VERSION,
     title: NDA_TITLE,
     subtitle: NDA_SUBTITLE,
     summaryBullets: NDA_SUMMARY_BULLETS,

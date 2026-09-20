@@ -61,7 +61,7 @@ export class PostgresConversationMemoryProvider implements ConversationMemoryPro
     const identityId = (input.controlPlaneContext?.identity as any)?.identityId;
     let conversationIds = [convId];
 
-    if (identityId) {
+    if (identityId && isUuid(identityId)) {
       const userConvs = await db.select({ convId: hermesConversations.conversationId })
         .from(hermesConversations)
         .where(and(

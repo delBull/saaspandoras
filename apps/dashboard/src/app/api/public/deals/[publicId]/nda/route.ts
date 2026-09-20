@@ -46,6 +46,24 @@ export async function GET(
 
     const identifier = email || wallet;
     const cfg = getNdaConfig(room.ndaVersion);
+
+    const isCreatorBypass = identifier === "creator@pandoras.finance" || (room.createdBy && identifier === room.createdBy.toLowerCase());
+    if (isCreatorBypass && !cfg.isBilateral) {
+      return NextResponse.json({
+        ndaEnabled: true,
+        ndaVersion: cfg.version,
+        ndaPhase: room.ndaPhase,
+        ndaTitle: cfg.title,
+        ndaSummaryBullets: cfg.summaryBullets,
+        ndaFullText: cfg.fullText,
+        requiredSigners: cfg.requiredSigners,
+        isBilateral: cfg.isBilateral,
+        alreadySigned: true,
+        bypassApplied: true,
+        previousAcceptance: { acceptedAt: new Date().toISOString(), wallet: identifier }
+      });
+    }
+
     const existing = identifier ? await hasEmailSignedNda(identifier, cfg.version) : null;
 
     return NextResponse.json({

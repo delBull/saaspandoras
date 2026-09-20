@@ -36,12 +36,12 @@ export class ProspectIntelligenceService {
     const objections: ProspectObjection[] = [];
 
     // 1. CRM Lead Resolution
-    const [lead] = await db
+    const [lead] = (identity.marketingIdentityId && isUuid(identity.marketingIdentityId)) ? await db
       .select()
       .from(marketingLeads)
       .where(eq(marketingLeads.identityId, identity.marketingIdentityId))
       .orderBy(desc(marketingLeads.updatedAt))
-      .limit(1);
+      .limit(1) : [null];
 
     if (lead) {
       crmStage = lead.crmStage || 'LEAD';

@@ -69,14 +69,18 @@ body.display-reduced-motion *::after {
   Safe Magnifier
   Only targets explicit elements with data-magnifier-target.
   Leaves iframes, canvas, Web3 wallets and other sensitive UI intact.
+  Wrapped in hover media query to prevent sticky hover issues on mobile touch devices.
 */
-body.display-magnifier-active [data-magnifier-target]:hover {
-  transform: scale(1.15);
-  transform-origin: center;
-  transition: transform 0.2s ease-in-out;
-  z-index: 50;
-  position: relative;
-  background-color: var(--display-bg); /* Prevents overlapping transparent text */
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  border-radius: 4px;
+@media (hover: hover) and (pointer: fine) {
+  body.display-magnifier-active [data-magnifier-target]:hover {
+    transform: scale(1.10);
+    transform-origin: center;
+    transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+    z-index: 50;
+    position: relative;
+    background-color: var(--display-bg); /* Prevents overlapping transparent text */
+    box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.3), 0 8px 10px -6px rgb(0 0 0 / 0.3);
+    border-radius: 8px;
+    outline: 1px solid var(--display-primary);
+  }
 }
