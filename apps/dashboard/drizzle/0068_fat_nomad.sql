@@ -1,0 +1,1 @@
+ALTER TABLE "nexus_deal_rooms" ADD COLUMN "cognitive_summary" jsonb DEFAULT '[]'::jsonb;

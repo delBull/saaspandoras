@@ -885,7 +885,10 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
       <NexusCentralNotificationModal
         broadcasts={isBroadcastModalOpen && unreadBroadcasts.length > 0 ? unreadBroadcasts : broadcasts}
         isOpen={isBroadcastModalOpen}
-        onClose={() => setIsBroadcastModalOpen(false)}
+        onClose={() => {
+          unreadBroadcasts.forEach(b => handleDismissBroadcast(b.id));
+          setIsBroadcastModalOpen(false);
+        }}
         onDismiss={handleDismissBroadcast}
       />
 

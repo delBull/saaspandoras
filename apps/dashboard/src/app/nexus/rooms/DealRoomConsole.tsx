@@ -97,6 +97,7 @@ interface Room {
   ndaEnabled?: boolean | null;
   ndaPhase?: string | null;
   ndaVersion?: string | null;
+  cognitiveSummary?: string[] | null;
 }
 
 const KINDS: Room["kind"][] = ["PROPOSAL", "AGREEMENT", "CONTRACT", "AMENDMENT", "CHARTER"];
@@ -971,15 +972,33 @@ export default function DealRoomConsole() {
                         </div>
                       </div>
                     )}
-                    {(() => {
-                      const firstSigner = selected.signers[0];
-                      if (!firstSigner?.email) return null;
-                      return (
-                        <div className="mt-4 max-w-sm">
-                          <CognitiveProfileWidget userId={firstSigner.email} walletAddress={firstSigner.wallet} />
-                        </div>
-                      );
-                    })()}
+                    {selected.cognitiveSummary && selected.cognitiveSummary.length > 0 && (
+                      <div className="mt-4 p-4 rounded-xl border border-indigo-500/20 bg-indigo-500/[0.03] max-w-lg">
+                        <h4 className="text-xs font-semibold text-indigo-400 font-mono tracking-widest uppercase mb-3 flex items-center gap-2">
+                          Hermes Cognitive Summary
+                          <span className="px-1.5 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 text-[9px] leading-none">AI GENERATED</span>
+                        </h4>
+                        <ul className="space-y-2">
+                          {selected.cognitiveSummary.map((point, idx) => {
+                            // Simple markdown parser for the summary points (bold)
+                            const parts = point.split(/(\*\*.*?\*\*)/g);
+                            return (
+                              <li key={idx} className="flex items-start gap-2 text-[11px] text-zinc-400 leading-relaxed">
+                                <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-1.5 shrink-0"></div>
+                                <span>
+                                  {parts.map((p, j) => {
+                                    if (p.startsWith("**") && p.endsWith("**")) {
+                                      return <strong key={j} className="text-zinc-200 font-semibold">{p.slice(2, -2)}</strong>;
+                                    }
+                                    return <span key={j}>{p}</span>;
+                                  })}
+                                </span>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </div>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <button

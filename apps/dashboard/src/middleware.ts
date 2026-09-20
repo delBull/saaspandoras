@@ -87,6 +87,21 @@ export function middleware(request: NextRequest) {
     }
   }
 
+  // 0.2.2 Hard Redirect for /nexus accessed outside of nexus subdomain
+  if (!isNexusSubdomain && (pathname === "/nexus" || pathname.startsWith("/nexus/"))) {
+    const isStaging = host.includes('staging');
+    const targetHost = host.startsWith('localhost') || host.includes('127.0.0.1')
+      ? 'nexus.localhost:3000'
+      : (isStaging ? 'staging.nexus.pandoras.finance' : 'nexus.pandoras.finance');
+    
+    const targetUrl = new URL(request.url);
+    targetUrl.host = targetHost;
+    // Map /nexus -> / and /nexus/rooms -> /rooms
+    targetUrl.pathname = pathname === '/nexus' ? '/' : pathname.replace('/nexus', '');
+    
+    return NextResponse.redirect(targetUrl, 301);
+  }
+
   // 0.3 Admin Decoupling Protection (Redirect dash to admin)
   // TODO: Uncomment this once DNS propagates and admin.pandoras.finance is fully verified.
   /*

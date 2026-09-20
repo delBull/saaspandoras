@@ -81,6 +81,8 @@ export async function GET(
         ? {
             acceptedAt: existing.acceptedAt.toISOString(),
             wallet: existing.wallet,
+            signatureCompany: existing.signatureCompany,
+            signatureRole: existing.signatureRole,
           }
         : null,
     });

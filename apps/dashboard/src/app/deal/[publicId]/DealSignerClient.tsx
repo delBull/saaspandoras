@@ -28,6 +28,7 @@ interface PublicRoom {
   company: string;
   status: string;
   summary?: string | null;
+  cognitiveSummary?: string[] | null;
   openSign?: boolean | null;
   enteredIntoForceAt?: string | null;
   // NDA Engine fields
@@ -166,6 +167,12 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
           setNdaStep("bypassed");
           if (data.previousAcceptance?.wallet) {
             setNdaSignatureHash(data.previousAcceptance.wallet);
+          }
+          if (data.previousAcceptance?.signatureCompany) {
+            setSignCompany(data.previousAcceptance.signatureCompany);
+          }
+          if (data.previousAcceptance?.signatureRole) {
+            setSignRole(data.previousAcceptance.signatureRole);
           }
         } else {
           setNdaStep("required");
@@ -534,37 +541,43 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                 {room.summary || KIND_LABEL[room.kind]}
               </h1>
 
-              <div className="mt-6 mb-2 p-5 rounded-2xl border border-indigo-500/30 bg-indigo-500/[0.04] relative overflow-hidden group print:hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2 group-hover:bg-indigo-500/20 transition-colors"></div>
-                <div className="flex items-start gap-4 relative z-10">
-                  <div className="w-8 h-8 rounded-lg border border-indigo-500/40 bg-indigo-500/20 flex items-center justify-center shrink-0">
-                    <Activity className="w-4 h-4 text-indigo-300" />
-                  </div>
-                  <div>
-                    <h3 className="text-xs font-semibold text-indigo-300 font-mono tracking-widest uppercase mb-1 flex items-center gap-2">
-                      Hermes Cognitive Summary
-                      <span className="px-1.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-200 text-[8px] leading-none">AI GENERATED</span>
-                    </h3>
-                    <p className="text-[13px] text-zinc-300 leading-relaxed mb-3">
-                      He analizado este acuerdo. Los puntos críticos para <strong className="text-zinc-100">{dynamicPartyName}</strong> son:
-                    </p>
-                    <ul className="space-y-2">
-                      <li className="flex items-start gap-2 text-[12px] text-zinc-400">
-                        <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 mt-1.5 shrink-0"></div>
-                        <span>El acuerdo establece una comisión operativa tope del <strong>15% al 20%</strong> sujeta al margen final.</span>
-                      </li>
-                      <li className="flex items-start gap-2 text-[12px] text-zinc-400">
-                        <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 mt-1.5 shrink-0"></div>
-                        <span>Los costos de manufactura tecnológica (Solution Shaping) se deducen previo al cálculo de comisión.</span>
-                      </li>
-                      <li className="flex items-start gap-2 text-[12px] text-zinc-400">
-                        <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 mt-1.5 shrink-0"></div>
-                        <span>Acuerdo de Confidencialidad y principios del Sovereign Knowledge Vault aplicables inmediatamente.</span>
-                      </li>
-                    </ul>
+              {room.cognitiveSummary && room.cognitiveSummary.length > 0 && (
+                <div className="mt-6 mb-2 p-5 rounded-2xl border border-indigo-500/30 bg-indigo-500/[0.04] relative overflow-hidden group print:hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2 group-hover:bg-indigo-500/20 transition-colors"></div>
+                  <div className="flex items-start gap-4 relative z-10">
+                    <div className="w-8 h-8 rounded-lg border border-indigo-500/40 bg-indigo-500/20 flex items-center justify-center shrink-0">
+                      <Activity className="w-4 h-4 text-indigo-300" />
+                    </div>
+                    <div>
+                      <h3 className="text-xs font-semibold text-indigo-300 font-mono tracking-widest uppercase mb-1 flex items-center gap-2">
+                        Hermes Cognitive Summary
+                        <span className="px-1.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-200 text-[8px] leading-none">AI GENERATED</span>
+                      </h3>
+                      <p className="text-[13px] text-zinc-300 leading-relaxed mb-3">
+                        He analizado este acuerdo. Los puntos críticos para <strong className="text-zinc-100">{dynamicPartyName}</strong> son:
+                      </p>
+                      <ul className="space-y-2">
+                        {room.cognitiveSummary.map((point, idx) => {
+                          const parts = point.split(/(\*\*.*?\*\*)/g);
+                          return (
+                            <li key={idx} className="flex items-start gap-2 text-[12px] text-zinc-400">
+                              <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 mt-1.5 shrink-0"></div>
+                              <span>
+                                {parts.map((p, j) => {
+                                  if (p.startsWith("**") && p.endsWith("**")) {
+                                    return <strong key={j} className="text-zinc-200 font-semibold">{p.slice(2, -2)}</strong>;
+                                  }
+                                  return <span key={j}>{p}</span>;
+                                })}
+                              </span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               <div className="mt-4 mb-4 p-3.5 rounded-xl border border-white/10 bg-white/[0.02]">
                 <div className="flex items-center gap-2">
@@ -715,10 +728,10 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                             }
 
                             if (renderedLine.startsWith("## ")) {
-                              return <h2 key={i} className="text-[15px] font-bold text-white mt-4 mb-2">{renderedLine.slice(3)}</h2>;
+                              return <h2 key={i} className="text-[15px] font-bold text-white print:text-black mt-4 mb-2">{renderedLine.slice(3)}</h2>;
                             }
                             if (renderedLine.startsWith("### ")) {
-                              return <h3 key={i} className="text-[13px] font-semibold text-amber-200 mt-3 mb-1">{renderedLine.slice(4)}</h3>;
+                              return <h3 key={i} className="text-[13px] font-semibold text-amber-200 print:text-black mt-3 mb-1">{renderedLine.slice(4)}</h3>;
                             }
 
                             const parts = renderedLine.split(/(\*\*.*?\*\*)/g);
@@ -727,7 +740,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                                 <span className="text-zinc-600 print:text-black font-mono mr-2">{String(i + 1).padStart(2, "0")}</span>
                                 {parts.map((p, j) => {
                                   if (p.startsWith("**") && p.endsWith("**")) {
-                                    return <strong key={j} className="text-white font-semibold">{p.slice(2, -2)}</strong>;
+                                    return <strong key={j} className="text-white print:text-black font-semibold">{p.slice(2, -2)}</strong>;
                                   }
                                   return <span key={j}>{p}</span>;
                                 })}
@@ -837,7 +850,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
           )}
 
           {/* Sidebar / Sign Box */}
-          <div className="w-full md:w-[320px] shrink-0 border-t md:border-t-0 md:border-l border-white/10 p-4 md:p-6 bg-[#08080A] print:hidden flex flex-col">
+          <div className="w-full md:w-[320px] shrink-0 border-t md:border-t-0 md:border-l border-white/10 p-4 md:p-6 bg-[#08080A] print:hidden flex flex-col md:overflow-y-auto">
           <div className="max-w-sm mx-auto md:mx-0">
             {signed ? (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="p-5 rounded-2xl border border-emerald-500/30 bg-emerald-500/[0.06] text-center">

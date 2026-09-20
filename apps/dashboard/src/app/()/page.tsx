@@ -92,7 +92,11 @@ export default async function RootDashboardPage({ searchParams }: PageProps) {
 
   if (!resolvedSlug) {
     if (userIsAdmin) {
-      redirect('/nexus');
+      const isStaging = host.includes('staging');
+      const targetNexus = host.startsWith('localhost') || host.includes('127.0.0.1') 
+        ? 'http://nexus.localhost:3000' 
+        : (isStaging ? 'https://staging.nexus.pandoras.finance' : 'https://nexus.pandoras.finance');
+      redirect(targetNexus);
     } else if (callerWallet) {
       // Find what tenant they belong to
       resolvedSlug = (await getDefaultTenantForWallet(callerWallet)) || undefined;

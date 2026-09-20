@@ -562,6 +562,7 @@ export function publicRoomView(room: NonNullable<Awaited<ReturnType<typeof getRo
     company: room.company,
     status: room.status,
     summary: room.summary,
+    cognitiveSummary: room.cognitiveSummary,
     openSign: room.openSign,
     enteredIntoForceAt: room.enteredIntoForceAt ? room.enteredIntoForceAt.toISOString() : null,
     // NDA Engine
@@ -708,7 +709,7 @@ export async function convertToAgreement(roomId: string, actor: string) {
 export async function hasEmailSignedNda(
   identifier: string,
   ndaVersion = "v1.0"
-): Promise<{ acceptedAt: Date; wallet: string | null } | null> {
+): Promise<{ acceptedAt: Date; wallet: string | null; signatureCompany: string | null; signatureRole: string | null } | null> {
   const normalized = identifier.toLowerCase();
   const row = await db.query.nexusNdaAcceptances.findFirst({
     where: and(
@@ -718,7 +719,7 @@ export async function hasEmailSignedNda(
       ),
       eq(nexusNdaAcceptances.ndaVersion, ndaVersion)
     ),
-    columns: { acceptedAt: true, wallet: true },
+    columns: { acceptedAt: true, wallet: true, signatureCompany: true, signatureRole: true },
   });
   return row ?? null;
 }

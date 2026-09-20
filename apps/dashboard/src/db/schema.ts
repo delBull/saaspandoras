@@ -3400,6 +3400,7 @@ export const nexusDealRooms = pgTable("nexus_deal_rooms", {
   company: text("company").notNull().default("MXHUB ECOSISTEMA BLOCKCHAIN S.A. DE C.V."),
   status: nexusDealStatusEnum("status").notNull().default("DRAFT"),
   summary: text("summary"),
+  cognitiveSummary: jsonb("cognitive_summary").$type<Array<string>>().default([]),
   autoShare: boolean("auto_share").notNull().default(true),
   openSign: boolean("open_sign").notNull().default(false),
   taskRef: text("task_ref"),

@@ -60,6 +60,12 @@ export default async function DealPublicPage({
 
   const view = publicRoomView(room);
 
+  // Filter out the creator from the signers list so it appears as a true B2B agreement
+  // where the only public signer required is the counterparty.
+  if (room.createdBy) {
+    view.signers = view.signers.filter((_, idx) => room.signers[idx]?.email !== room.createdBy);
+  }
+
   // If no magic link token is provided, obscure PII from the signers to prevent unauthorized enumeration
   if (!signerEmail) {
     view.signers = view.signers.map(s => ({
