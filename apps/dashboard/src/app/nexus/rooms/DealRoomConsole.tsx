@@ -277,7 +277,7 @@ export default function DealRoomConsole() {
 
   const selected = useMemo(() => rooms.find((r) => r.id === selectedId) ?? null, [rooms, selectedId]);
   const activeSection = useMemo(
-    () => selected?.sections.find((s) => s.id === sectionId) ?? null,
+    () => selected?.sections.find((s) => s.id === sectionId) ?? selected?.sections[0] ?? null,
     [selected, sectionId]
   );
   const progressIndex = selected ? STATUS_ORDER.indexOf(selected.status) : 0;
