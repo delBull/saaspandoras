@@ -3,6 +3,7 @@ import { db } from '@/db';
 import { marketingLeads } from '@/db/schema';
 import { academyCandidates, academyAssessments } from '@/db/schema';
 import { eq, desc, and } from 'drizzle-orm';
+import { isUuid } from '@/lib/utils';
 
 export interface IntelligenceScopeConfig {
   allowRestrictedFacts: boolean;

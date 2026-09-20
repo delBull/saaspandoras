@@ -115,6 +115,8 @@ export async function POST(req: NextRequest) {
         if (!canonical) {
           console.warn(`[Hermes Telegram Webhook] 🔒 Rejected unverified/spoofed tenant slug: '${tenantSlug}'. Falling back to 'pandoras'.`);
           tenantSlug = 'pandoras';
+        } else {
+          tenantSlug = canonical.projectSlug;
         }
       } catch (authErr) {
         console.warn('[Hermes Telegram Webhook] Non-blocking tenant verification warning:', authErr);

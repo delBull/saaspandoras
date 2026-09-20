@@ -18,6 +18,7 @@ import { daoMembers, marketingLeads, ambassadors } from '@/db/schema';
 import { eq, and, or, ilike } from 'drizzle-orm';
 import { TenantAuthorityService } from '@/lib/pandoras/core/domains/hermes/tenants/tenant-authority';
 import { CanonicalIdentityGraph } from './canonical-identity-graph';
+import { isUuid } from '@/lib/utils';
 import type { CanonicalIdentityRecord } from './types';
 
 export interface TenantMembershipInfo {
@@ -57,8 +58,8 @@ export class TenantContextResolver {
     // 1. Resolve Identity Record if ID string is provided
     let identity: CanonicalIdentityRecord | null;
     if (typeof identityOrId === 'string') {
-      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(identityOrId);
-      if (!isUuid) return null;
+      const isUuidV4 = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(identityOrId);
+      if (!isUuidV4) return null;
 
       // Find by ID in DB
       const row = await db.query.marketingIdentities.findFirst({

@@ -70,6 +70,7 @@
   ],
   "exclude": [
     "node_modules",
-    "scripts/legacy"
+    "scripts/legacy",
+    "scratch"
   ]
 }

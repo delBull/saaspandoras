@@ -17,8 +17,7 @@ export const dynamic = 'force-dynamic';
 
 const sessionTokenService = new SessionTokenService();
 
-const isUuid = (val?: string): boolean => 
-  Boolean(val && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val));
+import { isUuid } from '@/lib/utils';
 
 function buildProjectMatchCondition(targetSlug: string, orgId?: string) {
   const canonicalTarget = targetSlug?.replace(/^org_/, '').trim();

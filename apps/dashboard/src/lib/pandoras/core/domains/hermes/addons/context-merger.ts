@@ -60,8 +60,7 @@ export interface ConversationContext {
   };
 }
 
-const isUuid = (val?: string): boolean => 
-  Boolean(val && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val));
+import { isUuid } from '@/lib/utils';
 
 export class CognitiveContextBuilder {
   static async buildEffectiveContext(tenantId: string, contactId: string): Promise<ConversationContext> {

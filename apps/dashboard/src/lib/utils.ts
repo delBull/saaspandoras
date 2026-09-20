@@ -22,3 +22,9 @@ export function getDashboardDomain() {
 }
 
 export { sanitizeUrl, resolveIpfsUrl } from "./project-utils";
+
+export const isUuid = (value?: string | null): boolean => {
+  if (!value) return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+};
+
