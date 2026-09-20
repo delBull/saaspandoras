@@ -88,10 +88,7 @@ body.display-reduced-motion *::after {
     transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
     z-index: 50;
     position: relative;
-    background-color: var(--display-surface);
-    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.4), 0 8px 10px -6px rgb(0 0 0 / 0.4);
-    border-radius: 12px;
-    outline: 2px solid var(--display-primary);
+    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.6), 0 8px 10px -6px rgb(0 0 0 / 0.6);
   }
 }
 
@@ -100,12 +97,9 @@ body.display-reduced-motion *::after {
   body.display-magnifier-active [data-magnifier-target]:active {
     transform: scale(1.05);
     transform-origin: center;
-    transition: transform 0.15s ease-out;
+    transition: transform 0.2s ease-out;
     z-index: 50;
     position: relative;
-    background-color: var(--display-surface);
-    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.4);
-    border-radius: 12px;
-    outline: 2px solid var(--display-primary);
+    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.6), 0 8px 10px -6px rgb(0 0 0 / 0.6);
   }
 }

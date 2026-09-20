@@ -16,6 +16,8 @@ import {
   Bot,
   Settings,
   Eye,
+  EyeOff,
+  X,
 } from "lucide-react";
 import {
   CollaboratorPermissionsDrawer,
@@ -39,9 +41,10 @@ interface SettingsClientProps {
   isUserAdmin?: boolean;
   userRole?: string;
   operatorContext?: OperatorContext | null;
+  onClose?: () => void;
 }
 
-export default function NexusSettingsPage({ isUserAdmin = false, userRole = "OPERATOR", operatorContext = null }: SettingsClientProps) {
+export default function NexusSettingsPage({ isUserAdmin = false, userRole = "OPERATOR", operatorContext = null, onClose }: SettingsClientProps) {
   const [collaborators, setCollaborators] = useState<CollaboratorItem[]>([]);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -55,10 +58,29 @@ export default function NexusSettingsPage({ isUserAdmin = false, userRole = "OPE
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   // Tabs state - SuperAdmin inicia en "team", los demás colaboradores inician en "terminal"
-  const [activeTab, setActiveTab] = useState<"team" | "agents" | "terminal" | "display">(isUserAdmin ? "team" : "terminal");
+  const [activeTab, setActiveTab] = useState<"team" | "agents" | "terminal" | "display" | "alerts">(isUserAdmin ? "team" : "terminal");
+  const [alertHistory, setAlertHistory] = useState<any[]>([]);
 
   const canManageAgenda = isUserAdmin || userRole === "ADMIN" || !!operatorContext?.permissions?.["calendar.manage"];
   const canManageAgents = isUserAdmin || userRole === "ADMIN" || !!operatorContext?.permissions?.["agents.manage"];
+
+  const loadAlerts = async () => {
+    try {
+      const res = await fetch("/api/v1/nexus/broadcasts");
+      const data = await res.json();
+      if (data.success && data.broadcasts) {
+        setAlertHistory(data.broadcasts);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "alerts") {
+      loadAlerts();
+    }
+  }, [activeTab]);
 
   const loadCollaborators = async () => {
     if (!isUserAdmin) return;
@@ -173,21 +195,31 @@ export default function NexusSettingsPage({ isUserAdmin = false, userRole = "OPE
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <a
-              href="/nexus"
-              onClick={(e) => {
-                const storedToken = typeof window !== "undefined" ? localStorage.getItem("pandoras_nexus_token") : null;
-                if (storedToken) {
-                  e.preventDefault();
-                  document.cookie = `pandoras_nexus_token=${encodeURIComponent(storedToken)}; path=/; max-age=2592000; SameSite=Lax`;
-                  window.location.href = `/nexus?token=${encodeURIComponent(storedToken)}`;
-                }
-              }}
-              className="p-2.5 bg-zinc-900 rounded-xl border border-zinc-800 hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
-              title="Volver a Nexus Command Center"
-            >
-              <ExternalLink className="w-5 h-5 rotate-180" />
-            </a>
+            {onClose ? (
+              <button
+                onClick={onClose}
+                className="p-2.5 bg-zinc-900 rounded-xl border border-zinc-800 hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
+                title="Cerrar Ajustes"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            ) : (
+              <a
+                href="/nexus"
+                onClick={(e) => {
+                  const storedToken = typeof window !== "undefined" ? localStorage.getItem("pandoras_nexus_token") : null;
+                  if (storedToken) {
+                    e.preventDefault();
+                    document.cookie = `pandoras_nexus_token=${encodeURIComponent(storedToken)}; path=/; max-age=2592000; SameSite=Lax`;
+                    window.location.href = `/nexus?token=${encodeURIComponent(storedToken)}`;
+                  }
+                }}
+                className="p-2.5 bg-zinc-900 rounded-xl border border-zinc-800 hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
+                title="Volver a Nexus Command Center"
+              >
+                <ExternalLink className="w-5 h-5 rotate-180" />
+              </a>
+            )}
             <div>
               <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300 text-[10px] font-mono mb-1">
                 <ShieldCheck className="w-3 h-3" />
@@ -257,7 +289,17 @@ export default function NexusSettingsPage({ isUserAdmin = false, userRole = "OPE
             }`}
           >
             <Eye className="w-4 h-4" />
-            Accesibilidad & Visualización
+            Comfort Visual
+          </button>
+          <button
+            onClick={() => setActiveTab("alerts")}
+            className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 ${
+              activeTab === "alerts"
+                ? "border-amber-400 text-amber-400"
+                : "border-transparent text-zinc-500 hover:text-zinc-300"
+            }`}
+          >
+            Historial de Alertas
           </button>
         </div>
 
@@ -465,10 +507,10 @@ export default function NexusSettingsPage({ isUserAdmin = false, userRole = "OPE
             <div className="border-b border-zinc-800 pb-4">
               <h2 className="text-base font-bold text-white flex items-center gap-2">
                 <Eye className="w-4 h-4 text-amber-400" />
-                Sovereign Display Engine — Nexus & Deal Rooms Confort
+                Visual y Accesibilidad
               </h2>
               <p className="text-xs text-zinc-400 mt-1">
-                Ajusta el zoom, la lupa focal asistida y los filtros de contraste para lectura de contratos, cláusulas y registros de auditoría.
+                Ajusta el zoom, el seleccionador focal (Smart Focus) y los filtros de contraste para lectura de contratos, cláusulas y registros de auditoría.
               </p>
             </div>
 
@@ -484,10 +526,10 @@ export default function NexusSettingsPage({ isUserAdmin = false, userRole = "OPE
                 <div className="bg-black/40 border border-white/5 p-4 rounded-xl space-y-2">
                   <div className="flex items-center gap-2 font-bold text-amber-300 font-mono">
                     <span>🔍</span>
-                    <span>Lupa Focal en Deal Rooms & Contratos</span>
+                    <span>Smart Focus (Seleccionador) en Deal Rooms & Contratos</span>
                   </div>
                   <p>
-                    Actívala para leer letras pequeñas en contratos legales, hashes de e-sign y CIDs de IPFS. Pasa el cursor sobre las cláusulas y la lupa aumentará el texto automáticamente.
+                    Actívalo para resaltar inteligentemente cláusulas legales, hashes de e-sign y CIDs de IPFS. Pasa el cursor y el área se enfocará automáticamente.
                   </p>
                 </div>
 
@@ -501,6 +543,43 @@ export default function NexusSettingsPage({ isUserAdmin = false, userRole = "OPE
                   </p>
                 </div>
               </div>
+            </div>
+          </motion.div>
+        ) : activeTab === "alerts" ? (
+          /* ── ALERTS HISTORY TAB ── */
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-6 bg-[#0C0C12] border border-white/5 p-6 rounded-2xl"
+          >
+            <div className="border-b border-zinc-800 pb-4">
+              <h2 className="text-base font-bold text-white flex items-center gap-2">
+                Historial de Alertas
+              </h2>
+              <p className="text-xs text-zinc-400 mt-1">
+                Consulta los avisos y comunicados que ya cerraste en el centro de comandos.
+              </p>
+            </div>
+            <div className="space-y-3">
+              {alertHistory.length === 0 ? (
+                <div className="text-center py-8 text-zinc-500 text-sm">
+                  No hay alertas registradas en el historial.
+                </div>
+              ) : (
+                alertHistory.map((alert) => (
+                  <div key={alert.id} className="bg-white/5 border border-white/10 rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xs font-bold text-amber-400 uppercase tracking-wider">{alert.category || 'AVISO'}</span>
+                      <span className="text-xs text-zinc-500">{new Date(alert.createdAt).toLocaleDateString()}</span>
+                    </div>
+                    <h4 className="text-sm font-bold text-white mb-1">{alert.title}</h4>
+                    <p className="text-xs text-zinc-400 leading-relaxed">{alert.message}</p>
+                    {alert.targetUrl && (
+                      <a href={alert.targetUrl} className="text-xs text-amber-300 mt-2 block hover:underline">Ver más detalles &rarr;</a>
+                    )}
+                  </div>
+                ))
+              )}
             </div>
           </motion.div>
         ) : (

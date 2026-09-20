@@ -236,7 +236,7 @@ export function HermesFloatingGuide({
                       Hermes OS
                     </span>
                     <span className="text-xs text-zinc-400">
-                      guiando a <span className="text-amber-300 font-medium">{operatorContext ? operatorContext.name.split(' ')[0] : 'Operador'}</span> ({role})
+                      guiando a <span className="text-amber-300 font-medium">{operatorContext ? (operatorContext.name?.split(' ')[0] || 'Operador') : 'Operador'}</span> ({role})
                     </span>
                   </div>
                 </div>
@@ -310,7 +310,7 @@ export function HermesFloatingGuide({
                   Capacidades Clave de esta Estación
                 </span>
                 <div className="space-y-2">
-                  {currentStation.keyHighlights.map((highlight, idx) => (
+                  {(currentStation.keyHighlights || []).map((highlight, idx) => (
                     <div
                       key={idx}
                       className="flex items-start gap-2.5 text-xs text-zinc-300 bg-white/[0.02] border border-white/5 rounded-xl p-2.5"
@@ -332,7 +332,7 @@ export function HermesFloatingGuide({
 
               {/* Quick FAQ Chips */}
               <div className="flex flex-wrap gap-1.5">
-                {currentStation.faqs.map((faq, idx) => (
+                {(currentStation.faqs || []).map((faq, idx) => (
                   <button
                     key={idx}
                     onClick={() => handleAskHermes(faq.question)}

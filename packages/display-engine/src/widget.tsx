@@ -82,7 +82,7 @@ export const DisplayControlsWidget = ({ variant = "card", className = "", onClos
             onChange={(e) => setProfile({ magnifier: e.target.checked })}
             className="w-4 h-4 accent-[var(--display-primary)] focus:ring-[var(--display-primary)]"
           />
-          <span className="text-sm">Activar Lupa Segura</span>
+          <span className="text-sm">Smart Focus (Seleccionador)</span>
         </label>
         <label className="flex items-center gap-2 cursor-pointer">
           <input 

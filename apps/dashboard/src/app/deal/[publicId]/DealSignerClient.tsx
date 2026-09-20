@@ -153,6 +153,8 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
   // Once we know the wallet/email, check if NDA is needed and if already signed.
   useEffect(() => {
     if (!effectiveNdaEnabled) { setNdaStep("none"); return; }
+    if (rawToken === "creator-preview-token") { setNdaStep("none"); return; }
+    
     const identifier = isOpenSign ? account?.address?.toLowerCase() : initialEmail?.toLowerCase();
     if (!identifier) { setNdaStep(effectiveNdaEnabled ? "required" : "none"); return; }
 

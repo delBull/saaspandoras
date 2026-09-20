@@ -461,7 +461,7 @@ export function SettingsClient({
           >
             <div className="border-b border-white/5 pb-4">
               <h2 className="text-base font-bold text-white">Sovereign Display Engine — Confort Visual & Accesibilidad</h2>
-              <p className="text-xs text-zinc-400">Personaliza la escala tipográfica, filtros de contraste y la lupa asistida para lectura de contratos y métricas.</p>
+              <p className="text-xs text-zinc-400">Personaliza la escala tipográfica, filtros de contraste y el seleccionador asistido para lectura de contratos y métricas.</p>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -478,7 +478,7 @@ export function SettingsClient({
                 <div className="bg-black/40 border border-white/5 p-4 rounded-xl space-y-2">
                   <div className="flex items-center gap-2 text-xs font-bold text-amber-300 font-mono">
                     <span>🔍</span>
-                    <span>Lupa Focal Segura (Smart Magnifier)</span>
+                    <span>Smart Focus (Seleccionador)</span>
                   </div>
                   <p className="text-xs text-zinc-400 leading-relaxed">
                     Diseñada para auditar acuerdos legales, contratos de inversión (Deal Rooms) y hashes criptográficos de e-sign. Al activarla, simplemente sitúa el cursor sobre cualquier texto denso o balance para desplegar una ventana de aumento sin romper la diagramación de la página.
