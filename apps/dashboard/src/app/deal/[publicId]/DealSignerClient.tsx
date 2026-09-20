@@ -686,8 +686,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                       </span>
                       <span className={`text-zinc-600 transition-transform ${openSection === sec.code ? "rotate-180" : ""}`}>▾</span>
                     </button>
-                    {openSection === sec.code && (
-                      <div className="px-4 pb-4 space-y-1.5">
+                    <div className={`px-4 pb-4 space-y-1.5 ${openSection === sec.code ? "block" : "hidden print:block"}`}>
                         {sec.content.split("\n").filter(Boolean).map((line, i) => {
                           const renderedLine = line
                             .replace(/{{COUNTERPARTY_COMPANY}}/g, dynamicPartyName)
@@ -729,14 +728,13 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                               onClick={() => {
                                 setOpenSection(nextSec.code);
                               }}
-                              className="w-full mt-4 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[11px] font-mono hover:bg-amber-500/20 transition-colors shadow-sm"
+                              className="w-full mt-4 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[11px] font-mono hover:bg-amber-500/20 transition-colors shadow-sm print:hidden"
                             >
                               SIGUIENTE: {nextSec.title} <ChevronDown className="w-4 h-4" />
                             </button>
                           );
                         })()}
                       </div>
-                    )}
                   </div>
                 ))}
               </div>
