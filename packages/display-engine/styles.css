@@ -78,20 +78,34 @@ body.display-reduced-motion *::after {
 
 /* 
   Safe Magnifier
-  Only targets explicit elements with data-magnifier-target.
-  Leaves iframes, canvas, Web3 wallets and other sensitive UI intact.
-  Wrapped in hover media query to prevent sticky hover issues on mobile touch devices.
+  Targets explicit elements with data-magnifier-target.
+  Includes hover for desktop and active for mobile/touch.
 */
 @media (hover: hover) and (pointer: fine) {
   body.display-magnifier-active [data-magnifier-target]:hover {
-    transform: scale(1.10);
+    transform: scale(1.05);
     transform-origin: center;
-    transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+    transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
     z-index: 50;
     position: relative;
-    background-color: var(--display-bg); /* Prevents overlapping transparent text */
-    box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.3), 0 8px 10px -6px rgb(0 0 0 / 0.3);
-    border-radius: 8px;
-    outline: 1px solid var(--display-primary);
+    background-color: var(--display-surface);
+    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.4), 0 8px 10px -6px rgb(0 0 0 / 0.4);
+    border-radius: 12px;
+    outline: 2px solid var(--display-primary);
+  }
+}
+
+/* Fallback for Touch Devices (Mobile) */
+@media (hover: none) and (pointer: coarse) {
+  body.display-magnifier-active [data-magnifier-target]:active {
+    transform: scale(1.05);
+    transform-origin: center;
+    transition: transform 0.15s ease-out;
+    z-index: 50;
+    position: relative;
+    background-color: var(--display-surface);
+    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.4);
+    border-radius: 12px;
+    outline: 2px solid var(--display-primary);
   }
 }

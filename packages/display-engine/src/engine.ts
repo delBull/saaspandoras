@@ -53,16 +53,17 @@ export function applyProfileToDom(
 
   if (!root || !body) return;
 
-  // 1. Escala discreta de tipografía / layout (Usando zoom para no romper grids/flex)
+  // 1. Escala discreta de tipografía / layout (Escala tipográfica relativa)
+  // Reemplazamos la propiedad 'zoom' no estándar por fontSize para escalar todo el layout (Tailwind rems)
   if (profile.scale === "115") {
-    root.style.fontSize = ""; // reset
-    (root.style as any).zoom = "1.15";
+    (root.style as any).zoom = ""; // reset
+    root.style.fontSize = "115%";
   } else if (profile.scale === "130") {
-    root.style.fontSize = ""; // reset
-    (root.style as any).zoom = "1.30";
+    (root.style as any).zoom = ""; // reset
+    root.style.fontSize = "130%";
   } else {
-    root.style.fontSize = ""; 
-    (root.style as any).zoom = "";
+    (root.style as any).zoom = ""; 
+    root.style.fontSize = "100%";
   }
 
   // 2. Tokens semánticos mediante data attribute
