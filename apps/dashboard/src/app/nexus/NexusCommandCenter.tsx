@@ -533,12 +533,16 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
               SETTINGS
             </button>
             <button
-              onClick={() => {
+              onClick={async () => {
                 try {
                   localStorage.removeItem('pandoras_nexus_token');
                   document.cookie = 'pandoras_nexus_token=; path=/; max-age=0; SameSite=Lax';
+                  document.cookie = 'wallet-address=; path=/; max-age=0;';
+                  document.cookie = 'thirdweb:wallet-address=; path=/; max-age=0;';
+                  localStorage.setItem('wallet-logged-out', 'true');
+                  await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
                 } catch {}
-                window.location.href = '/login';
+                window.location.href = '/';
               }}
               className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-red-500/30 bg-red-500/10 text-red-400 text-[10px] tracking-wider hover:bg-red-500/20 transition-colors"
               title="Cerrar Sesión"
@@ -769,7 +773,8 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
                       <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {sectionLinks(sec).map((link, idx) => {
                           const isSettings = link.href === "/nexus/settings";
-                          const Wrapper = (isSettings ? "button" : Link) as any;
+                          const isCrossZone = !link.href.startsWith("/nexus/") && !link.external;
+                          const Wrapper = (isSettings ? "button" : (isCrossZone ? "a" : Link)) as any;
                           
                           return (
                             <Wrapper 

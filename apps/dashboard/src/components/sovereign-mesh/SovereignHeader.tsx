@@ -17,7 +17,7 @@ export function SovereignHeader({ organization, organizationSlug, activeModules 
 
   const handleLogout = () => {
     document.cookie = 'pandoras_portal_session=; Max-Age=0; path=/';
-    window.location.href = `/portal/login`;
+    window.location.href = `/accessv2`;
   };
 
   const hasHermes = activeModules.length === 0 || activeModules.includes('HERMES');

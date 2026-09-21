@@ -15,7 +15,7 @@ export function GrowthOsHeader({ slugId, orgName }: GrowthOsHeaderProps) {
     document.cookie = 'wallet-address=; Max-Age=0; path=/';
     document.cookie = 'thirdweb:wallet-address=; Max-Age=0; path=/';
     localStorage.setItem('wallet-logged-out', 'true');
-    window.location.href = '/portal/login';
+    window.location.href = '/accessv2';
   };
 
   return (

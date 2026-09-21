@@ -173,7 +173,7 @@ export default function ProjectFounderDashboard({ project, hasGrowthOs }: Projec
     document.cookie = 'wallet-address=; Max-Age=0; path=/';
     document.cookie = 'thirdweb:wallet-address=; Max-Age=0; path=/';
     localStorage.setItem('wallet-logged-out', 'true');
-    window.location.href = '/portal/login';
+    window.location.href = '/accessv2';
   };
 
   const menuItems = [

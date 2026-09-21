@@ -51,3 +51,87 @@
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.25);
 }
+
+/* 
+  ========================================
+  PDF / PRINT STYLES FOR DEAL ROOM & CONTRACTS
+  ========================================
+*/
+@media print {
+  @page {
+    margin: 2.5cm;
+    size: letter portrait;
+  }
+  
+  body {
+    background: white !important;
+    color: black !important;
+    font-family: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif !important;
+    font-size: 11pt !important;
+    line-height: 1.6 !important;
+  }
+
+  /* Typography adjustments for print */
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+    break-after: avoid;
+    color: black !important;
+    margin-top: 1.5em !important;
+    margin-bottom: 0.5em !important;
+    font-weight: 700 !important;
+  }
+
+  p, li, blockquote {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    color: black !important;
+  }
+
+  blockquote {
+    border-left: 3px solid black !important;
+    padding-left: 1rem !important;
+    margin-left: 0 !important;
+    font-style: italic;
+  }
+
+  /* Prevent sections (deal clauses) from breaking abruptly if possible */
+  .deal-section {
+    page-break-inside: auto;
+    break-inside: auto;
+    margin-bottom: 1.5em;
+  }
+
+  /* Keep signatures and important blocks together */
+  .keep-together, .signature-block {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Tables formatting for contracts */
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1.5em 0;
+    page-break-inside: auto;
+  }
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+  th, td {
+    border: 1px solid #ccc !important;
+    padding: 8px !important;
+    text-align: left;
+    color: black !important;
+  }
+  th {
+    background-color: #f5f5f5 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Hide UI elements explicitly */
+  .print\:hidden {
+    display: none !important;
+  }
+}

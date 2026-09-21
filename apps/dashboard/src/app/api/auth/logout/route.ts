@@ -9,5 +9,11 @@ export async function POST() {
     cookieStore.delete("pbox_session_v3");
     cookieStore.delete("wallet-address");
     cookieStore.delete("thirdweb:wallet-address");
+    
+    // Clear tenant routing cookies so the user can switch contexts
+    cookieStore.delete("pd_current_tenant");
+    cookieStore.delete("portal_slug");
+    cookieStore.delete("snarai_project_slug");
+    cookieStore.delete("pandoras_portal_session");
     return NextResponse.json({ success: true });
 }

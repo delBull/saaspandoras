@@ -708,7 +708,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
             ) : (
               <div className="space-y-2">
                 {room.sections.map((sec, sectionIndex) => (
-                  <div key={sec.code} className="rounded-xl border border-white/10 bg-[#0C0C10] overflow-hidden">
+                  <div key={sec.code} className="deal-section rounded-xl border border-white/10 bg-[#0C0C10] overflow-hidden print:border-none print:bg-transparent">
                     <button
                       onClick={() => setOpenSection(openSection === sec.code ? "" : sec.code)}
                       className="w-full flex items-center justify-between gap-2 px-4 py-3 text-left hover:bg-white/[0.02] transition-colors"
@@ -719,7 +719,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                           {resolveDynamicText(sec.title)}
                         </span>
                       </span>
-                      <span className={`text-zinc-600 transition-transform ${openSection === sec.code ? "rotate-180" : ""}`}>▾</span>
+                      <span className={`text-zinc-600 print:hidden transition-transform ${openSection === sec.code ? "rotate-180" : ""}`}>▾</span>
                     </button>
                     <div className={`px-4 pb-4 space-y-1.5 ${openSection === sec.code ? "block" : "hidden print:block"}`}>
                         {(() => {
@@ -732,7 +732,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                               inCodeBlock = !inCodeBlock;
                               return (
                                 <p key={i} className="text-[12px] text-zinc-500 font-mono leading-relaxed mb-1">
-                                  <span className="text-zinc-600 print:text-black font-mono mr-2">{String(i + 1).padStart(2, "0")}</span>
+                                  <span className="text-zinc-600 print:hidden font-mono mr-2">{String(i + 1).padStart(2, "0")}</span>
                                   {renderedLine}
                                 </p>
                               );
@@ -757,7 +757,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                             const parts = renderedLine.split(/(\*\*.*?\*\*)/g);
                             return (
                               <p key={i} className="text-[12px] text-zinc-300 print:text-black leading-relaxed mb-2">
-                                <span className="text-zinc-600 print:text-black font-mono mr-2">{String(i + 1).padStart(2, "0")}</span>
+                                <span className="text-zinc-600 print:hidden font-mono mr-2">{String(i + 1).padStart(2, "0")}</span>
                                 {parts.map((p, j) => {
                                   if (p.startsWith("**") && p.endsWith("**")) {
                                     return <strong key={j} className="text-white print:text-black font-semibold">{p.slice(2, -2)}</strong>;
