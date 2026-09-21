@@ -556,7 +556,7 @@ export default function TasksPanel({ tasks, setTasks, role = 'VIEWER' }: Props) 
       <div className="md:hidden">
         <button
           onClick={() => setMobileOpen(true)}
-          className="fixed bottom-4 right-4 z-40 flex items-center gap-2 px-3 py-2 rounded-xl border border-purple-500/30 bg-purple-500/10 text-purple-300 text-[11px] font-mono hover:bg-purple-500/20 transition-colors"
+          className="fixed bottom-12 right-4 z-40 flex items-center gap-2 px-3 py-2 rounded-xl border border-purple-500/30 bg-purple-500/10 text-purple-300 text-[11px] font-mono hover:bg-purple-500/20 transition-colors"
         >
           <Calendar className="w-3.5 h-3.5" />
           TAREAS

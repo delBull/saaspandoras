@@ -618,22 +618,22 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
             <span>Engine: Nexus v1.0</span>
           </div>
         </div>
-        <div className="flex items-center gap-3 shrink-0">
-          <span className="hidden sm:flex items-center gap-1.5 px-2 py-0.5 rounded-md border border-white/10 bg-black/40 text-zinc-400 text-[10px]">
+        <div className="flex items-center gap-3 overflow-x-auto no-scrollbar shrink-0 ml-auto pr-2 sm:pr-0">
+          <span className="hidden sm:flex items-center gap-1.5 px-2 py-0.5 rounded-md border border-white/10 bg-black/40 text-zinc-400 text-[10px] shrink-0">
             <Activity className="w-3 h-3 text-purple-300" />
             UNIFIED INDEX
           </span>
           <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={() => setIsOpsModalOpen(true)}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-purple-500/30 bg-purple-500/10 text-purple-300 text-[10px] tracking-wider hover:bg-purple-500/20 transition-colors"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-purple-500/30 bg-purple-500/10 text-purple-300 text-[10px] tracking-wider hover:bg-purple-500/20 transition-colors shrink-0"
             >
               <TerminalSquare className="w-3 h-3" />
               OPERATIONS HUB
             </button>
             <Link
               href="/nexus/rooms"
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-amber-500/30 bg-amber-500/10 text-amber-300 text-[10px] tracking-wider hover:bg-amber-500/20 transition-colors"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-amber-500/30 bg-amber-500/10 text-amber-300 text-[10px] tracking-wider hover:bg-amber-500/20 transition-colors shrink-0"
             >
               <Handshake className="w-3 h-3" />
               DEAL ROOM
@@ -641,7 +641,7 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
             {(role === 'SUPER_ADMIN' || role === 'ADMIN') && (
               <Link
                 href="/nexus/developers"
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-sky-500/30 bg-sky-500/10 text-sky-300 text-[10px] tracking-wider hover:bg-sky-500/20 transition-colors"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-sky-500/30 bg-sky-500/10 text-sky-300 text-[10px] tracking-wider hover:bg-sky-500/20 transition-colors shrink-0"
               >
                 <Code2 className="w-3 h-3" />
                 DEVELOPER HUB
@@ -649,7 +649,7 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
             )}
             <Link
               href="/admin/academy"
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-purple-500/30 bg-purple-500/10 text-purple-300 text-[10px] tracking-wider hover:bg-purple-500/20 transition-colors"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-purple-500/30 bg-purple-500/10 text-purple-300 text-[10px] tracking-wider hover:bg-purple-500/20 transition-colors shrink-0"
             >
               <GraduationCap className="w-3 h-3" />
               ACADEMY
@@ -660,7 +660,7 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
 
       {/* ── BODY: HUB GRID + TASKS PANEL ── */}
       <div className="flex-1 flex overflow-hidden min-h-0">
-      <main className={`flex-1 relative z-10 transition-all duration-500 p-4 md:p-6 lg:p-8 overflow-y-auto ${sidebarOpen ? "pl-96" : "pl-12 md:pl-16"}`}>
+      <main className={`flex-1 relative z-10 transition-all duration-500 p-4 md:p-6 lg:p-8 overflow-y-auto ${sidebarOpen ? "pl-12 md:pl-96" : "pl-12 md:pl-16"}`}>
         <div className="h-full w-full flex flex-col">
           <AnimatePresence>
             {!activeSection && (
@@ -668,7 +668,7 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 auto-rows-fr gap-4 md:gap-5 h-full"
+                className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 auto-rows-[minmax(180px,1fr)] gap-4 md:gap-5 pb-10"
               >
                 {visibleSections.map((sec, i) => {
                   const linksForRole = sectionLinks(sec);
