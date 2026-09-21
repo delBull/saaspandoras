@@ -79,12 +79,6 @@ export function HermesFloatingGuide({
     'Preparando recomendación...'
   ];
 
-  useEffect(() => {
-    return () => {
-      if (loadingInterval.current) clearInterval(loadingInterval.current);
-    };
-  }, []);
-
   if (!isOpen || stations.length === 0) return null;
 
   const currentStation = stations[Math.min(currentIndex, stations.length - 1)];
@@ -181,6 +175,12 @@ export function HermesFloatingGuide({
       }
     }
   };
+
+  useEffect(() => {
+    return () => {
+      if (loadingInterval.current) clearInterval(loadingInterval.current);
+    };
+  }, []);
 
   const handleResetDialog = () => {
     setHermesReply(null);

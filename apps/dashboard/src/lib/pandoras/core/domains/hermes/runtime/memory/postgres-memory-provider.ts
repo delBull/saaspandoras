@@ -198,7 +198,8 @@ export class PostgresConversationMemoryProvider implements ConversationMemoryPro
     const nextVersion = currentVersion + 1;
     
     // Update or create conversation
-    const identityId = (input.controlPlaneContext?.identity as any)?.identityId;
+    const rawIdentityId = (input.controlPlaneContext?.identity as any)?.identityId;
+    const identityId = rawIdentityId && isUuid(rawIdentityId) ? rawIdentityId : null;
 
     if (conv) {
       await db.update(hermesConversations)

@@ -61,6 +61,9 @@ export default async function PrintNdaPage({
 
   return (
     <div className="bg-white min-h-screen text-black font-sans p-8 print:p-0">
+      <style dangerouslySetInnerHTML={{ __html: `
+        @page { margin: 2.54cm; }
+      `}} />
       <div className="max-w-4xl mx-auto">
         <header className="mb-12 border-b-2 border-black pb-6">
           <h1 className="text-2xl font-bold uppercase tracking-wide mb-2">{cfg.title}</h1>
