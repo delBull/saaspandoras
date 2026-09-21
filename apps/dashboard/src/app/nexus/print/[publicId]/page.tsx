@@ -36,6 +36,44 @@ export default async function PrintDealRoomPage({
   // Mapear secciones
   const sections = room.sections;
 
+  // Determinar nombre dinámico para el PDF
+  let dynamicPartyName = room.company || room.counterparty || "[CONTRAPARTE]";
+  if (room.status === "DRAFT") {
+    dynamicPartyName = "[NOMBRE / RAZÓN SOCIAL DE LA CONTRAPARTE]";
+  } else if (room.signers && room.signers.length > 0) {
+    const signer = room.signers.find(s => s.signatureCompany || s.signatureName);
+    if (signer) {
+      dynamicPartyName = signer.signatureCompany || signer.signatureName || dynamicPartyName;
+    }
+  }
+
+  const resolveText = (text: string) => {
+    if (!text) return "";
+    let result = text
+      .replace(/{{COUNTERPARTY_COMPANY}}/gi, dynamicPartyName)
+      .replace(/{{COUNTERPARTY}}/gi, dynamicPartyName)
+      .replace(/Pandora's LLC/gi, "marca Pandora's y sus servicios bajo la umbrela de MXHUB ECOSISTEMA BLOCKCHAIN S.A. DE C.V.");
+
+    if (room.counterparty && dynamicPartyName !== room.counterparty) {
+      const originalName = room.counterparty.trim();
+      const firstName = originalName.split(' ')[0] || '';
+      const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const fullRegex = new RegExp(escapeRegExp(originalName), 'g');
+      result = result.replace(fullRegex, dynamicPartyName);
+      if (firstName.length > 3) {
+        const firstRegex = new RegExp(escapeRegExp(firstName), 'g');
+        result = result.replace(firstRegex, dynamicPartyName);
+      }
+    }
+    
+    // Quick markdown parser for the print view
+    result = result.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    result = result.replace(/### (.*?)(?=\n|$)/g, '<h3 class="text-sm font-semibold mt-3 mb-1">$1</h3>');
+    result = result.replace(/## (.*?)(?=\n|$)/g, '<h2 class="text-base font-bold mt-4 mb-2">$1</h2>');
+    
+    return result;
+  };
+
   return (
     <div className="bg-white min-h-screen text-black font-sans p-8 print:p-0">
       <div className="max-w-4xl mx-auto">
@@ -44,8 +82,8 @@ export default async function PrintDealRoomPage({
           <div className="flex justify-between items-end">
             <div>
               <p className="text-sm text-gray-600">ID: {room.publicId}</p>
-              <p className="text-sm font-semibold mt-1">Contraparte: {room.counterparty}</p>
-              <p className="text-sm text-gray-600">Compañía: {room.company || "N/A"}</p>
+              <p className="text-sm font-semibold mt-1">Contraparte: {room.status === "DRAFT" ? "[POR DEFINIR]" : room.counterparty}</p>
+              <p className="text-sm text-gray-600">Compañía: {room.status === "DRAFT" ? "[POR DEFINIR]" : (room.company || "N/A")}</p>
             </div>
             <div className="text-right">
               <p className="text-sm text-gray-600">Fecha: {new Date().toLocaleDateString('es-ES')}</p>
@@ -58,12 +96,12 @@ export default async function PrintDealRoomPage({
           {sections.map((sec, idx) => (
             <section key={sec.id} className="break-inside-avoid">
               <div className="mb-4">
-                <h2 className="text-xl font-bold uppercase tracking-wider">{idx + 1}. {sec.title}</h2>
-                {sec.subtitle && <p className="text-sm text-gray-600 italic">{sec.subtitle}</p>}
+                <h2 className="text-xl font-bold uppercase tracking-wider">{idx + 1}. {resolveText(sec.title)}</h2>
+                {sec.subtitle && <p className="text-sm text-gray-600 italic">{resolveText(sec.subtitle)}</p>}
               </div>
               <div 
-                className="prose prose-sm max-w-none text-black prose-p:text-black prose-headings:text-black prose-strong:text-black prose-a:text-black prose-li:text-black"
-                dangerouslySetInnerHTML={{ __html: sec.content }}
+                className="prose prose-sm max-w-none text-black whitespace-pre-wrap prose-p:text-black prose-headings:text-black prose-strong:text-black prose-a:text-black prose-li:text-black"
+                dangerouslySetInnerHTML={{ __html: resolveText(sec.content) }}
               />
             </section>
           ))}
