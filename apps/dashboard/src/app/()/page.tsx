@@ -90,17 +90,9 @@ export default async function RootDashboardPage({ searchParams }: PageProps) {
   // 3. Resolve final target slug dynamically
   let resolvedSlug = explicitSlug || portalSessionSlug;
 
-  if (!resolvedSlug) {
-    if (userIsAdmin) {
-      const isStaging = host.includes('staging');
-      const targetNexus = host.startsWith('localhost') || host.includes('127.0.0.1') 
-        ? 'http://nexus.localhost:3000' 
-        : (isStaging ? 'https://staging.nexus.pandoras.finance' : 'https://nexus.pandoras.finance');
-      redirect(targetNexus);
-    } else if (callerWallet) {
-      // Find what tenant they belong to
-      resolvedSlug = (await getDefaultTenantForWallet(callerWallet)) || undefined;
-    }
+  if (!resolvedSlug && callerWallet) {
+    // Find what tenant they belong to
+    resolvedSlug = (await getDefaultTenantForWallet(callerWallet)) || undefined;
   }
 
   // 4. If absolutely no slug can be resolved, they have no tenant.

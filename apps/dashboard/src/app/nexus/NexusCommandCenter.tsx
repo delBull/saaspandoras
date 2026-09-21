@@ -254,7 +254,29 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
         const data = await res.json();
         if (data.success && Array.isArray(data.broadcasts)) {
           setBroadcasts(data.broadcasts);
-          const dismissed: string[] = JSON.parse(localStorage.getItem('nexus_dismissed_broadcasts') || '[]');
+          let dismissed: string[] = [];
+          try {
+            const stored = localStorage.getItem('nexus_dismissed_broadcasts');
+            if (stored && stored !== 'undefined') dismissed = JSON.parse(stored);
+          } catch {}
+          
+          try {
+            const cookieMatch = document.cookie.match(/(?:^|; )nexus_dismissed_broadcasts=([^;]*)/);
+            if (cookieMatch && cookieMatch[1]) {
+              const cookieDismissed = JSON.parse(decodeURIComponent(cookieMatch[1]));
+              if (Array.isArray(cookieDismissed)) {
+                cookieDismissed.forEach(id => { if (!dismissed.includes(id)) dismissed.push(id); });
+              }
+            }
+          } catch {}
+          
+          if (!Array.isArray(dismissed)) dismissed = [];
+          
+          // Size mitigation: Keep only the last 50 dismissed IDs to prevent cookie overflow (>4KB)
+          if (dismissed.length > 50) {
+            dismissed = dismissed.slice(-50);
+          }
+          
           const unread = data.broadcasts.filter((b: any) => !dismissed.includes(b.id));
           setUnreadBroadcasts(unread);
           if (unread.length > 0) {
@@ -273,22 +295,39 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
       let dismissed: string[] = [];
       try {
         const stored = localStorage.getItem('nexus_dismissed_broadcasts');
-        if (stored && stored !== 'undefined') {
-          dismissed = JSON.parse(stored);
-          if (!Array.isArray(dismissed)) dismissed = [];
+        if (stored && stored !== 'undefined') dismissed = JSON.parse(stored);
+      } catch {}
+      try {
+            const cookieMatch = document.cookie.match(/(?:^|; )nexus_dismissed_broadcasts=([^;]*)/);
+            if (cookieMatch && cookieMatch[1]) {
+              const cookieDismissed = JSON.parse(decodeURIComponent(cookieMatch[1]));
+          if (Array.isArray(cookieDismissed)) {
+            cookieDismissed.forEach((id: string) => { if (!dismissed.includes(id)) dismissed.push(id); });
+          }
         }
-      } catch (e) {
-        dismissed = [];
-      }
+      } catch {}
+      if (!Array.isArray(dismissed)) dismissed = [];
       
       if (!dismissed.includes(broadcastId)) {
         dismissed.push(broadcastId);
-        localStorage.setItem('nexus_dismissed_broadcasts', JSON.stringify(dismissed));
+        
+        // Size mitigation: Keep only the last 50 dismissed IDs to prevent cookie overflow (>4KB)
+        if (dismissed.length > 50) {
+          dismissed = dismissed.slice(-50);
+        }
+        
+        try { localStorage.setItem('nexus_dismissed_broadcasts', JSON.stringify(dismissed)); } catch {}
+        try {
+          const domain = window.location.hostname.includes('pandoras.finance') ? 'domain=.pandoras.finance;' : '';
+          document.cookie = `nexus_dismissed_broadcasts=${encodeURIComponent(JSON.stringify(dismissed))}; path=/; max-age=31536000; ${domain} SameSite=Lax`;
+        } catch {}
+      }
+      setUnreadBroadcasts(prev => prev.filter(b => b.id !== broadcastId));
+      if (unreadBroadcasts.length <= 1) {
+        setIsBroadcastModalOpen(false);
       }
     } catch (err) {
-      console.warn("Failed to update dismissed broadcasts in local storage", err);
-    } finally {
-      setUnreadBroadcasts((prev) => prev.filter((b) => b.id !== broadcastId));
+      console.warn('[Nexus] Failed to save dismissed state:', err);
     }
   };
 
