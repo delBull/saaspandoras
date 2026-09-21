@@ -150,6 +150,30 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
     ? fullCompanyName
     : (signName.trim() || room.counterparty);
 
+  const resolveDynamicText = (text: string) => {
+    if (!text) return "";
+    let result = text
+      .replace(/{{COUNTERPARTY_COMPANY}}/gi, dynamicPartyName)
+      .replace(/{{COUNTERPARTY}}/gi, dynamicPartyName)
+      .replace(/Pandora's LLC/gi, "marca Pandora's y sus servicios bajo la umbrela de MXHUB ECOSISTEMA BLOCKCHAIN S.A. DE C.V.");
+
+    if (room.counterparty && dynamicPartyName !== room.counterparty) {
+      const originalName = room.counterparty.trim();
+      const firstName = originalName.split(' ')[0] || '';
+      
+      const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      
+      const fullRegex = new RegExp(escapeRegExp(originalName), 'g');
+      result = result.replace(fullRegex, dynamicPartyName);
+      
+      if (firstName.length > 3) {
+        const firstRegex = new RegExp(escapeRegExp(firstName), 'g');
+        result = result.replace(firstRegex, dynamicPartyName);
+      }
+    }
+    return result;
+  };
+
   // ── NDA CHECK ON MOUNT ───────────────────────────────────────────────────
   // Once we know the wallet/email, check if NDA is needed and if already signed.
   useEffect(() => {
@@ -692,9 +716,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                       <span className="flex items-center gap-3">
                         <span className="text-[10px] font-mono text-amber-300/80">{sec.code}</span>
                         <span className="text-[13px] text-zinc-100">
-                          {sec.title
-                            .replace(/{{COUNTERPARTY_COMPANY}}/g, dynamicPartyName)
-                            .replace(/{{COUNTERPARTY}}/g, dynamicPartyName)}
+                          {resolveDynamicText(sec.title)}
                         </span>
                       </span>
                       <span className={`text-zinc-600 transition-transform ${openSection === sec.code ? "rotate-180" : ""}`}>▾</span>
@@ -704,9 +726,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                           let inCodeBlock = false;
                           return sec.content.split("\n").map((line, i) => {
                             if (!line && !inCodeBlock) return null;
-                            const renderedLine = line
-                              .replace(/{{COUNTERPARTY_COMPANY}}/g, dynamicPartyName)
-                              .replace(/{{COUNTERPARTY}}/g, dynamicPartyName);
+                            const renderedLine = resolveDynamicText(line);
 
                             if (renderedLine.trim().startsWith("```")) {
                               inCodeBlock = !inCodeBlock;

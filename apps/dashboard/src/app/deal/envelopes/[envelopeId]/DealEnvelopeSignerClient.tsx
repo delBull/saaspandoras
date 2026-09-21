@@ -199,7 +199,7 @@ export function DealEnvelopeSignerClient({ envelope: initialEnvelope, initialSig
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <h1 className="text-sm font-semibold tracking-tight text-white truncate max-w-xs md:max-w-md">
-                {envelope.title}
+                {envelope.title.replace(/Pandora's LLC/gi, "marca Pandora's y sus servicios bajo la umbrela de MXHUB ECOSISTEMA BLOCKCHAIN S.A. DE C.V.")}
               </h1>
               <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-medium border ${
                 envelope.status === 'COMPLETED'
@@ -270,11 +270,11 @@ export function DealEnvelopeSignerClient({ envelope: initialEnvelope, initialSig
                   CONTRATO INSTITUCIONAL SOBERANO
                 </span>
                 <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight">
-                  {envelope.title}
+                  {envelope.title.replace(/Pandora's LLC/gi, "marca Pandora's y sus servicios bajo la umbrela de MXHUB ECOSISTEMA BLOCKCHAIN S.A. DE C.V.")}
                 </h2>
                 {envelope.description && (
                   <p className="text-xs text-zinc-400 mt-2 leading-relaxed">
-                    {envelope.description}
+                    {envelope.description.replace(/Pandora's LLC/gi, "marca Pandora's y sus servicios bajo la umbrela de MXHUB ECOSISTEMA BLOCKCHAIN S.A. DE C.V.")}
                   </p>
                 )}
               </div>

@@ -74,12 +74,12 @@ export default async function RootDashboardPage({ searchParams }: PageProps) {
         }
       }
     }
-  } catch (err) {}
+  } catch (err) { }
 
   // 2. Fetch auth state
   const { getAuth, isAdmin } = await import('@/lib/auth');
   const authResult = await getAuth(headerList).catch(() => ({ session: null }));
-  
+
   const callerWallet =
     (authResult as any).session?.address?.toLowerCase() ||
     headerList.get('x-wallet-address')?.toLowerCase() ||
