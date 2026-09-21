@@ -375,7 +375,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
   };
 
   return (
-    <main className="fixed inset-0 bg-[#08080A] print:bg-white text-zinc-100 print:text-black font-sans flex flex-col overflow-hidden">
+    <main className="fixed inset-0 bg-[#08080A] print:static print:h-auto print:bg-white text-zinc-100 print:text-black font-sans flex flex-col overflow-hidden print:overflow-visible">
       <header className="h-14 shrink-0 flex items-center justify-between px-4 md:px-6 bg-[#0C0C10] print:hidden border-b border-white/10 font-mono">
         <div className="flex items-center gap-3 min-w-0">
           <span className="flex items-center justify-center w-8 h-8 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-300 shrink-0">
@@ -538,7 +538,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
               </div>
             </div>
           ) : (
-            <div className="flex-1 md:overflow-y-auto p-4 md:p-8 print:p-0 print:overflow-visible">
+            <div className="flex-1 md:overflow-y-auto p-4 md:p-8 print:py-12 print:px-8 print:overflow-visible">
               <div className="max-w-3xl mx-auto">
             <div className="mb-6">
               <div className="flex items-center justify-between mb-2">
@@ -561,7 +561,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                   </button>
                 )}
               </div>
-              <h1 className="text-2xl md:text-3xl font-semibold text-white print:text-black tracking-tight">
+              <h1 className="text-2xl md:text-3xl font-semibold text-white print:text-black print:text-4xl print:mt-4 print:mb-8 tracking-tight">
                 {room.summary || KIND_LABEL[room.kind]}
               </h1>
 
@@ -713,9 +713,9 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                       onClick={() => setOpenSection(openSection === sec.code ? "" : sec.code)}
                       className="w-full flex items-center justify-between gap-2 px-4 py-3 text-left hover:bg-white/[0.02] transition-colors"
                     >
-                      <span className="flex items-center gap-3">
-                        <span className="text-[10px] font-mono text-amber-300/80">{sec.code}</span>
-                        <span className="text-[13px] text-zinc-100">
+                      <span className="flex items-center gap-3 print:mb-4">
+                        <span className="text-[10px] font-mono text-amber-300/80 print:text-black print:text-lg print:font-bold">{sec.code}.</span>
+                        <span className="text-[13px] text-zinc-100 print:text-black print:text-lg print:font-bold">
                           {resolveDynamicText(sec.title)}
                         </span>
                       </span>
