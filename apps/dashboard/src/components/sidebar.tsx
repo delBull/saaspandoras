@@ -31,6 +31,7 @@ import { resolveIpfsUrl } from '@/lib/utils';
 import { usePathname } from 'next/navigation';
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { hasFullPlatformAccess } from "@/lib/roles";
+import { usePersistedAccount } from "@/hooks/usePersistedAccount";
 
 interface SidebarProps {
   wallet?: string;
@@ -73,6 +74,7 @@ export function Sidebar({
   const account = useActiveAccount();
   const wallet = useActiveWallet();
   const { disconnect } = useDisconnect();
+  const { logout } = usePersistedAccount();
   const pathname = usePathname();
 
   // Multi-chain wallet state
@@ -920,7 +922,7 @@ export function Sidebar({
                     <Tooltip.Root>
                       <Tooltip.Trigger asChild>
                         <button
-                          onClick={() => { if(wallet) { disconnect(wallet); fetch("/api/auth/logout", { method: "POST" }).catch(() => {}); } }}
+                          onClick={() => { logout() }}
                           disabled={!wallet}
                           className="relative flex w-full items-center rounded-lg py-2 text-gray-400 transition-all duration-200 hover:bg-gray-800/50 hover:text-white disabled:opacity-50 justify-center"
                         >
@@ -938,7 +940,7 @@ export function Sidebar({
                     </Tooltip.Root>
                   ) : (
                     <button
-                      onClick={() => { if(wallet) { disconnect(wallet); fetch("/api/auth/logout", { method: "POST" }).catch(() => {}); } }}
+                      onClick={() => { logout() }}
                       disabled={!wallet}
                       className="relative flex w-full items-center rounded-lg py-2 text-gray-400 transition-all duration-200 hover:bg-gray-800/50 hover:text-white disabled:opacity-50 px-4"
                     >

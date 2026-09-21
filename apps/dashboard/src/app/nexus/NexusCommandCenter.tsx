@@ -37,6 +37,7 @@ import NexusSettingsPage from "./settings/SettingsClient";
 import { INITIAL_TASKS, TaskItem } from "@/components/nexus/taskTypes";
 import Link from "next/link";
 import { DisplayControlsWidget } from "@pandoras/display-engine";
+import { useActiveWallet, useDisconnect } from "thirdweb/react";
 
 interface NexusCommandCenterProps {
   auth: NexusAuthContext;
@@ -188,6 +189,9 @@ const SECTIONS: NexusSection[] = [
 ];
 
 export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken, token }: NexusCommandCenterProps) {
+  const activeThirdwebWallet = useActiveWallet();
+  const { disconnect: disconnectWallet } = useDisconnect();
+
   const { role, wallet } = auth;
   const isFirstVisitParam = initialTour === "ecosystem" || initialTour === "onboarding";
   const [isTourOpen, setIsTourOpen] = useState(isFirstVisitParam);
@@ -540,6 +544,9 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
                   document.cookie = 'wallet-address=; path=/; max-age=0;';
                   document.cookie = 'thirdweb:wallet-address=; path=/; max-age=0;';
                   localStorage.setItem('wallet-logged-out', 'true');
+                  if (activeThirdwebWallet) {
+                    disconnectWallet(activeThirdwebWallet);
+                  }
                   await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
                 } catch {}
                 window.location.href = '/';

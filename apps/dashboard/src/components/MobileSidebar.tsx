@@ -19,6 +19,7 @@ import { client } from "@/lib/thirdweb-client";
 import { wallets } from "@/lib/wallets";
 import { config } from "@/config";
 import { useAdmin } from "@/hooks/useAdmin";
+import { usePersistedAccount } from "@/hooks/usePersistedAccount";
 
 interface MobileSidebarProps {
   isOpen: boolean;
@@ -32,6 +33,7 @@ export function MobileSidebar({ isOpen, onClose, isAdmin: propIsAdmin }: MobileS
   const wallet = useActiveWallet();
   const { connect } = useConnectModal();
   const { disconnect } = useDisconnect();
+  const { logout } = usePersistedAccount();
   const { isAdmin: hookIsAdmin, isSuperAdmin } = useAdmin();
 
   const effectiveIsAdmin = !!propIsAdmin || hookIsAdmin || isSuperAdmin;
@@ -163,7 +165,7 @@ export function MobileSidebar({ isOpen, onClose, isAdmin: propIsAdmin }: MobileS
                   
                   <button
                     onClick={() => {
-                      if (wallet) { disconnect(wallet); fetch("/api/auth/logout", { method: "POST" }).catch(() => {}); }
+                      logout();
                       onClose();
                     }}
                     className="w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-zinc-900 text-red-400 hover:text-red-300 rounded-xl font-bold text-xs border border-red-500/20 active:scale-95 transition-all"
