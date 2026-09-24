@@ -30,7 +30,19 @@ export async function POST(request: Request) {
     const targetTenant = searchParams.get('tenant') || searchParams.get('organizationId');
 
     const bodyText = await request.text();
-    const metaAppSecret = (process.env.META_APP_SECRET || process.env.WHATSAPP_APP_SECRET || '').trim();
+    
+    // Dynamic Secret Resolution: Check for tenant-specific secret first (e.g., META_APP_SECRET_SNARAI)
+    let metaAppSecret = '';
+    if (targetTenant) {
+      const tenantEnvKey = `META_APP_SECRET_${targetTenant.replace(/-/g, '_').toUpperCase()}`;
+      metaAppSecret = process.env[tenantEnvKey] || '';
+    }
+    
+    // Fallback to global secret if tenant specific is not found
+    if (!metaAppSecret) {
+      metaAppSecret = (process.env.META_APP_SECRET || process.env.WHATSAPP_APP_SECRET || '').trim();
+    }
+    
     const signatureHeader = request.headers.get('x-hub-signature-256');
 
     let body: any;

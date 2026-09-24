@@ -5,6 +5,7 @@ import { InvalidChannelPayloadError } from '../channel-errors';
 import { SecretResolver, EnvironmentSecretResolver, DatabaseSecretResolver } from '../secret-resolver';
 import { BindingResolver, DatabaseBindingResolver, WhatsAppIdentity } from '../binding-resolver';
 import { SafeHttpClient } from '../../hermes/runtime/egress-guard';
+import { OrganizationSDK } from '@/lib/platform/organization-sdk';
 
 export interface HermesWhatsAppEnvelope {
   source: 'whatsapp';
@@ -121,9 +122,16 @@ export class WhatsAppAdapter implements ChannelAdapter {
         token = parts[0] || '';
         phoneNumberId = parts[1] || '';
       } catch {
-        // Fallback for dev / environment vars
-        token = process.env.META_WHATSAPP_TOKEN || 'mock_token';
-        phoneNumberId = process.env.META_PHONE_NUMBER_ID || process.env.HERMES_WHATSAPP_PHONE_NUMBER || 'mock_phone_id';
+        // Fallback for dev / environment vars with dynamic tenant support
+        try {
+          const org = await OrganizationSDK.resolve(input.organizationId);
+          const slugSafe = org.slug.replace(/-/g, '_').toUpperCase();
+          token = process.env[`META_WHATSAPP_TOKEN_${slugSafe}`] || process.env.META_WHATSAPP_TOKEN || 'mock_token';
+          phoneNumberId = process.env[`META_PHONE_NUMBER_ID_${slugSafe}`] || process.env.META_PHONE_NUMBER_ID || process.env.HERMES_WHATSAPP_PHONE_NUMBER || 'mock_phone_id';
+        } catch (e) {
+          token = process.env.META_WHATSAPP_TOKEN || 'mock_token';
+          phoneNumberId = process.env.META_PHONE_NUMBER_ID || process.env.HERMES_WHATSAPP_PHONE_NUMBER || 'mock_phone_id';
+        }
       }
 
       if (token === 'mock_token' || token.startsWith('mock_') || process.env.NODE_ENV === 'test') {

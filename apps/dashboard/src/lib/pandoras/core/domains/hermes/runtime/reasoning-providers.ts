@@ -181,7 +181,7 @@ export class OllamaReasoningProvider implements ReasoningProvider {
     // 1. Try Native Ollama /api/chat (15s timeout)
     try {
       const ctrl1 = new AbortController();
-      const t1 = setTimeout(() => ctrl1.abort(), 15_000);
+      const t1 = setTimeout(() => ctrl1.abort(), 60_000); // Increased to 60s for cold starts
       try {
         const nativeRes = await fetch(`${cleanBase}/api/chat`, {
           method: 'POST',
@@ -221,7 +221,7 @@ export class OllamaReasoningProvider implements ReasoningProvider {
     // 2. Try OpenAI-compatible /v1/chat/completions (15s timeout)
     try {
       const ctrl2 = new AbortController();
-      const t2 = setTimeout(() => ctrl2.abort(), 15_000);
+      const t2 = setTimeout(() => ctrl2.abort(), 60_000); // Increased to 60s for cold starts
       try {
         const v1Res = await fetch(`${cleanBase}/v1/chat/completions`, {
           method: 'POST',

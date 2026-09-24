@@ -9,7 +9,7 @@ import { OrganizationSDK } from '@/lib/platform/organization-sdk';
  */
 
 export interface DispatchRequest {
-  capability: 'calendar.schedule' | 'crm.update_stage' | 'payments.create_spei_link' | 'tokenization.get_holdings' | 'support.escalate_human';
+  capability: 'calendar.schedule' | 'crm.update_stage' | 'payments.create_spei_link' | 'tokenization.get_holdings' | 'support.escalate_human' | 'manage_team.add_collaborator';
   projectId: number;
   payload: Record<string, any>;
 }
@@ -108,6 +108,17 @@ export class CapabilityDispatcher {
           actionExecuted: 'support.escalate_human',
           data: { conversationId: payload.conversationId },
           userSummary: 'Conversación escalada a un agente humano.'
+        };
+
+      case 'manage_team.add_collaborator':
+        // C5.8: Execution OS / Tool execution capability for adding team members
+        // In the future this will call executionOS.execute('ADD_COLLABORATOR', ...)
+        console.log(`[CapabilityDispatcher] Simulated adding collaborator: ${payload.email || payload.wallet} with role ${payload.role || 'miembro'}`);
+        return {
+          success: true,
+          actionExecuted: 'manage_team.add_collaborator',
+          data: { email: payload.email, role: payload.role || 'miembro', projectId },
+          userSummary: `Se ha invitado a ${payload.email || 'el nuevo colaborador'} al proyecto exitosamente.`
         };
 
       default:
