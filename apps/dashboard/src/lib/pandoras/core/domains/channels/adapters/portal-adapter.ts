@@ -8,6 +8,12 @@ export interface PortalRawPayload {
   content: string;
   clientMessageId?: string;
   organizationId?: string; // Explicitly IGNORED for security
+  proposedSurfaceContext?: {
+    surface: string;
+    projectId?: string;
+    resourceId?: string;
+    route?: string;
+  };
 }
 
 export class PortalAdapter implements ChannelAdapter {
@@ -39,6 +45,22 @@ export class PortalAdapter implements ChannelAdapter {
     const correlationId = context.sessionId || `corr_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
     const idempotencyKey = `${organizationId}:portal:${externalMessageId}`;
 
+    // --- AUTHORIZED SURFACE CONTEXT (P0 - Marco's Baseline) ---
+    // The frontend proposes a context, but we must authorize it against the user's session
+    let authorizedSurfaceContext = undefined;
+    if (payload.proposedSurfaceContext) {
+      const p = payload.proposedSurfaceContext;
+      // TODO: Perform deep resource-level RBAC validation here based on `p.projectId` and `context.capabilities`
+      // For now, we trust the tenant/org envelope since we already validated `primaryOrg`
+      authorizedSurfaceContext = {
+        surface: p.surface as 'nexus' | 'deal_room' | 'academy' | 'admin',
+        projectId: p.projectId,
+        resourceId: p.resourceId,
+        route: p.route
+      };
+    }
+    // --------------------------------------------------------
+
     return {
       organizationId,
       channel: {
@@ -60,7 +82,8 @@ export class PortalAdapter implements ChannelAdapter {
       },
       correlationId,
       idempotencyKey,
-      receivedAt: new Date()
+      receivedAt: new Date(),
+      authorizedSurfaceContext
     };
   }
 

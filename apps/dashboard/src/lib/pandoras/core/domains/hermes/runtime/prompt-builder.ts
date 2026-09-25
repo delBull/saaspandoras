@@ -236,6 +236,26 @@ export class HermesPromptBuilder {
       });
     }
 
+    // ---- Block 2.7: CANONICAL USER MEMORY (Cross-Channel Memory) ----
+    if (ctx.canonicalMemory && ctx.canonicalMemory.length > 0) {
+      const memoryItems = ctx.canonicalMemory.map((mem) => {
+        return `- [${mem.type}] ${mem.content} (Fuente: ${mem.source || mem.sourceType})`;
+      });
+
+      messages.push({
+        role: 'system',
+        content: [
+          '=== [CANONICAL USER MEMORY] ===',
+          'Los siguientes "Facts" representan memoria consolidada y verificada del usuario dentro de este tenant, extraída de conversaciones en distintos canales (WhatsApp, Telegram, Web):',
+          ...memoryItems,
+          'DIRECTIVAS DE MEMORIA:',
+          '1. CONTINUIDAD CONTEXTUAL: Utiliza estos Facts para mantener el contexto de interacciones anteriores sin requerir que el usuario repita información.',
+          '2. USO DISCRETO: No anuncies ni enlistes explícitamente esta memoria a menos que sea directamente relevante para responder la consulta actual.',
+          '=== [FIN_CANONICAL_USER_MEMORY] ===',
+        ].join('\n'),
+      });
+    }
+
     // ---- Block 3: TENANT IDENTITY (cannot be modified by add-ons) ----
     messages.push({
       role: 'system',
@@ -366,6 +386,26 @@ export class HermesPromptBuilder {
       messages.push({
         role: 'system',
         content: directivesBlock,
+      });
+    }
+
+    // ---- Block 7.6: AUTHORIZED SURFACE CONTEXT (Phase 2) ----
+    if (ctx.surfaceContext) {
+      messages.push({
+        role: 'system',
+        content: [
+          '=== [AUTHORIZED SURFACE CONTEXT] ===',
+          'DATOS DE NAVEGACIÓN VERIFICADOS:',
+          `- Pantalla actual (Surface): ${ctx.surfaceContext.surface}`,
+          ctx.surfaceContext.route ? `- Ruta de UI: ${ctx.surfaceContext.route}` : '',
+          ctx.surfaceContext.projectId ? `- Contexto de Proyecto (ID): ${ctx.surfaceContext.projectId}` : '',
+          ctx.surfaceContext.resourceId ? `- Contexto de Recurso (ID): ${ctx.surfaceContext.resourceId}` : '',
+          '',
+          'DIRECTIVAS DE INTERACCIÓN ESPACIAL:',
+          '1. Utiliza esta información para entender DE QUÉ TE HABLA el usuario si hace referencias relativas como "este proyecto", "esta pantalla", "aquí", "estos datos".',
+          '2. No necesitas repetirle al usuario dónde está, solo usa el contexto para darle respuestas precisas y orientadas a la acción en la pantalla que está viendo.',
+          '=== [FIN_AUTHORIZED_SURFACE_CONTEXT] ==='
+        ].filter(Boolean).join('\n'),
       });
     }
 

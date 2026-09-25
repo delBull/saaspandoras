@@ -204,6 +204,16 @@ export const userIdentities = pgTable("user_identities", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const verifiedIdentities = pgTable("verified_identities", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  provider: varchar("provider", { length: 50 }).notNull(), // 'whatsapp', 'telegram', 'wallet', 'email'
+  externalId: varchar("external_id", { length: 255 }).notNull(),
+  verificationMethod: varchar("verification_method", { length: 50 }), // 'otp', 'signature', 'oauth'
+  verifiedAt: timestamp("verified_at").defaultNow().notNull(),
+  status: varchar("status", { length: 20 }).default('ACTIVE').notNull(),
+});
+
 export const sessions = pgTable("sessions", {
   id: uuid("id").primaryKey().defaultRandom(), // sid
   userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
@@ -3742,6 +3752,8 @@ export const hermesConversations = pgTable("hermes_conversations", {
   organizationId: varchar("organization_id", { length: 256 }).notNull().references(() => projects.slug, { onDelete: 'cascade' }),
   identityId: uuid("identity_id").references(() => marketingIdentities.id, { onDelete: 'set null' }),
   conversationId: varchar("conversation_id", { length: 256 }).notNull(),
+  channel: varchar("channel", { length: 50 }).notNull(), // 'WHATSAPP' | 'TELEGRAM' | 'WEB' | 'SMS'
+  surface: varchar("surface", { length: 50 }), // 'NEXUS' | 'DEAL_ROOM' | 'BOT' | 'PORTAL_AMBIENT' | 'LANDING'
   status: varchar("status", { length: 50 }).notNull().default('ACTIVE'), // 'ACTIVE' | 'PAUSED_HUMAN' | 'RESOLVED'
   escalationReason: varchar("escalation_reason", { length: 100 }), // 'FRUSTRATION' | 'USER_REQUEST' | 'POLICY_VIOLATION' | 'KNOWLEDGE_GAP' | 'MANUAL'
   assignedCollaboratorId: integer("assigned_collaborator_id").references(() => nexusCollaborators.id, { onDelete: 'set null' }),
@@ -3785,6 +3797,28 @@ export const hermesConversationMessages = pgTable("hermes_conversation_messages"
   orgConversationIdx: index("hermes_conv_msg_org_conv_idx").on(t.organizationId, t.conversationId),
   orgConversationSeqIdx: uniqueIndex("hermes_conv_msg_seq_idx").on(t.organizationId, t.conversationId, t.sequence),
   orgIdempotencyUnique: uniqueIndex("hermes_conv_msg_idem_idx").on(t.organizationId, t.idempotencyKey),
+}));
+
+export const hermesCanonicalMemory = pgTable("hermes_canonical_memory", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: varchar("organization_id", { length: 256 }).notNull().references(() => projects.slug, { onDelete: 'cascade' }),
+  identityId: uuid("identity_id").notNull().references(() => marketingIdentities.id, { onDelete: 'cascade' }),
+  type: varchar("type", { length: 50 }).notNull(), // 'FACT' | 'PREFERENCE' | 'GOAL' | 'CONTEXT' | 'INFERENCE'
+  content: text("content").notNull(),
+  source: varchar("source", { length: 100 }), // The string representation of the source
+  sourceType: varchar("source_type", { length: 50 }).notNull(), // 'USER_MESSAGE' | 'SYSTEM_EVENT' | 'DOCUMENT' | 'TOOL_RESULT' | 'ADMIN_ASSERTION'
+  sourceConversationId: varchar("source_conversation_id", { length: 256 }),
+  sourceMessageId: varchar("source_message_id", { length: 256 }),
+  confidence: integer("confidence"), // Nullable. Computed by memory policy or LLM heuristic.
+  status: varchar("status", { length: 50 }).notNull().default('ACTIVE'), // 'ACTIVE' | 'SUPERSEDED' | 'REVOKED' | 'EXPIRED'
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()).notNull(),
+  expiresAt: timestamp("expires_at"),
+  metadata: jsonb("metadata"),
+}, (t) => ({
+  orgIdentityIdx: index("hermes_memory_org_ident_idx").on(t.organizationId, t.identityId),
+  orgIdentityStatusIdx: index("hermes_memory_org_ident_status_idx").on(t.organizationId, t.identityId, t.status),
+  typeIdx: index("hermes_memory_type_idx").on(t.type),
 }));
 
 // --- PHASE 7: HERMES JOURNEYS (DYNAMIC GOAL ENGINE) ---

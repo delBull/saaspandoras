@@ -7,6 +7,12 @@ import { eq } from 'drizzle-orm';
 import { HermesExecutionEngine } from '@/lib/hermes/kernel/execution/execution-api';
 import { TelegramAdapter } from '@/lib/hermes/adapters/telegram-adapter';
 import { ExecutionRequest } from '@/lib/hermes/contracts/universal';
+import { DefaultOmnichannelGateway } from '@/lib/pandoras/core/domains/channels/omnichannel-gateway';
+import { DefaultCognitiveChannelDispatcher } from '@/lib/pandoras/core/domains/channels/channel-dispatcher';
+import { DuplicateMessageError, InvalidChannelPayloadError } from '@/lib/pandoras/core/domains/channels/channel-errors';
+
+const omnichannelGateway = new DefaultOmnichannelGateway();
+const channelDispatcher = new DefaultCognitiveChannelDispatcher();
 
 /**
  * 📡 Pandora's Platform OS v5 — Autonomous Webhook Endpoint powered by ExecutionEngine Kernel
@@ -65,68 +71,39 @@ export async function POST(
         }
       }
 
-      const orgContext = await OrganizationSDK.resolve(projectId, 'HERMES');
-      let botToken = metadata?.botConfig?.telegramToken || (orgContext.activeProduct?.connectors as any)?.telegram?.botToken;
+      // Inject the target tenant so the BindingResolver can correctly map the user
+      body.targetTenant = projectRecord.slug;
 
-      // Env override parity with the legacy route (bot/webhook/route.ts): any
-      // project's Telegram bot token can be managed via a per-slug Railway env
-      // var (TELEGRAM_<SLUG>_BOT_TOKEN) so it can be rotated without touching
-      // the DB.
-      const envTokenKey = `TELEGRAM_${projectRecord.slug.toUpperCase().replace(/-/g, '_')}_BOT_TOKEN`;
-      botToken = process.env[envTokenKey] || botToken;
+      try {
+        // C5.18: Thin webhook boundary. Delegate directly to OmnichannelGateway.
+        const normalized = await omnichannelGateway.receive({
+          channelType: 'telegram',
+          externalId: String(body.update_id),
+          rawPayload: body
+        });
 
-      body.botToken = botToken;
-      body.projectRecord = projectRecord;
-      body.metadata = metadata;
+        // Asynchronous dispatch for native webhooks and bot daemon
+        channelDispatcher.dispatchAsync(normalized).catch((err) => {
+          console.error('[Telegram Dispatch Error]:', err);
+        });
 
-      const context = TelegramAdapter.parse(projectId, body);
-      userMessage = context.payload.userMessage;
-      chatId = context.payload.chatId;
-
-      if (!userMessage && !context.payload.raw?.callback_query) {
-        return NextResponse.json({ ok: true, note: 'Ignored non-message update' });
+        return NextResponse.json({
+          ok: true,
+          status: 'ACCEPTED',
+          normalizedMessageId: normalized.message.messageId,
+          organizationId: normalized.organizationId,
+          correlationId: normalized.correlationId
+        });
+      } catch (error: any) {
+        if (error instanceof DuplicateMessageError) {
+          return NextResponse.json({ status: 'IDEMPOTENT_SKIPPED', message: error.message }, { status: 200 });
+        }
+        if (error instanceof InvalidChannelPayloadError) {
+          return NextResponse.json({ error: error.message }, { status: 400 });
+        }
+        console.error('[Telegram Webhook Error]:', error);
+        return NextResponse.json({ error: 'Internal processing error' }, { status: 500 });
       }
-
-      // Execute via Unified API
-      const engine = new HermesExecutionEngine();
-      const result = await engine.execute(context);
-
-      const reply = TelegramAdapter.render(result);
-
-      // Coherent reply contract for the Channel Mesh bot bridge (Fase 2/3):
-      // - The bot daemon (pandoras-telegram-bot) POSTs the raw Telegram update with
-      //   header `x-hermes-bot: 1`, signalling it will render the reply itself
-      //   (including inline evidence + human-escalation buttons). In that mode we
-      //   RETURN (reply, evidenceCid, escalate) and DO NOT send directly -> single
-      //   response with reply_markup, no double-send.
-      // - If the webhook is hit by Telegram's native webhook (no bot header), we send
-      //   the reply directly over the bot token as a safe self-contained fallback.
-      const botWillReply = req.headers.get('x-hermes-bot') === '1';
-
-      const tel = (result.telemetry as any) || {};
-      const escalate = tel.blocked === true
-        || tel.fallbackTriggered === 'technical'
-        || tel.fallbackTriggered === 'knowledge';
-      const evidenceCid = tel.evidenceCid || null;
-
-      const sendDirectly = botToken && !!reply && reply.trim() && !botWillReply;
-      if (sendDirectly) {
-        await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ chat_id: chatId, text: reply })
-        }).catch(e => console.error('[Webhook Telegram Send Error]:', e));
-      }
-
-      return NextResponse.json({
-        ok: true,
-        channel,
-        result,
-        reply: (botWillReply && reply) ? reply : undefined,
-        evidenceCid,
-        escalate,
-        replyHandledByBot: !!(botWillReply && reply && reply.trim()),
-      });
     }
 
     // Default fallback for other channels temporarily

@@ -30,6 +30,7 @@ import {
   GovernedCapability,
   RuntimeMessage,
   RuntimeTrace,
+  CanonicalMemoryFact,
 } from './contracts';
 // Import from context-merger — this is the type produced by CognitiveContextBuilder.
 import { ConversationContext as EffectiveContext } from '../addons/context-merger';
@@ -63,6 +64,7 @@ export class CognitiveContextAdapter {
     effectiveContext: EffectiveContext,
     conversationHistory: RuntimeMessage[],
     currentMessage: RuntimeMessage,
+    canonicalMemory?: CanonicalMemoryFact[],
   ): { reasoningContext: ReasoningContext; trace: Omit<RuntimeTrace, 'runtimeId' | 'conversationId' | 'createdAt'> } {
     const excludedKnowledgeReasons: RuntimeTrace['excludedKnowledgeReasons'] = [];
     const excludedAddonReasons: RuntimeTrace['excludedAddonReasons'] = [];
@@ -333,6 +335,12 @@ export class CognitiveContextAdapter {
       (rawInterlocutor as any)?.tenantContext;
 
     // -------------------------------------------------------------------------
+    // 5.9. Authorized Surface Context (Phase 2 Enforcement)
+    // -------------------------------------------------------------------------
+    const surfaceContext = (effectiveContext as any)?.surfaceContext ||
+      (effectiveContext.core as any)?.surfaceContext;
+
+    // -------------------------------------------------------------------------
     // 6. Assemble ReasoningContext
     // -------------------------------------------------------------------------
     const reasoningContext: ReasoningContext = {
@@ -340,12 +348,14 @@ export class CognitiveContextAdapter {
       governanceRestrictions,
       tenantIdentity,
       activeKnowledge,
+      canonicalMemory,
       activeCapabilities,
       styleOverlay,
       knowledgeUnavailable: Boolean(effectiveContext.knowledgeUnavailable),
       interlocutor,
       canonicalIdentity,
       tenantContext,
+      surfaceContext,
       conversationHistory,
       currentMessage,
     };

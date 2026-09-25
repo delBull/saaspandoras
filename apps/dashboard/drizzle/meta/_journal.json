@@ -484,6 +484,13 @@
       "when": 1789945890353,
       "tag": "0068_fat_nomad",
       "breakpoints": true
+    },
+    {
+      "idx": 69,
+      "version": "7",
+      "when": 1790320230198,
+      "tag": "0069_breezy_thunderbolt",
+      "breakpoints": true
     }
   ]
 }

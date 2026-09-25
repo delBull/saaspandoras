@@ -181,6 +181,15 @@ export interface GovernedCapability {
   requiresHumanApproval?: boolean;
 }
 
+export interface CanonicalMemoryFact {
+  id: string;
+  type: string; // 'FACT' | 'PREFERENCE' | 'GOAL' | 'CONTEXT'
+  content: string;
+  source: string;
+  sourceType: string;
+  confidence?: number;
+}
+
 export interface ReasoningContext {
   /**
    * Ordered by precedence (index 0 = highest authority).
@@ -199,6 +208,10 @@ export interface ReasoningContext {
    * K11-A06, K11-A07, K11-A08
    */
   activeKnowledge: GovernedKnowledgeFact[];
+  /**
+   * Authorized long-term canonical memory facts specific to the identity in this tenant.
+   */
+  canonicalMemory?: CanonicalMemoryFact[];
   /**
    * ONLY ACTIVE add-on capabilities.
    * K11-A09: SUSPENDED/DEACTIVATED never enter.
@@ -240,6 +253,13 @@ export interface ReasoningContext {
   };
   canonicalIdentity?: import('@/lib/identity/types').CanonicalIdentityRecord;
   tenantContext?: import('@/lib/identity/tenant-context-resolver').TenantContextRecord;
+  surfaceContext?: {
+    surface: string;
+    route?: string;
+    projectId?: string;
+    resourceId?: string;
+    mode?: string;
+  };
   conversationHistory: RuntimeMessage[];
   currentMessage: RuntimeMessage;
 }

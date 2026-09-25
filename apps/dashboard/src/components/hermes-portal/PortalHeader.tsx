@@ -12,8 +12,9 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import type { PortalOrganization } from '@/lib/portal/portal-types';
 import type { PortalRole } from '@/lib/portal/permissions';
-import { LogOut, Zap, Terminal, Layers, Rocket, Landmark } from 'lucide-react';
+import { LogOut, Zap, Terminal, Layers, Rocket, Landmark, Brain } from 'lucide-react';
 import { QuickCommandModal } from './QuickCommandModal';
+import { HermesAmbientDrawer } from './HermesAmbientDrawer';
 
 interface PortalHeaderProps {
   organization: PortalOrganization;
@@ -23,6 +24,7 @@ interface PortalHeaderProps {
 
 export function PortalHeader({ organization, role, organizationSlug }: PortalHeaderProps) {
   const [quickCommandOpen, setQuickCommandOpen] = useState(false);
+  const [ambientDrawerOpen, setAmbientDrawerOpen] = useState(false);
 
   // Global ⌘K / Ctrl+K keyboard shortcut listener
   useEffect(() => {
@@ -91,14 +93,24 @@ export function PortalHeader({ organization, role, organizationSlug }: PortalHea
 
         {/* Right: Quick Command & User Action */}
         <div className="flex items-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => setAmbientDrawerOpen(true)}
+            className="flex items-center gap-2 bg-indigo-500/10 hover:bg-indigo-500/20 active:bg-indigo-500/30 border border-indigo-500/20 px-2.5 py-1 rounded-lg text-indigo-300 hover:text-indigo-200 text-[11px] transition-all cursor-pointer shadow-inner"
+            title="Hermes Ambient Assistant"
+          >
+            <Brain className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Hermes Ambient</span>
+          </button>
+
           <button 
             type="button"
             onClick={() => setQuickCommandOpen(true)}
             className="flex items-center gap-2 bg-white/5 hover:bg-white/10 active:bg-white/15 border border-white/10 px-2.5 py-1 rounded-lg text-zinc-400 hover:text-zinc-200 text-[11px] transition-all cursor-pointer"
           >
-            <Terminal className="w-3.5 h-3.5 text-indigo-400" />
-            <span className="hidden sm:inline">Quick Command</span>
-            <kbd className="bg-black/50 px-1 py-0.2 rounded text-[10px] text-zinc-400 font-mono border border-white/5">⌘K</kbd>
+            <Terminal className="w-3.5 h-3.5 text-zinc-400" />
+            <span className="hidden sm:inline">Quick Cmd</span>
+            <kbd className="hidden lg:inline bg-black/50 px-1 py-0.2 rounded text-[10px] text-zinc-400 font-mono border border-white/5">⌘K</kbd>
           </button>
 
           <div className="px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-emerald-400 text-[10px] font-mono capitalize">
@@ -119,6 +131,14 @@ export function PortalHeader({ organization, role, organizationSlug }: PortalHea
       <QuickCommandModal
         isOpen={quickCommandOpen}
         onClose={() => setQuickCommandOpen(false)}
+        organizationSlug={organizationSlug}
+        organizationName={organization.name}
+      />
+
+      {/* Hermes Ambient AI Drawer */}
+      <HermesAmbientDrawer
+        isOpen={ambientDrawerOpen}
+        onClose={() => setAmbientDrawerOpen(false)}
         organizationSlug={organizationSlug}
         organizationName={organization.name}
       />

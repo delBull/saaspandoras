@@ -129,6 +129,9 @@ export interface ControlPlaneContext {
   surfaceContext?: {
     surface: string;
     section?: string;
+    route?: string;
+    projectId?: string;
+    resourceId?: string;
     mode: 'GUIDE' | 'ANALYZE' | 'PROPOSE' | 'EXECUTE';
     capabilities: import('../capabilities/types').CapabilityResolution[];
     objective?: {

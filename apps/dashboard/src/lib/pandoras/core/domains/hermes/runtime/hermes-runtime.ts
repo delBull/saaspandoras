@@ -538,11 +538,28 @@ export class HermesRuntime implements HermesCognitiveRuntime {
         } as any
       });
 
+      // Step 2d: Load Canonical User Memory (Cross-Channel / Omni-Channel Memory)
+      let canonicalMemory: any[] = [];
+      const canonicalIdentity = (effectiveContext as any)?.canonicalIdentity ||
+        (effectiveContext.core as any)?.canonicalIdentity ||
+        ((effectiveContext as any)?.interlocutor as any)?.canonicalIdentity;
+      
+      const identityId = canonicalIdentity?.identityId || canonicalIdentity?.id;
+      if (identityId) {
+        try {
+          const { CanonicalMemoryService } = await import('../memory/canonical-memory-service');
+          canonicalMemory = await CanonicalMemoryService.getActiveMemory(organizationId, identityId);
+        } catch (e) {
+          console.warn('[HermesRuntime] Failed to load canonical memory:', e);
+        }
+      }
+
       // Step 3: Adapt to ReasoningContext (one-way trust boundary)
       const { reasoningContext: rawReasoningContext, trace: traceInfo } = CognitiveContextAdapter.adapt(
         effectiveContext,
         conversationHistory,
         message,
+        canonicalMemory
       );
 
       // Step 3b: Pre-LLM Context Hygiene Validation (Phase 2.2 / 3.0 Gate T12)

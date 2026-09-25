@@ -225,6 +225,7 @@ export class PostgresConversationMemoryProvider implements ConversationMemoryPro
         id: `conv_${Date.now()}_${Math.random().toString(36).substring(7)}`,
         organizationId: targetOrgId,
         conversationId: convId,
+        channel: (input.controlPlaneContext as any)?.channel || 'SYSTEM',
         identityId: identityId || null,
         version: nextVersion,
         createdAt: new Date(),

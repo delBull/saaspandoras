@@ -1,7 +1,7 @@
 import { OrganizationChannelBinding } from './channel-binding-types';
 import { ChannelBindingNotFoundError, ChannelBindingInactiveError } from './channel-errors';
 import { db } from '@/db';
-import { channelIdentityBindings } from '@/db/schema';
+import { verifiedIdentities } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 
 export type TelegramIdentity =
@@ -43,6 +43,8 @@ export class DatabaseBindingResolver implements BindingResolver {
       throw new ChannelBindingNotFoundError('Identity has no valid external identifier');
     }
 
+    const targetTenant = identity.targetTenant || 'hermes';
+
     // 1. Check in-memory test bindings
     if (this.mockBindings.has(externalUserId)) {
       const b = this.mockBindings.get(externalUserId)!;
@@ -52,66 +54,48 @@ export class DatabaseBindingResolver implements BindingResolver {
       return b;
     }
 
-    // 2. Query DB channel_identity_bindings table
+    // 2. Query DB verified_identities table (Canonical Identity Linking)
     try {
       const rows = await db
         .select()
-        .from(channelIdentityBindings)
+        .from(verifiedIdentities)
         .where(
           and(
-            eq(channelIdentityBindings.channel, channelType),
-            eq(channelIdentityBindings.externalUserId, externalUserId)
+            eq(verifiedIdentities.provider, channelType),
+            eq(verifiedIdentities.externalId, externalUserId),
+            eq(verifiedIdentities.status, 'ACTIVE')
           )
         )
         .limit(1);
 
-      const existing = rows[0];
-      if (existing) {
-        if (existing.status !== 'ACTIVE') {
-          throw new ChannelBindingInactiveError(`Channel binding '${existing.id}' is INACTIVE`);
-        }
-
+      const verified = rows[0];
+      
+      if (verified) {
         return {
-          id: existing.id,
-          organizationId: existing.identityId, // identityId points to org/tenant ID
-          channelType: existing.channel as 'telegram' | 'whatsapp',
-          channelIdentity: existing.address || `@${channelType}_${externalUserId}`,
-          credentialsRef: `vault:${channelType}:${existing.id}`,
-          status: existing.status as 'ACTIVE' | 'INACTIVE'
+          id: verified.id,
+          organizationId: targetTenant, // Enforced by the Webhook URL parameter / Channel
+          channelType: channelType as 'telegram' | 'whatsapp',
+          channelIdentity: verified.userId, // Map directly to Canonical User ID
+          credentialsRef: `vault:${channelType}:${targetTenant}`,
+          status: 'ACTIVE'
         };
       }
     } catch (err: any) {
-      if (err instanceof ChannelBindingInactiveError) throw err;
-      console.warn('[BindingResolver] DB lookup fallback:', err?.message || err);
+      console.warn('[BindingResolver] verified_identities DB lookup failed:', err?.message || err);
     }
 
-    // --- LAUNCH MODE: Auto-provision binding dynamically ---
-    const targetTenant = identity.targetTenant || 'hermes';
-    console.log(`[BindingResolver] Auto-provisioning new user ${externalUserId} to ${targetTenant}`);
-    try {
-      const newBindingId = crypto.randomUUID();
-      await db.insert(channelIdentityBindings).values({
-        id: newBindingId,
-        identityId: targetTenant,
-        channel: channelType,
-        externalUserId: externalUserId,
-        address: `@${channelType}_${externalUserId}`,
-        status: 'ACTIVE'
-      });
-      
-      return {
-        id: newBindingId,
-        organizationId: targetTenant,
-        channelType: channelType as 'telegram' | 'whatsapp',
-        channelIdentity: `@${channelType}_${externalUserId}`,
-        credentialsRef: `vault:${channelType}:${newBindingId}`,
-        status: 'ACTIVE'
-      };
-    } catch (insertErr) {
-      console.error(`[BindingResolver] Failed to auto-provision ${targetTenant} binding:`, insertErr);
-    }
-    // --------------------------------------------------------
-
-    throw new ChannelBindingNotFoundError(`No active binding found for external user: ${externalUserId}`);
+    // 3. Fallback: Ephemeral Unlinked Identity
+    // We DO NOT auto-provision into the DB. We return an ephemeral identity so Hermes can
+    // process the message and respond with the "Please link your account" challenge.
+    console.log(`[BindingResolver] Unlinked identity detected (${externalUserId}). Returning ephemeral binding for ${targetTenant}`);
+    
+    return {
+      id: `ephemeral_${externalUserId}`,
+      organizationId: targetTenant,
+      channelType: channelType as 'telegram' | 'whatsapp',
+      channelIdentity: `unlinked_${channelType}_${externalUserId}`,
+      credentialsRef: `vault:${channelType}:${targetTenant}`,
+      status: 'ACTIVE'
+    };
   }
 }

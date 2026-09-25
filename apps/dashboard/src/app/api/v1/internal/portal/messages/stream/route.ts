@@ -21,7 +21,7 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { organizationSlug, content, clientMessageId, topicId = 'general', glSlug, ambassadorId, isFirstMessage } = body;
+    const { organizationSlug, content, clientMessageId, topicId = 'general', glSlug, ambassadorId, isFirstMessage, surfaceContext } = body;
 
     if (!organizationSlug || !content) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -61,7 +61,8 @@ export async function POST(request: Request) {
       externalId: clientMessageId || `msg_${Date.now()}`,
       rawPayload: {
         content: actualContent,
-        clientMessageId
+        clientMessageId,
+        proposedSurfaceContext: surfaceContext
       }
     }, cpCtx);
 
@@ -113,6 +114,14 @@ export async function POST(request: Request) {
         interlocutor: resolvedInterlocutor,
         canonicalIdentity: resolvedInterlocutor?.canonicalIdentity,
         tenantContext: resolvedInterlocutor?.tenantContext,
+        surfaceContext: normalizedInbound.authorizedSurfaceContext ? {
+          surface: normalizedInbound.authorizedSurfaceContext.surface,
+          route: normalizedInbound.authorizedSurfaceContext.route,
+          projectId: normalizedInbound.authorizedSurfaceContext.projectId,
+          resourceId: normalizedInbound.authorizedSurfaceContext.resourceId,
+          mode: 'GUIDE',
+          capabilities: []
+        } : undefined
       }
     }, { signal: abortController.signal });
 

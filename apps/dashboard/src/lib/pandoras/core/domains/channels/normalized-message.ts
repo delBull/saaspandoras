@@ -27,4 +27,11 @@ export interface NormalizedInboundMessage {
   correlationId: string;
   idempotencyKey: string;
   receivedAt: Date;
+
+  authorizedSurfaceContext?: {
+    surface: 'nexus' | 'deal_room' | 'academy' | 'admin' | string;
+    projectId?: string;
+    resourceId?: string;
+    route?: string;
+  };
 }
