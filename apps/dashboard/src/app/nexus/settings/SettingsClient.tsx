@@ -253,17 +253,32 @@ export default function NexusSettingsPage({ isUserAdmin = false, userRole = "OPE
                     <span>Terminal Privada</span>
                   </button>
                 </DialogTrigger>
-                <DialogContent className="max-w-4xl bg-zinc-950 border-zinc-800 text-white p-6 shadow-2xl">
-                  <DialogHeader className="border-b border-zinc-800 pb-3">
-                    <DialogTitle className="text-lg font-bold flex items-center gap-2 text-white">
-                      <CreditCard className="w-4 h-4 text-lime-400" />
-                      Terminal de Cobros Privada (Super Admin)
-                    </DialogTitle>
-                    <DialogDescription className="text-xs text-zinc-400">
-                      Settlement on-chain directo a tu wallet personal. Desacoplado de tenants y CRM.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <PrivateTerminalClient inModal={true} />
+                <DialogContent className="max-w-4xl max-h-[90vh] bg-[#09090D]/95 border border-lime-500/20 text-white p-0 shadow-2xl backdrop-blur-2xl rounded-3xl overflow-hidden flex flex-col">
+                  {/* Drawer Pull Indicator Header */}
+                  <div className="pt-3 pb-1 flex flex-col items-center justify-center border-b border-white/[0.06] bg-black/40 px-6">
+                    <div className="w-12 h-1 bg-white/20 rounded-full mb-3" />
+                    <div className="w-full flex items-center justify-between pb-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-7 h-7 rounded-lg bg-lime-500/10 border border-lime-500/30 flex items-center justify-center">
+                          <CreditCard className="w-4 h-4 text-lime-400" />
+                        </div>
+                        <div>
+                          <div className="text-sm font-bold text-white flex items-center gap-2">
+                            <span>Private Pay & Finance Terminal</span>
+                            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-lime-500/10 border border-lime-500/30 text-lime-400">
+                              SUPER ADMIN
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-zinc-400">
+                            Cobro on-chain directo a tu wallet personal sin custodia ni CRM.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
+                    <PrivateTerminalClient inModal={true} />
+                  </div>
                 </DialogContent>
               </Dialog>
             )}

@@ -30,9 +30,23 @@ export function PrivateTerminalClient({ inModal = false }: { inModal?: boolean }
     }
   }, [account?.address, destinationWallet]);
 
+  const getAuthHeaders = (): Record<string, string> => {
+    const headers: Record<string, string> = {};
+    if (typeof window !== "undefined") {
+      const storedToken = localStorage.getItem("pandoras_nexus_token") || localStorage.getItem("nexus_token");
+      if (storedToken) headers["x-nexus-token"] = storedToken;
+    }
+    if (account?.address) {
+      headers["x-wallet-address"] = account.address;
+    }
+    return headers;
+  };
+
   const loadLinks = async () => {
     try {
-      const res = await fetch("/api/private/payments");
+      const res = await fetch("/api/private/payments", {
+        headers: getAuthHeaders(),
+      });
       if (res.status === 403 || res.status === 401) {
         toast.error("Acceso restringido a Super Administrador");
         setLoading(false);
@@ -51,7 +65,7 @@ export function PrivateTerminalClient({ inModal = false }: { inModal?: boolean }
 
   useEffect(() => {
     loadLinks();
-  }, []);
+  }, [account?.address]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,7 +78,10 @@ export function PrivateTerminalClient({ inModal = false }: { inModal?: boolean }
     try {
       const res = await fetch("/api/private/payments", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          ...getAuthHeaders(),
+        },
         body: JSON.stringify({
           title,
           description: description || undefined,
@@ -100,13 +117,13 @@ export function PrivateTerminalClient({ inModal = false }: { inModal?: boolean }
   };
 
   return (
-    <div className={inModal ? "space-y-6 max-h-[80vh] overflow-y-auto pr-1" : "max-w-6xl mx-auto p-6 md:p-10 space-y-10"}>
-      {/* Top Banner */}
+    <div className={inModal ? "space-y-6" : "max-w-6xl mx-auto p-6 md:p-10 space-y-10"}>
+      {/* Top Banner (Full Page Mode) */}
       {!inModal && (
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-800 pb-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.08] pb-6">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="h-2 w-2 rounded-full bg-lime-400 animate-pulse" />
+              <span className="h-2 w-2 rounded-full bg-lime-400 animate-pulse shadow-sm shadow-lime-400" />
               <span className="text-[11px] font-mono tracking-widest uppercase text-lime-400 font-semibold">
                 Sovereign Rail • Super Admin Only
               </span>
@@ -117,11 +134,11 @@ export function PrivateTerminalClient({ inModal = false }: { inModal?: boolean }
             </p>
           </div>
 
-          <div className="flex items-center gap-3 bg-zinc-900/80 border border-zinc-800 p-3 rounded-xl">
+          <div className="flex items-center gap-3 bg-[#0D0D12] border border-white/[0.08] p-3.5 rounded-2xl shadow-inner">
             <Wallet className="w-5 h-5 text-lime-400" />
             <div className="text-xs">
-              <div className="text-zinc-500 font-medium">Wallet Administrador Activa</div>
-              <div className="font-mono text-zinc-300">
+              <div className="text-zinc-400 font-medium">Wallet Administrador Activa</div>
+              <div className="font-mono text-zinc-200">
                 {account?.address ? `${account.address.slice(0, 8)}...${account.address.slice(-6)}` : "No conectada"}
               </div>
             </div>
@@ -129,33 +146,41 @@ export function PrivateTerminalClient({ inModal = false }: { inModal?: boolean }
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      {/* Drawer Body Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Form: Generator */}
         <div className="lg:col-span-5">
-          <Card className="bg-zinc-950 border-zinc-800 text-white shadow-xl">
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                <Plus className="w-4 h-4 text-lime-400" /> Generar Nuevo Cobro Directo
-              </CardTitle>
-              <CardDescription className="text-zinc-400 text-xs">
-                Crea un link único de settlement para tus servicios externos.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleCreate} className="space-y-4">
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-zinc-300">Concepto / Título *</Label>
-                  <Input
-                    placeholder="Ej. Asesoría Arquitectura / Retainer"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    required
-                    className="bg-zinc-900 border-zinc-800 text-white"
-                  />
+          <div className="bg-[#0c0c12]/90 border border-white/[0.08] hover:border-lime-500/30 rounded-2xl text-white shadow-xl p-5 md:p-6 transition-all">
+            <div className="mb-5 pb-3 border-b border-white/[0.06] flex items-center justify-between">
+              <div>
+                <div className="text-sm font-semibold flex items-center gap-2 text-white">
+                  <Plus className="w-4 h-4 text-lime-400" /> Generar Cobro Directo
                 </div>
+                <p className="text-zinc-400 text-[11px] mt-0.5">
+                  Crea un link único sin custodia ni intermediación.
+                </p>
+              </div>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-lime-500/10 text-lime-400 border border-lime-500/20">
+                Non-Custodial
+              </span>
+            </div>
 
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-zinc-300">Monto en USD (USDC) *</Label>
+            <form onSubmit={handleCreate} className="space-y-4">
+              <div className="space-y-1.5">
+                <Label className="text-xs text-zinc-300 font-medium">Concepto / Título *</Label>
+                <Input
+                  placeholder="Ej. Asesoría Arquitectura / Retainer"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  required
+                  className="bg-[#12121A] border-white/10 text-white rounded-xl focus:border-lime-500/50 text-xs py-2"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs text-zinc-300 font-medium">Monto en USD (USDC) *</Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 font-mono text-sm">$</span>
                   <Input
                     type="number"
                     step="0.01"
@@ -163,98 +188,109 @@ export function PrivateTerminalClient({ inModal = false }: { inModal?: boolean }
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
                     required
-                    className="bg-zinc-900 border-zinc-800 text-white font-mono text-lg"
+                    className="bg-[#12121A] border-white/10 text-white pl-7 font-mono text-base rounded-xl focus:border-lime-500/50"
                   />
                 </div>
+              </div>
 
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-zinc-300">Wallet Receptora (Base Mainnet) *</Label>
-                  <Input
-                    placeholder="0x..."
-                    value={destinationWallet}
-                    onChange={(e) => setDestinationWallet(e.target.value)}
-                    required
-                    className="bg-zinc-900 border-zinc-800 text-white font-mono text-xs"
-                  />
-                  <p className="text-[11px] text-zinc-500">
-                    Los fondos se depositan directamente aquí sin pasar por custodia de la plataforma.
-                  </p>
-                </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-zinc-300 font-medium">Wallet Receptora (Base Mainnet) *</Label>
+                <Input
+                  placeholder="0x..."
+                  value={destinationWallet}
+                  onChange={(e) => setDestinationWallet(e.target.value)}
+                  required
+                  className="bg-[#12121A] border-white/10 text-white font-mono text-xs rounded-xl focus:border-lime-500/50"
+                />
+                <p className="text-[10px] text-zinc-400 leading-tight">
+                  Fondos depositados directamente aquí vía contrato/transferencia segura.
+                </p>
+              </div>
 
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-zinc-300">Descripción / Términos (Opcional)</Label>
-                  <Textarea
-                    placeholder="Detalles adicionales para el cliente..."
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    rows={2}
-                    className="bg-zinc-900 border-zinc-800 text-white text-xs"
-                  />
-                </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-zinc-300 font-medium">Descripción / Términos (Opcional)</Label>
+                <Textarea
+                  placeholder="Detalles adicionales para el comprobante o cliente..."
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={2}
+                  className="bg-[#12121A] border-white/10 text-white text-xs rounded-xl focus:border-lime-500/50"
+                />
+              </div>
 
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-zinc-300">Días de Expiración</Label>
-                  <Input
-                    type="number"
-                    min="1"
-                    max="365"
-                    value={expiresInDays}
-                    onChange={(e) => setExpiresInDays(e.target.value)}
-                    className="bg-zinc-900 border-zinc-800 text-white text-xs"
-                  />
-                </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-zinc-300 font-medium">Días de Expiración</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  max="365"
+                  value={expiresInDays}
+                  onChange={(e) => setExpiresInDays(e.target.value)}
+                  className="bg-[#12121A] border-white/10 text-white text-xs rounded-xl focus:border-lime-500/50"
+                />
+              </div>
 
-                <Button
-                  type="submit"
-                  disabled={submitting}
-                  className="w-full bg-lime-400 hover:bg-lime-300 text-black font-semibold mt-4"
-                >
-                  {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : "Generar Enlace de Cobro"}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
+              <Button
+                type="submit"
+                disabled={submitting}
+                className="w-full bg-lime-400 hover:bg-lime-300 text-black font-semibold text-xs py-2.5 rounded-xl shadow-lg shadow-lime-500/20 transition-all cursor-pointer mt-2"
+              >
+                {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : "Generar Enlace de Cobro"}
+              </Button>
+            </form>
+          </div>
         </div>
 
         {/* List of Active Links */}
-        <div className="lg:col-span-7 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-white">Enlaces Privados Generados</h2>
-            <span className="text-xs text-zinc-500 font-mono">{links.length} registros</span>
+        <div className="lg:col-span-7 space-y-3.5">
+          <div className="flex items-center justify-between pb-2 border-b border-white/[0.06]">
+            <h2 className="text-sm font-semibold text-white flex items-center gap-2">
+              <span>Terminales Activas</span>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-300">
+                {links.length}
+              </span>
+            </h2>
+            <button
+              onClick={loadLinks}
+              disabled={loading}
+              className="text-[11px] text-zinc-400 hover:text-white transition-colors"
+            >
+              Actualizar
+            </button>
           </div>
 
           {loading ? (
-            <div className="flex items-center justify-center p-12 text-zinc-500">
-              <Loader2 className="w-6 h-6 animate-spin mr-2" /> Cargando enlaces...
+            <div className="flex items-center justify-center p-12 text-zinc-500 text-xs">
+              <Loader2 className="w-5 h-5 animate-spin mr-2 text-lime-400" /> Cargando enlaces...
             </div>
           ) : links.length === 0 ? (
-            <div className="p-8 border border-dashed border-zinc-800 rounded-xl text-center text-zinc-500 text-sm">
-              No tienes enlaces de cobro privados activos aún.
+            <div className="p-8 border border-dashed border-white/[0.08] rounded-2xl text-center text-zinc-500 text-xs">
+              No tienes enlaces de cobro privados activos aún. Genera uno con el formulario.
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2.5 max-h-[550px] overflow-y-auto custom-scrollbar pr-1">
               {links.map((link) => (
                 <div
                   key={link.id}
-                  className="p-4 rounded-xl bg-zinc-950 border border-zinc-800/80 hover:border-zinc-700 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                  className="p-4 rounded-2xl bg-[#0c0c12]/80 border border-white/[0.06] hover:border-lime-500/30 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 group"
                 >
                   <div className="space-y-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="font-semibold text-white truncate text-sm">{link.title}</span>
-                      <span className="text-[10px] px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-lime-400 font-mono">
+                      <span className="font-semibold text-white truncate text-xs">{link.title}</span>
+                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-lime-400 font-mono">
                         Base
                       </span>
                     </div>
-                    <div className="text-xs text-zinc-400 font-mono">
+                    <div className="text-[11px] text-zinc-400 font-mono">
                       Destino: {link.destinationWallet.slice(0, 6)}...{link.destinationWallet.slice(-4)}
                     </div>
                     {link.description && (
-                      <p className="text-xs text-zinc-500 line-clamp-1">{link.description}</p>
+                      <p className="text-[11px] text-zinc-500 line-clamp-1">{link.description}</p>
                     )}
                   </div>
 
-                  <div className="flex sm:flex-col items-end justify-between sm:justify-center gap-2 shrink-0">
-                    <span className="text-lg font-bold text-white font-mono">
+                  <div className="flex sm:flex-col items-end justify-between sm:justify-center gap-1.5 shrink-0">
+                    <span className="text-base font-bold text-white font-mono">
                       ${Number(link.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                     </span>
                     <div className="flex items-center gap-1.5">
@@ -262,20 +298,20 @@ export function PrivateTerminalClient({ inModal = false }: { inModal?: boolean }
                         size="sm"
                         variant="outline"
                         onClick={() => copyToClipboard(link.id)}
-                        className="h-8 px-2.5 bg-zinc-900 border-zinc-800 hover:bg-zinc-800 text-xs text-zinc-300"
+                        className="h-7 px-2.5 bg-[#14141c] border-white/10 hover:border-lime-500/40 text-[11px] text-zinc-200 rounded-lg cursor-pointer"
                       >
                         {copiedId === link.id ? (
                           <Check className="w-3.5 h-3.5 text-lime-400" />
                         ) : (
-                          <Copy className="w-3.5 h-3.5" />
+                          <Copy className="w-3.5 h-3.5 text-zinc-400" />
                         )}
-                        <span className="ml-1.5">Copiar</span>
+                        <span className="ml-1">Copiar</span>
                       </Button>
                       <Button
                         size="sm"
                         variant="ghost"
                         onClick={() => window.open(`/pay/private/${link.id}`, "_blank")}
-                        className="h-8 px-2 text-zinc-400 hover:text-white"
+                        className="h-7 px-2 text-zinc-400 hover:text-white hover:bg-white/5 rounded-lg cursor-pointer"
                       >
                         <ExternalLink className="w-3.5 h-3.5" />
                       </Button>

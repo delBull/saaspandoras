@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { privatePaymentLinks } from "@/db/schema";
 import { validateAdminSession } from "@/lib/admin-auth";
+import { getNexusAuthContext } from "@/lib/nexus/nexus-rbac";
 import { z } from "zod";
 import { desc } from "drizzle-orm";
 
@@ -22,8 +23,39 @@ const CreatePrivateLinkSchema = z.object({
  * 🔒 Private Payment Rail — Admin Listing & Creation
  * Strictly isolated: zero tenant crossover, zero CRM sync, server-enforced destination.
  */
+async function resolvePrivateAdmin(req: NextRequest) {
+  // Strategy 1: Validate via validateAdminSession
+  try {
+    const adminCheck = await validateAdminSession(req.headers);
+    if (adminCheck.session?.address) {
+      return { address: adminCheck.session.address, errorResponse: null };
+    }
+  } catch (err) {
+    console.warn("[PrivatePayments API] validateAdminSession fallback check:", err);
+  }
+
+  // Strategy 2: Validate via Nexus RBAC Context (x-nexus-token / cookie)
+  try {
+    const nexusAuth = await getNexusAuthContext(req.headers);
+    if (nexusAuth.isAuthenticated && (nexusAuth.role === "SUPER_ADMIN" || nexusAuth.role === "ADMIN")) {
+      const address = nexusAuth.wallet || "0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9";
+      return { address, errorResponse: null };
+    }
+  } catch (err) {
+    console.warn("[PrivatePayments API] getNexusAuthContext fallback check:", err);
+  }
+
+  return {
+    address: null,
+    errorResponse: NextResponse.json(
+      { error: "Forbidden: Super Admin session required." },
+      { status: 403 }
+    ),
+  };
+}
+
 export async function GET(req: NextRequest) {
-  const { session, errorResponse } = await validateAdminSession(req.headers);
+  const { address, errorResponse } = await resolvePrivateAdmin(req);
   if (errorResponse) return errorResponse;
 
   try {
@@ -35,16 +67,16 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       success: true,
       links,
-      admin: session?.address,
+      admin: address,
     });
   } catch (error: any) {
     console.error("[PrivatePayments API] Error listing links:", error);
-    return NextResponse.json({ error: "Failed to load private payment links" }, { status: 500 });
+    return NextResponse.json({ error: error?.message || "Failed to load private payment links" }, { status: 500 });
   }
 }
 
 export async function POST(req: NextRequest) {
-  const { session, errorResponse } = await validateAdminSession(req.headers);
+  const { address, errorResponse } = await resolvePrivateAdmin(req);
   if (errorResponse) return errorResponse;
 
   try {
@@ -88,8 +120,8 @@ export async function POST(req: NextRequest) {
         expiresAt,
         status: "active",
         metadata: {
-          createdByUser: session?.userId,
-          createdByWallet: session?.address,
+          createdByUser: address,
+          createdByWallet: address,
         },
       })
       .returning();
@@ -105,6 +137,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (error: any) {
     console.error("[PrivatePayments API] Error creating link:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json({ error: error?.message || "Internal Server Error" }, { status: 500 });
   }
 }

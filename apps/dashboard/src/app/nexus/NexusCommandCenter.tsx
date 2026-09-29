@@ -281,10 +281,12 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
             dismissed = dismissed.slice(-50);
           }
           
-          const unread = data.broadcasts.filter((b: any) => !dismissed.includes(b.id));
+          const unread = data.broadcasts.filter((b: any) => !dismissed.includes(String(b.id)));
           setUnreadBroadcasts(unread);
           if (unread.length > 0) {
             setIsBroadcastModalOpen(true);
+          } else {
+            setIsBroadcastModalOpen(false);
           }
         }
       } catch (err) {
@@ -292,28 +294,29 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
       }
     }
     fetchBroadcasts();
-  }, [auth?.email, role]);
+  }, [auth?.email, auth?.wallet, role]);
 
   const handleDismissBroadcast = (broadcastId: string) => {
     try {
+      const idStr = String(broadcastId);
       let dismissed: string[] = [];
       try {
         const stored = localStorage.getItem('nexus_dismissed_broadcasts');
         if (stored && stored !== 'undefined') dismissed = JSON.parse(stored);
       } catch {}
       try {
-            const cookieMatch = document.cookie.match(/(?:^|; )nexus_dismissed_broadcasts=([^;]*)/);
-            if (cookieMatch && cookieMatch[1]) {
-              const cookieDismissed = JSON.parse(decodeURIComponent(cookieMatch[1]));
+        const cookieMatch = document.cookie.match(/(?:^|; )nexus_dismissed_broadcasts=([^;]*)/);
+        if (cookieMatch && cookieMatch[1]) {
+          const cookieDismissed = JSON.parse(decodeURIComponent(cookieMatch[1]));
           if (Array.isArray(cookieDismissed)) {
-            cookieDismissed.forEach((id: string) => { if (!dismissed.includes(id)) dismissed.push(id); });
+            cookieDismissed.forEach((id: string) => { if (!dismissed.includes(String(id))) dismissed.push(String(id)); });
           }
         }
       } catch {}
       if (!Array.isArray(dismissed)) dismissed = [];
       
-      if (!dismissed.includes(broadcastId)) {
-        dismissed.push(broadcastId);
+      if (!dismissed.includes(idStr)) {
+        dismissed.push(idStr);
         
         // Size mitigation: Keep only the last 50 dismissed IDs to prevent cookie overflow (>4KB)
         if (dismissed.length > 50) {
@@ -326,10 +329,13 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
           document.cookie = `nexus_dismissed_broadcasts=${encodeURIComponent(JSON.stringify(dismissed))}; path=/; max-age=31536000; ${domain} SameSite=Lax`;
         } catch {}
       }
-      setUnreadBroadcasts(prev => prev.filter(b => b.id !== broadcastId));
-      if (unreadBroadcasts.length <= 1) {
-        setIsBroadcastModalOpen(false);
-      }
+      setUnreadBroadcasts(prev => {
+        const next = prev.filter(b => String(b.id) !== idStr);
+        if (next.length === 0) {
+          setIsBroadcastModalOpen(false);
+        }
+        return next;
+      });
     } catch (err) {
       console.warn('[Nexus] Failed to save dismissed state:', err);
     }
@@ -367,32 +373,39 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
       console.warn("Failed to parse custom stations", error);
     }
     
-    if (auth.email) {
-      const welcomeKey = `pandoras_welcome_${auth.email}`;
-      // Consumir el flag inmediatamente: así el welcome + onboarding aparecen
-      // únicamente la 1era vez del auth/login, aunque cierres el flujo a medias.
-      const isFirstVisit = (() => {
-        try {
-          return typeof window !== "undefined" && localStorage.getItem(welcomeKey) !== "true";
-        } catch {
-          return false;
-        }
-      })();
-      if (isFirstVisit) {
-        try {
-          localStorage.setItem(welcomeKey, "true");
-        } catch {
-          /* noop */
-        }
+    const actorIdentity = (auth.email || auth.wallet || 'operator').toLowerCase().trim();
+    const welcomeKey = `pandoras_welcome_${actorIdentity}`;
+    
+    // Consumir el flag inmediatamente: así el welcome + onboarding aparecen
+    // únicamente la 1era vez del auth/login, aunque cierres el flujo a medias.
+    const isFirstVisit = (() => {
+      try {
+        if (typeof window === "undefined") return false;
+        const stored = localStorage.getItem(welcomeKey);
+        const cookieMatch = document.cookie.includes(`${welcomeKey}=true`);
+        if (stored === "true" || cookieMatch) return false;
+        return true;
+      } catch {
+        return false;
       }
-      setShowWelcomePanel(isFirstVisit);
-      // Desde la 2da visita el sidebar entra oculto; solo el flujo de iniciación
-      // (1era visita) o un tour explícito (?tour=ecosystem) lo abrirá.
-      setShowGuideSidebar(isFirstVisit || isFirstVisitParam);
+    })();
+
+    if (isFirstVisit) {
+      try {
+        localStorage.setItem(welcomeKey, "true");
+        const domain = window.location.hostname.includes('pandoras.finance') ? 'domain=.pandoras.finance;' : '';
+        document.cookie = `${welcomeKey}=true; path=/; max-age=31536000; ${domain} SameSite=Lax`;
+      } catch {
+        /* noop */
+      }
     }
+    setShowWelcomePanel(isFirstVisit);
+    // Desde la 2da visita el sidebar entra oculto; solo el flujo de iniciación
+    // (1era visita) o un tour explícito (?tour=ecosystem) lo abrirá.
+    setShowGuideSidebar(isFirstVisit || isFirstVisitParam);
 
     return () => {};
-  }, [auth.email, isFirstVisitParam]);
+  }, [auth.email, auth.wallet, isFirstVisitParam]);
 
   const getRoleBadge = () => {
     switch (role) {
@@ -879,13 +892,17 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
 
                     <button
                       onClick={() => {
-                        if (auth.email) {
-                          localStorage.setItem(`pandoras_welcome_${auth.email}`, 'true');
-                        }
+                        const actorIdentity = (auth.email || auth.wallet || 'operator').toLowerCase().trim();
+                        const welcomeKey = `pandoras_welcome_${actorIdentity}`;
+                        try {
+                          localStorage.setItem(welcomeKey, 'true');
+                          const domain = window.location.hostname.includes('pandoras.finance') ? 'domain=.pandoras.finance;' : '';
+                          document.cookie = `${welcomeKey}=true; path=/; max-age=31536000; ${domain} SameSite=Lax`;
+                        } catch {}
                         setShowWelcomePanel(false);
                         if (!isTourOpen) setIsTourOpen(true);
                       }}
-                      className="w-full bg-amber-500 hover:bg-amber-400 text-black font-semibold text-sm py-3 px-4 rounded-xl shadow-lg shadow-amber-500/20 transition-all"
+                      className="w-full bg-amber-500 hover:bg-amber-400 text-black font-semibold text-sm py-3 px-4 rounded-xl shadow-lg shadow-amber-500/20 transition-all cursor-pointer"
                     >
                       Entendido, iniciar operaciones
                     </button>
