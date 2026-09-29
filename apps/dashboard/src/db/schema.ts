@@ -4654,3 +4654,29 @@ export const nexusCampaignProposals = pgTable('nexus_campaign_proposals', {
 
 export type NexusCampaignProposal = typeof nexusCampaignProposals.$inferSelect;
 export type NewNexusCampaignProposal = typeof nexusCampaignProposals.$inferInsert;
+
+// =========================================================
+// PRIVATE PAYMENTS BOUNDED CONTEXT (SUPERADMIN TERMINAL)
+// Non-custodial, destination-controlled, zero tenant crossover
+// =========================================================
+
+export const privatePaymentLinks = pgTable("private_payment_links", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  amount: decimal("amount", { precision: 18, scale: 2 }).notNull(),
+  currency: varchar("currency", { length: 10 }).default("USD").notNull(),
+  destinationWallet: varchar("destination_wallet", { length: 42 }).notNull(),
+  networkChainId: integer("network_chain_id").default(8453).notNull(), // Default to Base
+  settlementToken: varchar("settlement_token", { length: 42 }), // Custom token address or null for USDC
+  status: varchar("status", { length: 30 }).default("active").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
+  metadata: jsonb("metadata").default({}).notNull(),
+}, (t) => ({
+  statusIdx: index("private_payment_links_status_idx").on(t.status),
+  createdIdx: index("private_payment_links_created_idx").on(t.createdAt),
+}));
+
+export type PrivatePaymentLink = typeof privatePaymentLinks.$inferSelect;
+export type NewPrivatePaymentLink = typeof privatePaymentLinks.$inferInsert;
