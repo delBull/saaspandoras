@@ -28,6 +28,16 @@ import { CognitiveAgentsManager } from "./CognitiveAgentsManager";
 import { NexusHermesTerminal } from "./NexusHermesTerminal";
 import { ConfigureAgendaButton } from "@/components/scheduler/ConfigureAgendaButton";
 import { DisplayControlsWidget } from "@pandoras/display-engine";
+import { CreditCard } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { PrivateTerminalClient } from "@/components/nexus/PrivateTerminalClient";
 
 export interface OperatorContext {
   name: string;
@@ -56,6 +66,7 @@ export default function NexusSettingsPage({ isUserAdmin = false, userRole = "OPE
   // Drawer state
   const [selectedCollab, setSelectedCollab] = useState<CollaboratorItem | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isTerminalOpen, setIsTerminalOpen] = useState(false);
 
   // Tabs state - SuperAdmin inicia en "team", los demás colaboradores inician en "terminal"
   const [activeTab, setActiveTab] = useState<"team" | "agents" | "terminal" | "display" | "alerts">(isUserAdmin ? "team" : "terminal");
@@ -234,6 +245,29 @@ export default function NexusSettingsPage({ isUserAdmin = false, userRole = "OPE
             {canManageAgenda && (
               <ConfigureAgendaButton tenantSlug="pandoras" vertical="HERMES" />
             )}
+            {isUserAdmin && (
+              <Dialog open={isTerminalOpen} onOpenChange={setIsTerminalOpen}>
+                <DialogTrigger asChild>
+                  <button className="text-xs bg-lime-500/10 text-lime-400 hover:bg-lime-500/20 border border-lime-500/30 px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 font-medium shadow-sm shadow-lime-500/10 cursor-pointer">
+                    <CreditCard className="w-3.5 h-3.5" />
+                    <span>Terminal Privada</span>
+                  </button>
+                </DialogTrigger>
+                <DialogContent className="max-w-4xl bg-zinc-950 border-zinc-800 text-white p-6 shadow-2xl">
+                  <DialogHeader className="border-b border-zinc-800 pb-3">
+                    <DialogTitle className="text-lg font-bold flex items-center gap-2 text-white">
+                      <CreditCard className="w-4 h-4 text-lime-400" />
+                      Terminal de Cobros Privada (Super Admin)
+                    </DialogTitle>
+                    <DialogDescription className="text-xs text-zinc-400">
+                      Settlement on-chain directo a tu wallet personal. Desacoplado de tenants y CRM.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <PrivateTerminalClient inModal={true} />
+                </DialogContent>
+              </Dialog>
+            )}
+
             <a
               href="/nexus/rooms"
               className="text-xs text-zinc-400 hover:text-amber-400 border border-white/10 px-3 py-1.5 rounded-xl hover:border-amber-500/30 transition-colors flex items-center gap-1.5"

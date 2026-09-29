@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Loader2, Copy, Check, ExternalLink, ShieldCheck, Wallet, Plus, ArrowUpRight } from "lucide-react";
 
-export function PrivateTerminalClient() {
+export function PrivateTerminalClient({ inModal = false }: { inModal?: boolean }) {
   const account = useActiveAccount();
   const [links, setLinks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -100,32 +100,34 @@ export function PrivateTerminalClient() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-6 md:p-10 space-y-10">
+    <div className={inModal ? "space-y-6 max-h-[80vh] overflow-y-auto pr-1" : "max-w-6xl mx-auto p-6 md:p-10 space-y-10"}>
       {/* Top Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-800 pb-6">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="h-2 w-2 rounded-full bg-lime-400 animate-pulse" />
-            <span className="text-[11px] font-mono tracking-widest uppercase text-lime-400 font-semibold">
-              Sovereign Rail • Super Admin Only
-            </span>
+      {!inModal && (
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-800 pb-6">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="h-2 w-2 rounded-full bg-lime-400 animate-pulse" />
+              <span className="text-[11px] font-mono tracking-widest uppercase text-lime-400 font-semibold">
+                Sovereign Rail • Super Admin Only
+              </span>
+            </div>
+            <h1 className="text-3xl font-bold text-white tracking-tight">Private Pay & Finance Terminal</h1>
+            <p className="text-zinc-400 text-sm mt-1">
+              Cobros directos on-chain liquidables a tu wallet personal. Aislado de tenants, CRM y contabilidad de Pandoras.
+            </p>
           </div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">Private Pay & Finance Terminal</h1>
-          <p className="text-zinc-400 text-sm mt-1">
-            Cobros directos on-chain liquidables a tu wallet personal. Aislado de tenants, CRM y contabilidad de Pandoras.
-          </p>
-        </div>
 
-        <div className="flex items-center gap-3 bg-zinc-900/80 border border-zinc-800 p-3 rounded-xl">
-          <Wallet className="w-5 h-5 text-lime-400" />
-          <div className="text-xs">
-            <div className="text-zinc-500 font-medium">Wallet Administrador Activa</div>
-            <div className="font-mono text-zinc-300">
-              {account?.address ? `${account.address.slice(0, 8)}...${account.address.slice(-6)}` : "No conectada"}
+          <div className="flex items-center gap-3 bg-zinc-900/80 border border-zinc-800 p-3 rounded-xl">
+            <Wallet className="w-5 h-5 text-lime-400" />
+            <div className="text-xs">
+              <div className="text-zinc-500 font-medium">Wallet Administrador Activa</div>
+              <div className="font-mono text-zinc-300">
+                {account?.address ? `${account.address.slice(0, 8)}...${account.address.slice(-6)}` : "No conectada"}
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Form: Generator */}
