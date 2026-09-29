@@ -1,7 +1,8 @@
 "use client";
 
 import { useConnectModal, useActiveWallet } from "thirdweb/react";
-import { createWallet, inAppWallet } from "thirdweb/wallets";
+import { inAppWallet } from "thirdweb/wallets/in-app";
+import { createWallet } from "thirdweb/wallets";
 import React, { useState, useEffect } from "react";
 import { client } from "~/lib/thirdweb-client";
 import { chain } from "~/lib/thirdweb-chain";
