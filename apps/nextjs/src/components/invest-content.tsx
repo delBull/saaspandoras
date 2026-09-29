@@ -1,15 +1,17 @@
 "use client";
 
 import {
-  ConnectWallet,
-  useAddress,
-  useContract,
-  useContractWrite,
-  useTokenBalance,
-} from "@thirdweb-dev/react";
-import { motion } from "framer-motion";
+  ConnectButton,
+  useActiveAccount,
+  useReadContract,
+  useSendTransaction,
+} from "thirdweb/react";
+import { getContract, prepareContractCall } from "thirdweb";
 import { parseUnits } from "ethers/lib/utils";
 import { useState } from "react";
+import { client } from "~/lib/thirdweb-client";
+import { chain } from "~/lib/thirdweb-chain";
+import { motion } from "framer-motion";
 import type { Dictionary } from "~/types";
 
 // Type definitions for error handling
@@ -22,38 +24,53 @@ const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 const IMAGE_URL = "/images/coin_mobile.jpg";
 
 export function InvestContent({ dict }: { dict: Dictionary }) {
-   
-  const address = useAddress();
-   
-  const { contract: vault } = useContract(VAULT_ADDRESS);
-   
-  const { contract: usdc } = useContract(USDC_ADDRESS, "token");
+  const account = useActiveAccount();
+  const address = account?.address;
 
-   
-  const { data: usdcBalance } = useTokenBalance(usdc, address);
-   
-  const { data: shareBalance } = useTokenBalance(vault, address);
+  const vaultContract = getContract({
+    client,
+    chain,
+    address: VAULT_ADDRESS,
+  });
 
-   
-  const { mutateAsync: deposit, isLoading: isDepositing } = useContractWrite(
-    vault,
-    "deposit",
-  );
+  const usdcContract = getContract({
+    client,
+    chain,
+    address: USDC_ADDRESS,
+  });
+
+  const { data: usdcRawBalance } = useReadContract({
+    contract: usdcContract,
+    method: "function balanceOf(address) view returns (uint256)",
+    params: [address || "0x0000000000000000000000000000000000000000"],
+  });
+
+  const { data: shareRawBalance } = useReadContract({
+    contract: vaultContract,
+    method: "function balanceOf(address) view returns (uint256)",
+    params: [address || "0x0000000000000000000000000000000000000000"],
+  });
+
+  const { mutateAsync: sendTx, isPending: isDepositing } = useSendTransaction();
 
   const [amount, setAmount] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
+  const formatUnitsDisplay = (raw: bigint | undefined, decimals = 6) => {
+    if (!raw) return "0";
+    return (Number(raw) / 10 ** decimals).toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 4,
+    });
+  };
+
   const handleDeposit = async () => {
     setError(null);
     setSuccess(null);
 
-    if (!address) {
+    if (!account || !address) {
       setError("🔌 Conecta tu wallet primero");
-      return;
-    }
-    if (!vault || !usdc) {
-      setError("⚠️ Contrato no disponible");
       return;
     }
     if (!amount || Number(amount) <= 0) {
@@ -62,16 +79,29 @@ export function InvestContent({ dict }: { dict: Dictionary }) {
     }
 
     try {
-      const value = parseUnits(amount, 6);
-       
-      await usdc.call("approve", [VAULT_ADDRESS, value]);
-       
-      await deposit({ args: [value, address] });
+      const value = parseUnits(amount, 6).toBigInt();
+
+      // 1. Approve USDC to Vault
+      const approveTx = prepareContractCall({
+        contract: usdcContract,
+        method: "function approve(address spender, uint256 amount) returns (bool)",
+        params: [VAULT_ADDRESS, value],
+      });
+      await sendTx(approveTx);
+
+      // 2. Deposit into Vault
+      const depositTx = prepareContractCall({
+        contract: vaultContract,
+        method: "function deposit(uint256 assets, address receiver) returns (uint256)",
+        params: [value, address as `0x${string}`],
+      });
+      await sendTx(depositTx);
+
       setSuccess("✅ Inversión exitosa!");
       setAmount("");
     } catch (e) {
-      const error = e as ErrorWithMessage;
-      setError(error.message || "😕 Error desconocido");
+      const err = e as ErrorWithMessage;
+      setError(err.message || "😕 Error desconocido");
     }
   };
 
@@ -85,7 +115,7 @@ export function InvestContent({ dict }: { dict: Dictionary }) {
     >
       {/* IZQUIERDA: formulario y stats */}
       <div className="flex-1 space-y-6">
-        <ConnectWallet />
+        <ConnectButton client={client} chain={chain} />
 
         <h1 className="text-3xl font-semibold">{dict.invest.title}</h1>
         <p className="text-lg text-gray-600 dark:text-gray-300">
@@ -96,13 +126,11 @@ export function InvestContent({ dict }: { dict: Dictionary }) {
         <div className="grid grid-cols-1 gap-4 text-gray-700 dark:text-gray-200">
           <div>
             <strong>{dict.invest.shares}:</strong>{" "}
-            { }
-            {shareBalance?.displayValue ?? "0"} {shareBalance?.symbol}
+            {formatUnitsDisplay(shareRawBalance as bigint | undefined)} SHARES
           </div>
           <div>
             <strong>{dict.invest.balance}:</strong>{" "}
-            { }
-            {usdcBalance?.displayValue ?? "0"} {usdcBalance?.symbol}
+            {formatUnitsDisplay(usdcRawBalance as bigint | undefined)} USDC
           </div>
         </div>
 
