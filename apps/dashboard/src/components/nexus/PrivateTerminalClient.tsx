@@ -10,13 +10,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Loader2, Copy, Check, ExternalLink, ShieldCheck, Wallet, Plus, ArrowUpRight } from "lucide-react";
 
-type LinkCurrency = "USD" | "MXN" | "USDT";
+type LinkCurrency = "USD" | "MXN" | "USDT" | "USDC";
 const CURRENCY_LABELS: Record<LinkCurrency, string> = {
   USD:  "🇺🇸 USD  — Dólar americano",
   MXN:  "🇲🇽 MXN  — Peso mexicano",
   USDT: "🟡 USDT — Tether stablecoin",
+  USDC: "🔵 USDC — USD Coin (Base native)",
 };
-const CURRENCY_SYMBOL: Record<LinkCurrency, string> = { USD: "$", MXN: "$", USDT: "₮" };
+const CURRENCY_SYMBOL: Record<LinkCurrency, string> = { USD: "$", MXN: "$", USDT: "₮", USDC: "$" };
 
 export function PrivateTerminalClient({ inModal = false }: { inModal?: boolean }) {
   const account = useActiveAccount();
@@ -192,7 +193,7 @@ export function PrivateTerminalClient({ inModal = false }: { inModal?: boolean }
                 <Label className="text-xs text-zinc-300 font-medium">Monto *</Label>
                 {/* Currency selector */}
                 <div className="flex rounded-xl border border-white/10 bg-[#12121A] p-0.5 gap-0.5 mb-1">
-                  {(["USD", "MXN", "USDT"] as LinkCurrency[]).map((cur) => (
+                  {(["USD", "MXN", "USDT", "USDC"] as LinkCurrency[]).map((cur) => (
                     <button
                       key={cur}
                       type="button"
@@ -204,7 +205,7 @@ export function PrivateTerminalClient({ inModal = false }: { inModal?: boolean }
                           : "text-zinc-500 hover:text-zinc-300"
                       }`}
                     >
-                      {cur === "USD" ? "🇺🇸 USD" : cur === "MXN" ? "🇲🇽 MXN" : "🟡 USDT"}
+                      {cur === "USD" ? "🇺🇸 USD" : cur === "MXN" ? "🇲🇽 MXN" : cur === "USDT" ? "🟡 USDT" : "🔵 USDC"}
                     </button>
                   ))}
                 </div>

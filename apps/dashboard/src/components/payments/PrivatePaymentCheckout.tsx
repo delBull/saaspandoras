@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { client } from "@/lib/thirdweb-client";
 import { defineChain, getContract } from "thirdweb";
 import { transfer } from "thirdweb/extensions/erc20";
 import { TransactionButton, ConnectButton, useActiveAccount } from "thirdweb/react";
 import {
   Loader2, CheckCircle2, ShieldCheck, ArrowUpRight,
-  Zap, Link2, XCircle, Copy, Check, RefreshCw, TrendingUp,
+  Zap, Link2, XCircle, Copy, Check, Radio,
 } from "lucide-react";
 import { toast } from "sonner";
 import QRCode from "react-qr-code";
@@ -15,50 +15,105 @@ import QRCode from "react-qr-code";
 const USDC_BASE    = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 const USDC_SEPOLIA = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238";
 
-type StoredCurrency = "USD" | "MXN" | "USDT";
+type StoredCurrency = "USD" | "MXN" | "USDT" | "USDC";
 type TxStep = "idle" | "signing" | "pending" | "confirmed";
 
 interface Rates {
-  usdToMxn: number;   // 1 USD → MXN
-  mxnToUsd: number;   // 1 MXN → USD
-  usdtToUsd: number;  // 1 USDT → USD (≈1.000)
-  usdToUsdt: number;  // 1 USD → USDT
-  fallback: boolean;
-  usdtFallback: boolean;
+  usdToMxn:  number; // 1 USD → MXN  (fiat, daily via open.er-api)
+  usdtToUsd: number; // 1 USDT → USD  (≈ 1.000, Binance WS)
+  usdcToUsd: number; // 1 USDC → USD  (Binance WS — real-time)
+  wsLive:    boolean; // Binance WS connected
 }
 
 const DEFAULT_RATES: Rates = {
-  usdToMxn: 17.5, mxnToUsd: 1 / 17.5,
-  usdtToUsd: 1.0, usdToUsdt: 1.0,
-  fallback: true, usdtFallback: true,
+  usdToMxn: 17.5, usdtToUsd: 1.0, usdcToUsd: 1.0, wsLive: false,
 };
 
-// ── Formatting ────────────────────────────────────────────────────────────────
-function fmt(n: number, decimals = 2) {
-  return n.toLocaleString("en-US", { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+// ── Binance WebSocket hook ────────────────────────────────────────────────────
+// Streams: usdcusdt (USDC real price) · used as USDT proxy too (both ≈ $1)
+// MXN: client-side fetch to open.er-api.com on mount (fresh, no 30-min server cache)
+function useRealtimeRates(): Rates {
+  const [rates, setRates] = useState<Rates>(DEFAULT_RATES);
+  const wsRef = useRef<WebSocket | null>(null);
+
+  // 1) MXN rate — fetch directly from open.er-api on client (bypasses Vercel edge cache)
+  useEffect(() => {
+    fetch("https://open.er-api.com/v6/latest/USD")
+      .then(async (r) => {
+        const j = await r.json();
+        if (typeof j?.rates?.MXN === "number") {
+          setRates((prev) => ({ ...prev, usdToMxn: j.rates.MXN }));
+        }
+      })
+      .catch(() => {/* keep default */});
+  }, []);
+
+  // 2) Binance WebSocket — USDC/USDT real-time price
+  useEffect(() => {
+    const STREAM = "wss://stream.binance.com:9443/stream?streams=usdcusdt@ticker/usdtbusd@ticker";
+
+    function connect() {
+      try {
+        const ws = new WebSocket(STREAM);
+        wsRef.current = ws;
+
+        ws.onopen = () => setRates((p) => ({ ...p, wsLive: true }));
+
+        ws.onmessage = (ev) => {
+          try {
+            const { stream, data } = JSON.parse(ev.data);
+            const price = parseFloat(data?.c ?? "0");
+            if (!price) return;
+            if (stream === "usdcusdt@ticker") {
+              // 1 USDC = price USDT ≈ price USD
+              setRates((p) => ({ ...p, usdcToUsd: price, usdtToUsd: price }));
+            }
+          } catch { /* ignore malformed */ }
+        };
+
+        ws.onclose = () => {
+          setRates((p) => ({ ...p, wsLive: false }));
+          // Reconnect after 5s
+          setTimeout(connect, 5000);
+        };
+        ws.onerror = () => ws.close();
+      } catch { /* WS not available (SSR guard) */ }
+    }
+
+    if (typeof window !== "undefined") connect();
+    return () => wsRef.current?.close();
+  }, []);
+
+  return rates;
+}
+
+// ── Currency helpers ──────────────────────────────────────────────────────────
+const CUR_SYMBOL: Record<StoredCurrency, string> = { USD: "$", MXN: "$", USDT: "₮", USDC: "$" };
+const CUR_FLAG:   Record<StoredCurrency, string> = { USD: "🇺🇸", MXN: "🇲🇽", USDT: "₮", USDC: "🔵" };
+
+function fmt(n: number, d = 2) {
+  return n.toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
 }
 function fmtMXN(n: number) {
   return n.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
-const CUR_SYMBOL: Record<StoredCurrency, string> = { USD: "$", MXN: "$", USDT: "₮" };
-const CUR_FLAG:   Record<StoredCurrency, string> = { USD: "🇺🇸", MXN: "🇲🇽", USDT: "🟡" };
 
-// ── Convert any amount to USD ─────────────────────────────────────────────────
-function toUSD(amount: number, currency: StoredCurrency, rates: Rates): number {
-  if (currency === "MXN")  return amount * rates.mxnToUsd;
-  if (currency === "USDT") return amount * rates.usdtToUsd;
-  return amount; // USD
+// Convert stored amount to USD
+function toUSD(amount: number, currency: StoredCurrency, r: Rates): number {
+  if (currency === "MXN")  return amount / r.usdToMxn;
+  if (currency === "USDT") return amount * r.usdtToUsd;
+  if (currency === "USDC") return amount * r.usdcToUsd;
+  return amount;
 }
 
-// ── All 3 cross-rates from a stored amount ────────────────────────────────────
-function computeAll(amount: number, currency: StoredCurrency, rates: Rates) {
-  const usd  = toUSD(amount, currency, rates);
-  const usdc = usd; // 1 USDC ≈ 1 USD (settlement)
+// All 4 cross-rates
+function computeAll(amount: number, currency: StoredCurrency, r: Rates) {
+  const usd  = toUSD(amount, currency, r);
   return {
     usd,
-    mxn:  usd * rates.usdToMxn,
-    usdt: usd * rates.usdToUsdt,
-    usdc,
+    mxn:  usd * r.usdToMxn,
+    usdt: usd / r.usdtToUsd,
+    usdc: usd / r.usdcToUsd,  // settlement amount
   };
 }
 
@@ -107,61 +162,66 @@ function CopyBtn({ value }: { value: string }) {
   );
 }
 
-// ── Main amount + 3 reference rates ──────────────────────────────────────────
-function AmountPanel({
-  amount, currency, rates, ratesLoading,
-}: {
-  amount: number; currency: StoredCurrency; rates: Rates; ratesLoading: boolean;
+// ── Amount panel with 4 cross-rates ──────────────────────────────────────────
+function AmountPanel({ amount, currency, rates }: {
+  amount: number; currency: StoredCurrency; rates: Rates;
 }) {
   const all = computeAll(amount, currency, rates);
 
-  // Display in stored currency
   const mainFmt = currency === "MXN"
     ? `${CUR_SYMBOL[currency]}${fmtMXN(amount)}`
-    : `${CUR_SYMBOL[currency]}${fmt(amount)}`;
+    : `${CUR_SYMBOL[currency]}${fmt(amount, currency === "USDT" || currency === "USDC" ? 4 : 2)}`;
 
-  // Reference rows — the other two + USDC settlement
-  const refs: { label: string; value: string; badge?: boolean; fallback?: boolean }[] = [];
-
-  if (currency !== "USD")  refs.push({ label: `${CUR_FLAG.USD} USD`,  value: `$${fmt(all.usd)}`, fallback: rates.fallback });
-  if (currency !== "MXN")  refs.push({ label: `${CUR_FLAG.MXN} MXN`,  value: `$${fmtMXN(all.mxn)}`, fallback: rates.fallback });
-  if (currency !== "USDT") refs.push({ label: `${CUR_FLAG.USDT} USDT`, value: `₮${fmt(all.usdt, 4)}`, fallback: rates.usdtFallback });
+  // Cross-rates: the 3 not-selected currencies
+  type RefRow = { label: string; value: string; live: boolean };
+  const refs: RefRow[] = [];
+  if (currency !== "USD")  refs.push({ label: `${CUR_FLAG.USD} USD`,  value: `$${fmt(all.usd)}`, live: false });
+  if (currency !== "MXN")  refs.push({ label: `${CUR_FLAG.MXN} MXN`,  value: `$${fmtMXN(all.mxn)}`, live: false });
+  if (currency !== "USDT") refs.push({ label: `${CUR_FLAG.USDT} USDT`, value: `₮${fmt(all.usdt, 4)}`, live: rates.wsLive });
+  if (currency !== "USDC") refs.push({ label: `${CUR_FLAG.USDC} USDC`, value: `$${fmt(all.usdc, 4)}`, live: rates.wsLive });
 
   return (
     <div className="flex flex-col p-3.5 rounded-xl bg-gradient-to-br from-zinc-900/80 to-zinc-950/40 border border-zinc-800/60 gap-2.5">
-      {/* Primary amount */}
-      <div className="flex items-center justify-between gap-2">
+      {/* Live badge */}
+      <div className="flex items-center justify-between">
         <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium">Monto a Pagar</span>
-        {ratesLoading && <Loader2 className="w-3 h-3 text-zinc-600 animate-spin flex-shrink-0" />}
+        <div className={`flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-md border ${
+          rates.wsLive
+            ? "text-lime-400 bg-lime-400/10 border-lime-400/20"
+            : "text-zinc-600 bg-zinc-900 border-zinc-800"
+        }`}>
+          <Radio className={`w-2.5 h-2.5 ${rates.wsLive ? "animate-pulse" : ""}`} />
+          {rates.wsLive ? "LIVE · Binance" : "Cargando..."}
+        </div>
       </div>
+
+      {/* Primary amount */}
       <div className="flex items-baseline gap-1.5">
         <span className="text-3xl font-black tracking-tight text-white font-mono leading-none">{mainFmt}</span>
         <span className="text-sm font-bold text-zinc-400">{currency}</span>
       </div>
 
-      {/* Separator */}
       <div className="border-t border-zinc-800/50" />
 
-      {/* Reference rates */}
+      {/* Cross-rates */}
       <div className="space-y-1.5">
-        <div className="flex items-center gap-1 text-[10px] text-zinc-600 mb-0.5">
-          <TrendingUp className="w-2.5 h-2.5" /> Tipos de cambio en tiempo real
-        </div>
         {refs.map((r) => (
           <div key={r.label} className="flex items-center justify-between">
             <span className="text-[11px] text-zinc-500">{r.label}</span>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5">
               <span className="text-[11px] font-mono text-zinc-300 font-semibold">{r.value}</span>
-              {r.fallback && <span title="Tasa estimada"><RefreshCw className="w-2 h-2 text-zinc-700" /></span>}
+              {r.live && <span className="w-1.5 h-1.5 rounded-full bg-lime-400 animate-pulse flex-shrink-0" title="Precio en tiempo real" />}
             </div>
           </div>
         ))}
-        {/* Always show USDC settlement */}
-        <div className="flex items-center justify-between pt-1 border-t border-zinc-800/40 mt-1">
-          <span className="text-[11px] text-zinc-600">Liquidación USDC</span>
+
+        {/* USDC settlement row (always shown, highlighted) */}
+        <div className="flex items-center justify-between pt-1.5 border-t border-zinc-800/40 mt-0.5">
+          <span className="text-[11px] text-zinc-600">Liquidación USDC on-chain</span>
           <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-lime-400/10 border border-lime-400/20">
-            <span className="text-xs font-black text-lime-400 font-mono">{fmt(all.usdc)}</span>
+            <span className="text-xs font-black text-lime-400 font-mono">{fmt(all.usdc, 4)}</span>
             <span className="text-[9px] font-bold text-lime-400/70">USDC</span>
+            {rates.wsLive && <span className="w-1 h-1 rounded-full bg-lime-400 animate-pulse ml-0.5 flex-shrink-0" />}
           </div>
         </div>
       </div>
@@ -193,14 +253,14 @@ function PaySection({ data, tokenContract, txStep, setTxStep, setCompletedTx, us
           style={{ touchAction: "manipulation", width: "100%" }}
           className="!bg-lime-400 hover:!bg-lime-300 active:!bg-lime-500 !text-black !font-black !py-3.5 !rounded-xl !transition-all !duration-150 !text-sm !tracking-tight !shadow-lg !shadow-lime-500/20"
         >
-          Pagar {fmt(usdcAmount)} USDC
+          Pagar {fmt(usdcAmount, 4)} USDC
         </TransactionButton>
       )}
     </div>
   );
 }
 
-// ── Shared sub-components ─────────────────────────────────────────────────────
+// ── Sub-components ────────────────────────────────────────────────────────────
 function NexusHeader() {
   return (
     <div className="text-center flex-shrink-0 py-1">
@@ -246,8 +306,7 @@ export function PrivatePaymentCheckout({ id }: { id: string }) {
   const [completedTx, setCompletedTx] = useState<string | null>(null);
   const [txStep, setTxStep]           = useState<TxStep>("idle");
   const [showQR, setShowQR]           = useState(false);
-  const [rates, setRates]             = useState<Rates>(DEFAULT_RATES);
-  const [ratesLoading, setRatesLoading] = useState(true);
+  const rates = useRealtimeRates();
   const payUrl = typeof window !== "undefined" ? window.location.href : "";
 
   useEffect(() => {
@@ -257,21 +316,12 @@ export function PrivatePaymentCheckout({ id }: { id: string }) {
       .finally(() => setLoading(false));
   }, [id]);
 
-  useEffect(() => {
-    fetch("/api/public/rates")
-      .then(async (res) => { const j = await res.json(); setRates({ ...DEFAULT_RATES, ...j }); })
-      .catch(() => {/* keep defaults */})
-      .finally(() => setRatesLoading(false));
-  }, []);
-
-  // ── Full-screen container shared across all states ────────────────────────
   const Screen = ({ children }: { children: React.ReactNode }) => (
     <div className="w-full max-w-md flex flex-col" style={{ maxHeight: "calc(100dvh - 1.5rem)" }}>
       {children}
     </div>
   );
 
-  // ── Loading ───────────────────────────────────────────────────────────────
   if (loading) return (
     <Screen>
       <NexusHeader />
@@ -288,7 +338,6 @@ export function PrivatePaymentCheckout({ id }: { id: string }) {
     </Screen>
   );
 
-  // ── Error ─────────────────────────────────────────────────────────────────
   if (error || !data) return (
     <Screen>
       <NexusHeader />
@@ -314,7 +363,6 @@ export function PrivatePaymentCheckout({ id }: { id: string }) {
   const tokenContract = getContract({ client, chain: defineChain(chainId), address: tokenAddress });
   const explorerBase  = isBase ? "https://basescan.org" : "https://sepolia.etherscan.io";
 
-  // ── Success ───────────────────────────────────────────────────────────────
   if (completedTx) return (
     <Screen>
       <NexusHeader />
@@ -325,7 +373,7 @@ export function PrivatePaymentCheckout({ id }: { id: string }) {
           </div>
           <h2 className="text-xl font-bold text-white tracking-tight mb-1">¡Pago Liquidado!</h2>
           <p className="text-zinc-400 text-sm mb-1">On-chain en Base Network.</p>
-          <p className="text-zinc-500 text-xs mb-4">{fmt(usdcAmount)} USDC transferidos</p>
+          <p className="text-zinc-500 text-xs mb-4">{fmt(usdcAmount, 4)} USDC transferidos</p>
           <div className="w-full p-3 bg-zinc-900/60 border border-zinc-800 rounded-xl text-[11px] font-mono text-zinc-400 break-all text-left mb-3">
             <span className="text-zinc-600 block mb-1 text-[10px] uppercase tracking-wider">TX Hash</span>
             {completedTx}
@@ -341,14 +389,12 @@ export function PrivatePaymentCheckout({ id }: { id: string }) {
     </Screen>
   );
 
-  // ── Main checkout ─────────────────────────────────────────────────────────
   return (
     <Screen>
       <NexusHeader />
-
       <div className="flex-1 min-h-0 flex flex-col rounded-2xl bg-zinc-950/90 border border-zinc-800/80 backdrop-blur-xl shadow-2xl shadow-black/60 mt-2 overflow-hidden">
 
-        {/* Header: badge + title */}
+        {/* Header */}
         <div className="px-4 pt-4 pb-3 border-b border-zinc-800/50 flex-shrink-0">
           <div className="flex items-center justify-between mb-2">
             <span className="inline-flex items-center gap-1 text-[9px] uppercase tracking-widest font-bold px-2 py-1 rounded-md bg-lime-400/10 border border-lime-400/20 text-lime-400">
@@ -359,30 +405,21 @@ export function PrivatePaymentCheckout({ id }: { id: string }) {
             </div>
           </div>
           <h1 className="text-lg font-bold tracking-tight text-white leading-tight">{data.title}</h1>
-          {data.description && (
-            <p className="text-xs text-zinc-400 mt-0.5 line-clamp-1">{data.description}</p>
-          )}
+          {data.description && <p className="text-xs text-zinc-400 mt-0.5 line-clamp-1">{data.description}</p>}
         </div>
 
-        {/* Amount panel + 3 cross-rates */}
+        {/* Amount + 4 live cross-rates */}
         <div className="px-4 pt-3 flex-shrink-0">
-          <AmountPanel
-            amount={storedAmount}
-            currency={storedCurrency}
-            rates={rates}
-            ratesLoading={ratesLoading}
-          />
+          <AmountPanel amount={storedAmount} currency={storedCurrency} rates={rates} />
         </div>
 
-        {/* Network + wallet details */}
+        {/* Network + wallet */}
         <div className="px-4 pt-2 flex-shrink-0">
           <div className="flex items-center justify-between py-2 border-b border-zinc-800/30">
             <span className="text-[11px] text-zinc-500">Red</span>
             <div className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
-              <span className="text-[11px] font-mono text-zinc-300">
-                {isBase ? "Base Mainnet" : "Sepolia"} ({chainId})
-              </span>
+              <span className="text-[11px] font-mono text-zinc-300">{isBase ? "Base Mainnet" : "Sepolia"} ({chainId})</span>
             </div>
           </div>
           <div className="flex items-center justify-between py-2">
@@ -397,7 +434,7 @@ export function PrivatePaymentCheckout({ id }: { id: string }) {
           </div>
         </div>
 
-        {/* QR (collapsible) */}
+        {/* QR */}
         <div className="px-4 flex-shrink-0">
           <button onClick={() => setShowQR((v) => !v)} style={{ touchAction: "manipulation" }}
             className="flex items-center gap-1 text-[10px] text-zinc-700 hover:text-lime-400 transition-colors py-1">
@@ -411,28 +448,18 @@ export function PrivatePaymentCheckout({ id }: { id: string }) {
           )}
         </div>
 
-        {/* TX Progress */}
-        {txStep !== "idle" && (
-          <div className="px-4 flex-shrink-0"><TxProgress step={txStep} /></div>
-        )}
+        {txStep !== "idle" && <div className="px-4 flex-shrink-0"><TxProgress step={txStep} /></div>}
 
-        {/* Spacer */}
         <div className="flex-1 min-h-0" />
 
-        {/* Pay button */}
-        <PaySection
-          data={data} tokenContract={tokenContract}
-          txStep={txStep} setTxStep={setTxStep}
-          setCompletedTx={setCompletedTx} usdcAmount={usdcAmount}
-        />
+        <PaySection data={data} tokenContract={tokenContract} txStep={txStep} setTxStep={setTxStep} setCompletedTx={setCompletedTx} usdcAmount={usdcAmount} />
 
         <SecurityBand />
 
         <p className="text-[9px] text-zinc-700 text-center px-6 pb-3 leading-relaxed flex-shrink-0">
-          Tipos de cambio reales · El pago final se liquida en USDC sobre Base Network.
+          USDC/USDT en tiempo real via Binance · MXN actualización diaria · Liquidación en USDC sobre Base.
         </p>
       </div>
-
       <NexusFooter />
     </Screen>
   );
