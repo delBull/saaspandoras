@@ -4680,3 +4680,89 @@ export const privatePaymentLinks = pgTable("private_payment_links", {
 
 export type PrivatePaymentLink = typeof privatePaymentLinks.$inferSelect;
 export type NewPrivatePaymentLink = typeof privatePaymentLinks.$inferInsert;
+
+// =========================================================
+// HERMES EXECUTION CHECKPOINTS (HARC-01 — Hito 1)
+// Persistent durable state for the Hermes Agent Runtime.
+// Replaces the in-memory Map() in DefaultExecutionRuntime.
+// Enables Zero-Trust Resume after human/governance decisions.
+// =========================================================
+
+export const hermesCheckpointStatusEnum = pgEnum("hermes_checkpoint_status", [
+  "PENDING_APPROVAL",
+  "RESUMED",
+  "CANCELLED",
+  "EXPIRED",
+]);
+
+export const hermesExecutionCheckpoints = pgTable("hermes_execution_checkpoints", {
+  id: uuid("id").defaultRandom().primaryKey(),
+
+  /**
+   * Tenant isolation — maps to the project slug / organization id.
+   */
+  organizationId: varchar("organization_id", { length: 256 }).notNull(),
+
+  /**
+   * Logical session identifier (ties together a multi-step Hermes conversation).
+   */
+  sessionId: varchar("session_id", { length: 256 }).notNull(),
+
+  /**
+   * The actor who triggered the execution (wallet address or internal agent id).
+   */
+  actorId: varchar("actor_id", { length: 256 }).notNull(),
+
+  /**
+   * Current workflow stage key at the moment of suspension.
+   */
+  currentStageId: varchar("current_stage_id", { length: 256 }).notNull(),
+
+  /**
+   * Full serialized state snapshot (payload + accumulated context + runtime memory).
+   * Stored as JSONB for querying specific keys if needed.
+   */
+  statePayload: jsonb("state_payload").notNull(),
+
+  /**
+   * Optional link to the OperationalIntent that caused this suspension
+   * (governance / HITL approval gate). Null for technical-pause checkpoints.
+   */
+  operationalIntentId: varchar("operational_intent_id", { length: 255 })
+    .references(() => operationalIntents.id, { onDelete: "set null" }),
+
+  /**
+   * Status lifecycle: PENDING_APPROVAL → RESUMED | CANCELLED | EXPIRED
+   */
+  status: hermesCheckpointStatusEnum("status").default("PENDING_APPROVAL").notNull(),
+
+  /**
+   * SHA-256 hex digest of JSON.stringify(statePayload).
+   * Re-verified at resume time (Zero-Trust Invariant 2).
+   * Optionally anchored to sovereign IPFS node (rpc.ipfs.pandoras.finance).
+   */
+  stateIntegrityHash: varchar("state_integrity_hash", { length: 64 }).notNull(),
+
+  /**
+   * Optional IPFS CID if the checkpoint was anchored to the sovereign node.
+   * Present only for governance-level checkpoints that require audit trail.
+   */
+  ipfsCid: varchar("ipfs_cid", { length: 128 }),
+
+  /**
+   * TTL for the checkpoint. After this date, the resume path is rejected (EXPIRED).
+   */
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  resumedAt: timestamp("resumed_at", { withTimezone: true }),
+  cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+}, (t) => ({
+  orgSessionIdx: index("hermes_checkpoints_org_sess_idx").on(t.organizationId, t.sessionId),
+  orgStatusIdx:  index("hermes_checkpoints_org_status_idx").on(t.organizationId, t.status),
+  intentIdx:     index("hermes_checkpoints_intent_idx").on(t.operationalIntentId),
+  expiryIdx:     index("hermes_checkpoints_expiry_idx").on(t.expiresAt, t.status),
+}));
+
+export type HermesExecutionCheckpoint    = typeof hermesExecutionCheckpoints.$inferSelect;
+export type NewHermesExecutionCheckpoint = typeof hermesExecutionCheckpoints.$inferInsert;

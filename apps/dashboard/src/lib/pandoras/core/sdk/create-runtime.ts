@@ -8,6 +8,8 @@ import { DefaultExecutionJournal } from '../execution/default-execution-journal'
 import { DefaultPolicyEngine } from '../execution/default-policy-engine';
 
 import { DefaultExecutionRuntime } from '../execution/default-execution-runtime';
+import { PersistentExecutionRuntime } from '../execution/persistent-execution-runtime';
+import { CheckpointRepository } from '../execution/checkpoint-repository';
 import { ExecutionDirector } from '../execution/execution-director';
 import { Identity, HumanDecision, ExecutionIdentitySnapshot } from '../../core/contracts'; // <-- from contracts
 import { ExecutionInstance } from '../execution/execution-instance';
@@ -40,7 +42,10 @@ export class PandorasRuntime {
 
     // 4. Capa Execution
     const policyEngine = new DefaultPolicyEngine();
-    const runtime = new DefaultExecutionRuntime(policyEngine, journal);
+    const checkpointRepo = new CheckpointRepository();
+    
+    // Switch to Persistent Runtime (HARC-01)
+    const runtime = new PersistentExecutionRuntime(policyEngine, journal, checkpointRepo);
     
     // 5. Capa Director y Workflows
     this.workflowRegistry = new WorkflowRegistry();
