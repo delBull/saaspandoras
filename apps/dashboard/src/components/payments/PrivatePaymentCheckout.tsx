@@ -8,6 +8,9 @@ import { TransactionButton } from "thirdweb/react";
 import { Loader2, CheckCircle2, ShieldCheck, ArrowUpRight, Zap, Link2, XCircle, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 import QRCode from "react-qr-code";
+import { useActiveAccount } from "thirdweb/react";
+import { ConnectButton } from "thirdweb/react";
+import { client } from "@/lib/thirdweb-client";
 
 const USDC_BASE    = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 const USDC_SEPOLIA = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238";
@@ -60,8 +63,71 @@ function CopyBtn({ value }: { value: string }) {
   );
 }
 
+// ── Pay Section (wallet gate + tx button) ─────────────────────────────────────
+function PaySection({ data, tokenContract, txStep, setTxStep, setCompletedTx }: {
+  data: any;
+  tokenContract: any;
+  txStep: TxStep;
+  setTxStep: (s: TxStep) => void;
+  setCompletedTx: (tx: string) => void;
+}) {
+  const account = useActiveAccount();
+
+  return (
+    <div className="px-6 pt-4 pb-2">
+      {!account ? (
+        <div className="space-y-2">
+          <p className="text-xs text-zinc-500 text-center mb-3">Conecta tu wallet para pagar</p>
+          <ConnectButton
+            client={client}
+            theme="dark"
+            connectButton={{
+              label: "Conectar Wallet para Pagar",
+              style: {
+                width: "100%",
+                background: "#a3e635",
+                color: "#000",
+                fontWeight: "900",
+                fontSize: "1rem",
+                padding: "1rem",
+                borderRadius: "0.75rem",
+                border: "none",
+                touchAction: "manipulation",
+              },
+            }}
+          />
+        </div>
+      ) : (
+        <TransactionButton
+          transaction={() => {
+            setTxStep("signing");
+            return transfer({ contract: tokenContract, to: data.destinationWallet, amount: data.amount });
+          }}
+          onTransactionSent={() => setTxStep("pending")}
+          onTransactionConfirmed={(tx) => {
+            setTxStep("confirmed");
+            toast.success("¡Pago liquidado!");
+            setTimeout(() => setCompletedTx(tx.transactionHash), 500);
+          }}
+          onError={(err) => {
+            setTxStep("idle");
+            console.error("[PrivateCheckout]", err);
+            toast.error("Error al procesar la transacción");
+          }}
+          theme="dark"
+          style={{ touchAction: "manipulation", width: "100%" }}
+          className="!bg-lime-400 hover:!bg-lime-300 active:!bg-lime-500 !text-black !font-black !py-4 !rounded-xl !transition-all !duration-150 !text-base !tracking-tight !shadow-lg !shadow-lime-500/20"
+        >
+          Pagar ${Number(data.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })} USDC
+        </TransactionButton>
+      )}
+    </div>
+  );
+}
+
 // ── Sub-components ────────────────────────────────────────────────────────────
 function NexusHeader() {
+
   return (
     <div className="text-center mb-1">
       <div className="inline-flex flex-col items-center gap-0.5">
@@ -175,7 +241,7 @@ export function PrivatePaymentCheckout({ id }: { id: string }) {
     <div className="w-full max-w-md">
       <NexusHeader />
 
-      <div className="mt-4 rounded-2xl bg-zinc-950/90 border border-zinc-800/80 backdrop-blur-xl overflow-hidden shadow-2xl shadow-black/60">
+      <div className="mt-4 rounded-2xl bg-zinc-950/90 border border-zinc-800/80 backdrop-blur-xl shadow-2xl shadow-black/60">
 
         {/* ── Header ── */}
         <div className="px-6 pt-6 pb-5 border-b border-zinc-800/60">
@@ -245,18 +311,13 @@ export function PrivatePaymentCheckout({ id }: { id: string }) {
         {txStep !== "idle" && <div className="px-6 pt-1"><TxProgress step={txStep} /></div>}
 
         {/* ── Pay Button ── */}
-        <div className="px-6 pt-4 pb-2">
-          <TransactionButton
-            transaction={() => { setTxStep("signing"); return transfer({ contract: tokenContract, to: data.destinationWallet, amount: data.amount }); }}
-            onTransactionSent={() => setTxStep("pending")}
-            onTransactionConfirmed={(tx) => { setTxStep("confirmed"); toast.success("¡Pago liquidado!"); setTimeout(() => setCompletedTx(tx.transactionHash), 500); }}
-            onError={(err) => { setTxStep("idle"); console.error("[PrivateCheckout]", err); toast.error("Error al procesar la transacción"); }}
-            theme="dark"
-            className="w-full !bg-lime-400 hover:!bg-lime-300 active:!bg-lime-500 !text-black !font-black !py-4 !rounded-xl !transition-all !duration-150 !text-base !tracking-tight !shadow-lg !shadow-lime-500/20 cursor-pointer"
-          >
-            Pagar ${Number(data.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })} USDC
-          </TransactionButton>
-        </div>
+        <PaySection
+          data={data}
+          tokenContract={tokenContract}
+          txStep={txStep}
+          setTxStep={setTxStep}
+          setCompletedTx={setCompletedTx}
+        />
 
         <SecurityBand />
 
