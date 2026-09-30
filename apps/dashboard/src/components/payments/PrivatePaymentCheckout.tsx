@@ -7,18 +7,60 @@ import { transfer } from "thirdweb/extensions/erc20";
 import { TransactionButton, ConnectButton, useActiveAccount } from "thirdweb/react";
 import {
   Loader2, CheckCircle2, ShieldCheck, ArrowUpRight,
-  Zap, Link2, XCircle, Copy, Check, RefreshCw,
+  Zap, Link2, XCircle, Copy, Check, RefreshCw, TrendingUp,
 } from "lucide-react";
 import { toast } from "sonner";
 import QRCode from "react-qr-code";
 
 const USDC_BASE    = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 const USDC_SEPOLIA = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238";
-type DisplayCurrency = "USD" | "MXN";
+
+type StoredCurrency = "USD" | "MXN" | "USDT";
 type TxStep = "idle" | "signing" | "pending" | "confirmed";
 
-function fmtUSD(n: number) { return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
-function fmtMXN(n: number) { return n.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+interface Rates {
+  usdToMxn: number;   // 1 USD → MXN
+  mxnToUsd: number;   // 1 MXN → USD
+  usdtToUsd: number;  // 1 USDT → USD (≈1.000)
+  usdToUsdt: number;  // 1 USD → USDT
+  fallback: boolean;
+  usdtFallback: boolean;
+}
+
+const DEFAULT_RATES: Rates = {
+  usdToMxn: 17.5, mxnToUsd: 1 / 17.5,
+  usdtToUsd: 1.0, usdToUsdt: 1.0,
+  fallback: true, usdtFallback: true,
+};
+
+// ── Formatting ────────────────────────────────────────────────────────────────
+function fmt(n: number, decimals = 2) {
+  return n.toLocaleString("en-US", { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+}
+function fmtMXN(n: number) {
+  return n.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+const CUR_SYMBOL: Record<StoredCurrency, string> = { USD: "$", MXN: "$", USDT: "₮" };
+const CUR_FLAG:   Record<StoredCurrency, string> = { USD: "🇺🇸", MXN: "🇲🇽", USDT: "🟡" };
+
+// ── Convert any amount to USD ─────────────────────────────────────────────────
+function toUSD(amount: number, currency: StoredCurrency, rates: Rates): number {
+  if (currency === "MXN")  return amount * rates.mxnToUsd;
+  if (currency === "USDT") return amount * rates.usdtToUsd;
+  return amount; // USD
+}
+
+// ── All 3 cross-rates from a stored amount ────────────────────────────────────
+function computeAll(amount: number, currency: StoredCurrency, rates: Rates) {
+  const usd  = toUSD(amount, currency, rates);
+  const usdc = usd; // 1 USDC ≈ 1 USD (settlement)
+  return {
+    usd,
+    mxn:  usd * rates.usdToMxn,
+    usdt: usd * rates.usdToUsdt,
+    usdc,
+  };
+}
 
 // ── Wallet identicon ──────────────────────────────────────────────────────────
 function WalletIdenticon({ address }: { address: string }) {
@@ -48,9 +90,7 @@ function TxProgress({ step }: { step: TxStep }) {
       <Loader2 className={`w-3 h-3 text-lime-400 flex-shrink-0 ${step !== "confirmed" ? "animate-spin" : ""}`} />
       <span className="text-zinc-300 font-medium truncate">{TX_STEPS[idx]?.label}</span>
       <div className="ml-auto flex gap-1 flex-shrink-0">
-        {TX_STEPS.map((s, i) => (
-          <span key={s.key} className={`w-1.5 h-1.5 rounded-full ${i <= idx ? "bg-lime-400" : "bg-zinc-700"}`} />
-        ))}
+        {TX_STEPS.map((s, i) => <span key={s.key} className={`w-1.5 h-1.5 rounded-full ${i <= idx ? "bg-lime-400" : "bg-zinc-700"}`} />)}
       </div>
     </div>
   );
@@ -61,23 +101,70 @@ function CopyBtn({ value }: { value: string }) {
   const [copied, setCopied] = useState(false);
   return (
     <button onClick={() => { navigator.clipboard.writeText(value); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
-      className="ml-1 text-zinc-600 hover:text-lime-400 transition-colors flex-shrink-0" title="Copiar"
-      style={{ touchAction: "manipulation" }}>
+      className="ml-1 text-zinc-600 hover:text-lime-400 transition-colors flex-shrink-0" style={{ touchAction: "manipulation" }}>
       {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
     </button>
   );
 }
 
-// ── Currency toggle ───────────────────────────────────────────────────────────
-function CurrencyToggle({ value, onChange }: { value: DisplayCurrency; onChange: (c: DisplayCurrency) => void }) {
+// ── Main amount + 3 reference rates ──────────────────────────────────────────
+function AmountPanel({
+  amount, currency, rates, ratesLoading,
+}: {
+  amount: number; currency: StoredCurrency; rates: Rates; ratesLoading: boolean;
+}) {
+  const all = computeAll(amount, currency, rates);
+
+  // Display in stored currency
+  const mainFmt = currency === "MXN"
+    ? `${CUR_SYMBOL[currency]}${fmtMXN(amount)}`
+    : `${CUR_SYMBOL[currency]}${fmt(amount)}`;
+
+  // Reference rows — the other two + USDC settlement
+  const refs: { label: string; value: string; badge?: boolean; fallback?: boolean }[] = [];
+
+  if (currency !== "USD")  refs.push({ label: `${CUR_FLAG.USD} USD`,  value: `$${fmt(all.usd)}`, fallback: rates.fallback });
+  if (currency !== "MXN")  refs.push({ label: `${CUR_FLAG.MXN} MXN`,  value: `$${fmtMXN(all.mxn)}`, fallback: rates.fallback });
+  if (currency !== "USDT") refs.push({ label: `${CUR_FLAG.USDT} USDT`, value: `₮${fmt(all.usdt, 4)}`, fallback: rates.usdtFallback });
+
   return (
-    <div className="inline-flex rounded-lg border border-zinc-800 bg-zinc-900/60 p-0.5 gap-0.5">
-      {(["USD", "MXN"] as DisplayCurrency[]).map((cur) => (
-        <button key={cur} onClick={() => onChange(cur)} style={{ touchAction: "manipulation" }}
-          className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all duration-150 ${value === cur ? "bg-lime-400 text-black" : "text-zinc-500 hover:text-zinc-300"}`}>
-          {cur === "USD" ? "🇺🇸 USD" : "🇲🇽 MXN"}
-        </button>
-      ))}
+    <div className="flex flex-col p-3.5 rounded-xl bg-gradient-to-br from-zinc-900/80 to-zinc-950/40 border border-zinc-800/60 gap-2.5">
+      {/* Primary amount */}
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium">Monto a Pagar</span>
+        {ratesLoading && <Loader2 className="w-3 h-3 text-zinc-600 animate-spin flex-shrink-0" />}
+      </div>
+      <div className="flex items-baseline gap-1.5">
+        <span className="text-3xl font-black tracking-tight text-white font-mono leading-none">{mainFmt}</span>
+        <span className="text-sm font-bold text-zinc-400">{currency}</span>
+      </div>
+
+      {/* Separator */}
+      <div className="border-t border-zinc-800/50" />
+
+      {/* Reference rates */}
+      <div className="space-y-1.5">
+        <div className="flex items-center gap-1 text-[10px] text-zinc-600 mb-0.5">
+          <TrendingUp className="w-2.5 h-2.5" /> Tipos de cambio en tiempo real
+        </div>
+        {refs.map((r) => (
+          <div key={r.label} className="flex items-center justify-between">
+            <span className="text-[11px] text-zinc-500">{r.label}</span>
+            <div className="flex items-center gap-1">
+              <span className="text-[11px] font-mono text-zinc-300 font-semibold">{r.value}</span>
+              {r.fallback && <span title="Tasa estimada"><RefreshCw className="w-2 h-2 text-zinc-700" /></span>}
+            </div>
+          </div>
+        ))}
+        {/* Always show USDC settlement */}
+        <div className="flex items-center justify-between pt-1 border-t border-zinc-800/40 mt-1">
+          <span className="text-[11px] text-zinc-600">Liquidación USDC</span>
+          <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-lime-400/10 border border-lime-400/20">
+            <span className="text-xs font-black text-lime-400 font-mono">{fmt(all.usdc)}</span>
+            <span className="text-[9px] font-bold text-lime-400/70">USDC</span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -106,7 +193,7 @@ function PaySection({ data, tokenContract, txStep, setTxStep, setCompletedTx, us
           style={{ touchAction: "manipulation", width: "100%" }}
           className="!bg-lime-400 hover:!bg-lime-300 active:!bg-lime-500 !text-black !font-black !py-3.5 !rounded-xl !transition-all !duration-150 !text-sm !tracking-tight !shadow-lg !shadow-lime-500/20"
         >
-          Pagar {fmtUSD(usdcAmount)} USDC
+          Pagar {fmt(usdcAmount)} USDC
         </TransactionButton>
       )}
     </div>
@@ -159,34 +246,32 @@ export function PrivatePaymentCheckout({ id }: { id: string }) {
   const [completedTx, setCompletedTx] = useState<string | null>(null);
   const [txStep, setTxStep]           = useState<TxStep>("idle");
   const [showQR, setShowQR]           = useState(false);
-  const [displayCurrency, setDisplayCurrency] = useState<DisplayCurrency>("USD");
-  const [usdToMxn, setUsdToMxn]       = useState(17.5);
-  const [rateLoading, setRateLoading] = useState(true);
-  const [rateFallback, setRateFallback] = useState(false);
+  const [rates, setRates]             = useState<Rates>(DEFAULT_RATES);
+  const [ratesLoading, setRatesLoading] = useState(true);
   const payUrl = typeof window !== "undefined" ? window.location.href : "";
 
   useEffect(() => {
     fetch(`/api/private/pay/${id}`)
-      .then(async (res) => { const j = await res.json(); if (!res.ok) throw new Error(j.error || "Error"); setData(j.data); if (j.data?.currency === "MXN") setDisplayCurrency("MXN"); })
+      .then(async (res) => { const j = await res.json(); if (!res.ok) throw new Error(j.error || "Error"); setData(j.data); })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, [id]);
 
   useEffect(() => {
     fetch("/api/public/rates")
-      .then(async (res) => { const j = await res.json(); if (j.usdToMxn) { setUsdToMxn(j.usdToMxn); setRateFallback(j.fallback === true); } })
-      .catch(() => setRateFallback(true))
-      .finally(() => setRateLoading(false));
+      .then(async (res) => { const j = await res.json(); setRates({ ...DEFAULT_RATES, ...j }); })
+      .catch(() => {/* keep defaults */})
+      .finally(() => setRatesLoading(false));
   }, []);
 
-  // ── Full-screen wrapper used by all states
-  const Screen = ({ children, borderColor = "border-zinc-800/80" }: { children: React.ReactNode; borderColor?: string }) => (
+  // ── Full-screen container shared across all states ────────────────────────
+  const Screen = ({ children }: { children: React.ReactNode }) => (
     <div className="w-full max-w-md flex flex-col" style={{ maxHeight: "calc(100dvh - 1.5rem)" }}>
       {children}
     </div>
   );
 
-  // ── Loading ──────────────────────────────────────────────────────────────
+  // ── Loading ───────────────────────────────────────────────────────────────
   if (loading) return (
     <Screen>
       <NexusHeader />
@@ -197,21 +282,18 @@ export function PrivatePaymentCheckout({ id }: { id: string }) {
           </div>
           <Loader2 className="w-4 h-4 text-lime-400 animate-spin absolute -bottom-1 -right-1" />
         </div>
-        <div className="text-center">
-          <p className="text-sm font-medium text-zinc-300">Cargando terminal de pago...</p>
-          <p className="text-xs text-zinc-600 mt-0.5">Pandoras Nexus · Private Rail</p>
-        </div>
+        <p className="text-sm font-medium text-zinc-300">Cargando terminal de pago...</p>
       </div>
       <NexusFooter />
     </Screen>
   );
 
-  // ── Error ────────────────────────────────────────────────────────────────
+  // ── Error ─────────────────────────────────────────────────────────────────
   if (error || !data) return (
     <Screen>
       <NexusHeader />
-      <div className="flex-1 flex flex-col items-center justify-center gap-3 px-4">
-        <div className="w-full rounded-2xl bg-zinc-950/90 border border-red-900/40 backdrop-blur-xl p-6 text-center">
+      <div className="flex-1 flex flex-col items-center justify-center px-4">
+        <div className="w-full rounded-2xl bg-zinc-950/90 border border-red-900/40 p-6 text-center">
           <XCircle className="w-9 h-9 text-red-500 mx-auto mb-3" />
           <h2 className="text-base font-semibold text-white mb-1">Enlace no disponible</h2>
           <p className="text-sm text-zinc-500">{error || "El link ha expirado o no existe."}</p>
@@ -222,37 +304,28 @@ export function PrivatePaymentCheckout({ id }: { id: string }) {
   );
 
   const storedAmount   = Number(data.amount);
-  const storedCurrency = (data.currency || "USD") as string;
-  const usdcAmount     = storedCurrency === "MXN" ? storedAmount / usdToMxn : storedAmount;
-  const chainId        = data.networkChainId || 8453;
-  const isBase         = chainId === 8453;
-  const tokenAddress   = data.settlementToken || (chainId === 11155111 ? USDC_SEPOLIA : USDC_BASE);
-  const tokenContract  = getContract({ client, chain: defineChain(chainId), address: tokenAddress });
-  const explorerBase   = isBase ? "https://basescan.org" : "https://sepolia.etherscan.io";
+  const storedCurrency = (data.currency || "USD") as StoredCurrency;
+  const all            = computeAll(storedAmount, storedCurrency, rates);
+  const usdcAmount     = all.usdc;
 
-  // Compute display amount
-  let displayFmt: string;
-  let displaySymbol: string;
-  if (storedCurrency === "MXN") {
-    displayFmt    = displayCurrency === "MXN" ? `$${fmtMXN(storedAmount)}` : `$${fmtUSD(storedAmount / usdToMxn)}`;
-    displaySymbol = displayCurrency;
-  } else {
-    displayFmt    = displayCurrency === "USD" ? `$${fmtUSD(storedAmount)}` : `$${fmtMXN(storedAmount * usdToMxn)}`;
-    displaySymbol = displayCurrency;
-  }
+  const chainId       = data.networkChainId || 8453;
+  const isBase        = chainId === 8453;
+  const tokenAddress  = data.settlementToken || (chainId === 11155111 ? USDC_SEPOLIA : USDC_BASE);
+  const tokenContract = getContract({ client, chain: defineChain(chainId), address: tokenAddress });
+  const explorerBase  = isBase ? "https://basescan.org" : "https://sepolia.etherscan.io";
 
-  // ── Success ──────────────────────────────────────────────────────────────
+  // ── Success ───────────────────────────────────────────────────────────────
   if (completedTx) return (
     <Screen>
       <NexusHeader />
-      <div className="flex-1 min-h-0 mx-0 flex flex-col rounded-2xl bg-zinc-950/90 border border-lime-500/20 backdrop-blur-xl overflow-hidden mt-2">
+      <div className="flex-1 min-h-0 flex flex-col rounded-2xl bg-zinc-950/90 border border-lime-500/20 backdrop-blur-xl overflow-hidden mt-2">
         <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
           <div className="w-16 h-16 rounded-full bg-lime-500/10 border border-lime-500/30 flex items-center justify-center mb-4">
             <CheckCircle2 className="w-8 h-8 text-lime-400" />
           </div>
           <h2 className="text-xl font-bold text-white tracking-tight mb-1">¡Pago Liquidado!</h2>
           <p className="text-zinc-400 text-sm mb-1">On-chain en Base Network.</p>
-          <p className="text-zinc-500 text-xs mb-4">{fmtUSD(usdcAmount)} USDC transferidos</p>
+          <p className="text-zinc-500 text-xs mb-4">{fmt(usdcAmount)} USDC transferidos</p>
           <div className="w-full p-3 bg-zinc-900/60 border border-zinc-800 rounded-xl text-[11px] font-mono text-zinc-400 break-all text-left mb-3">
             <span className="text-zinc-600 block mb-1 text-[10px] uppercase tracking-wider">TX Hash</span>
             {completedTx}
@@ -271,13 +344,11 @@ export function PrivatePaymentCheckout({ id }: { id: string }) {
   // ── Main checkout ─────────────────────────────────────────────────────────
   return (
     <Screen>
-      {/* Branding header */}
       <NexusHeader />
 
-      {/* Card — fills remaining height, no internal scroll */}
       <div className="flex-1 min-h-0 flex flex-col rounded-2xl bg-zinc-950/90 border border-zinc-800/80 backdrop-blur-xl shadow-2xl shadow-black/60 mt-2 overflow-hidden">
 
-        {/* ── Top section: badge + title ── */}
+        {/* Header: badge + title */}
         <div className="px-4 pt-4 pb-3 border-b border-zinc-800/50 flex-shrink-0">
           <div className="flex items-center justify-between mb-2">
             <span className="inline-flex items-center gap-1 text-[9px] uppercase tracking-widest font-bold px-2 py-1 rounded-md bg-lime-400/10 border border-lime-400/20 text-lime-400">
@@ -289,50 +360,29 @@ export function PrivatePaymentCheckout({ id }: { id: string }) {
           </div>
           <h1 className="text-lg font-bold tracking-tight text-white leading-tight">{data.title}</h1>
           {data.description && (
-            <p className="text-xs text-zinc-400 mt-0.5 leading-relaxed line-clamp-1">{data.description}</p>
+            <p className="text-xs text-zinc-400 mt-0.5 line-clamp-1">{data.description}</p>
           )}
         </div>
 
-        {/* ── Currency toggle + Amount ── */}
-        <div className="px-4 pt-3 flex-shrink-0 space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] text-zinc-600 uppercase tracking-wider font-medium">Ver precio en</span>
-            <CurrencyToggle value={displayCurrency} onChange={setDisplayCurrency} />
-          </div>
-
-          {/* Amount box */}
-          <div className="flex flex-col p-3.5 rounded-xl bg-gradient-to-br from-zinc-900/80 to-zinc-950/40 border border-zinc-800/60 gap-2">
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-black tracking-tight text-white font-mono">{displayFmt}</span>
-              <span className="text-sm font-bold text-zinc-400">{displaySymbol}</span>
-              {rateLoading && <Loader2 className="w-3 h-3 text-zinc-600 animate-spin ml-auto" />}
-            </div>
-            <div className="flex items-center gap-2 pt-1 border-t border-zinc-800/40">
-              <span className="text-[10px] text-zinc-600">Se liquidará como</span>
-              <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-lime-400/10 border border-lime-400/20">
-                <span className="text-xs font-black text-lime-400 font-mono">{fmtUSD(usdcAmount)}</span>
-                <span className="text-[9px] font-bold text-lime-400/70">USDC</span>
-              </div>
-              {rateFallback && (
-                <span className="text-[9px] text-zinc-700 ml-auto flex items-center gap-0.5">
-                  <RefreshCw className="w-2 h-2" /> est.
-                </span>
-              )}
-            </div>
-          </div>
-
-          <p className="text-[9px] text-zinc-700 text-right leading-none">
-            1 USD = {fmtMXN(usdToMxn)} MXN{rateFallback ? " (est.)" : ""}
-          </p>
+        {/* Amount panel + 3 cross-rates */}
+        <div className="px-4 pt-3 flex-shrink-0">
+          <AmountPanel
+            amount={storedAmount}
+            currency={storedCurrency}
+            rates={rates}
+            ratesLoading={ratesLoading}
+          />
         </div>
 
-        {/* ── Details: network + wallet ── */}
-        <div className="px-4 pt-1 flex-shrink-0">
+        {/* Network + wallet details */}
+        <div className="px-4 pt-2 flex-shrink-0">
           <div className="flex items-center justify-between py-2 border-b border-zinc-800/30">
             <span className="text-[11px] text-zinc-500">Red</span>
             <div className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
-              <span className="text-[11px] font-mono text-zinc-300">{isBase ? "Base Mainnet" : "Sepolia"} ({chainId})</span>
+              <span className="text-[11px] font-mono text-zinc-300">
+                {isBase ? "Base Mainnet" : "Sepolia"} ({chainId})
+              </span>
             </div>
           </div>
           <div className="flex items-center justify-between py-2">
@@ -347,7 +397,7 @@ export function PrivatePaymentCheckout({ id }: { id: string }) {
           </div>
         </div>
 
-        {/* ── QR (collapsible) ── */}
+        {/* QR (collapsible) */}
         <div className="px-4 flex-shrink-0">
           <button onClick={() => setShowQR((v) => !v)} style={{ touchAction: "manipulation" }}
             className="flex items-center gap-1 text-[10px] text-zinc-700 hover:text-lime-400 transition-colors py-1">
@@ -361,33 +411,28 @@ export function PrivatePaymentCheckout({ id }: { id: string }) {
           )}
         </div>
 
-        {/* ── TX Progress ── */}
+        {/* TX Progress */}
         {txStep !== "idle" && (
-          <div className="px-4 flex-shrink-0">
-            <TxProgress step={txStep} />
-          </div>
+          <div className="px-4 flex-shrink-0"><TxProgress step={txStep} /></div>
         )}
 
-        {/* ── Spacer pushes button to bottom ── */}
+        {/* Spacer */}
         <div className="flex-1 min-h-0" />
 
-        {/* ── Pay Button ── */}
+        {/* Pay button */}
         <PaySection
           data={data} tokenContract={tokenContract}
           txStep={txStep} setTxStep={setTxStep}
           setCompletedTx={setCompletedTx} usdcAmount={usdcAmount}
         />
 
-        {/* ── Security Band ── */}
         <SecurityBand />
 
-        {/* ── Fine print ── */}
         <p className="text-[9px] text-zinc-700 text-center px-6 pb-3 leading-relaxed flex-shrink-0">
-          Conversión de referencia. El pago final se procesa en USDC sobre Base Network.
+          Tipos de cambio reales · El pago final se liquida en USDC sobre Base Network.
         </p>
       </div>
 
-      {/* Footer — always visible below card */}
       <NexusFooter />
     </Screen>
   );

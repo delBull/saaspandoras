@@ -10,6 +10,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Loader2, Copy, Check, ExternalLink, ShieldCheck, Wallet, Plus, ArrowUpRight } from "lucide-react";
 
+type LinkCurrency = "USD" | "MXN" | "USDT";
+const CURRENCY_LABELS: Record<LinkCurrency, string> = {
+  USD:  "🇺🇸 USD  — Dólar americano",
+  MXN:  "🇲🇽 MXN  — Peso mexicano",
+  USDT: "🟡 USDT — Tether stablecoin",
+};
+const CURRENCY_SYMBOL: Record<LinkCurrency, string> = { USD: "$", MXN: "$", USDT: "₮" };
+
 export function PrivateTerminalClient({ inModal = false }: { inModal?: boolean }) {
   const account = useActiveAccount();
   const [links, setLinks] = useState<any[]>([]);
@@ -21,6 +29,7 @@ export function PrivateTerminalClient({ inModal = false }: { inModal?: boolean }
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
+  const [currency, setCurrency] = useState<LinkCurrency>("USD");
   const [destinationWallet, setDestinationWallet] = useState("");
   const [expiresInDays, setExpiresInDays] = useState("30");
 
@@ -86,6 +95,7 @@ export function PrivateTerminalClient({ inModal = false }: { inModal?: boolean }
           title,
           description: description || undefined,
           amount: parseFloat(amount),
+          currency,                              // ← USD | MXN | USDT
           destinationWallet: destinationWallet.trim(),
           networkChainId: 8453, // Base
           expiresInDays: expiresInDays ? parseInt(expiresInDays) : undefined,
@@ -99,6 +109,7 @@ export function PrivateTerminalClient({ inModal = false }: { inModal?: boolean }
       setTitle("");
       setDescription("");
       setAmount("");
+      setCurrency("USD");
       loadLinks();
     } catch (err: any) {
       toast.error(err.message || "Error al crear link");
@@ -178,9 +189,29 @@ export function PrivateTerminalClient({ inModal = false }: { inModal?: boolean }
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs text-zinc-300 font-medium">Monto en USD (USDC) *</Label>
+                <Label className="text-xs text-zinc-300 font-medium">Monto *</Label>
+                {/* Currency selector */}
+                <div className="flex rounded-xl border border-white/10 bg-[#12121A] p-0.5 gap-0.5 mb-1">
+                  {(["USD", "MXN", "USDT"] as LinkCurrency[]).map((cur) => (
+                    <button
+                      key={cur}
+                      type="button"
+                      onClick={() => setCurrency(cur)}
+                      style={{ touchAction: "manipulation" }}
+                      className={`flex-1 py-1.5 rounded-lg text-[11px] font-bold transition-all duration-150 ${
+                        currency === cur
+                          ? "bg-lime-400 text-black shadow-sm"
+                          : "text-zinc-500 hover:text-zinc-300"
+                      }`}
+                    >
+                      {cur === "USD" ? "🇺🇸 USD" : cur === "MXN" ? "🇲🇽 MXN" : "🟡 USDT"}
+                    </button>
+                  ))}
+                </div>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 font-mono text-sm">$</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 font-mono text-sm">
+                    {CURRENCY_SYMBOL[currency]}
+                  </span>
                   <Input
                     type="number"
                     step="0.01"
@@ -191,6 +222,9 @@ export function PrivateTerminalClient({ inModal = false }: { inModal?: boolean }
                     className="bg-[#12121A] border-white/10 text-white pl-7 font-mono text-base rounded-xl focus:border-lime-500/50"
                   />
                 </div>
+                <p className="text-[10px] text-zinc-600">
+                  El checkout mostrará {CURRENCY_LABELS[currency]} por defecto, con los otros dos como referencia.
+                </p>
               </div>
 
               <div className="space-y-1.5">
@@ -290,9 +324,12 @@ export function PrivateTerminalClient({ inModal = false }: { inModal?: boolean }
                   </div>
 
                   <div className="flex sm:flex-col items-end justify-between sm:justify-center gap-1.5 shrink-0">
-                    <span className="text-base font-bold text-white font-mono">
-                      ${Number(link.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                    </span>
+                    <div className="text-right">
+                      <span className="text-base font-bold text-white font-mono">
+                        {CURRENCY_SYMBOL[(link.currency as LinkCurrency) || "USD"]}{Number(link.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      </span>
+                      <span className="ml-1 text-[10px] text-zinc-500 font-bold">{link.currency || "USD"}</span>
+                    </div>
                     <div className="flex items-center gap-1.5">
                       <Button
                         size="sm"
