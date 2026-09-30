@@ -1,4 +1,4 @@
 {
   "buildCommand": "turbo run build --filter=nexus-tma...",
-  "installCommand": "bun install --no-frozen-lockfile"
+  "installCommand": "BUN_INSTALL_CACHE_DIR=/tmp/bun-cache-fresh bun install --no-frozen-lockfile"
 }
