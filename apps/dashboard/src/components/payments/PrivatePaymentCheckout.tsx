@@ -4,13 +4,10 @@ import { useEffect, useState } from "react";
 import { client } from "@/lib/thirdweb-client";
 import { defineChain, getContract } from "thirdweb";
 import { transfer } from "thirdweb/extensions/erc20";
-import { TransactionButton } from "thirdweb/react";
+import { TransactionButton, ConnectButton, useActiveAccount } from "thirdweb/react";
 import { Loader2, CheckCircle2, ShieldCheck, ArrowUpRight, Zap, Link2, XCircle, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 import QRCode from "react-qr-code";
-import { useActiveAccount } from "thirdweb/react";
-import { ConnectButton } from "thirdweb/react";
-import { client } from "@/lib/thirdweb-client";
 
 const USDC_BASE    = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 const USDC_SEPOLIA = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238";
