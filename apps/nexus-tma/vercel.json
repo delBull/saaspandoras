@@ -1,4 +1,4 @@
 {
   "buildCommand": "turbo run build --filter=nexus-tma...",
-  "installCommand": "BUN_INSTALL_CACHE_DIR=/tmp/bun-cache-fresh bun install --no-frozen-lockfile"
+  "installCommand": "bun install --no-frozen-lockfile --registry https://registry.npmjs.org/"
 }
