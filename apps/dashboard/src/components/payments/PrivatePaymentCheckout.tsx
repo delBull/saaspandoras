@@ -39,7 +39,7 @@ function TxProgress({ step }: { step: TxStep }) {
   return (
     <div className="flex items-center gap-2 py-2.5 px-3 rounded-lg bg-zinc-900/80 border border-zinc-800 text-xs">
       <Loader2 className={`w-3.5 h-3.5 text-lime-400 ${step !== "confirmed" ? "animate-spin" : ""}`} />
-      <span className="text-zinc-300 font-medium">{TX_STEPS[idx].label}</span>
+      <span className="text-zinc-300 font-medium">{TX_STEPS[idx]?.label}</span>
       <div className="ml-auto flex gap-1">
         {TX_STEPS.map((s, i) => (
           <span key={s.key} className={`w-1.5 h-1.5 rounded-full transition-all ${i <= idx ? "bg-lime-400" : "bg-zinc-700"}`} />
