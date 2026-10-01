@@ -40,12 +40,20 @@ export class DefaultRuntimePolicyValidator implements RuntimePolicyValidator {
     const text = output.content.toLowerCase();
 
     // ── 0. Calculate Channel Maximum Classification Ceiling & Rank ─────────────
-    const defaultChannelMax: KnowledgeClassificationTier =
+    let defaultChannelMax: KnowledgeClassificationTier =
       options?.channel === 'admin_console'
         ? 'CONFIDENTIAL'
         : options?.channel === 'internal_dashboard'
           ? 'INTERNAL_OPERATIONAL'
           : 'TENANT_RESTRICTED';
+
+    const identity = options?.controlPlaneContext?.identity || (options?.controlPlaneContext as any)?.interlocutor;
+    const isExecutive = options?.controlPlaneContext?.role === 'OWNER' || identity?.isBoss || identity?.executivePrivilege;
+
+    if (isExecutive) {
+      // Executive Privilege overrides the channel's physical ceiling for this specific interaction
+      defaultChannelMax = 'SECRET';
+    }
 
     const channelMax = options?.channelMaxClassification || defaultChannelMax;
     const maxAllowedRank = CLASSIFICATION_LATTICE_RANK[channelMax] ?? 2;
