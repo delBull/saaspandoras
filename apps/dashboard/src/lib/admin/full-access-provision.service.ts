@@ -68,13 +68,13 @@ export async function provisionFullAccess(
         status: 'active',
         bindingMode: 'provisioned',
         hermesInstanceId: `hermes_inst_${project.id}`,
-        capabilities: {} as any,
-        connectors: {} as any,
+        capabilities: {},
+        connectors: {},
         config: {
           provisionedVia: 'admin_full_access',
           billingExempt: true,
           provisionedBy: authorizedBy,
-        } as any,
+        },
       } as any);
       results.push({ family, action: 'installed', plan: 'enterprise' });
     }
