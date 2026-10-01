@@ -172,8 +172,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
       message: 'Petición creada — pendiente de visto bueno del Super Admin en dash.pandoras.finance/admin/full-access-approvals',
     });
   } catch (error: any) {
-    console.error('[Admin API: full-access REQUEST]', error?.message || error);
-    return NextResponse.json({ success: false, message: error?.message }, { status: 500 });
+    console.error('[Admin API: full-access REQUEST]', error);
+    return NextResponse.json({ 
+      success: false, 
+      message: error?.message || String(error), 
+      stack: process.env.NODE_ENV === 'development' ? error?.stack : undefined 
+    }, { status: 500 });
   }
 }
 
@@ -254,7 +258,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ sl
 
     return NextResponse.json({ success: true, intentId, results, approvedBy });
   } catch (error: any) {
-    console.error('[Admin API: full-access APPROVE]', error?.message || error);
-    return NextResponse.json({ success: false, message: error?.message }, { status: 500 });
+    console.error('[Admin API: full-access APPROVE]', error);
+    return NextResponse.json({ 
+      success: false, 
+      message: error?.message || String(error),
+      stack: process.env.NODE_ENV === 'development' ? error?.stack : undefined
+    }, { status: 500 });
   }
 }

@@ -2,6 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
+@import '@pandoras/display-engine/styles.css';
+
 @layer base {
   :root {
     --background: 240 10% 3.9%;

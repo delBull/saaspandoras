@@ -292,8 +292,8 @@ export function AdminTenantsView({ tenants, actorRole = 'VIEWER' }: AdminTenants
       </div>
 
       {/* Directory Table */}
-      <div className="rounded-2xl border border-white/[0.08] bg-[#0F0F16] overflow-hidden shadow-xl">
-        <div className="overflow-x-auto">
+      <div className="rounded-2xl border border-white/[0.08] bg-[#0F0F16] shadow-xl">
+        <div className="w-full">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-white/[0.08] bg-[#12121B] text-[11px] font-mono uppercase tracking-wider text-zinc-400">
@@ -316,8 +316,7 @@ export function AdminTenantsView({ tenants, actorRole = 'VIEWER' }: AdminTenants
                 filteredTenants.map((t) => (
                   <tr
                     key={t.id}
-                    onClick={() => handleOpenLens(t)}
-                    className="hover:bg-white/[0.03] transition-colors cursor-pointer group"
+                    className="transition-colors border-b border-white/[0.04] last:border-0"
                   >
                     {/* Organization Info */}
                     <td className="py-4 px-5">
@@ -409,7 +408,7 @@ export function AdminTenantsView({ tenants, actorRole = 'VIEWER' }: AdminTenants
                               >
                                 <ArrowUpCircle className={`w-4 h-4 ${upgradingId === t.id ? 'animate-spin' : ''}`} />
                               </button>
-                              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max px-2 py-1 bg-[#1A1A24] text-xs text-zinc-300 rounded border border-white/10 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-10 shadow-lg font-medium">
+                              <div className="absolute top-1/2 -translate-y-1/2 right-[110%] mr-2 w-max px-2 py-1 bg-[#1A1A24] text-xs text-zinc-300 rounded border border-white/10 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-[100] shadow-lg font-medium">
                                 Upgrade a Enterprise
                               </div>
                             </div>
@@ -431,19 +430,22 @@ export function AdminTenantsView({ tenants, actorRole = 'VIEWER' }: AdminTenants
                               >
                                 <InfinityIcon className={`w-4 h-4 ${upgradingId === t.id ? 'animate-pulse' : ''}`} />
                               </button>
-                              <div className="absolute bottom-full right-0 md:left-1/2 md:-translate-x-1/2 mb-2 w-56 md:w-64 px-3 py-2 bg-[#1A1A24] text-xs text-zinc-300 rounded-lg border border-violet-500/30 opacity-0 group-hover/btn:opacity-100 pointer-events-none transition-opacity shadow-xl z-50">
+                              <div className="absolute top-1/2 -translate-y-1/2 right-[110%] mr-2 w-56 md:w-64 px-3 py-2 bg-[#1A1A24] text-xs text-zinc-300 rounded-lg border border-violet-500/30 opacity-0 group-hover/btn:opacity-100 pointer-events-none transition-opacity shadow-xl z-[100]">
                                 <strong className="text-violet-400 block mb-1">Pase Directo (Full Access)</strong>
-                                <span className="leading-relaxed">Activa todas las verticales y módulos (incluyendo NFT Lab) para este tenant sin ejecutar cobros on-chain.</span>
+                                <span className="leading-relaxed">Activa todas las verticales y módulos (incluyendo NFT Lab) sin ejecutar cobros on-chain.</span>
                               </div>
                             </div>
                           </>
                         )}
                         <div className="group/lens relative">
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-purple-600/20 text-zinc-400 hover:text-purple-300 border border-white/[0.06] hover:border-purple-500/30 text-[11px] font-medium transition-all cursor-pointer">
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); handleOpenLens(t); }}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-purple-600/20 text-zinc-400 hover:text-purple-300 border border-white/[0.06] hover:border-purple-500/30 text-[11px] font-medium transition-all cursor-pointer"
+                          >
                             <span>Lens</span>
                             <ChevronRight className="w-3.5 h-3.5" />
-                          </span>
-                          <div className="absolute bottom-full right-0 mb-2 w-max px-2 py-1 bg-[#1A1A24] text-xs text-zinc-300 rounded border border-white/10 opacity-0 group-hover/lens:opacity-100 pointer-events-none transition-opacity z-10">
+                          </button>
+                          <div className="absolute top-1/2 -translate-y-1/2 right-[110%] mr-2 w-max px-2 py-1 bg-[#1A1A24] text-xs text-zinc-300 rounded border border-white/10 opacity-0 group-hover/lens:opacity-100 pointer-events-none transition-opacity z-[100]">
                             Inspeccionar (Read-Only)
                           </div>
                         </div>

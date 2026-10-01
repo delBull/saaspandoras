@@ -4,7 +4,11 @@ import sharedConfig from "@saasfly/tailwind-config";
 
 export default {
   darkMode: ["class"],
-  content: [...sharedConfig.content, "../../packages/ui/src/**/*.{ts,tsx}"],
+  content: [
+    ...sharedConfig.content, 
+    "../../packages/ui/src/**/*.{ts,tsx}",
+    "../../packages/display-engine/src/**/*.{ts,tsx}"
+  ],
   presets: [sharedConfig],
   plugins: [require("tailwindcss-animate")],
   theme: {

@@ -9,11 +9,11 @@
 export type EcosystemTourRole = 'SUPER_ADMIN' | 'ADMIN' | 'OPERATOR' | 'MARKETING' | 'VIEWER';
 
 export const ACADEMY_PATHS_BY_ROLE: Record<EcosystemTourRole, { course: string, link: string }> = {
-  SUPER_ADMIN: { course: 'Sovereign Architecture & Gov', link: '/nexus/academy?path=sovereign-gov' },
-  ADMIN: { course: 'COO / Operations Director', link: '/nexus/academy?path=coo-certification' },
-  OPERATOR: { course: 'Protocol Operator & Deal Room', link: '/nexus/academy?path=operator-certification' },
-  MARKETING: { course: 'CMO / Growth Executive', link: '/nexus/academy?path=cmo-certification' },
-  VIEWER: { course: 'Ecosystem Observer', link: '/nexus/academy?path=basics' }
+  SUPER_ADMIN: { course: 'Chief Operating Officer (COO Track)', link: '/admin/academy?track=prog_coo_executive_v2' },
+  ADMIN: { course: 'Hermes AI Kernel Operator', link: '/admin/academy?track=prog_hermes_operator_v1' },
+  OPERATOR: { course: 'Master Executive RWA', link: '/admin/academy?track=prog_rwa_real_estate_master_v1' },
+  MARKETING: { course: 'Chief Marketing Officer (CMO)', link: '/admin/academy?track=prog_cmo_executive_v1' },
+  VIEWER: { course: 'Platform Overview', link: '/admin/academy' }
 };
 
 export interface GuideFaqItem {
