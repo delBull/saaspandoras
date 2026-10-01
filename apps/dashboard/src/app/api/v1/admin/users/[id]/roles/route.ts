@@ -11,11 +11,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const { id: targetUserId } = await params;
 
     // 1. Authenticate Actor
-    const auth = await getNexusAuthContext(req.headers);
+    const auth = await getNexusAuthContext(req.headers, null, 'ADMIN');
 
-    // 2. Initial RBAC Check
-    if (!auth.isAuthenticated || (auth.role !== 'SUPER_ADMIN' && auth.role !== 'ADMIN')) {
-      return NextResponse.json({ ok: false, error: 'Unauthorized: Admin role required' }, { status: 403 });
+    // 2. Initial RBAC Capability Check
+    if (!auth.isAuthenticated || !auth.permissions['users.manage']) {
+      return NextResponse.json({ ok: false, error: 'Unauthorized: users.manage capability required' }, { status: 403 });
     }
 
     const { role, capabilities } = await req.json();
@@ -35,14 +35,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }
 
     // 4. Enforce Hierarchical Delegation Restrictions
-    if (auth.role === 'ADMIN') {
-      // An ADMIN cannot edit a SUPER_ADMIN or another ADMIN
+    if (auth.role !== 'SUPER_ADMIN') {
+      // A non-SUPER_ADMIN (even with users.manage) cannot edit a SUPER_ADMIN or another ADMIN
       if (targetUser.role === 'SUPER_ADMIN' || targetUser.role === 'ADMIN') {
         return NextResponse.json({ ok: false, error: 'Unauthorized: Cannot edit higher or equal privileged users' }, { status: 403 });
       }
 
-      // An ADMIN cannot grant SUPER_ADMIN or ADMIN role
-      if (role === 'SUPER_ADMIN' || role === 'ADMIN') {
+      // A non-SUPER_ADMIN cannot grant SUPER_ADMIN or ADMIN role
+      if (role === 'SUPER_ADMIN' || role === 'ADMIN' || role === 'admin' || role === 'super_admin') {
         return NextResponse.json({ ok: false, error: 'Unauthorized: Cannot grant higher or equal privileged roles' }, { status: 403 });
       }
     }

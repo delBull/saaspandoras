@@ -300,7 +300,7 @@ describe('🏛️ Hermes OS Sovereign Certification — 7 Audit Proofs', () => {
   // =========================================================================
   it('TEST F: Server-side RBAC validates capabilities and rejects unauthorized callers at domain level', () => {
     // 1. Institutional Books is exclusively locked to SUPER_ADMIN
-    const superAdminPerms = resolveEffectivePermissions('SUPER_ADMIN');
+    const superAdminPerms = resolveEffectivePermissions('SUPER_ADMIN', null, 'ADMIN');
     expect(superAdminPerms.institutionalBooks).toBe(true);
 
     const adminPerms = resolveEffectivePermissions('ADMIN');
@@ -317,9 +317,9 @@ describe('🏛️ Hermes OS Sovereign Certification — 7 Audit Proofs', () => {
     expect(mktgPerms.institutionalBooks).toBe(false);
 
     // 2. checkNexusPermission fail-closed enforcement
-    expect(checkNexusPermission({ isAuthenticated: false, role: null, permissions: adminPerms }, 'users.manage')).toBe(false);
-    expect(checkNexusPermission({ isAuthenticated: true, role: 'ADMIN_MARKETING', permissions: mktgPerms }, 'users.manage')).toBe(false);
-    expect(checkNexusPermission({ isAuthenticated: true, role: 'ADMIN', permissions: adminPerms }, 'institutionalBooks')).toBe(false);
+    expect(checkNexusPermission({ isAuthenticated: false, role: null, surface: 'UNKNOWN', permissions: adminPerms }, 'users.manage')).toBe(false);
+    expect(checkNexusPermission({ isAuthenticated: true, role: 'ADMIN_MARKETING', surface: 'UNKNOWN', permissions: mktgPerms }, 'users.manage')).toBe(false);
+    expect(checkNexusPermission({ isAuthenticated: true, role: 'ADMIN', surface: 'UNKNOWN', permissions: adminPerms }, 'institutionalBooks')).toBe(false);
   });
 
   // =========================================================================

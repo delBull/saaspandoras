@@ -63,9 +63,11 @@ export class FinancialOrchestratorService {
       import('@/db').then(({ db }) => {
         import('@/db/schema').then(({ a2aNonces }) => {
           import('drizzle-orm').then(({ like, or }) => {
-            db.delete(a2aNonces)
-              .where(or(like(a2aNonces.nonce, 'fin_nonce_%'), like(a2aNonces.nonce, 'fin_sig_%')))
-              .catch(() => {});
+            if (db && typeof db.delete === 'function') {
+              db.delete(a2aNonces)
+                .where(or(like(a2aNonces.nonce, 'fin_nonce_%'), like(a2aNonces.nonce, 'fin_sig_%')))
+                .catch(() => {});
+            }
           });
         });
       }).catch(() => {});

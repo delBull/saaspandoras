@@ -23,6 +23,8 @@ export type NexusRole =
   | 'MARKETING' 
   | 'VIEWER';
 
+export type NexusSurface = 'ADMIN' | 'NEXUS' | 'ACADEMY' | 'TMA' | 'UNKNOWN';
+
 export interface NexusPermissions {
   'users.manage': boolean;
   'tenants.manage': boolean;
@@ -53,6 +55,7 @@ export interface NexusAuthContext {
   canonicalOrgId?: string | null;
   whatsappPhone?: string | null;
   provisionStatus?: NexusProvisionStatus | null;
+  surface: NexusSurface;
   permissions: NexusPermissions;
 }
 
@@ -75,7 +78,8 @@ const DEFAULT_EMPTY_PERMISSIONS: NexusPermissions = {
  */
 export function resolveEffectivePermissions(
   role: NexusRole,
-  overrides?: Partial<Record<string, boolean>> | null
+  overrides?: Partial<Record<string, boolean>> | null,
+  surface: NexusSurface = 'UNKNOWN'
 ): NexusPermissions {
   const defaultsByRole: Record<NexusRole, NexusPermissions> = {
     SUPER_ADMIN: {
@@ -195,11 +199,11 @@ export function resolveEffectivePermissions(
     'calendar.manage': overrides?.['calendar.manage'] !== undefined ? overrides['calendar.manage'] : base['calendar.manage'],
     ecosystem: true, // Always accessible to authenticated Nexus members
     // 🛡️ SECURITY GUARD: Institutional books NEVER grants via collaborator overrides
-    institutionalBooks: role === 'SUPER_ADMIN',
+    institutionalBooks: role === 'SUPER_ADMIN' && surface === 'ADMIN',
     // Granular Module Overrides
     academyAdmin: overrides?.['academyAdmin'] !== undefined ? Boolean(overrides['academyAdmin']) : (role === 'SUPER_ADMIN' || role === 'ADMIN' || (role as string) === 'MANAGER'),
     dealRoom: overrides?.['dealRoom'] !== undefined ? Boolean(overrides['dealRoom']) : (role === 'SUPER_ADMIN' || role === 'ADMIN'),
-    settings: overrides?.['settings'] !== undefined ? Boolean(overrides['settings']) : (role === 'SUPER_ADMIN'),
+    settings: overrides?.['settings'] !== undefined ? Boolean(overrides['settings']) : (role === 'SUPER_ADMIN' && (surface === 'ADMIN' || surface === 'NEXUS')),
     hermesQa: overrides?.['hermesQa'] !== undefined ? Boolean(overrides['hermesQa']) : (role === 'SUPER_ADMIN' || role === 'ADMIN'),
   };
 
@@ -211,7 +215,8 @@ export function resolveEffectivePermissions(
  */
 export async function getNexusAuthContext(
   customHeaders?: Headers | null,
-  tokenParam?: string | null
+  tokenParam?: string | null,
+  surface: NexusSurface = 'UNKNOWN'
 ): Promise<NexusAuthContext> {
   try {
     let reqHeaders: Headers;
@@ -306,7 +311,8 @@ export async function getNexusAuthContext(
           name: name || 'Marco',
           whatsappPhone: whatsappPhone || '+523222741987',
           canonicalOrgId: 'pandoras',
-          permissions: resolveEffectivePermissions('SUPER_ADMIN'),
+          surface,
+          permissions: resolveEffectivePermissions('SUPER_ADMIN', null, surface),
         };
       }
 
@@ -399,9 +405,11 @@ export async function getNexusAuthContext(
             collaboratorId,
             canonicalOrgId,
             provisionStatus: (collaboratorStatus || 'ACTIVE') as NexusProvisionStatus,
+            surface,
             permissions: resolveEffectivePermissions(
               effectiveRole, 
-              collaboratorOverrides
+              collaboratorOverrides,
+              surface
             ),
           };
         } else {
@@ -431,6 +439,7 @@ export async function getNexusAuthContext(
               collaboratorId: null,
               canonicalOrgId: null,
               provisionStatus: 'PENDING',
+              surface,
               permissions: DEFAULT_EMPTY_PERMISSIONS,
             };
           }
@@ -460,6 +469,7 @@ export async function getNexusAuthContext(
             collaboratorId: null,
             canonicalOrgId: null,
             provisionStatus: 'PENDING',
+            surface,
             permissions: DEFAULT_EMPTY_PERMISSIONS,
           };
         }
@@ -502,6 +512,7 @@ export async function getNexusAuthContext(
           return {
             isAuthenticated: false,
             role: null,
+            surface,
             permissions: DEFAULT_EMPTY_PERMISSIONS,
             provisionStatus,
           };
@@ -545,7 +556,7 @@ export async function getNexusAuthContext(
           }
         }
 
-        const permissions = resolveEffectivePermissions(role, collaborator.permissions as NexusPermissionsOverride);
+        const permissions = resolveEffectivePermissions(role, collaborator.permissions as NexusPermissionsOverride, surface);
 
         return {
           isAuthenticated: true,
@@ -556,6 +567,7 @@ export async function getNexusAuthContext(
           canonicalOrgId,
           whatsappPhone: collaborator.whatsappPhone,
           provisionStatus: provisionStatus as NexusProvisionStatus,
+          surface,
           permissions,
         };
       } else {
@@ -567,7 +579,8 @@ export async function getNexusAuthContext(
           return {
             isAuthenticated: true,
             role,
-            permissions: resolveEffectivePermissions(role as NexusRole, {}),
+            surface,
+            permissions: resolveEffectivePermissions(role as NexusRole, {}, surface),
             email: hmac.email,
             name: hmac.email?.split('@')[0] || 'Sovereign Actor',
             wallet: null
@@ -580,6 +593,7 @@ export async function getNexusAuthContext(
     return {
       isAuthenticated: false,
       role: null,
+      surface,
       permissions: DEFAULT_EMPTY_PERMISSIONS,
     };
   } catch (err) {
@@ -587,6 +601,7 @@ export async function getNexusAuthContext(
     return {
       isAuthenticated: false,
       role: null,
+      surface,
       permissions: DEFAULT_EMPTY_PERMISSIONS,
     };
   }

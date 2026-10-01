@@ -2,6 +2,7 @@ export interface MembershipContext {
   role?: string;
   isBoss?: boolean;
   surface?: string;
+  permissions?: string[] | Record<string, boolean>;
 }
 
 export class CapabilityResolver {
@@ -12,18 +13,20 @@ export class CapabilityResolver {
     const caps = new Set<string>();
 
     if (membership.surface === 'GROWTH_OS') {
-      if (membership.isBoss || membership.role === 'OWNER') {
+      const perms = membership.permissions || {};
+      const hasGrowthManage = Array.isArray(perms) ? perms.includes('growth.manage') : !!perms['growth.manage'];
+      const hasGrowthRead = Array.isArray(perms) ? perms.includes('growth.read') : !!perms['growth.read'];
+
+      if (hasGrowthManage) {
         caps.add('growth.leads.read');
         caps.add('growth.leads.manage');
         caps.add('growth.analytics.read');
         caps.add('growth.campaigns.plan');
         caps.add('growth.campaigns.approve');
         caps.add('growth.campaigns.distribute');
-      } else if (membership.role === 'GESTOR') {
+      } else if (hasGrowthRead) {
         caps.add('growth.leads.read');
-        caps.add('growth.leads.manage');
         caps.add('growth.analytics.read');
-        // Gestors cannot approve or distribute campaigns
       } else {
         caps.add('growth.leads.read');
       }

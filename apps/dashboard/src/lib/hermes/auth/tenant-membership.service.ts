@@ -74,7 +74,22 @@ export class HermesTenantMembershipService {
     }
 
     // RULE 1: Global Platform Admin Authority (Bounded to 100 workspaces per query)
-    if (userRecord?.role === 'admin') {
+    if (userRecord?.role === 'super_admin' || userRecord?.role === 'admin') {
+      const { PlatformCapabilityRegistryService } = await import('@/lib/admin/platform-capability-registry.service');
+      
+      const authResult = PlatformCapabilityRegistryService.evaluateAuthorization(
+        {
+          id: userRecord.id,
+          actorType: 'WALLET',
+          role: userRecord.role.toUpperCase() as any,
+          sessionStartedAt: new Date().toISOString(),
+          isDiscord2faVerified: false
+        },
+        'platform.tenants.read',
+        'all'
+      );
+
+      if (authResult.granted) {
       try {
         const allProjects = await db
           .select({
@@ -105,6 +120,7 @@ export class HermesTenantMembershipService {
           503
         );
       }
+    }
     }
 
     // RULE 2: Owner lookup (by wallet or email)

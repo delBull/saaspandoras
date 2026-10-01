@@ -79,7 +79,7 @@ export function middleware(request: NextRequest) {
     // Only rewrite paths that are dedicated sub-modules of /nexus (rooms, settings, developers, print, etc.)
     // All top-level platform routes (/onboarding, /access, /growth-os, /admin, /deal, /portal, etc.)
     // must be served normally without appending /nexus prefix.
-    const nexusSubmodules = ["/rooms", "/settings", "/academy", "/developers", "/print", "/roles"];
+    const nexusSubmodules = ["/rooms", "/settings", "/developers", "/print", "/roles"];
     const isNexusSubmodule = nexusSubmodules.some(sub => pathname === sub || pathname.startsWith(`${sub}/`));
     
     if (isNexusSubmodule && !pathname.startsWith("/nexus/")) {
@@ -99,6 +99,39 @@ export function middleware(request: NextRequest) {
     // Map /nexus -> / and /nexus/rooms -> /rooms
     targetUrl.pathname = pathname === '/nexus' ? '/' : pathname.replace('/nexus', '');
     
+    return NextResponse.redirect(targetUrl, 301);
+  }
+
+  // 0.2.3 Academy Subdomain Routing (e.g. academy.pandoras.finance)
+  const isAcademySubdomain = host.startsWith("academy.") || host.startsWith("staging.academy.");
+  if (isAcademySubdomain && !pathname.startsWith("/api") && !pathname.startsWith("/_next")) {
+    if (pathname === "/" || pathname === "") {
+      return NextResponse.rewrite(new URL("/academy", request.url));
+    }
+    // Only rewrite if it's not already prefixed
+    if (!pathname.startsWith("/academy/") && pathname !== "/academy") {
+      return NextResponse.rewrite(new URL(`/academy${pathname}`, request.url));
+    }
+  }
+
+  // 0.2.4 Hard Redirect for /academy accessed outside of academy subdomain
+  if (!isAcademySubdomain && (pathname === "/academy" || pathname.startsWith("/academy/"))) {
+    const isStaging = host.includes('staging');
+    const targetHost = host.startsWith('localhost') || host.includes('127.0.0.1')
+      ? 'academy.localhost:3000'
+      : (isStaging ? 'staging.academy.pandoras.finance' : 'academy.pandoras.finance');
+    
+    const targetUrl = new URL(request.url);
+    targetUrl.host = targetHost;
+    // Map /academy -> / and /academy/foo -> /foo
+    targetUrl.pathname = pathname === '/academy' ? '/' : pathname.replace('/academy', '');
+    
+    // Check if it's a localhost testing environment with a custom port
+    if (host.startsWith('localhost:')) {
+      const port = host.split(':')[1];
+      targetUrl.host = `academy.localhost:${port}`;
+    }
+
     return NextResponse.redirect(targetUrl, 301);
   }
 

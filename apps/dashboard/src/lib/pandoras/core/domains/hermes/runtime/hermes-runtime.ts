@@ -319,6 +319,7 @@ export class HermesRuntime implements HermesCognitiveRuntime {
           const effectiveCapabilities = CapabilityResolver.resolveEffectiveCapabilities({
             role: controlPlaneContext.role,
             isBoss: (rawInterlocutor as any)?.isBoss,
+            permissions: (rawInterlocutor as any)?.permissions || (controlPlaneContext as any)?.permissions,
             surface: surfaceNameForIntelligence
           });
 

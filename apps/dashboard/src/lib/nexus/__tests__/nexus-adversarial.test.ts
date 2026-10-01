@@ -66,6 +66,7 @@ describe('Nexus Adversarial Tests (Phase 3)', () => {
       isAuthenticated: true,
       collaboratorId: 1,
       role: 'OPERATOR',
+      surface: 'NEXUS',
       permissions: { 'finance.manage': false } as any
     });
 

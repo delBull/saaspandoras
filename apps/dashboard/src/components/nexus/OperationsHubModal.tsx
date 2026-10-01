@@ -140,12 +140,11 @@ interface OpsModalProps {
   userName?: string;
   userEmail?: string;
   userRole?: string;
+  permissions?: Record<string, boolean>;
 }
 
-export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName, userEmail, userRole }: OpsModalProps) {
-  const role = (userRole || '').toUpperCase().trim();
-  const isSuperAdmin = role === 'SUPER_ADMIN';
-  const isOpsAdmin = isSuperAdmin || role === 'ADMIN' || role === 'OPERATIONS';
+export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName, userEmail, userRole, permissions = {} }: OpsModalProps) {
+  const isOpsAdmin = !!permissions['growth.manage'] || !!permissions['ecosystem'] || !!permissions['nexus.manage'];
 
   const [tab, setTab] = useState<Tab>('WORK_ENGINE');
   const [terminalMode, setTerminalMode] = useState<'TASK' | 'HERMES'>('TASK');

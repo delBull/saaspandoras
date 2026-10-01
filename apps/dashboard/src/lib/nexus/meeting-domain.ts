@@ -56,3 +56,27 @@ export class CancelMeetingHandler {
     return { success: true };
   }
 }
+
+export class LaunchImmediateMeetingHandler {
+  static async execute(authCtx: NexusAuthContext): Promise<{ success: boolean; meetingId?: string; error?: string }> {
+    if (!authCtx.isAuthenticated || !authCtx.collaboratorId) {
+      return { success: false, error: 'Unauthorized' };
+    }
+    
+    const orgId = authCtx.canonicalOrgId ?? 'pandoras';
+    const now = new Date();
+    const newMeetingId = crypto.randomUUID();
+
+    await db.insert(meetings).values({
+      id: newMeetingId,
+      canonicalOrgId: orgId,
+      hostCollaboratorId: authCtx.collaboratorId.toString(),
+      status: 'live',
+      startsAt: now,
+      startedAt: now,
+    });
+
+    return { success: true, meetingId: newMeetingId };
+  }
+}
+

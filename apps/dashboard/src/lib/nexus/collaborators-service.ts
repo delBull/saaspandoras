@@ -43,7 +43,7 @@ export async function requireNexusAdmin(req?: Request | Headers): Promise<boolea
     }
 
     const auth = await getNexusAuthContext(reqHeaders);
-    if (auth.isAuthenticated && (auth.role === 'SUPER_ADMIN' || auth.role === 'ADMIN')) {
+    if (auth.isAuthenticated && (auth.permissions['nexus.manage'] || auth.permissions['users.manage'])) {
       return true;
     }
 

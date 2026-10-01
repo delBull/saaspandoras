@@ -26,3 +26,23 @@ export async function cancelMeetingAction(meetingId: string) {
     return { success: false, error: "Internal Server Error" };
   }
 }
+export async function launchImmediateMeetingAction() {
+  try {
+    const { headers } = await import("next/headers");
+    const reqHeaders = await headers();
+    const authCtx = await getNexusAuthContext(reqHeaders);
+
+    const { LaunchImmediateMeetingHandler } = await import("@/lib/nexus/meeting-domain");
+    const result = await LaunchImmediateMeetingHandler.execute(authCtx);
+
+    if (!result.success) {
+      return { success: false, error: result.error };
+    }
+
+    revalidatePath("/nexus/agenda");
+    return { success: true, meetingId: result.meetingId };
+  } catch (error: any) {
+    console.error("[LaunchMeetingAction] Error:", error);
+    return { success: false, error: "Internal Server Error" };
+  }
+}

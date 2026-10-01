@@ -3,16 +3,28 @@
  * apps/dashboard/src/lib/nexus/__tests__/nexus-rbac.test.ts
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   resolveEffectivePermissions,
   checkNexusPermission,
   type NexusAuthContext,
 } from '../nexus-rbac';
 
+vi.mock('@/db', () => ({
+  db: {
+    select: vi.fn().mockReturnThis(),
+    from: vi.fn().mockReturnThis(),
+    where: vi.fn().mockResolvedValue([]),
+    insert: vi.fn().mockReturnThis(),
+    values: vi.fn().mockResolvedValue([]),
+    update: vi.fn().mockReturnThis(),
+    set: vi.fn().mockReturnThis(),
+  },
+}));
+
 describe('🛡️ Nexus RBAC Domain Engine', () => {
   it('RBAC-01: SUPER_ADMIN has uninhibited access across all planes including institutional books', () => {
-    const perms = resolveEffectivePermissions('SUPER_ADMIN');
+    const perms = resolveEffectivePermissions('SUPER_ADMIN', null, 'ADMIN');
     expect(perms["users.manage"]).toBe(true);
     expect(perms["growth.manage"]).toBe(true);
     expect(perms["nexus.manage"]).toBe(true);
@@ -78,6 +90,7 @@ describe('🛡️ Nexus RBAC Domain Engine', () => {
     const unauthCtx: NexusAuthContext = {
       isAuthenticated: false,
       role: null,
+      surface: 'UNKNOWN',
       permissions: {
         "users.manage": false,
         "tenants.manage": false,
@@ -108,7 +121,7 @@ describe('🛡️ Nexus RBAC Domain Engine', () => {
   });
 
   it('RBAC-09: SUPER_ADMIN is the sole authority for institutional books and master operations', () => {
-    const superPerms = resolveEffectivePermissions('SUPER_ADMIN');
+    const superPerms = resolveEffectivePermissions('SUPER_ADMIN', null, 'ADMIN');
     const adminPerms = resolveEffectivePermissions('ADMIN');
     const opsPerms = resolveEffectivePermissions('ADMIN_OPERATIONS');
 

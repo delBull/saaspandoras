@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
     }
 
     const { getNexusAuthContext } = await import('@/lib/nexus/nexus-rbac');
-    const auth = await getNexusAuthContext(req.headers);
+    const auth = await getNexusAuthContext(req.headers, null, 'NEXUS');
     if (!auth.isAuthenticated) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 403 });
     }
@@ -100,7 +100,7 @@ export async function POST(req: NextRequest) {
       permissions: [
         'knowledge.read',
         'runtime.respond',
-        ...(isBoss || validatedRole === 'ADMIN' ? ['governance.admin', 'claims.verify', 'platform.decrees'] : []),
+        ...(auth.permissions['nexus.manage'] ? ['governance.admin', 'claims.verify', 'platform.decrees'] : []),
       ],
       identity: {
         userId: operatorContext?.id,

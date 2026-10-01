@@ -6,6 +6,8 @@ import jwt from "jsonwebtoken";
 import Link from "next/link";
 import { ArrowLeft, Calendar, Video } from "lucide-react";
 import { CancelMeetingButton } from "./CancelMeetingButton";
+import { LaunchImmediateMeetingButton } from "./LaunchImmediateMeetingButton";
+import { CopyLinkButton } from "./CopyLinkButton";
 
 export const dynamic = "force-dynamic";
 
@@ -68,7 +70,7 @@ export default async function NexusAgendaPage({ searchParams }: { searchParams: 
   return (
     <div className="min-h-screen bg-black text-white selection:bg-lime-500/30 overflow-x-hidden pb-32">
       <div className="max-w-4xl mx-auto px-6 pt-12">
-        <header className="flex items-center justify-between mb-12">
+        <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
           <div>
             <Link
               href={token ? `/nexus?token=${token}` : "/nexus"}
@@ -81,6 +83,9 @@ export default async function NexusAgendaPage({ searchParams }: { searchParams: 
             <p className="text-zinc-500 font-mono text-xs uppercase tracking-widest">
               Reuniones Activas y Programadas
             </p>
+          </div>
+          <div>
+            <LaunchImmediateMeetingButton />
           </div>
         </header>
 
@@ -149,6 +154,9 @@ export default async function NexusAgendaPage({ searchParams }: { searchParams: 
                       </div>
 
                       <div className="flex items-center gap-3 w-full sm:w-auto">
+                        {row.meeting.status === "live" && (
+                          <CopyLinkButton meetingId={row.meeting.id} />
+                        )}
                         {canJoin && (
                           <Link
                             href={joinUrl || "#"}
