@@ -447,7 +447,8 @@ export class WhatsAppDispatcher {
     // ALL messages directed to Pandora's Master WhatsApp (+52 MX) are governed by Hermes Cognitive Runtime
     try {
       const runtime = getDefaultRuntime();
-      const conversationId = buildCanonicalWhatsAppConversationId('pandoras', phone);
+      // SEGREGRATION: Append _hermes to isolate from Sofia's session memory (which defaults to conv_wa_pandoras_phone)
+      const conversationId = buildCanonicalWhatsAppConversationId('pandoras', phone) + '_hermes';
 
       const isBoss = !!resolvedInterlocutor?.isBoss;
       const isCollaborator = !!resolvedInterlocutor?.isCollaborator;
@@ -468,7 +469,7 @@ export class WhatsAppDispatcher {
           organizationId: 'pandoras',
           role: isBoss ? 'OWNER' : (resolvedRole as any),
           permissions: resolvedPermissions,
-          sessionId: `wa_sess_pandoras_${cleanPhone}`,
+          sessionId: `wa_sess_pandoras_${cleanPhone}_hermes`,
           identity: {
             name: resolvedName,
             isBoss,
