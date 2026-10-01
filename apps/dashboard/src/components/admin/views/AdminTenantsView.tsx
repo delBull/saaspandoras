@@ -439,7 +439,7 @@ export function AdminTenantsView({ tenants, actorRole = 'VIEWER' }: AdminTenants
                           </>
                         )}
                         <div className="group/lens relative">
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/[0.04] group-hover:bg-purple-600/20 text-zinc-400 group-hover:text-purple-300 border border-white/[0.06] group-hover:border-purple-500/30 text-[11px] font-medium transition-all cursor-pointer">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-purple-600/20 text-zinc-400 hover:text-purple-300 border border-white/[0.06] hover:border-purple-500/30 text-[11px] font-medium transition-all cursor-pointer">
                             <span>Lens</span>
                             <ChevronRight className="w-3.5 h-3.5" />
                           </span>

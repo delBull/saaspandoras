@@ -195,7 +195,7 @@ export function AdminTenantLens({ tenant }: AdminTenantLensProps) {
       {/* Quick Launch Buttons */}
       <div className="pt-2 space-y-2">
         <Link
-          href={`/ecosystem/${tenant.slug}`}
+          href="/nexus"
           target="_blank"
           className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold shadow-lg shadow-purple-900/20 transition-all text-xs"
         >

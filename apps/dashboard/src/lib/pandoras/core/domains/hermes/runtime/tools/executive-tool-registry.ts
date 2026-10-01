@@ -27,6 +27,7 @@ import { paymentOrchestrator } from '../../payments/core/orchestrator';
 import { PaymentSettlementEvent } from '../../payments/core/types';
 import crypto from 'crypto';
 import { sendCollaboratorMagicLink } from '@/lib/nexus/collaborators-service';
+import { sendTenantProvisionEmail } from '@/lib/email/tenant-provision-mailer';
 
 const TOOL_SCHEMAS: ExecutiveToolSchema[] = [
   ActivateTenantTool,
@@ -55,7 +56,7 @@ export function registerExecutiveTools(executor: HermesToolExecutor): void {
     if (!tenantSlug || !vertical || !planId) {
       throw new Error('Missing tenantSlug, vertical or planId');
     }
-    const [project] = await db.select({ id: projects.id, orgId: projects.organizationId })
+    const [project] = await db.select({ id: projects.id, orgId: projects.organizationId, title: projects.title, applicantWalletAddress: projects.applicantWalletAddress })
       .from(projects).where(eq(projects.slug, String(tenantSlug))).limit(1);
     if (!project) throw new Error(`Tenant '${tenantSlug}' not found`);
 
@@ -80,6 +81,16 @@ export function registerExecutiveTools(executor: HermesToolExecutor): void {
       stateTransition: { previousState: null, newState: { vertical, planId } },
       result: 'SUCCESS',
     } as any);
+
+    if (project.applicantWalletAddress) {
+      const [owner] = await db.select({ email: users.email })
+        .from(users)
+        .where(eq(users.walletAddress, project.applicantWalletAddress))
+        .limit(1);
+      if (owner && owner.email) {
+        await sendTenantProvisionEmail(owner.email, project.title, planId);
+      }
+    }
 
     return {
       activated: true,

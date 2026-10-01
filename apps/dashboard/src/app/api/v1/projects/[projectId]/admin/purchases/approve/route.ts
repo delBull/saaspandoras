@@ -11,6 +11,7 @@ import { verifySignature } from 'thirdweb/auth';
 import { client } from '@/lib/thirdweb-client';
 import { SovereignIpfsOrchestrator } from '@/lib/pandoras/core/domains/hermes/knowledge/ipfs/orchestrator';
 import { SovereignIpfsAlerting } from '@/lib/pandoras/core/domains/hermes/knowledge/ipfs/ipfs-alerting';
+import { sendPurchaseEmail } from '@/lib/email/purchase-mailer';
 
 async function handler(
     req: Request,
@@ -319,6 +320,18 @@ async function handler(
                 const shadowUser = await db.query.users.findFirst({
                     where: eq(users.id, targetWallet || purchase.userId)
                 });
+
+                if (shadowUser?.email) {
+                    // Send purchase email
+                    await sendPurchaseEmail(shadowUser.email, {
+                        projectName: project.title,
+                        projectSlug: project.slug,
+                        amount: units,
+                        isReturning: false,
+                        legalConfig: project.legalConfig,
+                        portalUrl: `https://${project.slug}.pandoras.finance/portal`, // Adjust if using custom domain
+                    }).catch(e => console.error(`[PurchasesApprove] Error sending purchase email:`, e));
+                }
                 
                 if (shadowUser?.email) {
                     const lead = await db.query.marketingLeads.findFirst({

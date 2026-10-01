@@ -1,7 +1,8 @@
 import { BaseVerticalPaymentAdapter } from './base-adapter';
 import { PaymentSettlementEvent, PaymentVertical } from '../core/types';
 import { db } from '@/db';
-import { installedProducts, projects, platformEvents } from '@/db/schema';
+import { installedProducts, projects, platformEvents, users } from '@/db/schema';
+import { sendTenantProvisionEmail } from '@/lib/email/tenant-provision-mailer';
 import { eq, and } from 'drizzle-orm';
 import { PlatformAuditLedgerService } from '@/lib/admin/platform-audit-ledger.service';
 
@@ -16,7 +17,7 @@ export class GrowthPaymentAdapter extends BaseVerticalPaymentAdapter {
     console.log(`[GrowthPaymentAdapter] Received settlement for ${event.organizationId} / Product: ${event.productId}`);
     
     // 1. Resolve Project ID from canonical Organization ID
-    const [project] = await db.select({ id: projects.id })
+    const [project] = await db.select({ id: projects.id, title: projects.title, applicantWalletAddress: projects.applicantWalletAddress })
       .from(projects)
       .where(eq(projects.organizationId, event.organizationId))
       .limit(1);
@@ -113,6 +114,18 @@ export class GrowthPaymentAdapter extends BaseVerticalPaymentAdapter {
       },
       result: 'SUCCESS',
     });
+
+    // 5. Send Email Notification
+    if (project.applicantWalletAddress) {
+      const [owner] = await db.select({ email: users.email })
+        .from(users)
+        .where(eq(users.walletAddress, project.applicantWalletAddress))
+        .limit(1);
+      
+      if (owner && owner.email) {
+        await sendTenantProvisionEmail(owner.email, project.title, event.productId);
+      }
+    }
 
     console.log(`[GrowthPaymentAdapter] Successfully upgraded tenant ${event.organizationId} to ${event.productId}`);
   }
