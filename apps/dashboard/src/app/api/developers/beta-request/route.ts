@@ -8,12 +8,27 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Discord handle is required' }, { status: 400 });
     }
 
-    const webhookUrl = 'https://discord.com/api/webhooks/1555012559906799639/LldcOZ_TKI6Fykhr6Er8IUI0xKF215uIUe-MRkjwnQmQ2zE5ZiAYfx05-T95LESz7xqO';
+    // SECURITY FIX (GitGuardian Oct-2026): the beta-request webhook was
+    // hardcoded in source and got flagged as a leaked secret. It now lives
+    // SECURITY FIX (GitGuardian Oct-2026): the beta-request webhook was
+    // hardcoded in source and got flagged as a leaked secret (revoked in
+    // Discord). Centralized: all public/dev traffic goes through the single
+    // DISCORD_CHANGELOG_WEBHOOK (channel de anuncios). Alerts operativas
+    // siguen en DISCORD_WEBHOOK_ALERTS (no cambia).
+    const webhookUrl = process.env.DISCORD_CHANGELOG_WEBHOOK || '';
+    if (!webhookUrl) {
+      console.error('[BetaRequest] DISCORD_CHANGELOG_WEBHOOK missing — beta requests unavailable.');
+      return NextResponse.json({ error: 'Beta requests temporarily unavailable' }, { status: 503 });
+    }
+    if (!/^https:\/\/(discord\.com|discordapp\.com)\/api\/webhooks\//.test(webhookUrl)) {
+      console.error('[BetaRequest] Malformed webhook env.');
+      return NextResponse.json({ error: 'Beta requests temporarily unavailable' }, { status: 503 });
+    }
 
     const message = {
       embeds: [
         {
-          title: '🚀 Nuevo Request de Acceso API Beta',
+          title: '🛎️ Solicitud de Acceso — API Beta (Dev)',
           color: 5814783, // blurple
           fields: [
             { name: 'Discord Handle', value: `\`${discordHandle}\``, inline: true },
