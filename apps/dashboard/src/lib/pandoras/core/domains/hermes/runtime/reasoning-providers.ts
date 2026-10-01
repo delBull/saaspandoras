@@ -261,8 +261,13 @@ export class OllamaReasoningProvider implements ReasoningProvider {
     // 3. (OpenAI Fallback Removed as per request)
 
     // 4. Safe Default Fallback Response
+    const isBoss = input.reasoningContext.interlocutor?.isBoss || false;
+    const fallbackText = isBoss
+      ? `Jefe, recibí tu mensaje. En este momento estoy experimentando una latencia temporal en mis sistemas cognitivos al procesar información para ${input.reasoningContext.tenantIdentity.organizationName}. El mensaje quedó registrado en bitácora y un ingeniero lo revisará.`
+      : `Hola. Recibí tu mensaje. En este momento estoy experimentando una latencia temporal en mis sistemas cognitivos al procesar información de ${input.reasoningContext.tenantIdentity.organizationName}. Uno de nuestros operadores se pondrá en contacto contigo a la brevedad para asistirte personalmente.`;
+
     return {
-      content: `Hola. Estoy procesando tu consulta sobre ${input.reasoningContext.tenantIdentity.organizationName}. En este momento estamos actualizando el contexto de conexión, pero un asesor se pondrá en contacto contigo a la brevedad.`,
+      content: fallbackText,
       meta: {
         provider: 'fallback-safe',
         model: 'system-fallback',

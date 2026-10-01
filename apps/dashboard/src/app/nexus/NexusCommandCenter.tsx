@@ -120,7 +120,7 @@ const SECTIONS: NexusSection[] = [
     cap: "institutionalBooks",
     links: [
       { label: "Academy & Leadership Curriculum", note: "Alumnos, curriculum COO/CFO y emisión de blueprints de certificación.", href: "/nexus/academy" },
-      { label: "Academy Control Plane", note: "Gestión administrativa de la academia y certificaciones.", href: "/admin/academy", cap: "users.manage" },
+      // { label: "Academy Control Plane", note: "Gestión administrativa de la academia y certificaciones.", href: "/admin/academy", cap: "users.manage" },
       { label: "Pandoras Institutional Framework (Libros 0–VIII)", note: "Cuerpo documental institucional.", href: "https://pandoras.finance/libros", external: true },
       { label: "IOM System & Architecture (5 Layers)", note: "Sistema operativo institucional.", href: "https://pandoras.finance/libros/constitucion", external: true },
       { label: "Pandoras Asset Standard (PAS v1.0)", note: "Estándar de activos, Libro IV.", href: "https://pandoras.finance/libros/libro-iv", external: true },
@@ -524,7 +524,7 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
             className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-amber-500/20 via-purple-500/20 to-indigo-500/20 hover:from-amber-500/30 hover:to-indigo-500/30 border border-amber-500/30 text-amber-300 text-xs font-semibold shadow-lg shadow-amber-500/10 transition-all group"
           >
             <Compass className="w-4 h-4 text-amber-400 group-hover:rotate-45 transition-transform duration-300" />
-            <span className="text-center">Guía del Ecosistema</span>
+            <span className="text-center">Onboarding</span>
           </button>
         </div>
 

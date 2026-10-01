@@ -294,7 +294,7 @@ export async function getNexusAuthContext(
         if (superUser && superUser.role !== 'super_admin' && isSuperWallet) {
           db.update(users)
             .set({ role: 'super_admin' })
-            .where(eq(users.walletAddress, sessionWallet))
+            .where(eq(users.id, superUser.id))
             .catch(() => undefined);
         }
 
