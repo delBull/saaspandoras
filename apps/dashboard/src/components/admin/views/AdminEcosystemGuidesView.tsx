@@ -44,6 +44,7 @@ import {
   generateTourShareLink,
   generateWhatsAppShareText,
   EcosystemStation,
+  ACADEMY_PATHS_BY_ROLE
 } from '@/lib/guides/ecosystem-guides.data';
 import {
   TenantVertical,
@@ -311,9 +312,17 @@ export function AdminEcosystemGuidesView() {
                         {item.role}
                       </span>
                     </div>
-                    <p className="text-[11px] text-zinc-400 leading-snug line-clamp-2">
+                    <p className="text-[11px] text-zinc-400 leading-snug line-clamp-2 mb-2">
                       {item.description}
                     </p>
+                    {ACADEMY_PATHS_BY_ROLE[item.role] && (
+                      <div className="flex items-center gap-1.5 mt-auto pt-2 border-t border-white/5">
+                        <span className="text-[10px] font-semibold text-emerald-400">🎓 Academy:</span>
+                        <span className="text-[10px] text-zinc-300 truncate">
+                          {ACADEMY_PATHS_BY_ROLE[item.role].course}
+                        </span>
+                      </div>
+                    )}
                   </button>
                 );
               })}

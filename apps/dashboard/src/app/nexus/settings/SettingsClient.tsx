@@ -69,7 +69,7 @@ export default function NexusSettingsPage({ isUserAdmin = false, userRole = "OPE
   const [isTerminalOpen, setIsTerminalOpen] = useState(false);
 
   // Tabs state - SuperAdmin inicia en "team", los demás colaboradores inician en "terminal"
-  const [activeTab, setActiveTab] = useState<"team" | "agents" | "terminal" | "display" | "alerts">(isUserAdmin ? "team" : "terminal");
+  const [activeTab, setActiveTab] = useState<"team" | "agents" | "terminal" | "display" | "alerts">("terminal");
   const [alertHistory, setAlertHistory] = useState<any[]>([]);
 
   const canManageAgenda = isUserAdmin || userRole === "ADMIN" || !!operatorContext?.permissions?.["calendar.manage"];
@@ -295,18 +295,7 @@ export default function NexusSettingsPage({ isUserAdmin = false, userRole = "OPE
 
         {/* Tabs Navigation */}
         <div className="flex items-center gap-4 border-b border-zinc-800">
-          {isUserAdmin && (
-            <button
-              onClick={() => setActiveTab("team")}
-              className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 ${
-                activeTab === "team"
-                  ? "border-amber-400 text-amber-400"
-                  : "border-transparent text-zinc-500 hover:text-zinc-300"
-              }`}
-            >
-              Team & Roles
-            </button>
-          )}
+          {/* Team tab removed - Moved to Platform Admin */}
           <button
             onClick={() => setActiveTab("agents")}
             className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 ${

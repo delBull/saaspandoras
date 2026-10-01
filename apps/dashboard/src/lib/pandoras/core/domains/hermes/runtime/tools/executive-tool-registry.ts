@@ -16,19 +16,23 @@ import {
   ActivateTenantTool,
   AssignAdminTool,
   ApprovePaymentTool,
+  ProvisionCollaboratorTool,
   ExecutiveToolSchema,
 } from './executive-tools';
 import { db } from '@/db';
-import { projects, installedProducts, administrators, privatePaymentLinks } from '@/db/schema';
+import { projects, installedProducts, administrators, privatePaymentLinks, nexusCollaborators, users } from '@/db/schema';
 import { eq, and, inArray, or } from 'drizzle-orm';
 import { PlatformAuditLedgerService } from '@/lib/admin/platform-audit-ledger.service';
 import { paymentOrchestrator } from '../../payments/core/orchestrator';
 import { PaymentSettlementEvent } from '../../payments/core/types';
+import crypto from 'crypto';
+import { sendCollaboratorMagicLink } from '@/lib/nexus/collaborators-service';
 
 const TOOL_SCHEMAS: ExecutiveToolSchema[] = [
   ActivateTenantTool,
   AssignAdminTool,
   ApprovePaymentTool,
+  ProvisionCollaboratorTool,
 ];
 
 function isExecutive(context: Record<string, unknown> | undefined): boolean {
@@ -252,6 +256,102 @@ export function registerExecutiveTools(executor: HermesToolExecutor): void {
     } as any);
 
     return { approved: true, linkId: link.id, vertical: linkVertical, organizationId: linkTenant };
+  });
+  // ── executive_provision_collaborator ─────────────────────────────────────
+  executor.registerHandler('executive_provision_collaborator', async (params, context) => {
+    if (!isExecutive(context)) {
+      throw new Error('EXECUTIVE_GATE_DENY: Only OWNER/BOSS authority may provision collaborators.');
+    }
+    const { collaboratorEmail, role, action } = (params as any) || {};
+    if (!collaboratorEmail || !action) {
+      throw new Error('Missing collaboratorEmail or action');
+    }
+
+    const [collaborator] = await db
+      .select()
+      .from(nexusCollaborators)
+      .where(eq(nexusCollaborators.email, String(collaboratorEmail).toLowerCase().trim()))
+      .limit(1);
+
+    if (!collaborator) {
+      return { success: false, error: `Colaborador con email ${collaboratorEmail} no encontrado.` };
+    }
+
+    if (action === 'REJECT') {
+      await db.update(nexusCollaborators)
+        .set({ status: 'REJECTED' as any, statusChangedAt: new Date() })
+        .where(eq(nexusCollaborators.id, collaborator.id));
+      return { success: true, action: 'REJECTED', email: collaborator.email };
+    }
+
+    // SECURITY: allowlist the role — the LLM must never write an arbitrary
+    // string (e.g. hallucinated 'SUPERADMIN') into nexusCollaborators/users.
+    const VALID_COLLAB_ROLES = ['TENANT_ADMIN', 'OPERATOR', 'VIEWER'] as const;
+    let finalRole = String(role || collaborator.role || 'VIEWER').toUpperCase().trim();
+    const roleAliases: Record<string, string> = {
+      'SUPER_ADMIN': 'TENANT_ADMIN', 'ADMIN': 'TENANT_ADMIN', 'OPERADOR': 'OPERATOR', 'USER': 'VIEWER',
+    };
+    finalRole = roleAliases[finalRole] || finalRole;
+    if ((VALID_COLLAB_ROLES as readonly string[]).indexOf(finalRole) === -1) {
+      throw new Error(`EXECUTIVE_GATE_DENY: role '${finalRole}' is not a valid collaborator role (${VALID_COLLAB_ROLES.join(', ')}).`);
+    }
+    const token = `nx_${crypto.randomBytes(32).toString('hex')}`;
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    await db.update(nexusCollaborators)
+      .set({
+        role: finalRole,
+        status: 'ACTIVE' as any,
+        statusChangedAt: new Date(),
+        token,
+        expiresAt,
+      })
+      .where(eq(nexusCollaborators.id, collaborator.id));
+
+    const [linkedUser] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, collaborator.email.toLowerCase()))
+      .limit(1);
+
+    if (linkedUser) {
+      await db.update(users)
+        .set({ role: finalRole.toLowerCase() as any })
+        .where(eq(users.id, linkedUser.id));
+    }
+
+    try {
+      const base = process.env.NEXT_PUBLIC_NEXUS_URL || 'https://nexus.pandoras.finance';
+      const magicLink = `${base}/nexus?token=${encodeURIComponent(token)}`;
+      const displayName = collaborator.name || collaborator.email.split('@')[0] || 'Sovereign Actor';
+      await sendCollaboratorMagicLink(displayName, collaborator.email, magicLink);
+    } catch (err: any) {
+      // Policy decision (Marco, Oct-2026): la promoción del rol NO se revierte
+      // si el magic-link falla — el email es notificación, no autorización.
+      // El ADMIN puede reenviarlo desde el panel de colaboradores.
+      console.warn('[ExecutiveTools] Magic link failed (role promotion stands):', err.message);
+    }
+
+    PlatformAuditLedgerService.recordEntry({
+      actorId: String((context as any)?.actorId || 'executive_channel'),
+      actorWallet: String((context as any)?.actorWallet || 'executive_channel'),
+      actorRole: 'OWNER',
+      actorType: 'ADMIN',
+      action: 'TENANT_PROVISIONING_INTENT_CREATED',
+      targetResource: 'nexus_collaborator',
+      resourceId: String(collaborator.id),
+      capability: 'executive.provision_collaborator',
+      governance: { isDiscord2faVerified: false, auditReason: `Aprovisionado via Hermes Executive: ${finalRole}` },
+      stateTransition: { previousState: { status: collaborator.status }, newState: { status: 'ACTIVE', role: finalRole } },
+      result: 'SUCCESS',
+    } as any);
+
+    return {
+      success: true,
+      action: 'APPROVED',
+      email: collaborator.email,
+      role: finalRole
+    };
   });
 }
 

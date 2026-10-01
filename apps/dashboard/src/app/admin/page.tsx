@@ -135,8 +135,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           updatedAt: projects.updatedAt,
         })
         .from(projects)
-        .orderBy(desc(projects.createdAt))
-        .limit(50);
+        .orderBy(desc(projects.createdAt));
 
       totalTenants = projectsRows.length;
       enrichedTenantsList = projectsRows.map((p) => {
@@ -223,7 +222,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         .select()
         .from(hermesComputeUsageEvents)
         .orderBy(desc(hermesComputeUsageEvents.createdAt))
-        .limit(30);
+        .limit(500);
 
       recentEventsList = recentEventsRows.map((ev) => ({
         id: ev.id,

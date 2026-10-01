@@ -115,7 +115,7 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
     {
       id: 'crm',
       label: 'HQ Deal Room',
-      href: '/?tab=crm',
+      href: '/admin?tab=crm',
       icon: Briefcase,
       active: currentTab === 'crm',
       allowedRoles: ['SUPER_ADMIN', 'ADMIN_OPERATIONS', 'ADMIN'] as PlatformRole[],

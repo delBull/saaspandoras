@@ -90,6 +90,10 @@ export function AdminBillingView({
   const [adjustReason, setAdjustReason] = useState<string>('');
   const [isSandboxTarget, setIsSandboxTarget] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+  const totalPages = Math.ceil(events.length / itemsPerPage);
+  const currentEvents = events.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const openAdjustModal = (row: TenantCreditRow) => {
     setSelectedTenant(row);
@@ -384,7 +388,7 @@ export function AdminBillingView({
                       </td>
                     </tr>
                   ) : (
-                    events.map((ev) => (
+                    currentEvents.map((ev) => (
                       <tr
                         key={ev.id}
                         onClick={() => handleInspectEvent(ev)}
@@ -415,6 +419,27 @@ export function AdminBillingView({
               </table>
             </div>
           </div>
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-4">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1.5 text-xs font-semibold text-zinc-300 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 disabled:opacity-50 transition-colors"
+              >
+                Anterior
+              </button>
+              <span className="text-xs text-zinc-500 font-mono">
+                Página {currentPage} de {totalPages}
+              </span>
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1.5 text-xs font-semibold text-zinc-300 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 disabled:opacity-50 transition-colors"
+              >
+                Siguiente
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

@@ -450,10 +450,15 @@ export function AdminRwaView({ deals: initialDeals, actor }: AdminRwaViewProps) 
   const { inspect } = usePlatformInspector();
   const [stageFilter, setStageFilter] = useState<string>('ALL');
   const [deals, setDeals] = useState(initialDeals);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const filteredDeals = deals.filter((d) =>
     stageFilter === 'ALL' ? true : d.stage === stageFilter
   );
+
+  const totalPages = Math.ceil(filteredDeals.length / itemsPerPage);
+  const paginatedDeals = filteredDeals.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const handleStatusChanged = (dealId: string, newStatus: string) => {
     setDeals(prev =>
@@ -473,8 +478,9 @@ export function AdminRwaView({ deals: initialDeals, actor }: AdminRwaViewProps) 
           <h2 className="text-xl font-bold text-white tracking-tight">
             RWA Deal Room & Capital Structuring
           </h2>
-          <p className="text-xs text-zinc-400 mt-0.5">
-            Flujo institucional de tokenización: Screening, Structuring, Compliance y Despliegue en Mainnet.
+          <p className="text-xs text-zinc-400 mt-0.5 max-w-3xl">
+            Flujo institucional de tokenización: Screening, Structuring, Compliance y Despliegue en Mainnet. 
+            Las acciones críticas están protegidas por 2FA (SUPER_ADMIN). La edición de metadatos se puede realizar en cualquier momento.
           </p>
         </div>
         <span className="px-3 py-1.5 rounded-xl bg-purple-500/10 border border-purple-500/20 text-xs text-purple-300 font-mono font-semibold self-start">
@@ -486,7 +492,7 @@ export function AdminRwaView({ deals: initialDeals, actor }: AdminRwaViewProps) 
       <div className="p-4 rounded-2xl bg-[#0F0F16] border border-white/[0.08] overflow-x-auto scrollbar-none">
         <div className="flex items-center gap-2 min-w-max">
           <button
-            onClick={() => setStageFilter('ALL')}
+            onClick={() => { setStageFilter('ALL'); setCurrentPage(1); }}
             className={`px-3 py-2 rounded-xl text-xs font-mono font-medium transition-all flex items-center gap-1.5 ${
               stageFilter === 'ALL'
                 ? 'bg-zinc-700/40 text-white border border-zinc-500/40'
@@ -500,7 +506,7 @@ export function AdminRwaView({ deals: initialDeals, actor }: AdminRwaViewProps) 
           {STAGES.map((s, idx) => (
             <React.Fragment key={s.stage}>
               <button
-                onClick={() => setStageFilter(stageFilter === s.stage ? 'ALL' : s.stage)}
+                onClick={() => { setStageFilter(stageFilter === s.stage ? 'ALL' : s.stage); setCurrentPage(1); }}
                 className={`px-3 py-2 rounded-xl text-xs font-mono font-medium transition-all flex items-center gap-2 ${
                   stageFilter === s.stage
                     ? 'bg-purple-600/20 text-purple-300 border border-purple-500/40 shadow-sm'
@@ -535,14 +541,14 @@ export function AdminRwaView({ deals: initialDeals, actor }: AdminRwaViewProps) 
               </tr>
             </thead>
             <tbody className="divide-y divide-white/[0.04] text-xs">
-              {filteredDeals.length === 0 ? (
+              {paginatedDeals.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-12 text-center text-zinc-500">
                     No hay proyectos en la etapa seleccionada.
                   </td>
                 </tr>
               ) : (
-                filteredDeals.map((deal) => (
+                paginatedDeals.map((deal) => (
                   <DealActionRow
                     key={deal.id}
                     deal={deal}
@@ -555,6 +561,28 @@ export function AdminRwaView({ deals: initialDeals, actor }: AdminRwaViewProps) 
           </table>
         </div>
       </div>
+      
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between p-4 bg-[#0F0F16] border border-white/[0.08] rounded-xl shadow-xl">
+          <button
+            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+            className="px-3 py-1.5 text-xs font-semibold text-zinc-300 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 disabled:opacity-50 transition-colors"
+          >
+            Anterior
+          </button>
+          <span className="text-xs text-zinc-500 font-mono">
+            Página {currentPage} de {totalPages}
+          </span>
+          <button
+            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+            className="px-3 py-1.5 text-xs font-semibold text-zinc-300 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 disabled:opacity-50 transition-colors"
+          >
+            Siguiente
+          </button>
+        </div>
+      )}
     </div>
   );
 }

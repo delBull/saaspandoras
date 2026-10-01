@@ -8,7 +8,7 @@
  * Kanban board for tracking prospects until they convert into Tenants.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useTransition } from 'react';
 import { 
   KanbanSquare, 
   Search, 
@@ -21,10 +21,16 @@ import {
   CheckCircle2,
   XCircle,
   Plus,
-  Briefcase
+  Briefcase,
+  Sparkles,
+  Loader2,
+  AlertTriangle,
+  TrendingUp,
 } from 'lucide-react';
 import { usePlatformInspector } from '../inspector/PlatformInspectorContext';
 import { PlatformB2bLeadDTO, PlatformB2bLeadStage, B2bPipelineMetricsDTO } from '@/lib/dash-contracts/admin';
+import { analyzeCrmLeadAction } from '@/app/admin/actions/analyze-lead';
+import { toast } from 'sonner';
 
 interface AdminCrmViewProps {
   initialLeads: PlatformB2bLeadDTO[];
@@ -39,10 +45,21 @@ const STAGES: { id: PlatformB2bLeadStage; label: string; color: string }[] = [
   { id: 'NEGOTIATION', label: 'Negociación', color: 'orange' }
 ];
 
+type HermesAnalysis = {
+  score: number;
+  recommendedStage: string;
+  nextAction: string;
+  summary: string;
+  riskFlags: string[];
+  estimatedCloseMonths: number;
+};
+
 export function AdminCrmView({ initialLeads, metrics }: AdminCrmViewProps) {
   const { inspect } = usePlatformInspector();
   const [leads, setLeads] = useState<PlatformB2bLeadDTO[]>(initialLeads);
   const [searchQuery, setSearchQuery] = useState('');
+  const [hermesAnalyses, setHermesAnalyses] = useState<Record<string, HermesAnalysis>>({});
+  const [analyzingId, setAnalyzingId] = useState<string | null>(null);
 
   const filteredLeads = leads.filter(l => 
     l.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -54,6 +71,7 @@ export function AdminCrmView({ initialLeads, metrics }: AdminCrmViewProps) {
   };
 
   const handleOpenLead = (lead: PlatformB2bLeadDTO) => {
+    const analysis = hermesAnalyses[lead.id];
     inspect({
       type: 'CRM_LEAD',
       title: lead.companyName,
@@ -69,11 +87,35 @@ export function AdminCrmView({ initialLeads, metrics }: AdminCrmViewProps) {
         'Asignado a': lead.assignedOperatorName || 'Sin asignar',
         'Creado': new Date(lead.createdAt).toLocaleDateString(),
         'Última Act.': new Date(lead.updatedAt).toLocaleDateString(),
+        ...(analysis ? {
+          '⚡ Hermes Score': `${analysis.score}/100`,
+          '⚡ Etapa Sugerida': analysis.recommendedStage,
+          '⚡ Próxima Acción': analysis.nextAction,
+          '⚡ Cierre Estimado': `${analysis.estimatedCloseMonths} mes(es)`,
+          '⚡ Banderas': analysis.riskFlags.length > 0 ? analysis.riskFlags.join(', ') : 'Ninguna',
+        } : {}),
       },
-      rawPayload: lead,
+      rawPayload: { ...lead, hermesAnalysis: analysis || null },
       actionHref: `/admin/crm/leads/${lead.id}`,
       actionLabel: 'Promover a Tenant ↗',
     });
+  };
+
+  const handleHermesAnalyze = async (e: React.MouseEvent, leadId: string) => {
+    e.stopPropagation();
+    if (analyzingId === leadId) return;
+    setAnalyzingId(leadId);
+    try {
+      const res = await analyzeCrmLeadAction(leadId);
+      if (res.success && res.analysis) {
+        setHermesAnalyses(prev => ({ ...prev, [leadId]: res.analysis! }));
+        toast.success('Análisis de Hermes completado', { description: `Score: ${res.analysis.score}/100` });
+      } else {
+        toast.error('Error al analizar', { description: res.error });
+      }
+    } finally {
+      setAnalyzingId(null);
+    }
   };
 
   return (
@@ -154,44 +196,84 @@ export function AdminCrmView({ initialLeads, metrics }: AdminCrmViewProps) {
                 {/* Column Content */}
                 <div className="flex-1 p-3 overflow-y-auto scrollbar-none space-y-3">
                   {stageLeads.map((lead) => (
-                    <div 
-                      key={lead.id}
+                    <div key={lead.id}
                       onClick={() => handleOpenLead(lead)}
                       className="group p-4 rounded-xl border border-white/[0.06] bg-[#12121B] hover:bg-[#151520] hover:border-purple-500/30 transition-all cursor-pointer shadow-lg"
                     >
-                      <div className="flex justify-between items-start mb-2">
-                        <h4 className="text-sm font-semibold text-white group-hover:text-purple-300 transition-colors">
-                          {lead.companyName}
-                        </h4>
-                        <button className="text-zinc-600 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity">
-                          <MoreHorizontal className="w-4 h-4" />
-                        </button>
-                      </div>
-                      
-                      <div className="space-y-1.5 mb-3">
-                        <div className="flex items-center gap-1.5 text-xs text-zinc-400">
-                          <Building2 className="w-3.5 h-3.5" />
-                          <span>{lead.name}</span>
-                        </div>
-                        {lead.email && (
-                          <div className="flex items-center gap-1.5 text-xs text-zinc-500">
-                            <Mail className="w-3.5 h-3.5" />
-                            <span className="truncate">{lead.email}</span>
-                          </div>
-                        )}
-                      </div>
+                      {/* Extract to avoid TS2532 on repeated index access */}
+                      {(() => {
+                        const analysis = hermesAnalyses[lead.id];
+                        return (
+                          <>
+                            <div className="flex justify-between items-start mb-2">
+                              <h4 className="text-sm font-semibold text-white group-hover:text-purple-300 transition-colors">
+                                {lead.companyName}
+                              </h4>
+                              {/* Hermes Analyze Button */}
+                              <button
+                                onClick={(e) => handleHermesAnalyze(e, lead.id)}
+                                title="Analizar con Hermes AI"
+                                className="text-zinc-600 hover:text-purple-400 opacity-0 group-hover:opacity-100 transition-all p-0.5 rounded"
+                              >
+                                {analyzingId === lead.id
+                                  ? <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-400" />
+                                  : <Sparkles className="w-3.5 h-3.5" />
+                                }
+                              </button>
+                            </div>
 
-                      <div className="pt-3 mt-3 border-t border-white/[0.04] flex items-center justify-between">
-                        <span className="text-[10px] font-mono font-medium text-emerald-400/80 bg-emerald-500/10 px-1.5 py-0.5 rounded">
-                          ${(lead.estimatedValueUsd / 1000).toFixed(1)}k
-                        </span>
-                        
-                        {lead.assignedOperatorName && (
-                          <div className="w-6 h-6 rounded-full bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-[9px] font-bold text-purple-300" title={`Operador: ${lead.assignedOperatorName}`}>
-                            {lead.assignedOperatorName.slice(0, 2).toUpperCase()}
-                          </div>
-                        )}
-                      </div>
+                            {/* Hermes Score Badge (if analyzed) */}
+                            {analysis && (
+                              <div className="mb-2 flex items-center gap-1.5">
+                                <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold ${
+                                  analysis.score >= 70 ? 'bg-emerald-500/15 text-emerald-400' :
+                                  analysis.score >= 40 ? 'bg-amber-500/15 text-amber-400' :
+                                  'bg-red-500/15 text-red-400'
+                                }`}>
+                                  <Sparkles className="w-2.5 h-2.5" />
+                                  {analysis.score}/100
+                                </div>
+                                {analysis.riskFlags.length > 0 && (
+                                  <AlertTriangle className="w-3 h-3 text-amber-500" aria-label={analysis.riskFlags.join(', ')} />
+                                )}
+                              </div>
+                            )}
+                            
+                            <div className="space-y-1.5 mb-3">
+                              <div className="flex items-center gap-1.5 text-xs text-zinc-400">
+                                <Building2 className="w-3.5 h-3.5" />
+                                <span>{lead.name}</span>
+                              </div>
+                              {lead.email && (
+                                <div className="flex items-center gap-1.5 text-xs text-zinc-500">
+                                  <Mail className="w-3.5 h-3.5" />
+                                  <span className="truncate">{lead.email}</span>
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="pt-3 mt-3 border-t border-white/[0.04] flex items-center justify-between">
+                              <span className="text-[10px] font-mono font-medium text-emerald-400/80 bg-emerald-500/10 px-1.5 py-0.5 rounded">
+                                ${(lead.estimatedValueUsd / 1000).toFixed(1)}k
+                              </span>
+                              
+                              {/* Hermes next action (if analyzed) */}
+                              {analysis && (
+                                <div className="text-[9px] text-zinc-500 max-w-[120px] text-right leading-tight truncate" title={analysis.nextAction}>
+                                  <TrendingUp className="w-2.5 h-2.5 inline mr-0.5 text-purple-500" />
+                                  {analysis.nextAction.split('.')[0]}
+                                </div>
+                              )}
+
+                              {lead.assignedOperatorName && (
+                                <div className="w-6 h-6 rounded-full bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-[9px] font-bold text-purple-300" title={`Operador: ${lead.assignedOperatorName}`}>
+                                  {lead.assignedOperatorName.slice(0, 2).toUpperCase()}
+                                </div>
+                              )}
+                            </div>
+                          </>
+                        );
+                      })()}
                     </div>
                   ))}
                   

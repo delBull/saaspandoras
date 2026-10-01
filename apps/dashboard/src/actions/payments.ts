@@ -1,10 +1,10 @@
 'use server';
 
 import { db } from "@/db";
-import { paymentLinks, clients, transactions, purchases } from "@/db/schema";
+import { paymentLinks, clients, transactions, purchases, privatePaymentLinks } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { processPaymentSuccess } from "./clients";
-import { getAuth, isAdmin } from "@/lib/auth";
+import { getNexusAuthContext } from "@/lib/nexus/nexus-rbac";
 import { headers } from "next/headers";
 
 export async function createPaymentLink(data: {
@@ -15,8 +15,8 @@ export async function createPaymentLink(data: {
     destinationWallet?: string;
 }) {
     try {
-        const { session } = await getAuth(await headers());
-        if (!session?.address || !await isAdmin(session.address)) {
+        const auth = await getNexusAuthContext();
+        if (!auth.isAuthenticated || (auth.role !== 'SUPER_ADMIN' && auth.role !== 'ADMIN')) {
             throw new Error("Unauthorized");
         }
 
@@ -57,37 +57,57 @@ export async function createPaymentLink(data: {
 
 export async function getPaymentsDashboardStats() {
     try {
-        const { session } = await getAuth(await headers());
-        if (!session?.address || !await isAdmin(session.address)) {
+        const auth = await getNexusAuthContext();
+        if (!auth.isAuthenticated || (auth.role !== 'SUPER_ADMIN' && auth.role !== 'ADMIN')) {
             throw new Error("Unauthorized");
         }
 
         // 1. Fetch Links, Transactions and Purchases (Purchases contains SPEI & Thirdweb Intents)
         const links = await db.select().from(paymentLinks);
-        const allTransactions = await db.select().from(transactions);
-        const pendingPurchases = await db.query.purchases.findMany({
-          where: eq(purchases.status, 'pending')
+        const hermesLinks = await db.query.privatePaymentLinks.findMany({
+            orderBy: (t, { desc }) => [desc(t.createdAt)]
         });
+        const allTransactions = await db.select().from(transactions);
+        const allPurchases = await db.select().from(purchases);
+        const pendingPurchases = allPurchases.filter(p => p.status === 'pending');
+        const completedPurchases = allPurchases.filter(p => p.status === 'completed');
 
         // 2. Calculate Stats
-        const totalLinks = links.length;
-        const activeLinks = links.filter(l => l.isActive).length;
+        const totalLinks = links.length + hermesLinks.length;
+        const activeLinks = links.filter(l => l.isActive).length + hermesLinks.filter(l => l.status === 'active' || l.status === 'pending').length;
 
         // Real Revenue: Sum of all transactions with status 'completed'
         const completedTx = allTransactions.filter(t => t.status === 'completed');
-        const totalRevenue = completedTx.reduce((acc, curr) => acc + Number(curr.amount), 0);
+        const completedHermes = hermesLinks.filter(l => l.status === 'completed');
+        
+        const totalRevenue = 
+            completedTx.reduce((acc, curr) => acc + Number(curr.amount), 0) + 
+            completedHermes.reduce((acc, curr) => acc + Number(curr.amount), 0) +
+            completedPurchases.reduce((acc, curr) => acc + Number(curr.amount), 0);
 
         // "Pending Payment": Sum of transactions & purchases with status 'pending'
         const pendingTx = allTransactions.filter(t => t.status === 'pending');
+        const pendingHermes = hermesLinks.filter(l => l.status === 'pending');
         const pendingTxTotal = pendingTx.reduce((acc, curr) => acc + Number(curr.amount), 0);
         const pendingPurchasesTotal = pendingPurchases.reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
-        const pendingPayment = pendingTxTotal + pendingPurchasesTotal;
+        const pendingHermesTotal = pendingHermes.reduce((acc, curr) => acc + Number(curr.amount), 0);
+        
+        const pendingPayment = pendingTxTotal + pendingPurchasesTotal + pendingHermesTotal;
 
-        const activeClientsSet = new Set(completedTx.map(t => t.clientId).filter(Boolean));
+        const activeClientsSet = new Set([
+            ...completedTx.map(t => t.clientId).filter(Boolean),
+            ...completedHermes.map(l => l.destinationWallet),
+            ...completedPurchases.map(p => p.userId).filter(Boolean)
+        ]);
         const activeClients = activeClientsSet.size;
 
         // 3. Recent Links (descending)
-        const recentLinks = [...links].reverse().slice(0, 10);
+        const unifiedLinks = [
+            ...links.map(l => ({ ...l, type: 'public' })),
+            ...hermesLinks.map(l => ({ ...l, type: 'hermes', isActive: l.status === 'active' || l.status === 'pending' }))
+        ].sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+        
+        const recentLinks = unifiedLinks.slice(0, 10);
 
         // 4. Pending Transactions & Purchases (for Admin Verification / SPEI Approval)
         const combinedPending = [
@@ -105,8 +125,19 @@ export async function getPaymentsDashboardStats() {
             processedAt: p.createdAt,
             clientId: p.userId,
             linkTitle: `Reserva ${['SPEI_FASTLANE', 'bank_transfer', 'fastlane'].includes(p.paymentMethod) ? 'SPEI' : 'Thirdweb'} (${p.purchaseId})`
+          })),
+          ...pendingHermes.map(l => ({
+            id: l.id,
+            amount: l.amount,
+            currency: l.currency || 'USD',
+            status: l.status,
+            type: 'Hermes / Nexus',
+            processedAt: l.createdAt,
+            clientId: l.destinationWallet,
+            linkTitle: `Intent: ${l.title}`
           }))
-        ];
+        ].sort((a, b) => new Date(b.processedAt || 0).getTime() - new Date(a.processedAt || 0).getTime());
+
 
         return {
             success: true,
@@ -128,8 +159,8 @@ export async function getPaymentsDashboardStats() {
 
 export async function deletePaymentLink(id: string) {
     try {
-        const { session } = await getAuth(await headers());
-        if (!session?.address || !await isAdmin(session.address)) {
+        const auth = await getNexusAuthContext();
+        if (!auth.isAuthenticated || (auth.role !== 'SUPER_ADMIN' && auth.role !== 'ADMIN')) {
             throw new Error("Unauthorized");
         }
 
@@ -145,9 +176,52 @@ export async function deletePaymentLink(id: string) {
 
 export async function updateTransactionStatus(transactionId: string, status: 'completed' | 'rejected') {
     try {
-        const { session } = await getAuth(await headers());
-        if (!session?.address || !await isAdmin(session.address)) {
+        const auth = await getNexusAuthContext();
+        if (!auth.isAuthenticated || (auth.role !== 'SUPER_ADMIN' && auth.role !== 'ADMIN')) {
             throw new Error("Unauthorized");
+        }
+
+        // Check if it's a Hermes / Nexus Intent (privatePaymentLinks)
+        const hermesLink = await db.query.privatePaymentLinks.findFirst({
+            where: eq(privatePaymentLinks.id, transactionId)
+        });
+
+        if (hermesLink && hermesLink.status !== 'completed') {
+            const nextStatus = status === 'completed' ? 'completed' : 'cancelled';
+            await db.update(privatePaymentLinks)
+                .set({ status: nextStatus })
+                .where(eq(privatePaymentLinks.id, transactionId));
+
+            // Payment Core wiring (admin approval == executive approval):
+            // dispatch the settlement so the Orchestrator activates the
+            // tenant's product and the Audit Ledger + Event Spine stay in
+            // sync with every other payment path (executive tools, webhook).
+            if (nextStatus === 'completed') {
+                try {
+                    const meta = (hermesLink.metadata as Record<string, any>) || {};
+                    const { paymentOrchestrator } = await import('@/lib/pandoras/core/domains/hermes/payments/core/orchestrator');
+                    const event: any = {
+                        eventId: `admin_settle_${hermesLink.id}_${Date.now()}`,
+                        vertical: meta.vertical || 'GROWTH_OS',
+                        organizationId: meta.tenantId || 'pandoras',
+                        intentId: hermesLink.id,
+                        productId: meta.productId || 'GENERAL',
+                        amount: Number(hermesLink.amount),
+                        currency: String(hermesLink.currency || 'USD').toUpperCase(),
+                        provider: 'ADMIN_PANEL',
+                        providerTransactionId: `admin_${hermesLink.id}`,
+                        metadata: { viaAdminPanel: true, originalMetadata: meta },
+                        timestamp: new Date(),
+                    };
+                    await paymentOrchestrator.processSettlement(event);
+                } catch (orchErr: any) {
+                    // Approval stands (state already completed); dispatch failure
+                    // must be visible for the next reconciliation pass — never
+                    // silent, never blocking the admin's action.
+                    console.error('[PaymentsAPI] Orchestrator dispatch failed after admin approval:', orchErr?.message);
+                }
+            }
+            return { success: true };
         }
 
         // Check if it's a purchase record (SPEI Fastlane / Thirdweb Intent)
@@ -155,10 +229,14 @@ export async function updateTransactionStatus(transactionId: string, status: 'co
             where: eq(purchases.id, transactionId)
         });
 
-        if (existingPurchase) {
+        if (existingPurchase && existingPurchase.status !== 'completed') {
             await db.update(purchases)
                 .set({ status })
                 .where(eq(purchases.id, transactionId));
+            // RWA settlement policy: legacy approve route inserts daoMembers +
+            // ambassador commissions. This panel approval only flips state —
+            // DAO/NFT/IPFS projections stay downstream consumers of the
+            // 'rwa.purchase.settled' outbox event (Phase 2 contract).
             return { success: true };
         }
 

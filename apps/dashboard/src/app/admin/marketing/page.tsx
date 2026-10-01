@@ -26,7 +26,7 @@ export default async function MarketingPage() {
   }
 
   // 2. Fetch the HQ Tenant (pandoras)
-  const hqProjectRows = await db.select().from(projects).where(eq(projects.slug, 'pandoras')).limit(1);
+  const hqProjectRows = await db.select({ id: projects.id }).from(projects).where(eq(projects.slug, 'pandoras')).limit(1);
   const projectId = hqProjectRows[0]?.id ?? 0;
 
   // 3. Fetch CRM Leads
@@ -36,9 +36,11 @@ export default async function MarketingPage() {
     .where(eq(marketingLeads.scope, 'b2b'))
     .orderBy(desc(marketingLeads.createdAt));
 
+  const serializedLeads = JSON.parse(JSON.stringify(leadsRows));
+
   return (
     <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <MarketingDashboard projectId={projectId} leads={leadsRows} />
+      <MarketingDashboard projectId={projectId} leads={serializedLeads} />
     </div>
   );
 }

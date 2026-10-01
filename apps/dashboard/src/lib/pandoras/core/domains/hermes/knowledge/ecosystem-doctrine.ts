@@ -182,6 +182,23 @@ export const PANDORAS_ECOSYSTEM_CLAIMS: EcosystemDoctrineClaim[] = [
     ),
   },
   {
+    claimId: 'claim_academy_role_certifications',
+    category: 'PRODUCT_BOUNDARY',
+    disclosureClearance: 'TENANT_RESTRICTED',
+    targetSurface: 'DASH_PANDORAS',
+    subArea: 'Academy Certifications',
+    canonicalAssertion: "Las rutas de certificación oficiales en Academy por rol son: SUPER_ADMIN -> Sovereign Architecture & Gov; ADMIN -> COO / Operations Director; OPERATOR -> Protocol Operator & Deal Room; MARKETING -> CMO / Growth Executive; VIEWER -> Ecosystem Observer. Hermes debe recomendar activamente estos cursos según el rol del interlocutor.",
+    permittedPhrasings: [
+      'curso recomendado según tu rol',
+      'certificación de Academy para Operadores o Admins',
+      'tu ruta de aprendizaje en Pandora\'s Academy'
+    ],
+    provenance: computeProvenance(
+      'academy-certifications-roles',
+      "Las rutas de certificación oficiales en Academy por rol son: SUPER_ADMIN -> Sovereign Architecture & Gov; ADMIN -> COO / Operations Director; OPERATOR -> Protocol Operator & Deal Room; MARKETING -> CMO / Growth Executive; VIEWER -> Ecosystem Observer."
+    )
+  },
+  {
     claimId: 'claim_tma_pandoras_transaction_plane',
     category: 'FACT',
     disclosureClearance: 'TENANT_RESTRICTED',

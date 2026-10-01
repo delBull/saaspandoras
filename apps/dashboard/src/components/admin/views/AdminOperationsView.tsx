@@ -10,16 +10,16 @@
 
 import React, { useState } from 'react';
 import { 
-  Wrench, 
-  RefreshCw, 
   Server, 
-  Cpu, 
   Database, 
   Sparkles, 
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Cpu,
+  RefreshCw
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { runAdminOperation } from '../../../app/admin/actions/operations-actions';
 
 interface AdminOperationsViewProps {
   endpoints: Array<{
@@ -35,14 +35,22 @@ interface AdminOperationsViewProps {
 
 export function AdminOperationsView({ endpoints }: AdminOperationsViewProps) {
   const [runningTask, setRunningTask] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+  const totalPages = Math.ceil(endpoints.length / itemsPerPage);
+  const currentEndpoints = endpoints.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const handleRunTask = async (taskName: string) => {
     setRunningTask(taskName);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 800));
-      toast.success(`Tarea '${taskName}' ejecutada con éxito.`);
+      const result = await runAdminOperation(taskName);
+      if (result.success) {
+        toast.success(result.message || `Tarea '${taskName}' ejecutada con éxito.`);
+      } else {
+        toast.error(`Fallo al ejecutar '${taskName}': ${result.error}`);
+      }
     } catch (err: any) {
-      toast.error(`Fallo al ejecutar '${taskName}': ${err.message}`);
+      toast.error(`Error inesperado: ${err.message}`);
     } finally {
       setRunningTask(null);
     }
@@ -150,7 +158,7 @@ export function AdminOperationsView({ endpoints }: AdminOperationsViewProps) {
                     </td>
                   </tr>
                 ) : (
-                  endpoints.map((ep) => (
+                  currentEndpoints.map((ep) => (
                     <tr key={ep.endpointId} className="hover:bg-white/[0.02] transition-colors">
                       <td className="py-3.5 px-4">
                         <span className="font-semibold text-white block">{ep.endpointName}</span>
@@ -173,6 +181,28 @@ export function AdminOperationsView({ endpoints }: AdminOperationsViewProps) {
             </table>
           </div>
         </div>
+        
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between mt-4">
+            <button
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-1.5 text-xs font-semibold text-zinc-300 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 disabled:opacity-50 transition-colors"
+            >
+              Anterior
+            </button>
+            <span className="text-xs text-zinc-500 font-mono">
+              Página {currentPage} de {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1.5 text-xs font-semibold text-zinc-300 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 disabled:opacity-50 transition-colors"
+            >
+              Siguiente
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

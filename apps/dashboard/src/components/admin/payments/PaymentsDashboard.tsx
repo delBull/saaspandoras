@@ -127,7 +127,7 @@ export function PaymentsDashboard() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="space-y-2">
+                        <div className="space-y-2 max-h-[350px] overflow-y-auto pr-2">
                             {pendingTransactions.map((tx: any) => (
                                 <div key={tx.id} className="flex flex-col md:flex-row items-start md:items-center justify-between p-3 bg-zinc-950/50 rounded-lg border border-yellow-500/10 gap-4">
                                     <div className="flex-1">

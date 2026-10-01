@@ -24,6 +24,7 @@ import {
   provisionFullAccess,
   FULL_ACCESS_FAMILIES,
 } from '@/lib/admin/full-access-provision.service';
+import { sendTenantProvisionEmail } from '@/lib/email/tenant-provision-mailer';
 // Discord notify via direct webhook fetch
 
 export const runtime = 'nodejs';
@@ -53,6 +54,59 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
       return NextResponse.json({ success: false, message: 'Project not found' }, { status: 404 });
     }
 
+    const isSuperAdmin = nexus.isAuthenticated && nexus.role === 'SUPER_ADMIN';
+
+    // DIRECT PROVISIONING FOR SUPER_ADMIN
+    if (isSuperAdmin) {
+      const intentId = `intent_full_access_auto_${Date.now()}`;
+      await db.insert(operationalIntents).values({
+        id: intentId,
+        organizationId: project.organizationId,
+        missionId: 'admin_full_access_mission',
+        packId: 'core_admin_pack',
+        packVersion: '1.0.0',
+        strategyDecisionId: 'decision_full_access_v1',
+        intentType: 'admin.full_access.v1',
+        objective: `Full-access provisioning (no-charge) for tenant ${slug}`,
+        rationale: `Direct auto-approval by SUPER_ADMIN (${requestedBy}).`,
+        status: 'executed',
+      });
+
+      const { results } = await provisionFullAccess(slug, requestedBy);
+
+      PlatformAuditLedgerService.recordEntry({
+        actorId: requestedBy,
+        actorWallet: requestedBy,
+        actorRole: 'SUPER_ADMIN',
+        actorType: 'ADMIN',
+        action: 'TENANT_PROVISIONING_INTENT_CREATED',
+        targetResource: 'project',
+        resourceId: slug,
+        capability: 'admin.full_access_provision',
+        governance: { isDiscord2faVerified: false, auditReason: 'Super Admin direct provisioning (no approval required)' },
+        stateTransition: { previousState: null, newState: { intentId, status: 'executed', families: results } },
+        result: 'SUCCESS',
+      } as any);
+
+      const adminEmail = nexus.email || 'marco@pandoras.finance';
+      await sendTenantProvisionEmail(adminEmail, project.title, 'Full Access (Pase Directo)', {
+        action: 'FULL_ACCESS',
+        approvedVia: 'DIRECT_PASS',
+        families: ['GROWTH_OS', 'HERMES', 'CAPITAL', 'NFT_LAB'],
+        requestedBy: requestedBy,
+        billingExempt: true,
+      });
+
+      return NextResponse.json({
+        success: true,
+        requestId: intentId,
+        status: 'EXECUTED_DIRECTLY',
+        results,
+        message: 'Acceso total aprovisionado directamente por ser SUPER_ADMIN.',
+      });
+    }
+
+    // NORMAL PROVISIONING FOR ADMINS (Requires Approval)
     const intentId = `intent_full_access_${Date.now()}_${Math.floor(Math.random() * 9000 + 1000)}`;
     await db.insert(operationalIntents).values({
       id: intentId,
@@ -186,6 +240,17 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ sl
       stateTransition: { previousState: { intentId, status: 'proposed' }, newState: { intentId, status: 'executed', families: results } },
       result: 'SUCCESS',
     } as any);
+
+    const [project] = await db.select({ title: projects.title }).from(projects).where(eq(projects.slug, slug)).limit(1);
+    const adminEmail = nexus.email || 'marco@pandoras.finance';
+    const provisionedFamilies = (results || []).map((r: any) => r.family);
+    await sendTenantProvisionEmail(adminEmail, project ? project.title : slug, 'Full Access (Aprobado)', {
+        action: 'FULL_ACCESS',
+        approvedVia: 'APPROVAL_WALL',
+        families: provisionedFamilies,
+        requestedBy: approvedBy,
+        billingExempt: true,
+    });
 
     return NextResponse.json({ success: true, intentId, results, approvedBy });
   } catch (error: any) {

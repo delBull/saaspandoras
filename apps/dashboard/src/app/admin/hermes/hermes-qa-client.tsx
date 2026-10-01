@@ -27,7 +27,9 @@ export default function HermesQAPage() {
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
   const [expandedScenarioId, setExpandedScenarioId] = useState<string | null>(null);
-  const [runningMode, setRunningMode] = useState<"MOCK" | "INTEGRATION" | "CERTIFICATION">("MOCK");
+  const [runningMode, setRunningMode] = useState<"MOCK" | "INTEGRATION" | "CERTIFICATION">("INTEGRATION");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const runSuite = async (mode = runningMode) => {
     setLoading(true);
@@ -54,8 +56,10 @@ export default function HermesQAPage() {
 
   const filteredScenarios = report?.results.filter(s => {
     if (selectedCategory === "ALL") return true;
-    return s.category === selectedCategory;
   }) || [];
+
+  const totalPages = Math.ceil(filteredScenarios.length / itemsPerPage);
+  const paginatedScenarios = filteredScenarios.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
     <div className="min-h-screen bg-[#08080A] text-zinc-100 p-6 md:p-10 font-sans">
@@ -84,15 +88,22 @@ export default function HermesQAPage() {
           </div>
 
           <div className="flex items-center gap-3">
-            <select
-              value={runningMode}
-              onChange={(e) => setRunningMode(e.target.value as any)}
-              className="bg-black/40 border border-white/15 rounded-xl px-3 py-2 text-xs font-mono text-zinc-300 focus:outline-none focus:border-amber-400"
-            >
-              <option value="MOCK">Modo: MOCK (CI Fast)</option>
-              <option value="INTEGRATION">Modo: INTEGRATION (DB & Events)</option>
-              <option value="CERTIFICATION">Modo: CERTIFICATION (Full Engine)</option>
-            </select>
+            <div className="flex flex-col gap-1">
+              <select
+                value={runningMode}
+                onChange={(e) => setRunningMode(e.target.value as any)}
+                className="bg-black/40 border border-white/15 rounded-xl px-3 py-2 text-xs font-mono text-zinc-300 focus:outline-none focus:border-amber-400 w-[280px]"
+              >
+                <option value="MOCK">MOCK: Datos locales (Solo UI)</option>
+                <option value="INTEGRATION">INTEGRATION: Datos Reales BD (Rápido)</option>
+                <option value="CERTIFICATION">CERTIFICATION: QA Completo (Lento)</option>
+              </select>
+              <span className="text-[10px] text-zinc-500 font-mono px-1">
+                {runningMode === 'MOCK' && 'Prueba offline sin consultar DB real.'}
+                {runningMode === 'INTEGRATION' && 'Prueba endpoints con base de datos real.'}
+                {runningMode === 'CERTIFICATION' && 'Aserciones formales y QA del runtime completo.'}
+              </span>
+            </div>
 
             <button
               onClick={() => runSuite(runningMode)}
@@ -228,7 +239,7 @@ export default function HermesQAPage() {
 
             {/* Scenario Grid / List */}
             <div className="space-y-3">
-              {filteredScenarios.map((scenario) => {
+              {paginatedScenarios.map((scenario) => {
                 const isExpanded = expandedScenarioId === scenario.scenarioId;
                 const isCritical = scenario.gateLevel === "CRITICAL";
                 const isHigh = scenario.gateLevel === "HIGH";
@@ -336,6 +347,29 @@ export default function HermesQAPage() {
                 );
               })}
             </div>
+            
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between mt-6 p-4 border border-white/10 rounded-xl bg-black/40">
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 text-xs font-mono font-semibold text-zinc-300 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 disabled:opacity-50 transition-colors"
+                >
+                  Anterior
+                </button>
+                <span className="text-xs text-zinc-500 font-mono">
+                  Página {currentPage} de {totalPages}
+                </span>
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-4 py-2 text-xs font-mono font-semibold text-zinc-300 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 disabled:opacity-50 transition-colors"
+                >
+                  Siguiente
+                </button>
+              </div>
+            )}
           </>
         ) : null}
       </div>

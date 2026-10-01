@@ -9,6 +9,8 @@
  */
 
 import React, { useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { 
   Building2, 
   Search, 
@@ -41,6 +43,17 @@ export function AdminTenantsView({ tenants, actorRole = 'VIEWER' }: AdminTenants
   const [productFilter, setProductFilter] = useState<'ALL' | 'hermes' | 'growth' | 'rwa'>('ALL');
   const [stateFilter, setStateFilter] = useState<string>('ALL');
   const [upgradingId, setUpgradingId] = useState<string | null>(null);
+  
+  // Custom Confirmation Modal State
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    description: string;
+    actionLabel: string;
+    onConfirm: () => void;
+  } | null>(null);
+
+  const router = useRouter();
 
   const isAdmin = actorRole === 'SUPER_ADMIN' || actorRole === 'ADMIN';
 
@@ -120,7 +133,8 @@ export function AdminTenantsView({ tenants, actorRole = 'VIEWER' }: AdminTenants
         body: JSON.stringify({ plan: 'enterprise', status: 'active' })
       });
       if (res.ok) {
-        alert(`Plan de ${t.name} actualizado a ENTERPRISE exitosamente. (Recarga la página para ver los cambios).`);
+        alert(`Plan de ${t.name} actualizado a ENTERPRISE exitosamente.`);
+        router.refresh();
       } else {
         alert('Error al actualizar plan.');
       }
@@ -129,6 +143,7 @@ export function AdminTenantsView({ tenants, actorRole = 'VIEWER' }: AdminTenants
       alert('Error de conexión al actualizar plan.');
     } finally {
       setUpgradingId(null);
+      setConfirmModal(null);
     }
   };
 
@@ -144,8 +159,13 @@ export function AdminTenantsView({ tenants, actorRole = 'VIEWER' }: AdminTenants
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok && data.success) {
-        const installed = (data.results || []).map((r: any) => `${r.family}:${r.action}`).join(', ');
-        alert(`✅ FULL ACCESS concedido a ${t.name}. Familias: ${installed}. (Sin cobro — pase directo). Recarga para ver cambios.`);
+        if (data.status === 'EXECUTED_DIRECTLY') {
+          const installed = (data.results || []).map((r: any) => `${r.family}:${r.action}`).join(', ');
+          alert(`✅ FULL ACCESS concedido a ${t.name}. Familias: ${installed}. (Sin cobro — pase directo).`);
+          router.refresh();
+        } else {
+          alert(`Petición creada y enviada a aprobación. (ID: ${data.requestId})`);
+        }
       } else {
         alert(`Error: ${data.message || res.statusText}`);
       }
@@ -154,6 +174,7 @@ export function AdminTenantsView({ tenants, actorRole = 'VIEWER' }: AdminTenants
       alert('Error de conexión al conceder Full Access.');
     } finally {
       setUpgradingId(null);
+      setConfirmModal(null);
     }
   };
 
@@ -175,6 +196,16 @@ export function AdminTenantsView({ tenants, actorRole = 'VIEWER' }: AdminTenants
 
         {/* Quick Product Stats Chips */}
         <div className="flex items-center gap-2 flex-wrap">
+          {isAdmin && (
+            <Link 
+              href="/admin/full-access-approvals"
+              className="px-3 py-1.5 rounded-xl bg-violet-600/20 hover:bg-violet-600/30 border border-violet-500/30 text-xs flex items-center gap-2 text-violet-300 transition-colors mr-2"
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>Aprobaciones</span>
+            </Link>
+          )}
+
           <div className="px-3 py-1.5 rounded-xl bg-[#111118] border border-white/[0.08] text-xs flex items-center gap-2">
             <Building2 className="w-3.5 h-3.5 text-zinc-400" />
             <span className="text-zinc-400">Total:</span>
@@ -357,32 +388,65 @@ export function AdminTenantsView({ tenants, actorRole = 'VIEWER' }: AdminTenants
                     </td>
 
                     {/* Action */}
-                    <td className="py-4 px-5 text-right">
+                    <td className="py-4 px-5 text-right relative">
                       <div className="flex items-center justify-end gap-2">
                         {isAdmin && (
                           <>
-                            <button
-                              onClick={(e) => handleUpgrade(e, t)}
-                              disabled={upgradingId === t.id}
-                              title="Upgrade to Enterprise"
-                              className="inline-flex items-center justify-center p-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 transition-colors border border-emerald-500/20"
-                            >
-                              <ArrowUpCircle className={`w-4 h-4 ${upgradingId === t.id ? 'animate-spin' : ''}`} />
-                            </button>
-                            <button
-                              onClick={(e) => handleFullAccess(e, t)}
-                              disabled={upgradingId === t.id}
-                              title="Full Access: todas las verticales + NFT Lab, sin cobro (pase directo de Super Admin)"
-                              className="inline-flex items-center justify-center p-1.5 rounded-lg bg-violet-500/10 hover:bg-violet-500/25 text-violet-400 transition-colors border border-violet-500/25"
-                            >
-                              <InfinityIcon className={`w-4 h-4 ${upgradingId === t.id ? 'animate-pulse' : ''}`} />
-                            </button>
+                            <div className="group relative">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setConfirmModal({
+                                    isOpen: true,
+                                    title: 'Confirmar Upgrade a Enterprise',
+                                    description: `¿Estás seguro de ascender la organización ${t.name} al plan ENTERPRISE?`,
+                                    actionLabel: 'Ascender Plan',
+                                    onConfirm: () => handleUpgrade(e as unknown as React.MouseEvent, t)
+                                  });
+                                }}
+                                disabled={upgradingId === t.id}
+                                className="inline-flex items-center justify-center p-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 transition-colors border border-emerald-500/20"
+                              >
+                                <ArrowUpCircle className={`w-4 h-4 ${upgradingId === t.id ? 'animate-spin' : ''}`} />
+                              </button>
+                              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max px-2 py-1 bg-[#1A1A24] text-xs text-zinc-300 rounded border border-white/10 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-10 shadow-lg font-medium">
+                                Upgrade a Enterprise
+                              </div>
+                            </div>
+                            
+                            <div className="group relative z-20">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setConfirmModal({
+                                    isOpen: true,
+                                    title: 'Conceder FULL ACCESS (Pase Directo)',
+                                    description: `⚠️ SUPER ADMIN ACCIÓN: ¿Estás seguro de conceder FULL ACCESS (todas las verticales + NFT Lab sin cobro) a ${t.name}?`,
+                                    actionLabel: 'Conceder Acceso',
+                                    onConfirm: () => handleFullAccess(e as unknown as React.MouseEvent, t)
+                                  });
+                                }}
+                                disabled={upgradingId === t.id}
+                                className="inline-flex items-center justify-center p-1.5 rounded-lg bg-violet-500/10 hover:bg-violet-500/25 text-violet-400 transition-colors border border-violet-500/25"
+                              >
+                                <InfinityIcon className={`w-4 h-4 ${upgradingId === t.id ? 'animate-pulse' : ''}`} />
+                              </button>
+                              <div className="absolute bottom-full right-0 md:left-1/2 md:-translate-x-1/2 mb-2 w-56 md:w-64 px-3 py-2 bg-[#1A1A24] text-xs text-zinc-300 rounded-lg border border-violet-500/30 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity shadow-xl">
+                                <strong className="text-violet-400 block mb-1">Pase Directo (Full Access)</strong>
+                                <span className="leading-relaxed">Activa todas las verticales y módulos (incluyendo NFT Lab) para este tenant sin ejecutar cobros on-chain.</span>
+                              </div>
+                            </div>
                           </>
                         )}
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/[0.04] group-hover:bg-purple-600/20 text-zinc-400 group-hover:text-purple-300 border border-white/[0.06] group-hover:border-purple-500/30 text-[11px] font-medium transition-all">
-                          <span>Lens</span>
-                          <ChevronRight className="w-3.5 h-3.5" />
-                        </span>
+                        <div className="group/lens relative">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/[0.04] group-hover:bg-purple-600/20 text-zinc-400 group-hover:text-purple-300 border border-white/[0.06] group-hover:border-purple-500/30 text-[11px] font-medium transition-all cursor-pointer">
+                            <span>Lens</span>
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </span>
+                          <div className="absolute bottom-full right-0 mb-2 w-max px-2 py-1 bg-[#1A1A24] text-xs text-zinc-300 rounded border border-white/10 opacity-0 group-hover/lens:opacity-100 pointer-events-none transition-opacity z-10">
+                            Inspeccionar (Read-Only)
+                          </div>
+                        </div>
                       </div>
                     </td>
                   </tr>
@@ -392,6 +456,31 @@ export function AdminTenantsView({ tenants, actorRole = 'VIEWER' }: AdminTenants
           </table>
         </div>
       </div>
+      {/* Confirmation Modal */}
+      {confirmModal?.isOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-[#12121B] border border-white/[0.08] rounded-2xl shadow-2xl max-w-sm w-full p-6 animate-in fade-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-bold text-white mb-2">{confirmModal.title}</h3>
+            <p className="text-sm text-zinc-400 mb-6 leading-relaxed">
+              {confirmModal.description}
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setConfirmModal(null)}
+                className="px-4 py-2 rounded-lg text-sm font-medium text-zinc-400 hover:text-white bg-white/5 hover:bg-white/10 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmModal.onConfirm}
+                className="px-4 py-2 rounded-lg text-sm font-bold text-white bg-purple-600 hover:bg-purple-500 transition-colors shadow-lg shadow-purple-500/20"
+              >
+                {confirmModal.actionLabel}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

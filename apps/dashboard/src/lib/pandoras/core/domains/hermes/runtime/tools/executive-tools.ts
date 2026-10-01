@@ -88,8 +88,35 @@ export const ApprovePaymentTool: ExecutiveToolSchema = {
   authorizedRoles: ['OWNER'],
 };
 
+export const ProvisionCollaboratorTool: ExecutiveToolSchema = {
+  name: 'executive_provision_collaborator',
+  description: 'Aprovisiona y aprueba a un colaborador que está en estado PENDING, asignándole un rol dentro del ecosistema.',
+  parameters: {
+    type: 'object',
+    properties: {
+      collaboratorEmail: {
+        type: 'string',
+        description: 'El correo electrónico del colaborador pendiente a aprobar',
+      },
+      role: {
+        type: 'string',
+        enum: ['VIEWER', 'OPERATOR', 'MARKETING', 'ADMIN', 'SUPER_ADMIN'],
+        description: 'El rol a asignar al colaborador. Por defecto VIEWER si no se especifica.',
+      },
+      action: {
+        type: 'string',
+        enum: ['APPROVE', 'REJECT'],
+        description: 'Acción a tomar sobre el colaborador',
+      }
+    },
+    required: ['collaboratorEmail', 'action'],
+  },
+  authorizedRoles: ['OWNER'],
+};
+
 export const ExecutiveToolsRegistry = [
   ActivateTenantTool,
   AssignAdminTool,
   ApprovePaymentTool,
+  ProvisionCollaboratorTool,
 ];

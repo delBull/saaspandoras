@@ -8,6 +8,14 @@
 
 export type EcosystemTourRole = 'SUPER_ADMIN' | 'ADMIN' | 'OPERATOR' | 'MARKETING' | 'VIEWER';
 
+export const ACADEMY_PATHS_BY_ROLE: Record<EcosystemTourRole, { course: string, link: string }> = {
+  SUPER_ADMIN: { course: 'Sovereign Architecture & Gov', link: '/nexus/academy?path=sovereign-gov' },
+  ADMIN: { course: 'COO / Operations Director', link: '/nexus/academy?path=coo-certification' },
+  OPERATOR: { course: 'Protocol Operator & Deal Room', link: '/nexus/academy?path=operator-certification' },
+  MARKETING: { course: 'CMO / Growth Executive', link: '/nexus/academy?path=cmo-certification' },
+  VIEWER: { course: 'Ecosystem Observer', link: '/nexus/academy?path=basics' }
+};
+
 export interface GuideFaqItem {
   question: string;
   answer: string;
@@ -242,7 +250,12 @@ export function generateWhatsAppShareText(
   const stationList = getStationsForRole(role)
     .map((s) => `\u2022 ${s.title}`)
     .join('\n');
-  return `\uD83D\uDC4B Bienvenido a *Pandoras Growth OS* \u2014 Rol: *${role}*.\n\nTu onboarding incluye:\n${stationList}\n\nInicia aqu\u00ed:\n${link}\n\nAcceso sin contrase\u00f1as (Sovereign Auth).\n\n\u2014 _El equipo de Protocolo_`;
+    
+  const academyRecommendation = ACADEMY_PATHS_BY_ROLE[role]?.course 
+    ? `\n\n🎓 *Certificación Sugerida (Academy):*\nTu rol perfila para la certificación de *${ACADEMY_PATHS_BY_ROLE[role].course}*.`
+    : '';
+
+  return `\uD83D\uDC4B Bienvenido a *Pandoras Growth OS* \u2014 Rol: *${role}*.\n\nTu onboarding incluye:\n${stationList}${academyRecommendation}\n\nInicia aqu\u00ed:\n${link}\n\nAcceso sin contrase\u00f1as (Sovereign Auth).\n\n\u2014 _El equipo de Protocolo_`;
 }
 
 /**
@@ -251,12 +264,21 @@ export function generateWhatsAppShareText(
  */
 export function getHermesAnswerForStation(
   station: EcosystemStation,
-  query: string
+  query: string,
+  role?: EcosystemTourRole
 ): string {
   const lowerQuery = query.toLowerCase();
 
   if (lowerQuery.includes('hola') || lowerQuery.includes('saludos')) {
     return 'Saludos. Soy Hermes, tu IA residente. Pregúntame sobre esta sección de la plataforma.';
+  }
+
+  // Intercept Academy-related queries if we have role context
+  if (role && (lowerQuery.includes('academy') || lowerQuery.includes('curso') || lowerQuery.includes('certifica'))) {
+    const academyInfo = ACADEMY_PATHS_BY_ROLE[role];
+    if (academyInfo) {
+      return `Como detecto que tu rol es ${role}, te recomiendo especialmente la ruta de certificación: **${academyInfo.course}**. Puedes acceder a ella a través del módulo de Pandora's Academy.`;
+    }
   }
 
   const STOPWORDS = new Set(['?', 'qué', 'que', 'cómo', 'como', 'por', 'se', 'la', 'los', 'las', 'de', 'el', 'en', 'un', 'una', 'es', 'y', 'a', 'no', 'si']);

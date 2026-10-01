@@ -4,6 +4,7 @@ import { projects, installedProducts } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
 import { PlatformAuditLedgerService } from '@/lib/admin/platform-audit-ledger.service';
+import { sendTenantProvisionEmail } from '@/lib/email/tenant-provision-mailer';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,7 +37,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
       }, { status: 400 });
     }
 
-    const [project] = await db.select().from(projects).where(eq(projects.slug, slug)).limit(1);
+    const [project] = await db.select({
+      id: projects.id,
+      slug: projects.slug,
+      title: projects.title,
+    }).from(projects).where(eq(projects.slug, slug)).limit(1);
     if (!project) {
       return NextResponse.json({ success: false, message: 'Project not found' }, { status: 404 });
     }
@@ -73,6 +78,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
         newState: { plan, status: status || 'active', productFamily: productFamily || 'ALL' },
       },
       result: 'SUCCESS',
+    });
+
+    const adminEmail = auth.email || 'marco@pandoras.finance';
+    await sendTenantProvisionEmail(adminEmail, project.title, plan, {
+        action: 'PLAN_UPGRADE',
+        productFamily: productFamily || undefined,
+        requestedBy: (auth as any).wallet || 'platform_admin',
     });
 
     return NextResponse.json({

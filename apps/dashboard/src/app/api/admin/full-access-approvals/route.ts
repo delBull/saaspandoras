@@ -7,7 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { operationalIntents, projects } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
 
 export const runtime = 'nodejs';
@@ -27,7 +27,10 @@ export async function GET(req: NextRequest) {
         createdAt: operationalIntents.createdAt,
       })
       .from(operationalIntents)
-      .where(eq(operationalIntents.intentType, 'admin.full_access.v1'))
+      .where(and(
+        eq(operationalIntents.intentType, 'admin.full_access.v1'),
+        eq(operationalIntents.status, 'proposed')
+      ))
       .limit(50);
 
     const pending = await Promise.all(rows.map(async (r) => {
