@@ -53,6 +53,14 @@ export async function POST(
     let chatId = '';
 
     if (channel === 'telegram') {
+      const tgText = body?.message?.text || body?.channel_post?.text || '';
+      
+      // Anti-spam boundary for well-known telegram bots/channels
+      if (tgText && (tgText.includes('t.me/') || tgText.includes('A_ToolsX') || tgText.includes('A-TOOLS X') || tgText.includes('join our channel'))) {
+        console.warn(`[Telegram Webhook] Blocked suspected spam payload: ${tgText.substring(0, 50)}...`);
+        return NextResponse.json({ ok: true, status: 'SPAM_IGNORED' });
+      }
+
       const projectRecord = await db.query.projects.findFirst({
         where: eq(projects.id, projectId),
       });
