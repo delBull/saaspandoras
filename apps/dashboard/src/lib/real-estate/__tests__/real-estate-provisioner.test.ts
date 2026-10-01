@@ -78,10 +78,10 @@ describe('Hermes Real Estate Pack — Phase 5: Tenant Provisioning Integration',
   it('PROV-RE-003: Registered Tenant Soul is accessible via HermesSoulRegistry', async () => {
     const soul = HermesSoulRegistry.getSoul(testTenant);
     expect(soul).toBeDefined();
-    expect(soul.projectSlug).toBe(testTenant);
-    expect(soul.agentName).toContain('Tulum Palms');
-    expect(soul.canonicalUrls.dataRoom).toBe('https://dataroom.pandoras.finance/tulum-palms');
-    expect(soul.claimsPolicy.prohibited).toContain('rendimiento fijo garantizado');
+    expect(soul!.projectSlug).toBe(testTenant);
+    expect(soul!.agentName).toContain('Tulum Palms');
+    expect(soul!.canonicalUrls.dataRoom).toBe('https://dataroom.pandoras.finance/tulum-palms');
+    expect(soul!.claimsPolicy.prohibited).toContain('rendimiento fijo garantizado');
   });
 
   it('PROV-RE-004: S\'Narai Canonical Configuration preserves backward compatibility as Reference Tenant', () => {

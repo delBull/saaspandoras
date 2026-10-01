@@ -25,6 +25,11 @@ export interface WhatsAppIncomingMessage {
   id: string;
   type: string;
   text?: { body: string };
+  interactive?: {
+    type: string;
+    button_reply?: { id: string; title: string };
+    list_reply?: { id: string; title: string; description?: string };
+  };
   contactName?: string | null;
 }
 
@@ -171,7 +176,24 @@ export class WhatsAppDispatcher {
     const message = messages[0];
     const phone = message.from;
     const messageId = message.id;
-    const messageText = message.text?.body?.trim() || '';
+    const messageType = message.type;
+    
+    // Fallback and branching for non-text messages
+    if (messageType !== 'text' && messageType !== 'interactive') {
+      console.log(`[WhatsAppDispatcher] ⚠️ Unsupported message type: ${messageType} from ${phone}. Skipping LLM execution.`);
+      return { status: 'unsupported_type', handled: true, target: 'unrecognized' };
+    }
+
+    let messageText = '';
+    if (messageType === 'text') {
+      messageText = message.text?.body?.trim() || '';
+    } else if (messageType === 'interactive' && message.interactive) {
+      if (message.interactive.type === 'button_reply') {
+        messageText = message.interactive.button_reply?.title || message.interactive.button_reply?.id || '';
+      } else if (message.interactive.type === 'list_reply') {
+        messageText = message.interactive.list_reply?.title || message.interactive.list_reply?.id || '';
+      }
+    }
     const contactName = changes?.contacts?.[0]?.profile?.name || message.contactName || null;
     const phoneNumberId = changes?.metadata?.phone_number_id;
 

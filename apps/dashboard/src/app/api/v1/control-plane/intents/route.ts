@@ -200,6 +200,37 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === 'APPROVE') {
+      // 1. Fetch the intent to determine type and payload
+      const [intentRow] = await db
+        .select()
+        .from(operationalIntents)
+        .where(eq(operationalIntents.id, intentId))
+        .limit(1);
+
+      if (!intentRow) {
+        return NextResponse.json({ code: 'NOT_FOUND', message: 'Intent not found.' }, { status: 404 });
+      }
+
+      // 2. Tenant isolation: verify intent belongs to the authenticated org
+      const normalizedIntentOrg = intentRow.organizationId.replace(/^org_/, '').toLowerCase();
+      const normalizedAuthOrg = auth.organizationId.replace(/^org_/, '').toLowerCase();
+      if (normalizedIntentOrg !== normalizedAuthOrg) {
+        return NextResponse.json({ code: 'FORBIDDEN', message: 'Intent does not belong to this organization.' }, { status: 403 });
+      }
+
+      // ── H2 Replay Protection ─────────────────────────────────────────────
+      // If intent was already approved or executed, return early without re-dispatching executor.
+      // Prevents double-mint / double-deploy on duplicate APPROVE calls.
+      if (intentRow.status === 'approved' || intentRow.status === 'executed') {
+        return NextResponse.json({
+          success: true,
+          intentId,
+          status: intentRow.status.toUpperCase(),
+          alreadyProcessed: true,
+          message: `Intent already in status '${intentRow.status}'. No action taken.`,
+        });
+      }
+
       await db
         .update(operationalIntents)
         .set({
@@ -214,6 +245,60 @@ export async function POST(req: NextRequest) {
         decision: 'approved',
         reason: reason || 'Approved via Control Plane API',
       });
+
+      // 3. Post-approval executor dispatch — type-specific execution
+      // Each intentType has exactly one executor. Unknown types return APPROVED without execution.
+
+      // ── growth.nft.collection.v1 → on-chain contract deployment ──────────
+      if (intentRow.intentType === 'growth.nft.collection.v1') {
+        setImmediate(async () => {
+          try {
+            const { executeNftCollectionDeploy } = await import('@/lib/growth/nft/nft-deploy-executor');
+            await executeNftCollectionDeploy(intentId, intentRow.organizationId);
+          } catch (execErr: any) {
+            console.error(`[IntentsAPI] NFT deploy executor failed for intent ${intentId}:`, execErr?.message);
+            // Failure is logged; collection status reverts to GOVERNANCE_PENDING in executor
+          }
+        });
+        return NextResponse.json({ success: true, intentId, status: 'APPROVED', executorDispatched: true });
+      }
+
+      // ── growth.nft.mint.v1 → on-chain token mint ─────────────────────────
+      // Triggered by: REQUIRE_GOVERNANCE path in NftCapability.issueToken()
+      // Executor resolves issuanceId from intent rationale → calls mintTo on deployed contract
+      if (intentRow.intentType === 'growth.nft.mint.v1') {
+        setImmediate(async () => {
+          try {
+            const { resolveIssuanceIdFromIntent, executeNftMint } = await import('@/lib/growth/nft/nft-mint-executor');
+            const issuanceId = await resolveIssuanceIdFromIntent(intentId);
+            if (!issuanceId) {
+              console.error(`[IntentsAPI] NFT mint executor: cannot resolve issuanceId from intent ${intentId}`);
+              return;
+            }
+            await executeNftMint(issuanceId, intentRow.organizationId);
+          } catch (execErr: any) {
+            console.error(`[IntentsAPI] NFT mint executor failed for intent ${intentId}:`, execErr?.message);
+            // Failure is logged; issuance status set to 'mint_failed' in executor
+          }
+        });
+        return NextResponse.json({ success: true, intentId, status: 'APPROVED', executorDispatched: true });
+      }
+
+      // ── growth.nft.revoke.v1 → on-chain token revocation ─────────────────
+      // Triggered by: NftCapability.revokeToken() — always requires governance
+      // Executor resolves issuanceId from intent objective → calls burn/revoke on contract
+      if (intentRow.intentType === 'growth.nft.revoke.v1') {
+        setImmediate(async () => {
+          try {
+            const { executeNftRevoke } = await import('@/lib/growth/nft/nft-revoke-executor');
+            await executeNftRevoke(intentId, intentRow.organizationId);
+          } catch (execErr: any) {
+            console.error(`[IntentsAPI] NFT revoke executor failed for intent ${intentId}:`, execErr?.message);
+            // Failure is logged; token.revoke_failed outbox emitted in executor
+          }
+        });
+        return NextResponse.json({ success: true, intentId, status: 'APPROVED', executorDispatched: true });
+      }
 
       return NextResponse.json({ success: true, intentId, status: 'APPROVED' });
     }

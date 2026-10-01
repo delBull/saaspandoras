@@ -3,7 +3,7 @@
  * apps/dashboard/src/lib/pandoras/core/domains/hermes/intelligence/geo/index.ts
  */
 
-import { HermesToolExecutor } from '../../runtime/tool-executor';
+import type { HermesToolExecutor } from '../../runtime/tool-executor';
 import { GeoCitabilityEngine } from './geo-citability-engine';
 
 export * from './contracts';

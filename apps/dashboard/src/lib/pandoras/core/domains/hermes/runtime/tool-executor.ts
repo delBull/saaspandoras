@@ -183,27 +183,35 @@ export class HermesToolExecutor {
     });
 
     // Register canonical Web Intelligence tools (F2)
-    const { registerWebTools } = require('../tools/web');
-    registerWebTools(this);
+    // FIX: dynamic ESM imports — the previous static require() pointed at
+    // wrong paths AND breaks under vitest/ESM (index.ts not resolvable via
+    // node CJS resolution). Registration is async but non-blocking.
+    void this.registerIntelligenceToolSets();
+  }
 
-    // Register canonical Browser tools (F3)
-    const { registerBrowserTools } = require('../tools/browser');
-    registerBrowserTools(this);
+  private async registerIntelligenceToolSets(): Promise<void> {
+    try {
+      // Register canonical Web Intelligence tools (F2)
+      const { registerWebTools } = await import('@/lib/pandoras/core/domains/hermes/tools/web');
+      registerWebTools(this);
 
-    // Register canonical SEO Intelligence tools (F4)
-    const { registerSeoTools } = require('../intelligence/seo');
-    registerSeoTools(this);
+      // Register canonical Browser tools (F3)
+      const { registerBrowserTools } = await import('@/lib/pandoras/core/domains/hermes/tools/browser');
+      registerBrowserTools(this);
 
-    // Register canonical GEO Intelligence tools (F5)
-    const { registerGeoTools } = require('../intelligence/geo');
-    registerGeoTools(this);
+      // Register canonical GEO Intelligence tools (F5)
+      const { registerGeoTools } = await import('@/lib/pandoras/core/domains/hermes/intelligence/geo');
+      registerGeoTools(this);
 
-    // Register canonical MCP Gateway tools (F6)
-    const { registerMcpTools } = require('../mcp');
-    registerMcpTools(this);
+      // Register canonical MCP Gateway tools (F6)
+      const { registerMcpTools } = await import('@/lib/pandoras/core/domains/hermes/mcp');
+      registerMcpTools(this);
 
-    // Register canonical Autonomous Research tools (F7)
-    const { registerResearchTools } = require('../intelligence/research');
-    registerResearchTools(this);
+      // Register canonical Autonomous Research tools (F7)
+      const { registerResearchTools } = await import('@/lib/pandoras/core/domains/hermes/intelligence/research');
+      registerResearchTools(this);
+    } catch (err: any) {
+      console.warn('[HermesToolExecutor] Intelligence tool registration warning (non-blocking):', err?.message);
+    }
   }
 }

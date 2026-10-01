@@ -144,6 +144,7 @@ export async function POST(
 
     // 4. ControlPlaneContext with Verified Interlocutor Identity
     const controlPlaneContext = {
+      channel: 'TELEGRAM',
       organizationId: canonical.canonicalOrgId,
       actorId: interlocutor.actorId,
       role: (interlocutor.isBoss ? 'OWNER' : (interlocutor.isCollaborator ? 'OPERATOR' : 'VIEWER')) as any,

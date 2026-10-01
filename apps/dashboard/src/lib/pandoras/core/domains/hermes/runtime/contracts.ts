@@ -181,6 +181,17 @@ export interface GovernedCapability {
   requiresHumanApproval?: boolean;
 }
 
+export interface HermesSkill {
+  id: string;
+  organizationId: string;
+  key: string;
+  version: number;
+  name: string;
+  description: string;
+  instructionsMarkdown: string;
+  allowedTools?: string[];
+}
+
 export interface CanonicalMemoryFact {
   id: string;
   type: string; // 'FACT' | 'PREFERENCE' | 'GOAL' | 'CONTEXT'
@@ -217,6 +228,10 @@ export interface ReasoningContext {
    * K11-A09: SUSPENDED/DEACTIVATED never enter.
    */
   activeCapabilities: GovernedCapability[];
+  /**
+   * Loaded active skills (procedures) derived from the current Journey Stage.
+   */
+  activeSkills?: HermesSkill[];
   /**
    * Style overlay: does NOT override governance or identity.
    * K11-A16

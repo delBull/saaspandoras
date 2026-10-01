@@ -24,6 +24,7 @@ import {
   Shield,
   GitBranch,
   Settings,
+  Lock,
   ChevronLeft,
   ChevronRight,
   Boxes,
@@ -152,13 +153,9 @@ export function PortalSidebar({
     return pathname.startsWith(fullPath);
   };
 
-  const visiblePrimary = NAV_ITEMS.filter((item) =>
-    permissions.includes(item.requiredPermission)
-  );
+  const visiblePrimary = NAV_ITEMS;
   
-  const visibleFooter = FOOTER_ITEMS.filter((item) =>
-    permissions.includes(item.requiredPermission)
-  );
+  const visibleFooter = FOOTER_ITEMS;
 
   const primaryItems = visiblePrimary.filter((i) => i.section === 'primary' || !i.section);
   const internalItems = visiblePrimary.filter((i) => i.section === 'internal');
@@ -183,26 +180,40 @@ export function PortalSidebar({
 
         <nav className="flex-1 flex flex-col gap-1">
           {primaryItems.map((item) => {
-            const active = isActive(item.href);
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.href}
-                href={`${basePath}${item.href}`}
-                onClick={() => onNavClick?.()}
-                className={`
-                  flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all min-h-[44px]
-                  ${active
-                    ? 'bg-purple-600/20 text-purple-300 border border-purple-500/30'
-                    : 'text-zinc-400 hover:text-white hover:bg-white/[0.05]'
-                  }
-                `}
-              >
-                <Icon size={18} className={active ? 'text-purple-400' : 'text-zinc-400'} />
-                <span>{item.label}</span>
-              </Link>
-            );
-          })}
+                const active = isActive(item.href);
+                const Icon = item.icon;
+                const hasAccess = permissions.includes(item.requiredPermission);
+                return (
+                    <Link
+                        key={item.href}
+                        href={hasAccess ? `${basePath}${item.href}` : '#'}
+                        onClick={(e) => { if (!hasAccess) e.preventDefault(); }}
+                        className={`relative flex ${collapsed ? 'flex-col items-center justify-center p-3 w-14 h-14' : 'items-center justify-start px-3 py-3 w-full h-11 gap-3'} rounded-xl transition-all group ${
+                            !hasAccess
+                                ? 'opacity-50 cursor-not-allowed text-zinc-500 border border-transparent'
+                                : active 
+                                ? 'text-purple-400 bg-purple-500/10 border border-purple-500/30 shadow-[0_0_12px_rgba(168,85,247,0.15)]' 
+                                : 'text-zinc-500 hover:text-zinc-200 hover:bg-white/5 border border-transparent'
+                        }`}
+                        title={collapsed ? (hasAccess ? item.label : `${item.label} (Bloqueado) - Adquiere este módulo`) : undefined}
+                    >
+                        <div className="relative shrink-0">
+                          <Icon className="w-5 h-5" />
+                          {!hasAccess && collapsed && (
+                            <Lock className="w-3 h-3 text-zinc-500 absolute -bottom-1 -right-1 bg-[#09090C] rounded-full p-0.5" />
+                          )}
+                        </div>
+                        {collapsed ? (
+                           <span className="text-[9px] font-mono mt-1 opacity-70 group-hover:opacity-100">{item.label.slice(0, 4)}</span>
+                        ) : (
+                           <>
+                             <span className="text-sm font-medium tracking-wide opacity-90 flex-1 truncate">{item.label}</span>
+                             {!hasAccess && <Lock className="w-4 h-4 text-zinc-600 shrink-0" />}
+                           </>
+                        )}
+                    </Link>
+                );
+            })}
 
           {internalItems.length > 0 && (
               <div className="mt-4 mb-2">
@@ -210,27 +221,41 @@ export function PortalSidebar({
                       Growth OS
                   </div>
                   {internalItems.map((item) => {
-                    const active = isActive(item.href);
-                    const Icon = item.icon;
-                    const destination = item.externalUrl ? item.externalUrl(organizationSlug) : `${basePath}${item.href}`;
-                    return (
-                        <Link
-                            key={item.href}
-                            href={destination}
-                            onClick={() => onNavClick?.()}
-                            className={`
-                              flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all min-h-[44px] mt-1
-                              ${active
-                                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
-                                : 'text-zinc-400 hover:text-emerald-400/80 hover:bg-emerald-500/5'
-                              }
-                            `}
-                          >
-                            <Icon size={18} className="shrink-0" />
-                            <span>{item.label}</span>
-                        </Link>
-                    )
-                  })}
+                        const active = isActive(item.href);
+                        const Icon = item.icon;
+                        const destination = item.externalUrl ? item.externalUrl(organizationSlug) : `${basePath}${item.href}`;
+                        const hasAccess = permissions.includes(item.requiredPermission);
+                        return (
+                            <Link
+                                key={item.href}
+                                href={hasAccess ? destination : '#'}
+                                onClick={(e) => { if (!hasAccess) e.preventDefault(); }}
+                                className={`relative flex ${collapsed ? 'flex-col items-center justify-center p-3 w-14 h-14' : 'items-center justify-start px-3 py-3 w-full h-11 gap-3'} rounded-xl transition-all group ${
+                                    !hasAccess
+                                        ? 'opacity-50 cursor-not-allowed text-zinc-500 border border-transparent'
+                                        : active 
+                                        ? 'text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 shadow-[0_0_12px_rgba(16,185,129,0.15)]' 
+                                        : 'text-zinc-500 hover:text-emerald-400/80 hover:bg-emerald-500/5 border border-transparent'
+                                }`}
+                                title={collapsed ? (hasAccess ? item.label : `${item.label} (Bloqueado) - Adquiere este módulo`) : undefined}
+                            >
+                                <div className="relative shrink-0">
+                                  <Icon className="w-5 h-5" />
+                                  {!hasAccess && collapsed && (
+                                    <Lock className="w-3 h-3 text-zinc-500 absolute -bottom-1 -right-1 bg-[#09090C] rounded-full p-0.5" />
+                                  )}
+                                </div>
+                                {collapsed ? (
+                                   <span className="text-[9px] font-mono mt-1 opacity-70 group-hover:opacity-100">{item.label.slice(0, 4)}</span>
+                                ) : (
+                                   <>
+                                     <span className="text-sm font-medium tracking-wide opacity-90 flex-1 truncate">{item.label}</span>
+                                     {!hasAccess && <Lock className="w-4 h-4 text-zinc-600 shrink-0" />}
+                                   </>
+                                )}
+                            </Link>
+                        );
+                    })}
               </div>
           )}
         </nav>
@@ -238,26 +263,40 @@ export function PortalSidebar({
         {/* Footer Items for Mobile */}
         <div className="mt-8 border-t border-white/[0.08] pt-4 flex flex-col gap-1">
           {visibleFooter.map((item) => {
-            const active = isActive(item.href);
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.href}
-                href={`${basePath}${item.href}`}
-                onClick={() => onNavClick?.()}
-                className={`
-                  flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
-                  ${active
-                    ? 'bg-zinc-800 text-white border border-zinc-700'
-                    : 'text-zinc-500 hover:text-white hover:bg-white/[0.05]'
-                  }
-                `}
-              >
-                <Icon size={18} className="shrink-0" />
-                <span>{item.label}</span>
-              </Link>
-            );
-          })}
+                const active = isActive(item.href);
+                const Icon = item.icon;
+                const hasAccess = permissions.includes(item.requiredPermission);
+                return (
+                    <Link
+                        key={item.href}
+                        href={hasAccess ? `${basePath}${item.href}` : '#'}
+                        onClick={(e) => { if (!hasAccess) e.preventDefault(); }}
+                        className={`relative flex ${collapsed ? 'flex-col items-center justify-center p-3 w-14 h-14' : 'items-center justify-start px-3 py-3 w-full h-10 gap-3'} rounded-xl transition-all group ${
+                            !hasAccess
+                                ? 'opacity-50 cursor-not-allowed text-zinc-500 border border-transparent'
+                                : active 
+                                ? 'text-zinc-200 bg-white/10 border border-white/20' 
+                                : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5 border border-transparent'
+                        }`}
+                        title={collapsed ? (hasAccess ? item.label : `${item.label} (Bloqueado) - Adquiere este módulo`) : undefined}
+                    >
+                        <div className="relative shrink-0">
+                          <Icon className="w-4 h-4" />
+                          {!hasAccess && collapsed && (
+                            <Lock className="w-2.5 h-2.5 text-zinc-500 absolute -bottom-1 -right-1 bg-[#09090C] rounded-full p-0.5" />
+                          )}
+                        </div>
+                        {collapsed ? (
+                           <span className="text-[8px] font-mono mt-1 opacity-70 group-hover:opacity-100">{item.label.slice(0, 3)}</span>
+                        ) : (
+                           <>
+                             <span className="text-[13px] font-medium tracking-wide opacity-90 flex-1 truncate">{item.label}</span>
+                             {!hasAccess && <Lock className="w-3.5 h-3.5 text-zinc-600 shrink-0" />}
+                           </>
+                        )}
+                    </Link>
+                );
+           })}
         </div>
       </aside>
 

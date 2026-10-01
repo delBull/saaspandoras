@@ -174,3 +174,27 @@ export async function notifyNewsletterSubscription(email: string, source: string
 
     await sendDiscordNotification(DISCORD_WEBHOOK_LEADS, '', [embed]);
 }
+
+/**
+ * Notify about a Growth OS / Hermes Upgrade Intent
+ */
+export async function notifyUpgradeIntent(organizationSlug: string, capability: string, userAddress?: string, adminWebhookUrl?: string) {
+    const adminClientsUrl = 'https://dash.pandoras.finance/admin/dashboard?tab=clients';
+    
+    const embed: DiscordEmbed = {
+        title: `🔓 Upgrade Intent: ${organizationSlug}`,
+        description: `El tenant **${organizationSlug}** intentó acceder a una característica bloqueada.`,
+        color: COLORS.WARNING,
+        fields: [
+            { name: 'Feature / Capability', value: capability, inline: true },
+            { name: 'User / Wallet', value: userAddress || 'N/A', inline: true },
+            { name: '⚡ Acción Admin', value: `[👉 Ir a Admin para Actualizar Plan](${adminClientsUrl})`, inline: false }
+        ],
+        timestamp: new Date().toISOString(),
+        footer: { text: 'Growth OS - Intent Logging' }
+    };
+
+    // Route dynamically if assigned admin has a webhook, otherwise fallback to global ALERTS
+    const targetWebhook = adminWebhookUrl || DISCORD_WEBHOOK_ALERTS;
+    await sendDiscordNotification(targetWebhook, '', [embed]);
+}

@@ -156,10 +156,11 @@ export class CapabilityRegistryService {
       else if (planNorm === 'growth' || planNorm === 'pro') planTier = 'PRO';
       else planTier = 'STARTER';
     } else {
-      // Golden tenant S'Narai is Enterprise
-      if (cleanSlug === 'snarai' || project.slug === 'snarai') {
-        planTier = 'ENTERPRISE';
-      }
+      // Production Truth: no golden-tenant hardcode. When no product record
+      // exists, commercial tier is derived from the project's own trial tier
+      // (data, not code): FOUNDER → ENTERPRISE, MEDIA_ENABLED → PRO.
+      if (project.trialTier === 'FOUNDER') planTier = 'ENTERPRISE';
+      else if (project.trialTier === 'MEDIA_ENABLED') planTier = 'PRO';
     }
 
     // 2. Query real leads count from marketingLeads
@@ -214,6 +215,23 @@ export class CapabilityRegistryService {
         enabled,
       };
     });
+
+    // ── NFT_LAB explicit product override ────────────────────────────────
+    // A tenant can have NFT Lab activated via NftLabActivationService even
+    // if their plan tier alone wouldn't grant growth.nft.
+    // Check installed_products for an explicit NFT_LAB entry.
+    const nftCap = capabilities.find(c => c.key === 'growth.nft');
+    if (nftCap && !nftCap.enabled) {
+      try {
+        const { NftLabActivationService } = await import('./nft/nft-lab-activation.service');
+        const nftActive = await NftLabActivationService.isActive(organizationId);
+        if (nftActive) {
+          nftCap.enabled = true;
+        }
+      } catch {
+        // Non-fatal — default to plan-tier resolution
+      }
+    }
 
     return {
       organizationId: organizationId || `org_${cleanSlug}`,

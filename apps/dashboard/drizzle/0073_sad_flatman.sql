@@ -1,0 +1,1 @@
+ALTER TABLE "administrators" ADD COLUMN "discord_webhook_url" text;

@@ -19,6 +19,43 @@ export type HermesChannelType =
   | 'INTERNAL_DASHBOARD'
   | 'REST_API';
 
+/**
+ * K27.6.1 — Single-channel normalization point.
+ * Coerces any raw channel identifier (route-provided casing, legacy labels)
+ * into a canonical HermesChannelType. Unknown values degrade to WEB_WIDGET
+ * (fail-safe ceiling = PUBLIC), never crash and never leak.
+ */
+const CHANNEL_ALIASES: Record<string, HermesChannelType> = {
+  telegram: 'TELEGRAM',
+  telegram_tma: 'TELEGRAM',
+  whatsap: 'WHATSAPP',
+  whatsapp: 'WHATSAPP',
+  wa: 'WHATSAPP',
+  nexus: 'INTERNAL_DASHBOARD',
+  internal_dashboard: 'INTERNAL_DASHBOARD',
+  'web-widget': 'WEB_WIDGET',
+  web_widget: 'WEB_WIDGET',
+  web: 'WEB_WIDGET',
+  portal: 'PORTAL_AUTHENTICATED',
+  portal_authenticated: 'PORTAL_AUTHENTICATED',
+  rest_api: 'REST_API',
+  restapi: 'REST_API',
+};
+
+const HERMES_CHANNEL_CANONICALS: HermesChannelType[] = [
+  'TELEGRAM', 'WEB_WIDGET', 'PORTAL_AUTHENTICATED', 'WHATSAPP', 'INTERNAL_DASHBOARD', 'REST_API',
+];
+
+export function normalizeHermesChannel(raw: string | null | undefined): HermesChannelType {
+  if (!raw) return 'WEB_WIDGET';
+  const cleaned = String(raw).trim().toUpperCase().replace(/[\s-]+/g, '_');
+  if ((HERMES_CHANNEL_CANONICALS as string[]).includes(cleaned)) {
+    return cleaned as HermesChannelType;
+  }
+  const alias = String(raw).trim().toLowerCase().replace(/[-\s]+/g, '_');
+  return CHANNEL_ALIASES[alias] || 'WEB_WIDGET';
+}
+
 export interface ChannelConfig {
   channelType: HermesChannelType;
   maxClearanceCeiling: KnowledgeDisclosureClearance;

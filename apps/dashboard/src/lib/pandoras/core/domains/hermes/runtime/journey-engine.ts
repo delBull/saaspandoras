@@ -12,7 +12,7 @@ import {
 } from '../journeys/contracts';
 import { TenantAuthorityService } from '../tenants/tenant-authority';
 
-const isUuid = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+import { isUuid } from '@/lib/utils';
 
 export interface AdvanceActorStageParams {
   organizationId: string;
@@ -153,6 +153,62 @@ export class JourneyEngine implements JourneyEnginePort {
    * triggers (the Journey Graph Validator rejects non-adjacent moves).
    * Human-gated transitions (DIRECTOR_HANDOFF_COMPLETE) are never automatic.
    */
+  /**
+   * K11-HITO-2: Read-only resolution of the ACTIVE journey's current stage
+   * for an actor. Pure read — never mutates journey progress. Fail-open to null.
+   */
+  async getActiveJourneyStageInfo(organizationId: string, actorId: string): Promise<{ journeyId: string; stageId: string; stageName: string } | null> {
+    try {
+      const project = await db.query.projects.findFirst({
+        where: isUuid(organizationId)
+          ? eq(projects.organizationId, organizationId)
+          : eq(projects.slug, organizationId),
+        columns: { id: true, organizationId: true, slug: true }
+      });
+      if (!project) return null;
+      const canonicalOrgId = project.organizationId;
+      const orgSlug = project.slug;
+
+      const activeJourney = await db.query.hermesJourneys.findFirst({
+        where: and(
+          or(
+            eq(hermesJourneys.organizationId, canonicalOrgId),
+            eq(hermesJourneys.organizationId, orgSlug)
+          ),
+          eq(hermesJourneys.status, 'ACTIVE')
+        ),
+        orderBy: [asc(hermesJourneys.createdAt)]
+      });
+      if (!activeJourney) return null;
+
+      const stages = await db
+        .select({ id: hermesJourneyStages.id, name: hermesJourneyStages.name })
+        .from(hermesJourneyStages)
+        .where(eq(hermesJourneyStages.journeyId, activeJourney.id))
+        .orderBy(asc(hermesJourneyStages.orderIndex));
+      if (stages.length === 0) return null;
+
+      const actorJourney = await db.query.hermesActorJourneys.findFirst({
+        where: and(
+          or(
+            eq(hermesActorJourneys.organizationId, canonicalOrgId),
+            eq(hermesActorJourneys.organizationId, orgSlug)
+          ),
+          eq(hermesActorJourneys.actorId, actorId),
+          eq(hermesActorJourneys.journeyId, activeJourney.id),
+          eq(hermesActorJourneys.status, 'IN_PROGRESS')
+        )
+      });
+
+      const stage = stages.find(s => s.name === actorJourney?.currentStageId || s.id === actorJourney?.currentStageId) || stages[0];
+      if (!stage) return null;
+      return { journeyId: activeJourney.id, stageId: stage.id, stageName: stage.name };
+    } catch (err: any) {
+      console.warn(`[JourneyEngine] getActiveJourneyStageInfo failed for '${organizationId}':`, err?.message);
+      return null;
+    }
+  }
+
   async evaluateAndAdvance(params: {
     organizationId: string;
     actorId: string;

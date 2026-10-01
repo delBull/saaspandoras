@@ -30,14 +30,12 @@ export class HermesCommerceEngine {
     const totalUsd = tokenPriceUsd * amountTokens;
     const action = paymentMethod === 'WEB3_USDC' ? 'web3' : 'spei';
 
-    // S'Narai live checkout lives in the Pandoras Growth OS dashboard pay flow.
-    // The tier segment is resolved dynamically via matchPhase in the pay page.
-    const baseUrl = projectSlug === 'snarai'
-      ? 'https://dash.pandoras.finance/pay/snarai/fundador'
-      : 'https://dash.pandoras.finance/pay';
-
-    const origin = encodeURIComponent('https://snarai.aztecaz.xyz');
-    const checkoutUrl = `${baseUrl}?origin=${origin}&quantity=${amountTokens}&method=${action}`;
+    // Production Truth: no snarai hardcode. All tenants route through the
+    // same dashboard pay flow; the tier segment is resolved dynamically via
+    // matchPhase in the pay page. Origin remains client-agnostic.
+    const isProd = process.env.NODE_ENV === 'production';
+    const baseUrl = `${isProd ? 'https://dash.pandoras.finance' : 'https://staging.dash.pandoras.finance'}/pay`;
+    const checkoutUrl = `${baseUrl}?quantity=${amountTokens}&method=${action}&origin=${encodeURIComponent(projectSlug)}`;
 
     // Dynamic Organization Billing Profile resolution (Multi-tenant SPEI Rails)
     const speiDetails = paymentMethod === 'SPEI_FASTLANE' ? {

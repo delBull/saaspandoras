@@ -27,44 +27,54 @@ export default async function PortalStrategyPage({ params }: { params: Promise<{
   const docResult = await service.getGlobalPlatformKnowledge('ecosystem-architecture');
 
   return (
-    <div className="w-full max-w-5xl mx-auto space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="w-full max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-white tracking-tight flex items-center gap-2">
-            <Compass className="w-6 h-6 text-emerald-400" /> Growth Strategy
+          <h1 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
+            <Compass className="w-8 h-8 text-blue-400" />
+            Estrategia de Crecimiento
           </h1>
-          <p className="text-sm text-zinc-400 mt-1">
-            Global ecosystem architecture and strategic documentation for {portalCtx.organization.name}.
+          <p className="text-zinc-400 text-sm mt-2 max-w-2xl leading-relaxed">
+            Arquitectura global del ecosistema, planes de monetización y documentación estratégica de {portalCtx.organization.name}.
           </p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
          {/* Navigation / TOC */}
-         <div className="col-span-1 space-y-2">
-           <button className="w-full flex items-center gap-3 px-3 py-2.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl text-sm font-medium">
-             <BookOpen size={16} /> Ecosystem Architecture
+         <div className="col-span-1 space-y-3">
+           <button className="w-full flex items-center gap-3 px-4 py-3 bg-blue-500/10 border border-blue-500/30 text-blue-400 rounded-2xl text-sm font-bold shadow-[inset_0_0_0_1px_rgba(59,130,246,0.1)] transition-all">
+             <BookOpen size={18} /> Arquitectura del Ecosistema
            </button>
-           <button className="w-full flex items-center gap-3 px-3 py-2.5 text-zinc-400 hover:text-white hover:bg-white/5 rounded-xl text-sm font-medium transition-colors opacity-50 cursor-not-allowed">
-             <Compass size={16} /> Monetization Plan (Locked)
+           <button className="w-full flex items-center gap-3 px-4 py-3 bg-white/[0.02] border border-white/5 text-zinc-400 hover:text-white hover:bg-white/5 rounded-2xl text-sm font-medium transition-all opacity-70 cursor-not-allowed">
+             <Compass size={18} /> Plan de Monetización (Bloqueado)
+           </button>
+           <button className="w-full flex items-center gap-3 px-4 py-3 bg-white/[0.02] border border-white/5 text-zinc-400 hover:text-white hover:bg-white/5 rounded-2xl text-sm font-medium transition-all opacity-70 cursor-not-allowed">
+             <AlertCircle size={18} /> Auditorías de Hermes
            </button>
          </div>
 
          {/* Document Viewer */}
          <div className="col-span-1 md:col-span-3">
-            <GlassCard className="p-8 prose prose-invert max-w-none prose-emerald">
-               {docResult.success && docResult.content ? (
-                  <ReactMarkdown>{docResult.content}</ReactMarkdown>
-               ) : (
-                  <div className="flex flex-col items-center justify-center py-20 text-center">
-                     <AlertCircle className="w-12 h-12 text-zinc-600 mb-4" />
-                     <h3 className="text-lg font-medium text-white mb-2">Document Unavailable</h3>
-                     <p className="text-zinc-400 max-w-md">
-                        The strategy documentation could not be found. Please check your internal knowledge base directories.
-                     </p>
-                  </div>
-               )}
-            </GlassCard>
+            <div className="relative rounded-3xl border border-white/10 bg-[#09090D]/60 backdrop-blur-xl shadow-2xl overflow-hidden p-8 sm:p-10">
+               {/* Ambient Glow */}
+               <div className="absolute top-0 right-0 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
+               <div className="relative z-10 prose prose-invert max-w-none prose-blue prose-headings:font-black prose-p:text-zinc-400 prose-p:leading-relaxed prose-a:text-blue-400">
+                 {docResult.success && docResult.content ? (
+                    <ReactMarkdown>{docResult.content}</ReactMarkdown>
+                 ) : (
+                    <div className="flex flex-col items-center justify-center py-24 text-center">
+                       <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-6">
+                         <AlertCircle className="w-8 h-8 text-zinc-600" />
+                       </div>
+                       <h3 className="text-xl font-bold text-white mb-2 tracking-tight">Documento No Disponible</h3>
+                       <p className="text-zinc-500 max-w-md text-sm leading-relaxed">
+                          La documentación estratégica no pudo ser encontrada o está encriptada en la bóveda soberana (K25). Verifica los permisos del tenant.
+                       </p>
+                    </div>
+                 )}
+               </div>
+            </div>
          </div>
       </div>
     </div>

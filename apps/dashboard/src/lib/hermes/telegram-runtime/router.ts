@@ -7,7 +7,6 @@ import { KnowledgePackLoader } from '../knowledge-pack';
 import { HermesCommerceEngine } from '../commerce-engine';
 import { SalesState } from '../types';
 import { getTelegramState, saveTelegramState, TelegramLeadState } from './state';
-import { getLivePhaseData } from './live-phases';
 import {
   mainMenuKeyboard,
   thesisKeyboard,
@@ -275,8 +274,15 @@ export async function runAction(action: BotAction, ctx: BaseContext, state: Tele
     }
 
     case 'action_phases': {
-      const live = await getLivePhaseData(project);
-      replyText = phasesMessage(live, pack);
+      const { RwaIntelligenceProvider } = await import('@/lib/pandoras/core/domains/hermes/intelligence/rwa/rwa-intelligence-provider');
+      const provider = new RwaIntelligenceProvider();
+      const scope = { canonicalOrgId: project.organizationId, projectId: project.id, scopeType: 'PROJECT' as const, actorId: chatId.toString() };
+      const phaseResult = await provider.getPhases(scope);
+      if (phaseResult.status !== 'SUCCESS' || !phaseResult.data) {
+        throw new Error('Could not resolve live phases for project');
+      }
+      const live = phaseResult.data;
+      replyText = phasesMessage(live as any, pack);
       const session = HermesCommerceEngine.createCheckoutSession({
         leadId: String(chatId),
         projectSlug: projectId,
@@ -307,8 +313,14 @@ export async function runAction(action: BotAction, ctx: BaseContext, state: Tele
 
     case 'action_dataroom_dossier': {
       // Pass live remaining units for accurate availability display
-      const liveForDossier = await getLivePhaseData(project);
-      const liveUnits = liveForDossier.activePhase?.remainingTokens ?? undefined;
+      const { RwaIntelligenceProvider } = await import('@/lib/pandoras/core/domains/hermes/intelligence/rwa/rwa-intelligence-provider');
+      const provider = new RwaIntelligenceProvider();
+      const scope = { canonicalOrgId: project.organizationId, projectId: project.id, scopeType: 'PROJECT' as const, actorId: chatId.toString() };
+      const phaseResult = await provider.getPhases(scope);
+      let liveUnits: number | undefined = undefined;
+      if (phaseResult.status === 'SUCCESS' && phaseResult.data) {
+        liveUnits = phaseResult.data.activePhase?.remainingTokens;
+      }
       replyText = dataroomDossierMessage(pack, liveUnits);
       await sendTelegramMessage(botToken, chatId, replyText, dataroomFullKeyboard());
       recordEvent(projectId, 'DOWNLOADED_DOSSIER');

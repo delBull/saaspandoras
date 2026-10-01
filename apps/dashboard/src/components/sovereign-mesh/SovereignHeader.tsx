@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import type { PortalOrganization } from '@/lib/portal/portal-types';
-import { Layers, Bot, Rocket, Landmark, ShieldCheck, LogOut, Sliders } from 'lucide-react';
+import { Layers, Bot, Rocket, Landmark, ShieldCheck, LogOut, Sliders, Lock } from 'lucide-react';
 import { DisplayControlsWidget } from '@pandoras/display-engine';
 
 interface SovereignHeaderProps {
@@ -26,7 +26,7 @@ export function SovereignHeader({ organization, organizationSlug, activeModules 
   const hasRwa = activeModules.includes('PANDORAS_RWA');
 
   return (
-    <header className="h-14 bg-[#09090D] border-b border-white/10 flex items-center justify-between px-4 sm:px-6 shrink-0 sticky top-0 z-40 backdrop-blur-xl">
+    <header className="h-14 bg-[#09090D]/80 border-b border-white/5 flex items-center justify-between px-4 sm:px-6 shrink-0 sticky top-0 z-40 backdrop-blur-xl shadow-sm shadow-black/50">
       {/* Brand Identity */}
       <div className="flex items-center gap-3">
         <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-black font-black text-xs shadow-lg shadow-amber-500/20">
@@ -45,43 +45,54 @@ export function SovereignHeader({ organization, organizationSlug, activeModules 
 
       {/* 3 Planes Navigation */}
       <div className="hidden md:flex items-center gap-2 bg-black/40 p-1 rounded-2xl border border-white/5">
-        {hasHermes && (
-          <Link
-            href={`/portal/${organizationSlug}`}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-zinc-400 hover:text-emerald-300 hover:bg-emerald-500/10 border border-transparent hover:border-emerald-500/20 transition-all text-xs font-semibold"
-          >
-            <Bot className="w-4 h-4 text-emerald-400" />
-            <span>Hermes AI OS</span>
-          </Link>
-        )}
+        <Link
+          href={hasHermes ? `/portal/${organizationSlug}` : '#'}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all text-xs font-semibold relative ${
+            hasHermes
+              ? 'text-zinc-400 hover:text-emerald-300 hover:bg-emerald-500/10 border border-transparent hover:border-emerald-500/20'
+              : 'text-zinc-600 cursor-not-allowed opacity-70 border border-transparent'
+          }`}
+          title={!hasHermes ? "Hermes AI OS (Bloqueado) - Adquiere el add-on para habilitar IA conversacional" : undefined}
+          onClick={(e) => { if (!hasHermes) e.preventDefault(); }}
+        >
+          <Bot className={`w-4 h-4 ${hasHermes ? 'text-emerald-400' : 'text-zinc-500'}`} />
+          <span>Hermes AI OS</span>
+          {!hasHermes && <Lock className="w-3 h-3 text-zinc-500 ml-1" />}
+        </Link>
         
-        {hasHermes && (hasGrowth || hasRwa) && (
-          <div className="h-3 w-px bg-white/10" />
-        )}
+        <div className="h-3 w-px bg-white/10" />
         
-        {hasGrowth && (
-          <Link
-            href={`/growth-os/organizations/${organizationSlug}`}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-zinc-400 hover:text-violet-300 hover:bg-violet-500/10 border border-transparent hover:border-violet-500/20 transition-all text-xs font-semibold"
-          >
-            <Rocket className="w-4 h-4 text-violet-400" />
-            <span>Growth OS</span>
-          </Link>
-        )}
+        <Link
+          href={hasGrowth ? `/growth-os/organizations/${organizationSlug}` : '#'}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all text-xs font-semibold relative ${
+            hasGrowth
+              ? 'text-zinc-400 hover:text-violet-300 hover:bg-violet-500/10 border border-transparent hover:border-violet-500/20'
+              : 'text-zinc-600 cursor-not-allowed opacity-70 border border-transparent'
+          }`}
+          title={!hasGrowth ? "Growth OS (Bloqueado) - Activa la vertical de Growth para acceder a CRM y Campañas" : undefined}
+          onClick={(e) => { if (!hasGrowth) e.preventDefault(); }}
+        >
+          <Rocket className={`w-4 h-4 ${hasGrowth ? 'text-violet-400' : 'text-zinc-500'}`} />
+          <span>Growth OS</span>
+          {!hasGrowth && <Lock className="w-3 h-3 text-zinc-500 ml-1" />}
+        </Link>
 
-        {hasGrowth && hasRwa && (
-          <div className="h-3 w-px bg-white/10" />
-        )}
+        <div className="h-3 w-px bg-white/10" />
 
-        {hasRwa && (
-          <Link
-            href={`/ecosystem/${organizationSlug}/capital`}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-zinc-400 hover:text-indigo-300 hover:bg-indigo-500/10 border border-transparent hover:border-indigo-500/20 transition-all text-xs font-semibold"
-          >
-            <Landmark className="w-4 h-4 text-indigo-400" />
-            <span>RWA & Capital</span>
-          </Link>
-        )}
+        <Link
+          href={hasRwa ? `/ecosystem/${organizationSlug}/capital` : '#'}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all text-xs font-semibold relative ${
+            hasRwa
+              ? 'text-zinc-400 hover:text-indigo-300 hover:bg-indigo-500/10 border border-transparent hover:border-indigo-500/20'
+              : 'text-zinc-600 cursor-not-allowed opacity-70 border border-transparent'
+          }`}
+          title={!hasRwa ? "RWA & Capital (Bloqueado) - Tokeniza activos y gestiona capital institucional" : undefined}
+          onClick={(e) => { if (!hasRwa) e.preventDefault(); }}
+        >
+          <Landmark className={`w-4 h-4 ${hasRwa ? 'text-indigo-400' : 'text-zinc-500'}`} />
+          <span>RWA & Capital</span>
+          {!hasRwa && <Lock className="w-3 h-3 text-zinc-500 ml-1" />}
+        </Link>
       </div>
 
       {/* Right User State */}

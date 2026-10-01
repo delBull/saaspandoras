@@ -58,11 +58,13 @@ import {
   LogOut,
   Sparkles,
   Vote,
+  Lock,
 } from 'lucide-react';
 
 interface ProjectFounderDashboardProps {
   project: any;
   hasGrowthOs?: boolean;
+  activeModules?: string[];
 }
 
 function parseSafeNumber(val: any): number {
@@ -90,7 +92,7 @@ type MainTab =
   | 'settings'
   | 'pandoras_governance';
 
-export default function ProjectFounderDashboard({ project, hasGrowthOs }: ProjectFounderDashboardProps) {
+export default function ProjectFounderDashboard({ project, hasGrowthOs, activeModules = [] }: ProjectFounderDashboardProps) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<MainTab>('overview');
   const [isLoadingPhase, setIsLoadingPhase] = useState<string | null>(null);
@@ -176,6 +178,10 @@ export default function ProjectFounderDashboard({ project, hasGrowthOs }: Projec
     window.location.href = '/accessv2';
   };
 
+  
+  const hasHermesAccess = activeModules.length === 0 || activeModules.includes('HERMES');
+  const hasGrowthAccess = activeModules.length === 0 || activeModules.includes('GROWTH_OS');
+
   const menuItems = [
     { id: 'overview' as MainTab, label: 'Resumen General', icon: BuildingLibraryIcon, short: 'RES' },
     { id: 'purchases' as MainTab, label: 'Inversiones', icon: CurrencyDollarIcon, short: 'INV', count: pendingCount },
@@ -230,21 +236,33 @@ export default function ProjectFounderDashboard({ project, hasGrowthOs }: Projec
           </Link>
           <div className="h-3 w-px bg-white/10" />
           <Link
-            href={`/portal/${project.slug}`}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-zinc-400 hover:text-emerald-300 hover:bg-emerald-500/10 border border-transparent hover:border-emerald-500/20 transition-all text-[11px] font-medium"
-            title="Hermes AI OS"
+            href={hasHermesAccess ? `/portal/${project.slug}` : '#'}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg transition-all text-[11px] font-medium relative ${
+              hasHermesAccess
+                ? 'text-zinc-400 hover:text-emerald-300 hover:bg-emerald-500/10 border border-transparent hover:border-emerald-500/20'
+                : 'text-zinc-600 cursor-not-allowed opacity-70 border border-transparent'
+            }`}
+            title={!hasHermesAccess ? "Hermes AI OS (Bloqueado) - Adquiere el add-on para habilitar IA conversacional" : "Hermes AI OS"}
+            onClick={(e) => { if (!hasHermesAccess) e.preventDefault(); }}
           >
-            <Bot className="w-3.5 h-3.5 text-emerald-400" />
+            <Bot className={`w-3.5 h-3.5 ${hasHermesAccess ? 'text-emerald-400' : 'text-zinc-500'}`} />
             <span>Hermes AI</span>
+            {!hasHermesAccess && <Lock className="w-2.5 h-2.5 text-zinc-500 ml-0.5" />}
           </Link>
           <div className="h-3 w-px bg-white/10" />
           <Link
-            href={`/growth-os/organizations/${project.slug}`}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-zinc-400 hover:text-violet-300 hover:bg-violet-500/10 border border-transparent hover:border-violet-500/20 transition-all text-[11px] font-medium"
-            title="Growth OS Hub"
+            href={hasGrowthAccess ? `/growth-os/organizations/${project.slug}` : '#'}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg transition-all text-[11px] font-medium relative ${
+              hasGrowthAccess
+                ? 'text-zinc-400 hover:text-violet-300 hover:bg-violet-500/10 border border-transparent hover:border-violet-500/20'
+                : 'text-zinc-600 cursor-not-allowed opacity-70 border border-transparent'
+            }`}
+            title={!hasGrowthAccess ? "Growth OS (Bloqueado) - Activa la vertical de Growth para acceder a CRM y Campañas" : "Growth OS Hub"}
+            onClick={(e) => { if (!hasGrowthAccess) e.preventDefault(); }}
           >
-            <Rocket className="w-3.5 h-3.5 text-violet-400" />
+            <Rocket className={`w-3.5 h-3.5 ${hasGrowthAccess ? 'text-violet-400' : 'text-zinc-500'}`} />
             <span>Growth OS</span>
+            {!hasGrowthAccess && <Lock className="w-2.5 h-2.5 text-zinc-500 ml-0.5" />}
           </Link>
         </div>
 

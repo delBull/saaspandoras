@@ -130,6 +130,7 @@ export const administrators = pgTable("administrators", {
   availability: jsonb("availability"),
   allowedDomains: jsonb("allowed_domains").default([]).notNull(),
   secretKey: varchar("secret_key", { length: 255 }),
+  discordWebhookUrl: text("discord_webhook_url"),
 });
 
 // ── Single Source of Truth: Genesis / Waitlist Access Requests ───────────────
@@ -273,6 +274,8 @@ export const projects = pgTable("projects", {
   id: serial("id").primaryKey(),
   organizationId: uuid("organization_id").notNull().unique().defaultRandom(),
   isSimulationMode: boolean("is_simulation_mode"), // True for new tenants, false for prod
+  assignedAdminId: integer("assigned_admin_id").references(() => administrators.id), // Link a Account Manager
+
 
   // Sección 1: Identidad del Proyecto
   title: varchar("title", { length: 256 }).notNull(),
@@ -1503,6 +1506,32 @@ export const webhookEvents = pgTable("webhook_events", {
 export type IntegrationClient = typeof integrationClients.$inferSelect;
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type WebhookEvent = typeof webhookEvents.$inferSelect;
+
+// =========================================================
+// PAYMENT EVENT INBOX (Idempotency Boundary - P1-6)
+// =========================================================
+export const paymentInboxStatusEnum = pgEnum("payment_inbox_status", [
+  "pending", // Received, not processed
+  "processed", // Successfully settled via Orchestrator
+  "failed", // Processing failed (e.g. invalid signature/intent)
+  "ignored" // Duplicate or irrelevant (filtered)
+]);
+
+export const paymentInboxEvents = pgTable("payment_inbox_events", {
+  id: varchar("id", { length: 255 }).primaryKey(), // providerEventId (e.g. from thirdweb webhook)
+  provider: varchar("provider", { length: 50 }).notNull(), // 'THIRDWEB', 'STRIPE', 'WIRE', 'EXECUTIVE'
+  paymentIntentId: varchar("payment_intent_id", { length: 255 }), // Can be null if unresolved
+  payload: jsonb("payload").notNull(), // Raw event payload
+  status: paymentInboxStatusEnum("status").default("pending").notNull(),
+  error: text("error"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  processedAt: timestamp("processed_at", { withTimezone: true }),
+}, (t) => ({
+  intentIdx: index("payment_inbox_intent_idx").on(t.paymentIntentId),
+  providerStatusIdx: index("payment_inbox_provider_status_idx").on(t.provider, t.status),
+}));
+
+export type PaymentInboxEvent = typeof paymentInboxEvents.$inferSelect;
 
 
 
@@ -4764,5 +4793,158 @@ export const hermesExecutionCheckpoints = pgTable("hermes_execution_checkpoints"
   expiryIdx:     index("hermes_checkpoints_expiry_idx").on(t.expiresAt, t.status),
 }));
 
+
 export type HermesExecutionCheckpoint    = typeof hermesExecutionCheckpoints.$inferSelect;
 export type NewHermesExecutionCheckpoint = typeof hermesExecutionCheckpoints.$inferInsert;
+
+// ============================================================
+// NFT LAB — TENANT COLLECTIONS & ISSUANCES (Phase 1)
+// Phase 0 Architecture Audit: reuses outboxEvents for events,
+// hermesCapabilityGrants for policy, operationalIntents for
+// governance. Only these two tables are truly new.
+// ============================================================
+
+export const nftCollectionStatusEnum = pgEnum('nft_collection_status', [
+  'DRAFT',
+  'GOVERNANCE_PENDING',
+  'DEPLOYED',
+  'PAUSED',
+  'RETIRED',
+]);
+
+export const nftPurposeEnum = pgEnum('nft_purpose', [
+  'ACCESS',
+  'IDENTITY',
+  'MEMBERSHIP',
+  'REWARD',
+  'REPUTATION',
+  'COLLECTIBLE',
+  'EXPERIENCE',
+  'GOVERNANCE',
+]);
+
+export const nftStandardEnum = pgEnum('nft_standard', [
+  'ERC-721',
+  'ERC-1155',
+  'SBT',
+]);
+
+/**
+ * Tenant-owned NFT collections.
+ * One row per collection definition; each tenant is scoped by organizationId.
+ * contractAddress is only populated after governance approval + deployment.
+ */
+export const tenantNftCollections = pgTable('tenant_nft_collections', {
+  id: uuid('id').defaultRandom().primaryKey(),
+
+  // ── Tenant Binding (server-authoritative, never from client) ──────────
+  projectId: integer('project_id').references(() => projects.id).notNull(),
+  organizationId: varchar('organization_id', { length: 255 }).notNull(),
+
+  // ── Identity ──────────────────────────────────────────────────────────
+  name: varchar('name', { length: 255 }).notNull(),
+  symbol: varchar('symbol', { length: 20 }).notNull(),
+  description: text('description'),
+
+  // ── Purpose / Standard / Behavior (Phase 0 taxonomy) ─────────────────
+  purpose: nftPurposeEnum('purpose').notNull(),
+  standard: nftStandardEnum('standard').notNull().default('ERC-721'),
+  transferable: boolean('transferable').notNull().default(true),
+  burnable: boolean('burnable').notNull().default(false),
+  expirable: boolean('expirable').notNull().default(false),
+  revokable: boolean('revokable').notNull().default(false),
+
+  // ── Supply ────────────────────────────────────────────────────────────
+  totalSupply: integer('total_supply').notNull().default(0), // 0 = unlimited
+  reservedSupply: integer('reserved_supply').default(0),
+  royaltyFeeBps: integer('royalty_fee_bps').default(250),   // 2.5%
+
+  // ── Chain ─────────────────────────────────────────────────────────────
+  // Backend-determined. Default: Base Mainnet. No UI override without plan gate.
+  chainId: integer('chain_id').notNull().default(8453),
+
+  // ── On-chain State (populated post-deploy) ────────────────────────────
+  contractAddress: varchar('contract_address', { length: 42 }),
+  deployTxHash: varchar('deploy_tx_hash', { length: 66 }),
+  deployedAt: timestamp('deployed_at', { withTimezone: true }),
+
+  // ── Metadata (IPFS) ───────────────────────────────────────────────────
+  imageIpfsCid: varchar('image_ipfs_cid', { length: 255 }),
+  metadataIpfsCid: varchar('metadata_ipfs_cid', { length: 255 }),
+
+  // ── Purpose-specific Config (JSONB — collection params only) ──────────
+  // NOT for integrations/events/webhooks (those live in bindings/outbox).
+  // e.g.: { expiresInDays: 365, accessLevel: 'VIP', redeemableFor: 'discount_10pct' }
+  config: jsonb('config').default({}),
+
+  // ── Lifecycle / Governance ────────────────────────────────────────────
+  status: nftCollectionStatusEnum('status').notNull().default('DRAFT'),
+  governanceIntentId: varchar('governance_intent_id', { length: 255 }),
+
+  // ── Audit ─────────────────────────────────────────────────────────────
+  createdBy: varchar('created_by', { length: 255 }), // canonical wallet of creator
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  orgIdx: index('tenant_nft_collections_org_idx').on(t.organizationId),
+  statusIdx: index('tenant_nft_collections_status_idx').on(t.status),
+  projectStatusIdx: index('tenant_nft_collections_project_status_idx').on(t.projectId, t.status),
+}));
+
+export type TenantNftCollection    = typeof tenantNftCollections.$inferSelect;
+export type NewTenantNftCollection = typeof tenantNftCollections.$inferInsert;
+
+// ── Issuance Status ───────────────────────────────────────────────────────
+
+export const nftIssuanceStatusEnum = pgEnum('nft_issuance_status', [
+  'pending_mint',
+  'minted',
+  'mint_failed',
+  'expired',
+  'revoked',
+]);
+
+/**
+ * Individual token mint records — one row per NFT issued to a recipient.
+ * Governance intent is required for high-risk collections;
+ * auto-issued within policy for approved collections.
+ */
+export const tenantNftIssuances = pgTable('tenant_nft_issuances', {
+  id: uuid('id').defaultRandom().primaryKey(),
+
+  // ── Collection Binding ────────────────────────────────────────────────
+  collectionId: uuid('collection_id').references(() => tenantNftCollections.id).notNull(),
+  projectId: integer('project_id').references(() => projects.id).notNull(),
+
+  // ── Recipient ─────────────────────────────────────────────────────────
+  recipientWallet: varchar('recipient_wallet', { length: 42 }).notNull(),
+  // Optional link to CRM lead (for correlation — NOT authorization)
+  recipientLeadId: uuid('recipient_lead_id').references(() => marketingLeads.id),
+
+  // ── On-chain State ────────────────────────────────────────────────────
+  tokenId: varchar('token_id', { length: 255 }),
+  mintTxHash: varchar('mint_tx_hash', { length: 66 }),
+  mintedAt: timestamp('minted_at', { withTimezone: true }),
+
+  // ── Expiration / Revocation ───────────────────────────────────────────
+  expiresAt: timestamp('expires_at', { withTimezone: true }), // for ACCESS purpose
+  revokedAt: timestamp('revoked_at', { withTimezone: true }),
+  revokedBy: varchar('revoked_by', { length: 255 }),          // canonical actor id
+
+  // ── Governance (when required by policy) ──────────────────────────────
+  governanceIntentId: varchar('governance_intent_id', { length: 255 }),
+
+  // ── Status + Metadata ─────────────────────────────────────────────────
+  status: nftIssuanceStatusEnum('status').notNull().default('pending_mint'),
+  metadata: jsonb('metadata').default({}), // correlation data, not auth
+
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  collectionIdx: index('tenant_nft_issuances_collection_idx').on(t.collectionId),
+  recipientIdx: index('tenant_nft_issuances_recipient_idx').on(t.recipientWallet),
+  projectStatusIdx: index('tenant_nft_issuances_project_status_idx').on(t.projectId, t.status),
+  leadIdx: index('tenant_nft_issuances_lead_idx').on(t.recipientLeadId),
+}));
+
+export type TenantNftIssuance    = typeof tenantNftIssuances.$inferSelect;
+export type NewTenantNftIssuance = typeof tenantNftIssuances.$inferInsert;

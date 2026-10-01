@@ -5,8 +5,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { projects } from '@/db/schema';
-import { eq, or } from 'drizzle-orm';
+import { projects, marketingCampaigns, marketingExecutions } from '@/db/schema';
+import { eq, or, desc, sql } from 'drizzle-orm';
 import { getAuth } from '@/lib/auth';
 import { checkRateLimit, clientIpFromHeaders } from '@/lib/hermes/auth/rate-limiter';
 import { validatePortalSession } from '@/lib/platform/portal-auth';
@@ -149,44 +149,132 @@ export async function GET(req: NextRequest) {
       },
     ];
 
-    const campaigns: EmailCampaignDTO[] = [
-      {
-        id: 'camp_referral_warm',
-        name: 'Campaña Referidos Cálidos Q3',
-        templateId: 'tmpl_welcome_vip',
-        status: 'SENT',
-        recipientsCount: 142,
-        openRate: 68.4,
-        clickRate: 34.1,
-        sentAt: new Date(Date.now() - 86400000 * 3).toISOString(),
-        createdAt: new Date(Date.now() - 86400000 * 7).toISOString(),
-      },
-      {
-        id: 'camp_token_announcement',
-        name: 'Lanzamiento Fase 2 Tokens',
-        templateId: 'tmpl_token_offering',
-        status: 'SCHEDULED',
-        recipientsCount: 320,
-        openRate: 0,
-        clickRate: 0,
-        scheduledAt: new Date(Date.now() + 86400000 * 2).toISOString(),
-        createdAt: new Date().toISOString(),
-      },
-    ];
+    // ─── REAL CAMPAIGNS (Production Truth) ──────────────────────────────
+    // Campaigns are persisted in marketing_campaigns with the tenant's
+    // canonicalOrgId stored SERVER-SIDE inside config.organizationId
+    // (set at POST time). Metrics come from real marketing_executions —
+    // no synthetic open/close rates.
+    const campaigns: EmailCampaignDTO[] = [];
+    let campaignRows: any[] = [];
+    try {
+      campaignRows = await db
+        .select()
+        .from(marketingCampaigns)
+        .where(sql`config->>'organizationId' = ${auth.organizationId}`)
+        .orderBy(desc(marketingCampaigns.createdAt))
+        .limit(30);
+
+      for (const c of campaignRows) {
+        const cfg = (c.config as any) || {};
+        const execs = await db
+          .select({ status: marketingExecutions.status })
+          .from(marketingExecutions)
+          .where(eq(marketingExecutions.campaignId, c.id));
+        const completed = execs.filter(e => e.status === 'completed').length;
+        const active = execs.filter(e => e.status === 'active').length;
+        campaigns.push({
+          id: String(c.id),
+          name: c.name,
+          templateId: cfg.templateId || null,
+          status: active > 0 ? 'SCHEDULED' : (completed > 0 ? 'SENT' : 'DRAFT'),
+          recipientsCount: execs.length,
+          openRate: null as any,
+          clickRate: null as any,
+          scheduledAt: cfg.scheduledAt || null,
+          createdAt: c.createdAt.toISOString(),
+        });
+      }
+    } catch (campaignsErr: any) {
+      console.warn('[Growth Email] Campaign fetch notice (fallback to empty):', campaignsErr?.message);
+      campaignRows = [];
+    }
 
     const response: GetEmailMarketingResponseDTO = {
       templates,
       campaigns,
       stats: {
-        totalSent: 142,
-        avgOpenRate: 68.4,
-        avgClickRate: 34.1,
+        totalSent: campaigns.reduce((acc: number, c: EmailCampaignDTO) => acc + (c.recipientsCount || 0), 0),
+        avgOpenRate: null as any,
+        avgClickRate: null as any,
       },
     };
 
     return NextResponse.json(response);
   } catch (error: any) {
     console.error('[Growth API: email GET] Error:', error);
+    return NextResponse.json({ code: 'INTERNAL_ERROR', message: error.message }, { status: 500 });
+  }
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const ip = clientIpFromHeaders(req.headers);
+    const rl = checkRateLimit(`growth-email-post:${ip}`, 15, 60_000);
+    if (!rl.allowed) {
+      return NextResponse.json({ code: 'RATE_LIMITED', message: 'Too many requests.' }, { status: 429 });
+    }
+
+    const body = await req.json();
+    const { organizationId: orgParam, name, templateId, subject, scheduledAt } = body;
+    const cleanSlug = (orgParam || '').replace(/^org_/, '').trim();
+    if (!cleanSlug) {
+      return NextResponse.json({ code: 'INVALID_REQUEST', message: 'organizationId is required.' }, { status: 400 });
+    }
+    if (!name || !String(name).trim()) {
+      return NextResponse.json({ code: 'INVALID_REQUEST', message: 'Campaign name is required.' }, { status: 400 });
+    }
+
+    const auth = await resolveTenant(req, orgParam);
+    if (!auth) {
+      return NextResponse.json({ code: 'UNAUTHENTICATED', message: 'Authentication required.' }, { status: 401 });
+    }
+
+    try {
+      await capabilityRegistry.assertCapability(auth.organizationId, 'growth.email');
+    } catch (err: any) {
+      return NextResponse.json({ code: 'CAPABILITY_DISABLED', message: err.message }, { status: 403 });
+    }
+
+    // Production Truth: the campaign is PERSISTED in `marketing_campaigns`
+    // with the canonicalOrgId stamped SERVER-SIDE inside config.organizationId
+    // (correlation-only metadata is ignored for authorization). Reads filter
+    // by it so tenants and pandoras never mix campaigns.
+    const [createdCampaign] = await db
+      .insert(marketingCampaigns)
+      .values({
+        name: String(name).trim(),
+        triggerType: 'manual' as any,
+        isActive: !scheduledAt ? true : false,
+        config: {
+          organizationId: auth.organizationId,
+          templateId: templateId || null,
+          subject: subject ? String(subject).trim() : null,
+          scheduledAt: scheduledAt || null,
+          status: scheduledAt ? 'SCHEDULED' : 'DRAFT',
+          createdVia: 'growth_os_email_modal',
+        } as any,
+      })
+      .returning();
+
+    if (!createdCampaign) {
+      return NextResponse.json({ code: 'INSERT_FAILED', message: 'Failed to persist campaign.' }, { status: 500 });
+    }
+
+    const cfg = (createdCampaign.config as any) || {};
+    const campaign = {
+      id: String(createdCampaign.id),
+      name: createdCampaign.name,
+      templateId: cfg.templateId || null,
+      subject: cfg.subject || null,
+      status: scheduledAt ? 'SCHEDULED' : 'DRAFT',
+      scheduledAt: scheduledAt || null,
+      organizationId: auth.organizationId,
+      createdAt: new Date().toISOString(),
+    };
+
+    return NextResponse.json({ success: true, campaign }, { status: 201 });
+  } catch (error: any) {
+    console.error('[Growth API: email POST] Error:', error);
     return NextResponse.json({ code: 'INTERNAL_ERROR', message: error.message }, { status: 500 });
   }
 }

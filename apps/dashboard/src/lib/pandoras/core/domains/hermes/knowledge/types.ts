@@ -97,6 +97,7 @@ export interface GovernedKnowledgeItem {
 export type ControlPlaneRole = 'OWNER' | 'ADMIN' | 'OPERATOR' | 'VIEWER' | 'SYSTEM';
 
 export interface ControlPlaneContext {
+  channel?: string;
   actorId: string;
   organizationId: string;
   role: ControlPlaneRole;

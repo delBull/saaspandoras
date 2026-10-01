@@ -3,7 +3,7 @@
  * apps/dashboard/src/lib/pandoras/core/domains/hermes/tools/browser/index.ts
  */
 
-import { HermesToolExecutor } from '../../runtime/tool-executor';
+import type { HermesToolExecutor } from '../../runtime/tool-executor';
 import { WebBrowserTool } from './browser-provider';
 
 export * from './contracts';

@@ -69,11 +69,8 @@ export function computeBehavioralMetrics(
     intentKeywords.includes('unidad') ||
     intentKeywords.includes('inversionista') ||
     intentKeywords.includes('investor') ||
-    intentKeywords.includes('snarai gold') || 
-    intentKeywords.includes('s\'narai gold') || 
-    intentKeywords.includes('snarai') || 
-    intentKeywords.includes('s\'narai') || 
-    intentKeywords.includes('narai gold') || 
+    // Production Truth: removed 'snarai'/'s\'narai'/'narai' keyword hardcodes —
+    // brand-specific intents belong to the tenant's runtimeConfig, not code.
     intentKeywords.includes('full units');
   if (isFullUnitIntent && !lead.metadata?.tags?.some((t: string) => t.toUpperCase().includes('FULL_UNIT'))) {
     if (!lead.metadata) lead.metadata = {};
@@ -274,8 +271,9 @@ export function resolveGrowthAction(
       if (isVip) {
         nextState = 'HOT';
         actions = ['SEND_VIP_CONCIERGE_WELCOME', 'NOTIFY_TEAM'];
-      } else if (project?.slug === 'snarai' || project?.slug === 'narai') {
-        // Institutional Override: Align all Narai leads to the Explore Welcome email
+      } else if (String(project?.businessCategory || '').includes('real_estate')) {
+        // Vertical-driven override (data, not name): real-estate tenants align
+        // leads to the Explore Welcome sequence.
         nextState = 'AWARE';
         actions = ['SEND_WELCOME_EXPLORE_D1', 'NOTIFY_TEAM'];
       } else {

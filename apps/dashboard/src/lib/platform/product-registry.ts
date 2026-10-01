@@ -151,6 +151,52 @@ export const PRODUCT_REGISTRY = {
     },
   },
 
+
+  /**
+   * NFT Lab — Tenant-scoped NFT capability layer for Growth OS.
+   * Phase 0 Architecture: product in installedProducts controls capabilities JSONB.
+   * The deployer (protocol-deployer) is shared infrastructure.
+   * Chains: Base Mainnet (production), Base Sepolia (staging).
+   */
+  NFT_LAB: {
+    family: 'GROWTH_OS',
+    displayName: 'NFT Lab & Smart Passes',
+    crmPipeline: ['Lead', 'Qualified', 'Proposal', 'Closed Won'],
+    capabilities: {
+      // Core NFT operations
+      collections:    { default: true,  plans: ['sandbox', 'starter', 'growth', 'enterprise'] },
+      issuance:       { default: true,  plans: ['sandbox', 'starter', 'growth', 'enterprise'] },
+      // Token gating requires on-chain RPC — growth+
+      token_gating:   { default: false, plans: ['growth', 'enterprise'] },
+      // Automation bindings (trigger → mint) — enterprise only
+      automation:     { default: false, plans: ['enterprise'] },
+      // Analytics over issuances
+      analytics:      { default: false, plans: ['starter', 'growth', 'enterprise'] },
+    },
+    connectors: {
+      // RPC providers for on-chain verification and deployment
+      base_rpc:     { default: true,  plans: ['sandbox', 'starter', 'growth', 'enterprise'] },
+      ipfs:         { default: false, plans: ['starter', 'growth', 'enterprise'] },
+    },
+    portalModules: ['collections', 'issuances', 'token_gating', 'analytics', 'automation'],
+    onboardingSteps: [
+      'define_collection',   // Purpose, standard, behavior flags
+      'governance_approve',  // Boss approves on-chain deployment intent
+      'verify_deploy',       // Confirm contract address
+      'issue_first_token',   // Test issuance to test wallet
+    ],
+    runtimeProfile: {
+      requiredIntegrations: ['blockchain_rpc'],
+      healthChecks: ['deployer_available', 'rpc_connected'],
+    },
+    pricing: {
+      sandbox:    { price: 0,   currency: 'USD', period: 'trial'  },
+      starter:    { price: 199, currency: 'USD', period: 'month'  },
+      growth:     { price: 499, currency: 'USD', period: 'month'  },
+      enterprise: { price: null, currency: 'USD', period: 'custom' },
+    },
+  },
+
 } as const satisfies Record<string, ProductDef>;
 
 // ── Helpers ──────────────────────────────────────────────────────────────────

@@ -1,6 +1,6 @@
 import { db } from '@/db';
-import { projects, installedProducts, marketingLeads, operationalIntents } from '@/db/schema';
-import { eq, and, count } from 'drizzle-orm';
+import { projects, installedProducts, marketingLeads, operationalIntents, hermesEvents } from '@/db/schema';
+import { eq, and, count, desc } from 'drizzle-orm';
 import { CanonicalAuthSession } from '@/lib/hermes/auth/canonical-resolver';
 import { capabilityRegistry } from '@/lib/growth/capability-registry.service';
 import { getTreasuryBalances, isDeployedContract } from '@/lib/growth/treasury-onchain';
@@ -133,6 +133,45 @@ export class GrowthOverviewService {
       recentActivities: [],
     };
 
+    // Fetch Recent Hermes & Growth Events
+    const recentDbEvents = await db.query.hermesEvents.findMany({
+      where: eq(hermesEvents.tenantId, project.id),
+      orderBy: [desc(hermesEvents.createdAt)],
+      limit: 5,
+    });
+
+    response.recentActivities = recentDbEvents.map((evt) => ({
+      id: evt.id,
+      title: evt.eventType,
+      description: (evt.payload as any)?.description || 'Actividad registrada por el Hermes Mesh Engine',
+      timestamp: evt.createdAt.toISOString(),
+      actor: (evt.payload as any)?.actor || 'Hermes Core',
+      capability: 'growth.agents' as const,
+    }));
+
     return response;
   }
+
+
+
+  /**
+   * Vigilance stream for the "Hermes Omnipresente" widget.
+   * Real data: payment_inbox_events (pending/processed/failed) scoped to the
+   * canonical org + the last hermesEvents. Honest empty state.
+   */
+  static async getHermesVigilance(organizationId: string): Promise<{
+    pending: number;
+    processedToday: number;
+    failed: number;
+    lastEvents: { id: string; description: string; timestamp: string; actor: string }[];
+  }> {
+    try {
+      const { HermesPaymentEventInbox } = await import('@/lib/pandoras/core/domains/hermes/payments/core/event-inbox');
+      return await HermesPaymentEventInbox.vigilanceSnapshot(organizationId);
+    } catch (err: any) {
+      console.warn('[GrowthOverviewService] Vigilance snapshot fallback:', err?.message);
+      return { pending: 0, processedToday: 0, failed: 0, lastEvents: [] };
+    }
+  }
 }
+

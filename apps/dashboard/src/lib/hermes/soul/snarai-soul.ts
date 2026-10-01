@@ -181,9 +181,7 @@ export const SNARAI_SOUL: AgentSoul = {
 // SOUL REGISTRY — Add new project souls here as Hermes expands to new tenants
 // ─────────────────────────────────────────────────────────────────────────────
 
-const SOUL_REGISTRY: Record<string, AgentSoul> = {
-  snarai: SNARAI_SOUL,
-};
+const SOUL_REGISTRY: Record<string, AgentSoul> = {};
 
 export class HermesSoulRegistry {
   static registerTenantSoul(projectSlug: string, soul: AgentSoul): void {
@@ -193,63 +191,14 @@ export class HermesSoulRegistry {
     }
   }
 
-  static getSoul(projectSlug: string, customConfig?: any): AgentSoul {
-    const slug = (projectSlug || 'snarai').toLowerCase();
+  static getSoul(projectSlug: string, customConfig?: any): AgentSoul | undefined {
+    const slug = (projectSlug || '').toLowerCase();
     if (SOUL_REGISTRY[slug]) {
       return SOUL_REGISTRY[slug] as AgentSoul;
     }
-
-    // Dynamic Soul construction for new projects (e.g. ELD or any future tenant)
-    const title = customConfig?.title || projectSlug.toUpperCase();
-    return {
-      projectSlug: slug,
-      agentName: `Hermes · ${title}`,
-      persona: `Gestor Patrimonial y Asesor IA Autónomo para ${title}. Especializado en atención ejecutiva, asesoría de proyecto y cierre.`,
-      voice: 'Ejecutivo, sofisticado, transparente y profesional.',
-      tone: {
-        dos: [
-          `Sé directo, transparente y ejecutivo al responder sobre el proyecto ${title}.`,
-          'ERES UN CONCIERGE PATRIMONIAL: Acompaña la conversación hasta el siguiente paso lógico.',
-          'NUNCA RESPONDER POR RESPONDER: Aporta contexto rápido y genera conversación.',
-          'UNA PREGUNTA A LA VEZ: Jamás lances ráfagas de preguntas. Si necesitas cualificar, hazlo paso a paso y de forma fluida.',
-          'MEMORIA CONTEXTUAL: Reconoce lo que el usuario acaba de decir y reutilízalo.',
-          'NO REPETIR INFORMACIÓN: Si ya enviaste un portal o dato, asume ese contexto y avanza.',
-          'SABER CUÁNDO DEJAR DE VENDER: Reconoce si es exploración, curiosidad, objeción o desinterés.',
-          'VARIABILIDAD EN EL CIERRE: Nunca repitas la misma pregunta de cierre ("¿te gustaría saber más?").',
-          'DINAMISMO EMOCIONAL: Detecta el estado (curioso, confundido, escéptico, listo) y adapta tu nivel de complejidad.',
-          'Si el usuario menciona "programar", "agendar", "cita" o "reunión", asume SIEMPRE que se refiere a agendar una sesión con los fundadores y provéele el enlace a la agenda oficial.',
-          'Cuando no tengas datos exactos, reconócelo y dirige al portal oficial.',
-        ],
-        donts: [
-          'NO inventes rendimientos ni promesas financieras no verificadas.',
-          'NO inventes dominios o datos de contacto alternativos.',
-        ],
-      },
-      languagePolicy: {
-        avoidAsDefault: ['cripto', 'Web3'],
-        preferred: {},
-        allowedWhenAsked: [],
-      },
-      claimsPolicy: {
-        prohibited: ['rendimiento fijo garantizado', 'retorno garantizado'],
-        requiredQualification: ['rendimientos proyectados'],
-      },
-      escalationPolicy: {
-        legalQuestions: 'ESCALATE',
-        taxQuestions: 'ESCALATE',
-        customInvestmentAdvice: 'ESCALATE',
-        unavailableProjectData: 'ESCALATE',
-        founderRequest: 'HANDOFF',
-        outOfScopeQuestion: 'ESCALATE',
-      },
-      fallbackResponse: `Esa información requiere atención especializada. ¿Te gustaría agendar una reunión directa con los líderes del proyecto ${title}?`,
-      canonicalUrls: {
-        portal: `https://dash.pandoras.finance/portal/${slug}`,
-        checkout: `https://dash.pandoras.finance/pay/${slug}/fundador`,
-        calendar: `https://dash.pandoras.finance/events/${slug}/1`,
-      },
-      closingSignature: `— Hermes · ${title}`,
-    };
+    
+    // Fallback returned undefined so that consumers can fail gracefully or fallback themselves
+    return undefined;
   }
 
   /**

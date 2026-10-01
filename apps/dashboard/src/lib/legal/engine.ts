@@ -21,16 +21,14 @@ export class LegalEngine {
     return cryptoNode.createHash("sha256").update(content).digest("hex");
   }
 
-  /**
-   * Resolves the agreement template for a project.
-   * If the project has a custom template in legalConfig, it uses that.
-   * Otherwise, it uses a default template or S'Narai specific if slug matches.
-   */
   static getTemplate(project: any): string {
-    const customTemplate = project.legalConfig?.agreementTemplate;
+    const runtimeConfig = (project.tenantRuntimeConfig as any) || {};
+    const legalProfile = runtimeConfig.legalProfile || {};
+    
+    const customTemplate = project.legalConfig?.agreementTemplate || legalProfile.agreementTemplate;
     if (customTemplate) return customTemplate;
 
-    if (project.slug === 'snarai' || project.slug === 'narai') {
+    if (legalProfile.agreementTemplateName === 'SNARAI_AGREEMENT_TEMPLATE') {
       return SNARAI_AGREEMENT_TEMPLATE;
     }
 
@@ -89,10 +87,10 @@ export class LegalEngine {
       // 4. Unique Agreement ID (Human Readable)
       const agreementId = `AG-${project.slug.toUpperCase().substring(0, 3)}-${tokenId.padStart(5, '0')}`;
       
-      // 5. Generate Portal URL
       // We assume the portal is in the project's site under /portal (or /cert)
-      // For Narai, it's integrated in /portal
-      const baseUrl = project.website || "https://snarai.aztecaz.xyz";
+      const runtimeConfig = (project.tenantRuntimeConfig as any) || {};
+      const brandConfig = runtimeConfig.brandConfig || {};
+      const baseUrl = project.website || brandConfig.website || `https://${project.slug}.aztecaz.xyz`;
       const legalPortalUrl = `${baseUrl}/portal?wallet=${walletAddress}&cert=${agreementId}`;
 
       // 6. Update Database

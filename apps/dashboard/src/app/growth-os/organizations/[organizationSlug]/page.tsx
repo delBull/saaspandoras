@@ -14,7 +14,9 @@ import {
   Zap,
   Layers,
   Activity,
-  Plus
+  Plus,
+  Bot,
+  Terminal
 } from 'lucide-react';
 
 export default async function GrowthOverviewPage({ params }: { params: Promise<{ organizationSlug: string }> }) {
@@ -30,10 +32,10 @@ export default async function GrowthOverviewPage({ params }: { params: Promise<{
     hasHermes: true,
     enabledCapabilities: ['growth.crm', 'growth.email', 'growth.finance', 'growth.governance'],
     metrics: [
-      { id: 'prospects', title: 'Prospectos en Pipeline', value: '12', changePercent: 15, status: 'DATABASE', capability: 'growth.crm' },
-      { id: 'campaigns', title: 'Campañas Activas', value: '2', status: 'LIVE', capability: 'growth.email' },
-      { id: 'treasury', title: 'Tesorería Rastreada', value: '$11 USDC', status: 'LIVE', capability: 'growth.finance' },
-      { id: 'governance', title: 'Quórum de Gobernanza', value: '100%', status: 'DATABASE', capability: 'growth.governance' },
+      { id: 'prospects', title: 'Prospectos en Pipeline', value: '—', status: 'UNAVAILABLE' as any, changePercent: 0, capability: 'growth.crm' },
+      { id: 'campaigns', title: 'Campañas Activas', value: '—', status: 'UNAVAILABLE' as any, capability: 'growth.email' },
+      { id: 'treasury', title: 'Tesorería Rastreada', value: '—', status: 'UNAVAILABLE' as any, capability: 'growth.finance' },
+      { id: 'governance', title: 'Quórum de Gobernanza', value: '—', status: 'UNAVAILABLE' as any, capability: 'growth.governance' },
     ],
     quickActions: [
       { id: 'qa_pipeline', label: 'Pipeline Comercial & CRM', href: `/growth-os/organizations/${slugId}/pipeline`, iconName: 'Users', capability: 'growth.crm' },
@@ -44,8 +46,9 @@ export default async function GrowthOverviewPage({ params }: { params: Promise<{
     recentActivities: [],
   };
 
+  let fetched: GrowthOverviewDTO | null = null;
   try {
-    const fetched = await DashApi.growth.getOverview(orgId);
+    fetched = await DashApi.growth.getOverview(orgId);
     if (fetched) {
       overview = {
         ...overview,
@@ -56,6 +59,17 @@ export default async function GrowthOverviewPage({ params }: { params: Promise<{
     }
   } catch (err) {
     console.warn(`[GrowthOverviewPage] Live fetch notice:`, err);
+  }
+
+  // ── K11-VIGILANCE: Hermes Omnipresente real stream ──────────────────────
+  // Real data only: payment-inbox buckets + last hermes events for THIS org.
+  let vigilance: { pending: number; processedToday: number; failed: number; lastEvents: { id: string; description: string; timestamp: string; actor: string }[] } = { pending: 0, processedToday: 0, failed: 0, lastEvents: [] };
+  try {
+    const { HermesPaymentEventInbox } = await import('@/lib/pandoras/core/domains/hermes/payments/core/event-inbox');
+    const canonicalOrg = fetched?.organizationId || orgId;
+    vigilance = await HermesPaymentEventInbox.vigilanceSnapshot(String(canonicalOrg));
+  } catch (vigErr: any) {
+    console.warn(`[GrowthOverviewPage] Vigilance stream notice:`, vigErr?.message);
   }
 
   return (
@@ -171,6 +185,51 @@ export default async function GrowthOverviewPage({ params }: { params: Promise<{
               <ArrowUpRight className="w-4 h-4 text-zinc-500 group-hover:text-violet-400 transition-colors" />
             </Link>
           ))}
+        </div>
+      </div>
+
+      {/* ── HERMES OMNIPRESENTE (Active Agent Tracking) ── */}
+      <div className="rounded-3xl border border-emerald-500/20 bg-emerald-950/10 backdrop-blur-xl shadow-2xl overflow-hidden relative">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-600/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="p-5 border-b border-emerald-500/10 flex items-center justify-between bg-emerald-500/[0.02]">
+          <h2 className="font-bold text-white text-sm flex items-center gap-2 font-mono">
+            <Bot className="w-4 h-4 text-emerald-400" />
+            Hermes Omnipresente
+          </h2>
+          <span className="text-[10px] text-emerald-400 font-mono font-bold px-2 py-0.5 rounded-md border border-emerald-500/20 bg-emerald-500/10 flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            VIGILANDO
+          </span>
+          <div className="flex items-center gap-1.5">
+            <span className="text-[9px] text-amber-400/80 font-mono px-1 rounded border border-amber-500/20 bg-amber-500/5">⏳ {vigilance.pending} pend.</span>
+            <span className="text-[9px] text-emerald-400/80 font-mono px-1 rounded border border-emerald-500/20 bg-emerald-500/10">✓ {vigilance.processedToday} hoy</span>
+            {vigilance.failed > 0 && (
+              <span className="text-[9px] text-red-400/80 font-mono px-1 rounded border border-red-500/20 bg-red-500/10">✗ {vigilance.failed} fail</span>
+            )}
+          </div>
+        </div>
+        <div className="p-5">
+          <div className="flex flex-col gap-3">
+            {vigilance.lastEvents.length > 0 ? (
+              vigilance.lastEvents.map((evt) => (
+                <div key={evt.id} className="flex items-start gap-3 p-3 rounded-xl bg-black/40 border border-white/5">
+                  <Terminal className="w-4 h-4 text-zinc-500 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-xs text-emerald-300 font-mono">{evt.description}</p>
+                    <p className="text-[10px] text-zinc-500 font-mono mt-1">{new Date(evt.timestamp).toLocaleString()} · {evt.actor}</p>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="flex items-start gap-3 p-3 rounded-xl bg-black/40 border border-white/5">
+                <Terminal className="w-4 h-4 text-zinc-500 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-xs text-zinc-300 font-mono">Sin actividad de pagos registrada en las últimas 24h.</p>
+                  <p className="text-[10px] text-zinc-500 font-mono mt-1">El evento inbox de Payment Core queda a la escucha de Thirdweb y reportes SPEI.</p>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

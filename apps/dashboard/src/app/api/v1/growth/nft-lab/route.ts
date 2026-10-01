@@ -1,87 +1,35 @@
 /**
  * 🛰️ Growth OS API Boundary — NFT Lab Service
  * /api/v1/growth/nft-lab
+ *
+ * Phase 1 rewrite: reads tenant_nft_collections from DB (real, tenant-scoped).
+ * mintedSupply = COUNT from tenant_nft_issuances per collection.
+ * No hardcoded collections. Supported chains = backend-determined.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { projects, operationalIntents, daoMembers } from '@/db/schema';
+import { projects, tenantNftCollections, tenantNftIssuances } from '@/db/schema';
 import { eq, or, count } from 'drizzle-orm';
-import { getAuth } from '@/lib/auth';
 import { checkRateLimit, clientIpFromHeaders } from '@/lib/hermes/auth/rate-limiter';
-import { validatePortalSession } from '@/lib/platform/portal-auth';
-import { OrganizationSDK } from '@/lib/platform/organization-sdk';
-import { SessionTokenService } from '@/lib/hermes/auth/session-token.service';
-import { isWalletAuthorizedForTenant } from '@/lib/hermes/auth/wallet-tenant-membership';
+import { resolveCanonicalAuthSession } from '@/lib/hermes/auth/canonical-resolver';
 import { capabilityRegistry } from '@/lib/growth/capability-registry.service';
-import type { 
-  GetNftLabResponseDTO, 
-  NftCollectionDTO 
+import type {
+  GetNftLabResponseDTO,
+  NftCollectionDTO,
+  NftPurpose,
+  NftStandard,
+  NftCollectionStatus,
 } from '@/lib/dash-contracts/growth';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
-const sessionTokenService = new SessionTokenService();
-
-async function resolveTenant(req: NextRequest, requestedOrg?: string | null): Promise<{
-  organizationId: string;
-  organizationSlug: string;
-  projectId?: number;
-} | null> {
-  const cleanSlug = requestedOrg ? requestedOrg.replace(/^org_/, '').trim() : '';
-  if (!cleanSlug) return null;
-
-  // 1. Portal Session Cookie
-  const portalCookie = req.cookies.get('pandoras_portal_session')?.value;
-  if (portalCookie) {
-    const session = await validatePortalSession(portalCookie);
-    if (session) {
-      const org = await OrganizationSDK.resolve(session.projectId, session.product as any);
-      if (org) {
-        if (cleanSlug !== org.slug && cleanSlug !== org.organizationId) {
-          return null;
-        }
-        return {
-          organizationId: org.organizationId,
-          organizationSlug: org.slug,
-          projectId: session.projectId,
-        };
-      }
-    }
-  }
-
-  // 2. Web Wallet Session (Anti-IDOR)
-  const auth = await getAuth();
-  if (auth.isVerified && auth.session?.address) {
-    const isAuth = await isWalletAuthorizedForTenant(auth.session.address, cleanSlug);
-    if (!isAuth) return null;
-    return {
-      organizationId: requestedOrg || `org_${cleanSlug}`,
-      organizationSlug: cleanSlug,
-    };
-  }
-
-  // 3. Bearer Token
-  const authHeader = req.headers.get('authorization') || '';
-  const bearerToken = authHeader.replace(/^Bearer\s+/i, '').trim();
-  if (bearerToken) {
-    try {
-      const payload = sessionTokenService.verifyToken(bearerToken);
-      const tenant = payload.organizationId.toLowerCase().replace(/^org_/, '');
-      if (cleanSlug !== tenant && cleanSlug !== payload.organizationId) {
-        return null;
-      }
-      return {
-        organizationId: payload.organizationId,
-        organizationSlug: tenant,
-      };
-    } catch {
-      return null;
-    }
-  }
-
-  return null;
-}
+// Backend-determined chain list. Tenant cannot override chain without plan gate.
+const SUPPORTED_CHAINS = [
+  { id: 8453, name: 'Base Mainnet', isTestnet: false },
+  { id: 84532, name: 'Base Sepolia', isTestnet: true },
+];
 
 export async function GET(req: NextRequest) {
   try {
@@ -94,69 +42,93 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const orgParam = searchParams.get('organizationId') || '';
     const cleanSlug = orgParam.replace(/^org_/, '').trim();
+    if (!cleanSlug) {
+      return NextResponse.json({ code: 'INVALID_REQUEST', message: 'organizationId required.' }, { status: 400 });
+    }
 
-    const auth = await resolveTenant(req, orgParam);
-    if (!auth) {
+    // ── Auth: resolve canonical session (anti-IDOR, tenant isolation) ──────
+    const session = await resolveCanonicalAuthSession(req, cleanSlug);
+    if (!session) {
       return NextResponse.json({ code: 'UNAUTHENTICATED', message: 'Authentication required.' }, { status: 401 });
     }
 
-    // 🔒 Capability Assertion Enforcement (Fail-Closed)
+    // ── Capability Gate (fail-closed) ────────────────────────────────────
     try {
-      await capabilityRegistry.assertCapability(auth.organizationId, 'growth.nft');
+      await capabilityRegistry.assertCapability(session.canonicalOrgId, 'growth.nft');
     } catch (err: any) {
       return NextResponse.json({ code: 'CAPABILITY_DISABLED', message: err.message }, { status: 403 });
     }
 
+    // ── Resolve project (server-authoritative) ───────────────────────────
     const [project] = await db
-      .select()
+      .select({ id: projects.id })
       .from(projects)
-      .where(or(eq(projects.slug, cleanSlug), eq(projects.slug, orgParam)))
+      .where(or(
+        eq(projects.organizationId, session.canonicalOrgId),
+        eq(projects.slug, cleanSlug),
+      ))
       .limit(1);
 
-    const [daoCountRes] = project
-      ? await db.select({ val: count() }).from(daoMembers).where(eq(daoMembers.projectId, project.id))
-      : [{ val: 0 }];
-    const realMintedSupply = daoCountRes?.val ?? 0;
+    if (!project) {
+      // Tenant exists (auth passed) but no project yet — return empty state honestly
+      const response: GetNftLabResponseDTO = { collections: [], supportedChains: SUPPORTED_CHAINS };
+      return NextResponse.json(response);
+    }
 
-    const collections: NftCollectionDTO[] = [
-      {
-        id: 'col_participation_cert',
-        name: `${project?.title || 'Tenant'} Participation Certificates`,
-        symbol: `${(project?.slug || 'PNDR').toUpperCase().slice(0, 4)}-CERT`,
-        type: 'CERTIFICATE',
-        contractAddress: project?.contractAddress || '0x45a987c44756f40bdb2c8e87d2834fa121a897f',
-        chainId: 8453, // Base
-        totalSupply: (project as any)?.totalTokens || (project as any)?.totalShares || 1000,
-        mintedSupply: realMintedSupply,
-        royaltyFeeBps: 250, // 2.5%
-        status: 'ACTIVE',
-        metadataIpfsCid: 'bafkreicertificateproofipfs',
-        createdAt: project?.createdAt ? project.createdAt.toISOString() : new Date().toISOString(),
-      },
-      {
-        id: 'col_founder_pass',
-        name: `${project?.title || 'Tenant'} VIP Founder Club Pass`,
-        symbol: `${(project?.slug || 'PNDR').toUpperCase().slice(0, 4)}-VIP`,
-        type: 'FOUNDER_PASS',
-        chainId: 8453,
-        totalSupply: 50,
-        mintedSupply: Math.min(50, Math.floor(realMintedSupply / 2)),
-        royaltyFeeBps: 500, // 5%
-        status: 'ACTIVE',
-        createdAt: new Date().toISOString(),
-      },
-    ];
+    // ── Fetch real collections from DB ────────────────────────────────────
+    const rawCollections = await db
+      .select()
+      .from(tenantNftCollections)
+      .where(eq(tenantNftCollections.projectId, project.id))
+      .orderBy(tenantNftCollections.createdAt);
 
-    const supportedChains = [
-      { id: 8453, name: 'Base Mainnet', isTestnet: false },
-      { id: 84532, name: 'Base Sepolia', isTestnet: true },
-      { id: 137, name: 'Polygon Mainnet', isTestnet: false },
-      { id: 1, name: 'Ethereum Mainnet', isTestnet: false },
-    ];
+    // ── Mint counts per collection (real from issuances) ──────────────────
+    const mintCounts = new Map<string, number>();
+    if (rawCollections.length > 0) {
+      const counts = await db
+        .select({
+          collectionId: tenantNftIssuances.collectionId,
+          total: count(),
+        })
+        .from(tenantNftIssuances)
+        .where(
+          or(...rawCollections.map(c => eq(tenantNftIssuances.collectionId, c.id)))
+        )
+        .groupBy(tenantNftIssuances.collectionId);
+
+      for (const row of counts) {
+        mintCounts.set(row.collectionId, row.total);
+      }
+    }
+
+    const collections: NftCollectionDTO[] = rawCollections.map(col => ({
+      id: col.id,
+      organizationId: session.canonicalOrgId,
+      name: col.name,
+      symbol: col.symbol,
+      purpose: col.purpose as NftPurpose,
+      standard: col.standard as NftStandard,
+      transferable: col.transferable,
+      burnable: col.burnable,
+      expirable: col.expirable,
+      revokable: col.revokable,
+      contractAddress: col.contractAddress ?? undefined,
+      chainId: col.chainId,
+      totalSupply: col.totalSupply,
+      mintedSupply: mintCounts.get(col.id) ?? 0,
+      royaltyFeeBps: col.royaltyFeeBps ?? 250,
+      status: col.status as NftCollectionStatus,
+      governanceIntentId: col.governanceIntentId ?? undefined,
+      imageIpfsCid: col.imageIpfsCid ?? undefined,
+      metadataIpfsCid: col.metadataIpfsCid ?? undefined,
+      deployTxHash: col.deployTxHash ?? undefined,
+      config: (col.config as Record<string, unknown>) ?? {},
+      createdAt: col.createdAt.toISOString(),
+    }));
 
     const response: GetNftLabResponseDTO = {
       collections,
-      supportedChains,
+      supportedChains: SUPPORTED_CHAINS,
     };
 
     return NextResponse.json(response);
@@ -167,7 +139,8 @@ export async function GET(req: NextRequest) {
 }
 
 /**
- * Mint Intent Creation — Governed via Operational Intents (F7.6)
+ * POST — kept for backward compat: submit a mint intent for an existing collection.
+ * For creating NEW collections, use POST /api/v1/growth/nft-lab/collection.
  */
 export async function POST(req: NextRequest) {
   try {
@@ -178,40 +151,95 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { organizationId, collectionId, recipientAddress, tokenType } = body;
+    const { organizationId, collectionId, recipientWallet } = body;
 
-    const auth = await resolveTenant(req, organizationId);
-    if (!auth) {
+    const cleanSlug = (organizationId || '').replace(/^org_/, '').trim();
+    if (!cleanSlug) {
+      return NextResponse.json({ code: 'INVALID_REQUEST', message: 'organizationId required.' }, { status: 400 });
+    }
+
+    const session = await resolveCanonicalAuthSession(req, cleanSlug);
+    if (!session) {
       return NextResponse.json({ code: 'UNAUTHENTICATED', message: 'Authentication required.' }, { status: 401 });
     }
 
-    // 🔒 Capability Assertion
     try {
-      await capabilityRegistry.assertCapability(auth.organizationId, 'growth.nft');
+      await capabilityRegistry.assertCapability(session.canonicalOrgId, 'growth.nft');
     } catch (err: any) {
       return NextResponse.json({ code: 'CAPABILITY_DISABLED', message: err.message }, { status: 403 });
     }
 
-    // High risk action: creates Operational Intent for Governance Center approval
-    const generatedIntentId = `intent_nft_mint_${Date.now()}`;
-    await db.insert(operationalIntents).values({
-      id: generatedIntentId,
-      organizationId: auth.organizationId,
+    if (!collectionId || !recipientWallet) {
+      return NextResponse.json({ code: 'INVALID_REQUEST', message: 'collectionId and recipientWallet required.' }, { status: 400 });
+    }
+
+    // ── Verify collection belongs to this tenant (anti-IDOR) ─────────────
+    const [collection] = await db
+      .select({ id: tenantNftCollections.id, status: tenantNftCollections.status, projectId: tenantNftCollections.projectId })
+      .from(tenantNftCollections)
+      .where(eq(tenantNftCollections.id, collectionId))
+      .limit(1);
+
+    if (!collection) {
+      return NextResponse.json({ code: 'NOT_FOUND', message: 'Collection not found.' }, { status: 404 });
+    }
+
+    // Verify the project belongs to the authenticated tenant
+    const [project] = await db
+      .select({ id: projects.id })
+      .from(projects)
+      .where(or(
+        eq(projects.organizationId, session.canonicalOrgId),
+        eq(projects.slug, cleanSlug),
+      ))
+      .limit(1);
+
+    if (!project || collection.projectId !== project.id) {
+      return NextResponse.json({ code: 'FORBIDDEN', message: 'Collection does not belong to this tenant.' }, { status: 403 });
+    }
+
+    if (collection.status !== 'DEPLOYED') {
+      return NextResponse.json({
+        code: 'COLLECTION_NOT_DEPLOYED',
+        message: `Collection status is '${collection.status}'. Only DEPLOYED collections can be minted.`,
+      }, { status: 409 });
+    }
+
+    // ── Create issuance record + governance intent ────────────────────────
+    const { db: dbInstance } = await import('@/db');
+    const { operationalIntents, tenantNftIssuances: issuancesTable } = await import('@/db/schema');
+
+    const [issuance] = await dbInstance
+      .insert(issuancesTable)
+      .values({
+        collectionId,
+        projectId: project.id,
+        recipientWallet: recipientWallet.toLowerCase().trim(),
+        status: 'pending_mint',
+        metadata: { requestedBy: session.actorId, requestedAt: new Date().toISOString() },
+      })
+      .returning({ id: issuancesTable.id });
+
+    const intentId = `intent_nft_mint_${Date.now()}`;
+    await dbInstance.insert(operationalIntents).values({
+      id: intentId,
+      organizationId: session.canonicalOrgId,
       missionId: 'nft_issuance_mission',
       packId: 'core_nft_pack',
       packVersion: '1.0.0',
       strategyDecisionId: 'decision_mint_1',
       intentType: 'growth.nft.mint.v1',
-      objective: `Mint ${tokenType || 'Certificate'} for ${recipientAddress}`,
-      rationale: `Authorized NFT generation for collection ${collectionId}`,
+      objective: `Mint NFT from collection ${collectionId} to ${recipientWallet}`,
+      rationale: `Issuance record: ${issuance?.id}`,
       status: 'proposed',
     });
 
     return NextResponse.json({
       success: true,
-      intentId: generatedIntentId,
-      status: 'GOVERNANCE_APPROVAL_REQUIRED',
-      message: 'Intención de minteo registrada. Pendiente de aprobación en el Governance Center.',
+      issuanceId: issuance?.id,
+      governanceIntentId: intentId,
+      autoExecuted: false,
+      message: 'Solicitud de mint registrada. Pendiente de aprobación en Governance Center.',
     });
   } catch (error: any) {
     console.error('[Growth API: nft-lab POST] Error:', error);

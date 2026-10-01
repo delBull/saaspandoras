@@ -138,7 +138,7 @@ export class SignalWireTelephonyProvider implements WhatsAppProvider {
 }
 
 // Backward-compatible alias
-export const SignalWireWhatsAppProvider = SignalWireTelephonyProvider;
+export const SignalWireSMSProvider = SignalWireTelephonyProvider;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 3. WhatsApp & Channel Provider Resolver

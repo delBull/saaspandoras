@@ -6,6 +6,8 @@ export interface ResourceScope {
   canonicalOrgId: string;
   projectId?: number;
   scopeType: 'PROJECT' | 'ORGANIZATION';
+  actorId?: string; // Phase 6.5: Authoritatively bind scope to the requester's identity
+  actorRole?: string;
 }
 
 export interface GrowthReadResult {

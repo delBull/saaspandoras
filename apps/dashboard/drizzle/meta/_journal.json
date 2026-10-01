@@ -498,6 +498,48 @@
       "when": 1790715997867,
       "tag": "0070_concerned_red_wolf",
       "breakpoints": true
+    },
+    {
+      "idx": 71,
+      "version": "7",
+      "when": 1790738713966,
+      "tag": "0071_violet_stephen_strange",
+      "breakpoints": true
+    },
+    {
+      "idx": 72,
+      "version": "7",
+      "when": 1790744333985,
+      "tag": "0072_careful_klaw",
+      "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "7",
+      "when": 1790745138781,
+      "tag": "0073_sad_flatman",
+      "breakpoints": true
+    },
+    {
+      "idx": 74,
+      "version": "7",
+      "when": 1790751440271,
+      "tag": "0074_romantic_stature",
+      "breakpoints": true
+    },
+    {
+      "idx": 75,
+      "version": "7",
+      "when": 1790758546671,
+      "tag": "0075_lame_jackpot",
+      "breakpoints": true
+    },
+    {
+      "idx": 76,
+      "version": "7",
+      "when": 1790795425206,
+      "tag": "0076_eminent_prowler",
+      "breakpoints": true
     }
   ]
 }

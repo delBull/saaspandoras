@@ -3,7 +3,7 @@
  * apps/dashboard/src/lib/pandoras/core/domains/hermes/mcp/index.ts
  */
 
-import { HermesToolExecutor } from '../runtime/tool-executor';
+import type { HermesToolExecutor } from '../runtime/tool-executor';
 import { HermesMcpBridge } from './mcp-bridge';
 
 export * from './contracts';

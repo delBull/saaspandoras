@@ -16,7 +16,6 @@ export class CompatibilityProvider {
 
     const { handleTelegramMessage, handleTelegramCallback, escapeMarkdown, sendTelegramMessage } = require('../telegram-runtime/router');
     const { generateBotResponse } = require('@/lib/marketing/bot-engine');
-    const { getLivePhaseData } = require('../telegram-runtime/live-phases');
     const { mainMenuKeyboard, reunionKeyboard, buySelectorKeyboard } = require('../telegram-runtime/keyboards');
 
     let reply = 'La acción solicitada no está implementada en el Compatibility Provider.';
@@ -89,8 +88,15 @@ export class CompatibilityProvider {
       }
 
       // 3. Fallback to Free-Form LLM
-      const live = await getLivePhaseData(mappedCtx.project);
-      const activePhase = live.activePhase;
+      const { RwaIntelligenceProvider } = await import('@/lib/pandoras/core/domains/hermes/intelligence/rwa/rwa-intelligence-provider');
+      const provider = new RwaIntelligenceProvider();
+      const scope = { canonicalOrgId: mappedCtx.project.organizationId, projectId: mappedCtx.project.id, scopeType: 'PROJECT' as const, actorId: mappedCtx.chatId.toString() };
+      const phaseResult = await provider.getPhases(scope);
+      let activePhase = null;
+      if (phaseResult.status === 'SUCCESS' && phaseResult.data) {
+        activePhase = phaseResult.data.activePhase;
+      }
+      
       const liveContext = {
         title: mappedCtx.project.title || 'S\'Narai',
         slug: mappedCtx.project.slug || 'snarai',

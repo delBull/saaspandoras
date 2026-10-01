@@ -471,7 +471,7 @@ export async function executeGrowthActions(
                             fundingPercentage,
                             currentPhase: freshProject?.status === 'live' ? 'Participación Abierta' : 'Fase Privada',
                             agreementId: latestPurchase?.agreementId as string || latestPurchase?.id,
-                            agreementHash: latestPurchase?.agreementHash || (project.slug === 'snarai' ? `PENDING-${latestPurchase?.id?.slice(0, 8)}` : undefined),
+                            agreementHash: latestPurchase?.agreementHash || `PENDING-${latestPurchase?.id?.slice(0, 8)}`,
                             legalPortalUrl: latestPurchase?.legalPortalUrl || undefined
                         });
                         success = res.success;

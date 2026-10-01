@@ -18,6 +18,16 @@ export default async function ManageProjectPage({ params }: { params: Promise<{ 
     // a missing portal session — render the dashboard regardless so the sovereign suite
     // (GROWTH OS / HERMES OS access) is always reachable.
     let hasGrowthOs = false;
+    let activeModules: string[] = [];
+    try {
+        const { setupProgressService } = await import('@/lib/mesh/setup-progress.service');
+        const setupSummary = await setupProgressService.getEcosystemSetupState(slug);
+        if (setupSummary && setupSummary.modules) {
+          activeModules = setupSummary.modules.map((m: any) => m.productKey);
+        }
+    } catch (err) {
+        console.warn('[ManageProjectPage] Setup summary fetch notice:', err);
+    }
     try {
         const overview = await DashApi.controlPlane.getOverview(`org_${slug}`);
         hasGrowthOs = overview.hasHermes || true;
@@ -28,7 +38,7 @@ export default async function ManageProjectPage({ params }: { params: Promise<{ 
 
     return (
         <div className="w-full min-h-screen bg-black text-white p-4 sm:p-6 md:p-8 md:pt-10">
-            <ProjectFounderDashboard project={project} hasGrowthOs={hasGrowthOs} />
+            <ProjectFounderDashboard project={project} hasGrowthOs={hasGrowthOs} activeModules={activeModules} />
         </div>
     );
 }

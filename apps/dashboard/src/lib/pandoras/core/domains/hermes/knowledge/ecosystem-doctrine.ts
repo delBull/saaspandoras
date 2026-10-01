@@ -153,7 +153,7 @@ export const PANDORAS_ECOSYSTEM_CLAIMS: EcosystemDoctrineClaim[] = [
     disclosureClearance: 'TENANT_RESTRICTED',
     targetSurface: 'DASH_PANDORAS',
     subArea: 'Growth OS & Channel Mesh (/nexus/developers)',
-    canonicalAssertion: "La vertical de Growth OS y Developer Hub (/nexus/developers) coordina el Hermes Channel Mesh (WhatsApp vía SignalWire, Telegram y Discord HITL) y expone el SDK A2A para interconectar agentes externos mediante autenticación HMAC L1 y firmas EIP-191 L2.",
+    canonicalAssertion: "La vertical de Growth OS y Developer Hub (/nexus/developers) coordina el Hermes Channel Mesh (WhatsApp vía Meta Graph API (HQ) y SMS vía SignalWire (Tenants), Telegram y Discord HITL) y expone el SDK A2A para interconectar agentes externos mediante autenticación HMAC L1 y firmas EIP-191 L2.",
     permittedPhrasings: [
       'Developer Hub y SDK A2A en /nexus/developers',
       'Hermes Channel Mesh para WhatsApp, Telegram y Discord',
@@ -161,7 +161,7 @@ export const PANDORAS_ECOSYSTEM_CLAIMS: EcosystemDoctrineClaim[] = [
     ],
     provenance: computeProvenance(
       'nexus-growth-mesh',
-      "La vertical de Growth OS y Developer Hub (/nexus/developers) coordina el Hermes Channel Mesh (WhatsApp vía SignalWire, Telegram y Discord HITL) y expone el SDK A2A para interconectar agentes externos mediante autenticación HMAC L1 y firmas EIP-191 L2."
+      "La vertical de Growth OS y Developer Hub (/nexus/developers) coordina el Hermes Channel Mesh (WhatsApp vía Meta Graph API (HQ) y SMS vía SignalWire (Tenants), Telegram y Discord HITL) y expone el SDK A2A para interconectar agentes externos mediante autenticación HMAC L1 y firmas EIP-191 L2."
     ),
   },
   {

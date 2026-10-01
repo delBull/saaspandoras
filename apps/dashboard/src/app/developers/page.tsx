@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Terminal, 
@@ -41,6 +42,9 @@ export default function DevelopersPage() {
   const [loading, setLoading] = useState(true);
   const [loadingKey, setLoadingKey] = useState(false);
   const [showSelector, setShowSelector] = useState(false);
+  const [showBetaModal, setShowBetaModal] = useState(false);
+  const [discordHandle, setDiscordHandle] = useState('');
+  const [submittingBeta, setSubmittingBeta] = useState(false);
 
   useEffect(() => {
     fetchProjects();
@@ -87,6 +91,37 @@ export default function DevelopersPage() {
       console.error('Error fetching API key:', error);
     } finally {
       setLoadingKey(false);
+    }
+  };
+
+  
+  const handleBetaRequest = async () => {
+    if (!discordHandle.trim()) {
+      toast.error('Por favor ingresa tu usuario de Discord');
+      return;
+    }
+    setSubmittingBeta(true);
+    try {
+      const res = await fetch('/api/developers/beta-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          discordHandle, 
+          projectId: selectedProject?.slug || 'none',
+          email: 'admin@' + (selectedProject?.slug || 'unknown') + '.com'
+        })
+      });
+      if (res.ok) {
+        toast.success('¡Solicitud enviada! Revisa Discord pronto.');
+        setShowBetaModal(false);
+        setDiscordHandle('');
+      } else {
+        toast.error('Hubo un error al enviar tu solicitud.');
+      }
+    } catch (e) {
+      toast.error('Hubo un error al enviar tu solicitud.');
+    } finally {
+      setSubmittingBeta(false);
     }
   };
 
@@ -191,7 +226,7 @@ if (state.knowledgeCenter?.isActive) {
       version: 'v2.2',
       description: 'Deploy ERC-20, ERC-721, or ERC-1155 directly from the dashboard.',
       icon: <Coins className="w-6 h-6 text-emerald-400" />,
-      status: 'Research',
+      status: 'Coming Soon',
       color: 'emerald'
     },
     {
@@ -215,7 +250,7 @@ if (state.knowledgeCenter?.isActive) {
       version: 'v3.2',
       description: 'Unified dashboard for automated user journey mapping and high-intent alerts.',
       icon: <BarChart3 className="w-6 h-6 text-pink-400" />,
-      status: 'Research',
+      status: 'Coming Soon',
       color: 'pink'
     },
     {
@@ -609,19 +644,81 @@ if (state.knowledgeCenter?.isActive) {
             <div className="max-w-2xl space-y-6 relative z-10">
               <h3 className="text-3xl md:text-4xl font-bold text-white">¿Construyendo algo ambicioso?</h3>
               <p className="text-lg text-zinc-400 font-light">
-                Nuestro equipo de **Core Engine** está aceptando socios beta para las nuevas APIs de Minting y Gobernanza. Únete al grupo de pioneros.
+                Nuestro equipo de **Core Engine** está aceptando socios beta para las nuevas APIs de Tokenización y Gobernanza. Únete al canal #developers-beta en nuestro Discord para obtener early access y colaborar directamente con nosotros.
               </p>
               <div className="flex flex-wrap gap-4 pt-4">
-                <Button className="bg-indigo-600 hover:bg-indigo-700 h-12 px-10 rounded-2xl font-bold shadow-lg shadow-indigo-500/20">
-                  Join Beta Access
+                <Button onClick={() => setShowBetaModal(true)} className="bg-indigo-600 hover:bg-indigo-700 h-12 px-10 rounded-2xl font-bold shadow-lg shadow-indigo-500/20">
+                  Request Beta Access
                 </Button>
-                <Button variant="ghost" className="h-12 px-8 rounded-2xl font-bold text-zinc-400 hover:text-white hover:bg-white/5">
-                  View Full API Changelog
+                <Button variant="ghost" asChild className="h-12 px-8 rounded-2xl font-bold text-zinc-400 hover:text-white hover:bg-white/5">
+                  <Link href="/developers/docs">Ver Documentación de API</Link>
                 </Button>
               </div>
             </div>
           </div>
         </section>
+      
+      {/* Beta Access Modal */}
+      <AnimatePresence>
+        {showBetaModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }} 
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              onClick={() => setShowBetaModal(false)}
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }} 
+              animate={{ opacity: 1, scale: 1, y: 0 }} 
+              exit={{ opacity: 0, scale: 0.95, y: 20 }} 
+              className="relative w-full max-w-md bg-zinc-900 border border-white/10 p-8 rounded-3xl shadow-2xl overflow-hidden"
+            >
+              <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/20 blur-[50px] rounded-full translate-x-1/2 -translate-y-1/2 pointer-events-none" />
+              
+              <h3 className="text-2xl font-bold text-white mb-2">Únete a la Beta</h3>
+              <p className="text-zinc-400 text-sm mb-6">
+                Ingresa tu usuario de Discord. Te agregaremos al canal privado <span className="text-indigo-400 font-mono">#developers-beta</span> para darte soporte directo.
+              </p>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2 block">
+                    Discord Username
+                  </label>
+                  <input 
+                    type="text" 
+                    placeholder="ej. marco123 o marco#1234" 
+                    value={discordHandle}
+                    onChange={(e) => setDiscordHandle(e.target.value)}
+                    className="w-full bg-zinc-950 border border-white/10 rounded-xl px-4 py-3 text-white font-mono text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                  />
+                </div>
+                
+                <div className="flex gap-3 pt-4">
+                  <Button 
+                    variant="ghost" 
+                    onClick={() => setShowBetaModal(false)}
+                    className="flex-1 rounded-xl text-zinc-400 hover:text-white"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button 
+                    onClick={handleBetaRequest}
+                    disabled={submittingBeta}
+                    className="flex-1 rounded-xl bg-indigo-600 hover:bg-indigo-700 font-bold"
+                  >
+                    {submittingBeta ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                    Enviar Request
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       </div>
     </div>
   );

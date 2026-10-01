@@ -32,109 +32,115 @@ export default async function PortalMarketAttackPage({ params }: { params: Promi
   }
 
   return (
-    <div className="w-full max-w-6xl mx-auto space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="w-full max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-white tracking-tight flex items-center gap-2">
-            <Target className="w-6 h-6 text-emerald-400" /> Market Attack
+          <h1 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
+            <Target className="w-8 h-8 text-emerald-400" /> Campañas & Market Attack
           </h1>
-          <p className="text-sm text-zinc-400 mt-1">
-            Deploy demand drafts and track campaign performance for {portalCtx.organization.name}.
+          <p className="text-sm text-zinc-400 mt-2 max-w-2xl leading-relaxed">
+            Despliega borradores de demanda, automatizaciones y rastrea el rendimiento de campañas para {portalCtx.organization.name}.
           </p>
         </div>
         
-        <button className="flex items-center gap-2 px-4 py-2 bg-emerald-500 text-black font-semibold rounded-xl text-sm hover:bg-emerald-400 transition-colors">
-          <Plus size={16} /> New Draft
+        <button className="flex items-center gap-2 px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-black font-bold rounded-xl text-sm transition-all shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_25px_rgba(16,185,129,0.5)]">
+          <Plus size={18} /> Nuevo Draft
         </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
          {/* ACTIVE CAMPAIGNS SUMMARY */}
          <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-4 gap-4">
-            <GlassCard className="p-5 flex flex-col gap-3">
-               <div className="flex items-center gap-2 text-zinc-400 text-sm font-medium">
-                  <Activity size={16} className="text-emerald-400" /> Total Active
+            <div className="p-6 flex flex-col gap-3 rounded-3xl border border-white/5 bg-[#09090D]/80 backdrop-blur-md shadow-xl relative overflow-hidden">
+               <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-600/10 rounded-full blur-2xl pointer-events-none" />
+               <div className="flex items-center gap-2 text-zinc-400 text-sm font-bold tracking-wide uppercase relative z-10">
+                  <Activity size={16} className="text-emerald-400" /> Total Activas
                </div>
-               <div className="text-3xl font-bold text-white">
+               <div className="text-4xl font-black text-white tracking-tighter relative z-10">
                   {performance.filter(p => p.status === 'active').length}
                </div>
-            </GlassCard>
-            <GlassCard className="p-5 flex flex-col gap-3">
-               <div className="flex items-center gap-2 text-zinc-400 text-sm font-medium">
+            </div>
+            <div className="p-6 flex flex-col gap-3 rounded-3xl border border-white/5 bg-[#09090D]/80 backdrop-blur-md shadow-xl relative overflow-hidden">
+               <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-600/10 rounded-full blur-2xl pointer-events-none" />
+               <div className="flex items-center gap-2 text-zinc-400 text-sm font-bold tracking-wide uppercase relative z-10">
                   <Users size={16} className="text-emerald-400" /> Total Leads
                </div>
-               <div className="text-3xl font-bold text-white">
+               <div className="text-4xl font-black text-white tracking-tighter relative z-10">
                   {performance.reduce((acc, curr) => acc + (curr.leads || 0), 0)}
                </div>
-            </GlassCard>
-            <GlassCard className="p-5 flex flex-col gap-3 md:col-span-2">
-               <div className="flex items-center gap-2 text-zinc-400 text-sm font-medium">
+            </div>
+            <div className="p-6 flex flex-col gap-3 rounded-3xl border border-emerald-500/20 bg-emerald-950/10 backdrop-blur-md shadow-xl md:col-span-2 relative overflow-hidden">
+               <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+               <div className="flex items-center gap-2 text-zinc-400 text-sm font-bold tracking-wide uppercase relative z-10">
                   <TrendingUp size={16} className="text-emerald-400" /> Top Performer Angle
                </div>
-               <div className="text-xl font-bold text-emerald-400 truncate">
+               <div className="text-2xl font-black text-emerald-400 truncate relative z-10 tracking-tight">
                   {performance.length > 0 ? performance[0].angle || 'Direct Response' : 'N/A'}
                </div>
-               <div className="text-xs text-zinc-500 font-mono">
-                  Score: {performance.length > 0 ? performance[0].score : '0.0'}
+               <div className="text-xs text-zinc-500 font-mono relative z-10">
+                  Score de Conversión: <span className="text-white font-bold">{performance.length > 0 ? performance[0].score : '0.0'}</span>
                </div>
-            </GlassCard>
+            </div>
          </div>
 
          {/* PERFORMANCE LIST */}
          <div className="lg:col-span-3">
-            <GlassCard className="p-1">
+            <div className="rounded-3xl border border-white/5 bg-[#09090D]/80 backdrop-blur-xl shadow-2xl overflow-hidden">
                <div className="overflow-x-auto">
                   <table className="w-full text-left text-sm whitespace-nowrap">
-                     <thead className="text-xs text-zinc-500 uppercase bg-white/[0.02] border-b border-white/5">
+                     <thead className="text-[10px] font-bold tracking-wider text-zinc-500 uppercase bg-white/[0.02] border-b border-white/5">
                         <tr>
-                           <th className="px-6 py-4 font-medium">Campaign</th>
-                           <th className="px-6 py-4 font-medium">Strategy DNA</th>
-                           <th className="px-6 py-4 font-medium">Platform</th>
-                           <th className="px-6 py-4 font-medium">Performance (Leads/Purchases)</th>
-                           <th className="px-6 py-4 font-medium text-right">Score</th>
+                           <th className="px-6 py-5">Campaña</th>
+                           <th className="px-6 py-5">DNA Estratégico</th>
+                           <th className="px-6 py-5">Plataforma</th>
+                           <th className="px-6 py-5">Rendimiento (Leads / Compras)</th>
+                           <th className="px-6 py-5 text-right">Hermes Score</th>
                         </tr>
                      </thead>
                      <tbody className="divide-y divide-white/5">
                         {performance.length === 0 ? (
                            <tr>
-                              <td colSpan={5} className="px-6 py-8 text-center text-zinc-500">
-                                 No campaigns launched yet. Create a demand draft to begin.
+                              <td colSpan={5} className="px-6 py-12 text-center text-zinc-500">
+                                 <div className="flex flex-col items-center justify-center gap-3">
+                                   <Target className="w-8 h-8 text-zinc-700" />
+                                   <p>No hay campañas lanzadas aún. Crea un draft de demanda para comenzar.</p>
+                                 </div>
                               </td>
                            </tr>
                         ) : (
                            performance.map((c) => (
                               <tr key={c.id} className="hover:bg-white/[0.02] transition-colors group cursor-pointer">
-                                 <td className="px-6 py-4">
+                                 <td className="px-6 py-5">
                                     <div className="flex items-center gap-3">
-                                       <div className={`w-2 h-2 rounded-full ${c.status === 'active' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-zinc-600'}`} />
-                                       <span className="font-medium text-white">{c.name}</span>
+                                       <div className={`w-2 h-2 rounded-full ${c.status === 'active' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse' : 'bg-zinc-600'}`} />
+                                       <span className="font-bold text-white group-hover:text-emerald-400 transition-colors">{c.name}</span>
                                     </div>
                                  </td>
-                                 <td className="px-6 py-4">
-                                    <div className="flex flex-col gap-1">
-                                       <span className="text-xs text-zinc-300">Angle: {c.angle || 'direct'}</span>
-                                       <span className="text-[10px] text-zinc-500">Emotion: {c.emotion || 'neutral'}</span>
+                                 <td className="px-6 py-5">
+                                    <div className="flex flex-col gap-1.5">
+                                       <span className="text-xs text-zinc-300 font-mono bg-white/5 px-2 py-0.5 rounded-md w-fit border border-white/10">Ángulo: {c.angle || 'direct'}</span>
+                                       <span className="text-[10px] text-zinc-500 font-mono uppercase">Emoción: {c.emotion || 'neutral'}</span>
                                     </div>
                                  </td>
-                                 <td className="px-6 py-4">
-                                    <span className="px-2 py-1 bg-white/5 rounded-md text-xs font-mono text-zinc-400 capitalize">
+                                 <td className="px-6 py-5">
+                                    <span className="px-2.5 py-1 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-zinc-400 capitalize">
                                        {c.platform || 'Multi'}
                                     </span>
                                  </td>
-                                 <td className="px-6 py-4">
-                                    <div className="flex items-center gap-4">
+                                 <td className="px-6 py-5">
+                                    <div className="flex items-center gap-6">
                                        <div className="flex flex-col">
-                                          <span className="text-xs text-zinc-500">Leads</span>
-                                          <span className="font-mono text-white">{c.leads || 0}</span>
+                                          <span className="text-[10px] uppercase font-bold text-zinc-500">Leads</span>
+                                          <span className="font-mono text-white text-base">{c.leads || 0}</span>
                                        </div>
                                        <div className="flex flex-col">
-                                          <span className="text-xs text-zinc-500">Purchases</span>
-                                          <span className="font-mono text-emerald-400">{c.purchases || 0}</span>
+                                          <span className="text-[10px] uppercase font-bold text-zinc-500">Compras</span>
+                                          <span className="font-mono text-emerald-400 text-base">{c.purchases || 0}</span>
                                        </div>
                                     </div>
                                  </td>
-                                 <td className="px-6 py-4 text-right">
-                                    <div className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono text-xs">
+                                 <td className="px-6 py-5 text-right">
+                                    <div className="inline-flex items-center justify-center px-3.5 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono text-sm font-bold shadow-sm">
                                        {Number(c.score || 0).toFixed(1)}
                                     </div>
                                  </td>
@@ -144,7 +150,7 @@ export default async function PortalMarketAttackPage({ params }: { params: Promi
                      </tbody>
                   </table>
                </div>
-            </GlassCard>
+            </div>
          </div>
       </div>
     </div>

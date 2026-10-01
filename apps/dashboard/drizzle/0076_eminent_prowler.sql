@@ -1,0 +1,1 @@
+ALTER TYPE "public"."nft_issuance_status" ADD VALUE 'mint_failed' BEFORE 'expired';

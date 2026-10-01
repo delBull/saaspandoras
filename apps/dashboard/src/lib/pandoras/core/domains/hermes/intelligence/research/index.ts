@@ -3,7 +3,7 @@
  * apps/dashboard/src/lib/pandoras/core/domains/hermes/intelligence/research/index.ts
  */
 
-import { HermesToolExecutor } from '../../runtime/tool-executor';
+import type { HermesToolExecutor } from '../../runtime/tool-executor';
 import { AutonomousResearchEngine } from './autonomous-research-engine';
 
 export * from './contracts';

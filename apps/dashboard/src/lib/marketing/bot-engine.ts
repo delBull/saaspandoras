@@ -14,39 +14,98 @@ export async function generateBotResponse(context: {
   projectSlug?: string;
   customSystemPrompt?: string;
 }) {
-  const { projectName = 'S\'Narai', userMessage, projectContext, botInstructions, chatId, customSystemPrompt } = context;
+  const { projectName, userMessage, projectContext, botInstructions, chatId, customSystemPrompt } = context;
 
   // Hermes Core Intelligence Engine Integration (Phase 1)
   const { KnowledgePackLoader } = await import('@/lib/hermes/knowledge-pack');
   const { HermesDecisionEngine } = await import('@/lib/hermes/decision-engine');
-  const { dataProviderSingleton } = await import('@/lib/hermes/data-provider');
-  const { HermesSoulRegistry } = await import('@/lib/hermes/soul/snarai-soul');
+  const { HermesSoulRegistry } = await import('@/lib/hermes/soul/snarai-soul'); // TODO: Rename to generic soul registry later
   const { CommercialCloserService } = await import('@/lib/hermes/revenue-closer');
+  const { RwaIntelligenceProvider } = await import('@/lib/pandoras/core/domains/hermes/intelligence/rwa/rwa-intelligence-provider');
+  const { db } = await import('@/db');
+  const { projects } = await import('@/db/schema');
+  const { eq } = await import('drizzle-orm');
   
-  const projectSlug = context.projectSlug || projectContext?.slug || projectName || 'snarai';
-  const pack = await KnowledgePackLoader.getPack(projectSlug, projectContext);
+  const projectSlug = context.projectSlug || projectContext?.slug || projectName;
+  if (!projectSlug || projectSlug === 'undefined') {
+    throw new Error('Hermes OS Bot Engine requires a valid projectSlug to establish tenant context.');
+  }
+  const resolvedSlug = projectSlug;
+
+  // Internal fetch of manifest config from DB to avoid HTTP loopbacks and resolve Canonical ResourceScope
+  let dbProject: any = null;
+  let dbConfig: any = {};
+  let resourceScope: any = null;
+  try {
+    const projResult = await db.select().from(projects).where(eq(projects.slug, resolvedSlug)).limit(1);
+    if (projResult.length > 0) {
+      dbProject = projResult[0];
+
+      // COMMERCIAL GATE: Ensure tenant has an active Hermes license
+      const { installedProducts } = await import('@/db/schema');
+      const { and } = await import('drizzle-orm');
+      const hermesInstall = await db.select().from(installedProducts)
+        .where(
+          and(
+            eq(installedProducts.projectId, dbProject.id),
+            eq(installedProducts.productFamily, 'HERMES')
+          )
+        ).limit(1);
+
+      if (hermesInstall.length === 0 || (hermesInstall[0]!.status !== 'active' && hermesInstall[0]!.status !== 'trial')) {
+        throw new Error(`HERMES_SUSPENDED: Tenant ${resolvedSlug} does not have an active Hermes license.`);
+      }
+
+      dbConfig = dbProject.tenantRuntimeConfig || {};
+      resourceScope = {
+        canonicalOrgId: dbProject.organizationId,
+        projectId: dbProject.id,
+        scopeType: 'PROJECT',
+        actorId: chatId
+      };
+    } else if (resolvedSlug === 'sandbox') {
+      // Sandbox operates without a DB tenant context
+    } else {
+      throw new Error(`Tenant context not found for slug: ${resolvedSlug}`);
+    }
+  } catch (dbErr: any) {
+    console.error('[BotEngine] Tenant resolution or commercial gate FAIL CLOSED:', dbErr);
+    if (dbErr.message?.includes('HERMES_SUSPENDED')) {
+      return {
+        action: 'ANSWER',
+        rationale: 'COMMERCIAL_GATE_REJECTED',
+        replyText: 'El asistente Hermes está temporalmente inactivo para este proyecto.',
+        payload: ''
+      };
+    }
+    throw new Error('UNAVAILABLE: Tenant resolution failed.');
+  }
+
+  const pack = await KnowledgePackLoader.getPack(resolvedSlug, projectContext);
 
   // Resolve Soul for this project (identity, language policy, canonical URLs)
-  const soul = HermesSoulRegistry.getSoul(projectSlug);
+  const soul = HermesSoulRegistry.getSoul(resolvedSlug);
   const soulPrompt = soul ? HermesSoulRegistry.buildSoulPrompt(soul) : '';
   
-  // Resolve real-time project state using Universal DataProvider (skip if sandbox)
-  let resolvedState = null;
-  if (projectSlug !== 'sandbox') {
-    resolvedState = await dataProviderSingleton.getProjectState(projectSlug);
+  // Resolve real-time project state using RwaIntelligenceProvider instead of direct data provider
+  let liveContext: any = projectContext;
+  if (resolvedSlug !== 'sandbox' && resourceScope) {
+    const provider = new RwaIntelligenceProvider();
+    const result = await provider.getProjectState(resourceScope, { slug: resolvedSlug });
+    if (result.status === 'SUCCESS' && result.data) {
+      liveContext = {
+        ...projectContext,
+        title: result.data.title,
+        slug: result.data.slug,
+        currentPrice: result.data.currentPrice,
+        phaseName: result.data.phaseName,
+        availableUnits: result.data.availableUnits,
+        progressPercentage: result.data.progressPercentage,
+        treasury: result.data.treasury,
+        holdersCount: result.data.holdersCount,
+      };
+    }
   }
-  
-  const liveContext = resolvedState ? {
-    title: resolvedState.title,
-    slug: resolvedState.slug,
-    currentPrice: resolvedState.metadata?.tokenPrice,
-    phaseName: resolvedState.metadata?.phaseName,
-    availableUnits: resolvedState.metadata?.availableUnits,
-    progressPercentage: resolvedState.metadata?.progressPercentage,
-    treasury: resolvedState.treasuryDisplay,
-    holdersCount: resolvedState.holdersCount,
-    ...projectContext
-  } : projectContext;
   
   const customerMemory = {
     leadId: chatId || 'guest-session',
@@ -58,7 +117,7 @@ export async function generateBotResponse(context: {
   };
 
   const { mission, recommendedAction } = await HermesDecisionEngine.evaluateNextMission(
-    projectSlug,
+    resolvedSlug,
     customerMemory,
     'ENGAGED',
     userMessage
@@ -68,7 +127,7 @@ export async function generateBotResponse(context: {
 
   // Evaluate commercial closer signals & doctrine
   const closerResult = await CommercialCloserService.evaluateInbound({
-    tenantSlug: projectSlug,
+    tenantSlug: resolvedSlug,
     leadId: chatId || 'anonymous_telegram',
     messageText: userMessage,
     channel: 'telegram',
@@ -141,31 +200,14 @@ ${botInstructions || 'Actuar con amabilidad y redirigir al portal oficial para a
   ];
 
   try {
-    const resolvedSlug = (projectSlug && projectSlug !== 'undefined') ? projectSlug : 'snarai';
-    const isSnarai = resolvedSlug === 'snarai';
-
-    // Internal fetch of manifest config from DB to avoid HTTP loopbacks
-    let dbConfig: any = {};
-    try {
-      const { db } = await import('@/db');
-      const { projects } = await import('@/db/schema');
-      const { eq } = await import('drizzle-orm');
-      
-      const dbProject = await db.select().from(projects).where(eq(projects.slug, resolvedSlug)).limit(1);
-      dbConfig = (dbProject.length > 0 && dbProject[0]?.tenantRuntimeConfig) ? dbProject[0].tenantRuntimeConfig : {};
-    } catch (dbErr) {
-      console.warn('[BotEngine] DB lookup skipped or failed, falling back to local KnowledgePack/Soul:', dbErr);
-    }
     
     const apiKey = dbConfig?.providers?.llm?.apiKeyRef 
-      || (isSnarai ? process.env.OLLAMA_SNARAI_API_KEY : null)
       || process.env.OLLAMA_API_KEY 
       || process.env.GROQ_API_KEY
       || process.env.OPENAI_API_KEY
       || 'ollama-key';
       
     let rawBaseUrl = dbConfig?.providers?.llm?.baseUrl 
-      || (isSnarai ? process.env.OLLAMA_SNARAI_BASE_URL : null)
       || process.env.OLLAMA_BASE_URL 
       || process.env.OLLAMA_HOST;
 
@@ -180,7 +222,6 @@ ${botInstructions || 'Actuar con amabilidad y redirigir al portal oficial para a
     }
       
     const aiModel = dbConfig?.providers?.llm?.model 
-      || (isSnarai ? process.env.OLLAMA_SNARAI_MODEL : null)
       || process.env.OLLAMA_MODEL 
       || (process.env.GROQ_API_KEY ? 'llama-3.3-70b-versatile' : 'gpt-4o-mini');
 

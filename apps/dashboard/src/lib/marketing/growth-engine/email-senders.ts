@@ -225,18 +225,16 @@ function resolveNicheContext(context: {
   let projectName = context.projectName || "Pandora";
   let projectSlug = context.projectSlug || "pandoras";
 
-  // 🛡️ [Rebranding Guard] Force Narai -> S'Narai
-  if (projectName.toLowerCase().includes('narai') || projectSlug.toLowerCase() === 'narai') {
-    projectName = "S'Narai";
-    projectSlug = "snarai";
-  }
+  // Production Truth: removed "Rebranding Guard" narai→S'Narai hardcode.
+  // Tenant identity/branding comes from context/businessCategory only — never
+  // from a name-mangling rule in code.
 
   const category = context.businessCategory?.toLowerCase() || '';
   
   // Niche mapping logic (Scalable)
   let niche = 'tech_startup';
   
-  if (category.includes('real_estate') || category.includes('inmobiliario') || projectName.toLowerCase().includes('snarai')) {
+  if (category.includes('real_estate') || category.includes('inmobiliario')) {
     niche = 'real_estate';
   } else if (category.includes('growth_os') || category.includes('marketing') || projectName.toLowerCase().includes('growth os')) {
     niche = 'growth_os';
@@ -1045,7 +1043,13 @@ export async function sendCheckoutRecoveryEmail(context: {
 
   const dashboardBase = isProd ? 'https://dash.pandoras.finance' : 'https://staging.dash.pandoras.finance';
   const subject = `Tu asignación en ${context.projectName} expira pronto`;
-  const ctaUrl = `${dashboardBase}/pay/${context.projectSlug || 'snarai'}/default`;
+  // Production Truth: no snarai fallback — resolve the slug from context or
+  // skip the nudge (never route a payment CTA to another tenant).
+  if (!context.projectSlug) {
+    console.warn('[EmailSender] Expiry nudge skipped: projectSlug missing — refusing to guess tenant.');
+    return { success: false, skipped: true };
+  }
+  const ctaUrl = `${dashboardBase}/pay/${context.projectSlug}/default`;
 
   try {
     const data = await resend.emails.send({

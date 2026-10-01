@@ -22,7 +22,9 @@ import {
   Layers,
   CheckCircle2,
   XCircle,
-  Clock
+  Clock,
+  ArrowUpCircle,
+  Infinity as InfinityIcon
 } from 'lucide-react';
 import { usePlatformInspector } from '../inspector/PlatformInspectorContext';
 import { AdminTenantLensDTO } from '@/lib/dash-contracts/admin';
@@ -38,6 +40,7 @@ export function AdminTenantsView({ tenants, actorRole = 'VIEWER' }: AdminTenants
   const [searchQuery, setSearchQuery] = useState('');
   const [productFilter, setProductFilter] = useState<'ALL' | 'hermes' | 'growth' | 'rwa'>('ALL');
   const [stateFilter, setStateFilter] = useState<string>('ALL');
+  const [upgradingId, setUpgradingId] = useState<string | null>(null);
 
   const isAdmin = actorRole === 'SUPER_ADMIN' || actorRole === 'ADMIN';
 
@@ -103,6 +106,55 @@ export function AdminTenantsView({ tenants, actorRole = 'VIEWER' }: AdminTenants
       actionHref: `/ecosystem/${t.slug}`,
       actionLabel: 'Abrir Mesh Hub del Tenant ↗',
     });
+  };
+
+  const handleUpgrade = async (e: React.MouseEvent, t: AdminTenantLensDTO) => {
+    e.stopPropagation();
+    if (!isAdmin) return;
+    
+    setUpgradingId(t.id);
+    try {
+      const res = await fetch(`/api/admin/projects/${t.slug}/plan`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan: 'enterprise', status: 'active' })
+      });
+      if (res.ok) {
+        alert(`Plan de ${t.name} actualizado a ENTERPRISE exitosamente. (Recarga la página para ver los cambios).`);
+      } else {
+        alert('Error al actualizar plan.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error de conexión al actualizar plan.');
+    } finally {
+      setUpgradingId(null);
+    }
+  };
+
+  const handleFullAccess = async (e: React.MouseEvent, t: AdminTenantLensDTO) => {
+    e.stopPropagation();
+    if (!isAdmin) return;
+
+    setUpgradingId(t.id);
+    try {
+      const res = await fetch(`/api/admin/projects/${t.slug}/full-access`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
+        const installed = (data.results || []).map((r: any) => `${r.family}:${r.action}`).join(', ');
+        alert(`✅ FULL ACCESS concedido a ${t.name}. Familias: ${installed}. (Sin cobro — pase directo). Recarga para ver cambios.`);
+      } else {
+        alert(`Error: ${data.message || res.statusText}`);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error de conexión al conceder Full Access.');
+    } finally {
+      setUpgradingId(null);
+    }
   };
 
   return (
@@ -306,10 +358,32 @@ export function AdminTenantsView({ tenants, actorRole = 'VIEWER' }: AdminTenants
 
                     {/* Action */}
                     <td className="py-4 px-5 text-right">
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/[0.04] group-hover:bg-purple-600/20 text-zinc-400 group-hover:text-purple-300 border border-white/[0.06] group-hover:border-purple-500/30 text-[11px] font-medium transition-all">
-                        <span>Lens</span>
-                        <ChevronRight className="w-3.5 h-3.5" />
-                      </span>
+                      <div className="flex items-center justify-end gap-2">
+                        {isAdmin && (
+                          <>
+                            <button
+                              onClick={(e) => handleUpgrade(e, t)}
+                              disabled={upgradingId === t.id}
+                              title="Upgrade to Enterprise"
+                              className="inline-flex items-center justify-center p-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 transition-colors border border-emerald-500/20"
+                            >
+                              <ArrowUpCircle className={`w-4 h-4 ${upgradingId === t.id ? 'animate-spin' : ''}`} />
+                            </button>
+                            <button
+                              onClick={(e) => handleFullAccess(e, t)}
+                              disabled={upgradingId === t.id}
+                              title="Full Access: todas las verticales + NFT Lab, sin cobro (pase directo de Super Admin)"
+                              className="inline-flex items-center justify-center p-1.5 rounded-lg bg-violet-500/10 hover:bg-violet-500/25 text-violet-400 transition-colors border border-violet-500/25"
+                            >
+                              <InfinityIcon className={`w-4 h-4 ${upgradingId === t.id ? 'animate-pulse' : ''}`} />
+                            </button>
+                          </>
+                        )}
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/[0.04] group-hover:bg-purple-600/20 text-zinc-400 group-hover:text-purple-300 border border-white/[0.06] group-hover:border-purple-500/30 text-[11px] font-medium transition-all">
+                          <span>Lens</span>
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        </span>
+                      </div>
                     </td>
                   </tr>
                 ))

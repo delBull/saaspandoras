@@ -1,10 +1,13 @@
+import { db } from "@/db";
+import { projects } from "@/db/schema";
+import { eq } from "drizzle-orm";
 import { sendEmail } from "./client";
 
 export interface AmbassadorWelcomeProps {
     ambassadorName: string;
     ambassadorEmail: string;
     referralCode: string;
-    origin: string; // "pandoras" | "snarai"
+    origin: string; // project slug
 }
 
 export async function sendAmbassadorWelcomeEmail({
@@ -14,15 +17,22 @@ export async function sendAmbassadorWelcomeEmail({
     origin
 }: AmbassadorWelcomeProps) {
     try {
-        const projectName = origin === "snarai" ? "S'Narai" : "Pandoras Growth OS";
-        const roleName = origin === "snarai" ? "Gestor Patrimonial" : "Ambassador";
+        const [project] = await db.select().from(projects).where(eq(projects.slug, origin)).limit(1);
+        const runtimeConfig = project?.tenantRuntimeConfig as any;
+        const brandConfig = runtimeConfig?.brandConfig || {};
+        
+        const projectName = brandConfig.name || (origin === "snarai" ? "S'Narai" : "Pandoras Growth OS");
+        const roleName = brandConfig.roleName || (origin === "snarai" ? "Gestor Patrimonial" : "Ambassador");
+        const primaryColor = brandConfig.color || "#10b981";
+        const bgColor = brandConfig.background || "#0f172a";
+        const hubUrl = brandConfig.hubUrl || `https://${origin}.aztecaz.xyz/gestores/portal`;
         
         const subject = `¡Bienvenido como ${roleName} oficial de ${projectName}! 🚀`;
         
         const htmlContent = `
             <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f4f4f5; padding: 40px 0;">
                 <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);">
-                    <div style="background-color: ${origin === 'snarai' ? '#0f172a' : '#000000'}; padding: 40px 20px; text-align: center;">
+                    <div style="background-color: ${bgColor}; padding: 40px 20px; text-align: center;">
                         <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600;">${projectName}</h1>
                         <p style="color: #94a3b8; margin-top: 10px; font-size: 16px;">Programa de ${roleName}s Oficial</p>
                     </div>
@@ -51,9 +61,9 @@ export async function sendAmbassadorWelcomeEmail({
                             Comparte tu código con tus clientes y prospectos para que puedan registrarse en la plataforma.
                         </p>
 
-                        ${origin === 'snarai' ? `
+                        ${brandConfig.hubUrl || origin === 'snarai' ? `
                         <div style="text-align: center; margin-bottom: 30px;">
-                            <a href="https://snarai.aztecaz.xyz/gestores/portal" style="background-color: #10b981; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; display: inline-block;">Acceder al Hub Comercial (Gestores)</a>
+                            <a href="${hubUrl}" style="background-color: ${primaryColor}; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; display: inline-block;">Acceder al Hub Comercial (Gestores)</a>
                         </div>
                         ` : ''}
                         

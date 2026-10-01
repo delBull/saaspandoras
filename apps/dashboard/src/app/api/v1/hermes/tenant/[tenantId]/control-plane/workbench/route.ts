@@ -166,8 +166,8 @@ export async function GET(request: Request, context: { params: Promise<{ tenantI
             brandName: project.title,
             baseCurrency: 'USD',
             voice: 'assistant',
-            installedPacks: domainPack?.soul?.proactivity 
-                ? ['snarai-core', 'objection-handler', 'concierge']
+            installedPacks: domainPack?.soul?.proactivity
+                ? ['objection-handler', 'concierge']
                 : []
         },
         knowledgeRuntime: {

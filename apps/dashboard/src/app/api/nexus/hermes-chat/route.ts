@@ -93,6 +93,7 @@ export async function POST(req: NextRequest) {
     const actorId = interlocutor.actorId || operatorContext?.email || operatorContext?.id || `nexus_${validatedRole.toLowerCase()}`;
 
     const controlPlaneContext: ControlPlaneContext = {
+      channel: 'INTERNAL_DASHBOARD', // K27.6: authoritative ceiling source (CONFIDENTIAL)
       actorId,
       organizationId: 'pandoras',
       role: isBoss ? 'OWNER' : (validatedRole as any),

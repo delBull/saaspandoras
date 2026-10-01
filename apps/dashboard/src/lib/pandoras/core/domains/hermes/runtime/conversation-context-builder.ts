@@ -6,7 +6,6 @@ import { JourneyEngine } from './journey-engine';
 import { db } from '@/db';
 import { projects } from '@/db/schema';
 import { eq } from 'drizzle-orm';
-import { HermesSoulRegistry } from '@/lib/hermes/soul/snarai-soul';
 
 const FALLBACK_ORG_NAME = 'Pandoras';
 const FALLBACK_BRAND_NAME = 'Pandoras';
@@ -34,11 +33,10 @@ export class ConversationContextBuilder {
     await this.resolveOrganizationIdentity(normalized.organizationId);
 
     // 1. Resolve Identity, Soul, Policy (Layers 0 to 3)
-    // In later phases (6.6.7, etc), this will hit the DB or Redis config store
-    // based on normalized.organizationId and normalized.projectId.
-    const identity = this.resolveIdentity(normalized);
-    const soul = this.resolveSoul(normalized);
-    const policy = this.resolvePolicy(normalized);
+    // Now fetched dynamically from the DB's identityPack and policyPack
+    const identity = this.resolveIdentity();
+    const soul = this.resolveSoul();
+    const policy = this.resolvePolicy();
 
     // 2. Resolve dynamic state (Layers 3 & 4)
     // In Phase 6.6.3+ these will call their respective Engines
@@ -75,34 +73,34 @@ export class ConversationContextBuilder {
     };
   }
 
-  private resolveIdentity(normalized: NormalizedInboundMessage) {
-    const orgId = normalized.organizationId || this.orgName?.toLowerCase();
-    const soul = HermesSoulRegistry.getSoul(orgId?.includes('narai') ? 'snarai' : orgId);
+  private resolveIdentity() {
+    const pack = this.identityPack || {};
 
     return {
-      agentName: soul?.agentName || 'Hermes',
+      agentName: pack.agentName || 'Hermes',
       organizationName: this.orgName,
       brand: {
         name: this.brandName,
-        tone: soul?.voice || 'professional',
-        language: 'es-MX'
+        tone: pack.voice || 'professional',
+        language: pack.languagePolicy?.avoidAsDefault ? 'es-MX' : 'es-MX'
       }
     };
   }
 
-  private resolveSoul(normalized: NormalizedInboundMessage) {
-    const orgId = normalized.organizationId || this.orgName?.toLowerCase();
-    const soul = HermesSoulRegistry.getSoul(orgId?.includes('narai') ? 'snarai' : orgId);
+  private resolveSoul() {
+    const pack = this.identityPack;
 
-    if (soul) {
+    if (pack && pack.tone) {
       return {
-        mission: soul.tone.dos.slice(0, 3),
-        personality: [soul.voice, 'autónomo', 'patrimonial'],
-        principles: soul.tone.donts.slice(0, 3),
-        communication: soul.languagePolicy.avoidAsDefault.length 
-          ? [`Evitar: ${soul.languagePolicy.avoidAsDefault.join(', ')}`]
+        mission: pack.tone.dos?.slice(0, 3) || [],
+        personality: [pack.voice, 'autónomo', 'patrimonial'],
+        principles: pack.tone.donts?.slice(0, 3) || [],
+        communication: pack.languagePolicy?.avoidAsDefault?.length 
+          ? [`Evitar: ${pack.languagePolicy.avoidAsDefault.join(', ')}`]
           : ['Respuestas concisas', 'Adaptarse al usuario'],
-        escalationRules: Object.entries(soul.escalationPolicy).map(([k, v]) => `${k}: ${v}`)
+        escalationRules: this.policyPack?.escalationPolicy 
+          ? Object.entries(this.policyPack.escalationPolicy).map(([k, v]) => `${k}: ${v}`)
+          : []
       };
     }
 
@@ -115,35 +113,52 @@ export class ConversationContextBuilder {
     };
   }
 
+  private orgName = FALLBACK_ORG_NAME;
+  private brandName = FALLBACK_BRAND_NAME;
+  private identityPack: any = null;
+  private policyPack: any = null;
+
   private async resolveOrganizationIdentity(organizationId: string) {
     this.orgName = FALLBACK_ORG_NAME;
     this.brandName = FALLBACK_BRAND_NAME;
+    this.identityPack = null;
+    this.policyPack = null;
+
     try {
       const project = await db.query.projects.findFirst({
         where: eq(projects.slug, organizationId),
-        columns: { title: true }
+        columns: { title: true, identityPack: true, policyPack: true }
       });
       if (project?.title) {
         this.orgName = project.title;
         this.brandName = project.title;
+        this.identityPack = project.identityPack;
+        this.policyPack = project.policyPack;
+      } else {
+        throw new Error(`Tenant context not found for slug: ${organizationId}`);
       }
     } catch (err) {
-      // Never break the cognitive pipeline on DB unavailability (K12-A45 fail-safe).
-      console.warn(`[ConversationContextBuilder] Fallback org identity for ${organizationId}:`, err);
+      console.error(`[ConversationContextBuilder] Tenant resolution FAIL CLOSED for ${organizationId}:`, err);
+      throw new Error('UNAVAILABLE: Tenant resolution failed.');
     }
   }
 
-  private orgName = FALLBACK_ORG_NAME;
-  private brandName = FALLBACK_BRAND_NAME;
+  private resolvePolicy() {
+    const policy = this.policyPack || {};
+    
+    let hardEscalation = {
+      'legal_question': 'human',
+      'investment_commitment': 'human'
+    };
+    
+    if (policy.escalationPolicy) {
+       hardEscalation = { ...hardEscalation, ...policy.escalationPolicy };
+    }
 
-  private resolvePolicy(normalized: NormalizedInboundMessage) {
     return {
-      prohibitedActions: ['invent_financial_returns', 'expose_private_information'],
-      requiredDisclosures: ['Soy un asistente virtual'],
-      hardEscalationTriggers: {
-        'legal_question': 'human',
-        'investment_commitment': 'human'
-      }
+      prohibitedActions: policy.claimsPolicy?.prohibited || ['invent_financial_returns', 'expose_private_information'],
+      requiredDisclosures: policy.claimsPolicy?.requiredQualification || ['Soy un asistente virtual'],
+      hardEscalationTriggers: hardEscalation
     };
   }
 }

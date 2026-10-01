@@ -17,9 +17,10 @@ export async function GET(request: NextRequest) {
     const authHeader = request.headers.get('authorization');
     const tenantParam = request.nextUrl.searchParams.get('tenantId') || request.nextUrl.searchParams.get('organizationId');
 
-    let canonicalTenant = tenantParam || 'snarai';
+    // Production Truth: no snarai default — tenant must be explicitly provided.
+    let canonicalTenant = (tenantParam || '').replace(/^org_/, '');
 
-    if (db && tenantParam) {
+    if (db && tenantParam && canonicalTenant) {
       const [proj] = await db
         .select({ slug: projects.slug })
         .from(projects)

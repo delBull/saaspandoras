@@ -61,6 +61,16 @@ export default async function ControlPlaneLayout({
     console.warn(`[ControlPlaneLayout] Notice:`, err);
   }
 
+  let enabledCapabilities: string[] = ['growth.crm', 'growth.email'];
+  try {
+    const growthOverview = await DashApi.growth.getOverview(orgId);
+    if (growthOverview && growthOverview.enabledCapabilities) {
+      enabledCapabilities = growthOverview.enabledCapabilities;
+    }
+  } catch (err) {
+    console.warn(`[ControlPlaneLayout] Growth Overview fetch notice:`, err);
+  }
+
   // Load setup state to know which modules are active for the navbar
   let activeModules: string[] = [];
   try {
@@ -95,6 +105,7 @@ export default async function ControlPlaneLayout({
             slugId={slugId} 
             orgName={overview.name} 
             hasHermes={overview.hasHermes} 
+            enabledCapabilities={enabledCapabilities}
           />
           <main className="flex-1 h-full min-w-0 bg-[#050505] text-zinc-100 overflow-y-auto p-4 sm:p-6 lg:p-8">
             {children}

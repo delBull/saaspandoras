@@ -114,7 +114,7 @@ global.fetch = async (url: any, options: any) => {
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { HermesOutboundDispatcher } from '@/lib/hermes/agents/HermesOutboundDispatcher';
-import { WhatsAppProviderResolver, MetaWhatsAppProvider, SignalWireWhatsAppProvider } from '@/lib/channels/whatsapp/whatsapp-provider';
+import { WhatsAppProviderResolver, MetaWhatsAppProvider, SignalWireSMSProvider } from '@/lib/channels/whatsapp/whatsapp-provider';
 
 describe('🏛️ F9.12 End-to-End Proof: Hermes Universal Intake → Knowledge → Kernel → Channel Adapter → Audit', () => {
   beforeEach(() => {
@@ -138,7 +138,7 @@ describe('🏛️ F9.12 End-to-End Proof: Hermes Universal Intake → Knowledge 
 
     // Tenant (e.g. S'Narai org_2) resolves to SignalWire telephony adapter
     const tenantProvider = WhatsAppProviderResolver.getProviderForTenant('org_2');
-    expect(tenantProvider).toBeInstanceOf(SignalWireWhatsAppProvider);
+    expect(tenantProvider).toBeInstanceOf(SignalWireSMSProvider);
   });
 
   // ── TEST 2: FULL COGNITIVE TURN & DISPATCH (PANDORA HQ -> META) ──

@@ -3,7 +3,7 @@
  * apps/dashboard/src/lib/pandoras/core/domains/hermes/tools/web/index.ts
  */
 
-import { HermesToolExecutor } from '../../runtime/tool-executor';
+import type { HermesToolExecutor } from '../../runtime/tool-executor';
 import { WebFetchTool } from './web-fetch-tool';
 import { WebExtractTool } from './web-extract-tool';
 import { WebSearchTool } from './web-search-provider';

@@ -265,7 +265,7 @@ export class HermesPromptBuilder {
         `Organization: ${ctx.tenantIdentity.organizationName}`,
         ctx.tenantIdentity.language ? `Language: ${ctx.tenantIdentity.language}` : 'Language: es',
         ctx.tenantIdentity.tone ? `Tone: ${ctx.tenantIdentity.tone}` : 'Tone: Formal, Concierge Patrimonial Institucional',
-        'CRITICAL ANTI-LEAKAGE RULE: You are Hermes OS. You are NOT Sofía, you are NOT Pandora\'s Media Co, and you MUST NEVER adopt a colloquial, sassy, or "trading bot" persona (e.g. do not say "mi cielo", do not reference "learnings.json" or "TP1/SL"). You are the Cognitive Operating System of Pandora\'s Growth OS.',
+        'CRITICAL ANTI-LEAKAGE RULE: You are Hermes OS. You MUST NEVER adopt a colloquial, sassy, or "trading bot" persona (e.g. do not say "mi cielo", do not reference "learnings.json" or "TP1/SL"). You are the Cognitive Operating System of Pandora\'s Growth OS.',
       ].filter(Boolean).join('\n'),
     });
 
@@ -324,6 +324,24 @@ export class HermesPromptBuilder {
         '=== [SECTION_END: AUTHORIZED_ACTION_SLOTS] ===',
       ].join('\n');
       messages.push({ role: 'system', content: capContent });
+    }
+
+    // ---- Block 5.5: ACTIVE SKILLS (PROCEDURES - Hito 2) ----
+    if (ctx.activeSkills && ctx.activeSkills.length > 0) {
+      const skillsContent = [
+        '=== [SECTION_START: ACTIVE_PROCEDURES_AND_SKILLS] ===',
+        'The following instructions represent the active workflow stage or skill you must execute.',
+        'Follow these steps precisely as instructed by the Tenant:',
+        '',
+        ...ctx.activeSkills.map(skill => [
+          `[SKILL: ${skill.name} (${skill.key})]`,
+          `Description: ${skill.description}`,
+          `Instructions:\n${skill.instructionsMarkdown}`,
+          '---'
+        ].join('\n')),
+        '=== [SECTION_END: ACTIVE_PROCEDURES_AND_SKILLS] ===',
+      ].join('\n');
+      messages.push({ role: 'system', content: skillsContent });
     }
 
     // ---- Block 6: STYLE OVERLAY (lowest authority) ----

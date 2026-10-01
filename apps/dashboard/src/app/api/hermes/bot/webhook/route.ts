@@ -239,6 +239,7 @@ export async function POST(req: NextRequest) {
         createdAt: new Date(),
       },
       controlPlaneContext: {
+        channel: 'TELEGRAM',
         actorId: interlocutor.actorId,
         organizationId: tenantSlug,
         role: interlocutor.isBoss ? 'OWNER' : (interlocutor.isCollaborator ? 'OPERATOR' : 'VIEWER'),
@@ -265,8 +266,9 @@ export async function POST(req: NextRequest) {
     const rawCid = ipfsMatch?.[1] || receiptCid;
 
     if (rawCid) {
+      const ipfsGateway = process.env.NEXT_PUBLIC_IPFS_GATEWAY || 'https://gateway.pinata.cloud/ipfs/';
       inlineKeyboard.push([
-        { text: '📜 Ver Evidencia Notarizada (IPFS)', url: `https://gateway.pinata.cloud/ipfs/${rawCid}` }
+        { text: '📜 Ver Evidencia Notarizada (IPFS)', url: `${ipfsGateway}${rawCid}` }
       ]);
     }
 

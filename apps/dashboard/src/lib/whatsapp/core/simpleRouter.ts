@@ -665,10 +665,6 @@ function detectFlowFromLanding(payload: any, messageText?: string): FlowType {
 async function detectProject(messageText?: string): Promise<number | null> {
   const text = (messageText || '').toLowerCase();
   
-  // 1. Hardcoded high-priority matches
-  if (text.includes('snarai') || text.includes('narai')) return 2; // Narai / S'Narai
-  if (text.includes('pandora')) return 3; // Pandora's Access
-  
   // 2. Dynamic lookup by slug or title
   try {
     const { db } = await import("~/db");

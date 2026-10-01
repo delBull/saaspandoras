@@ -26,7 +26,23 @@ DIRECTIVAS PERMANENTES DE OPERACIÓN — PRODUCCIÓN
 - Si el código referencia una tabla/columna, esa tabla/columna DEBE existir en Neon.
   Verificarlo es parte de "terminado".
 - Nunca editar migraciones ya aplicadas; siempre migraciones nuevas.
-- Siempre haz las migraciones contra base de datos en .env, pero para base de datos en producción pídemela siempre porque no la exponemos.
+## Database Access Policy
+
+- Development/staging DB:
+  usar únicamente la conexión provista por el entorno (.env).
+
+- Production DB:
+  nunca asumir acceso.
+  nunca intentar descubrir credentials.
+  nunca usar una DB de producción no autorizada.
+
+- Si una verificación requiere producción:
+  detenerse y solicitar explícitamente acceso/connection string al usuario.
+
+- Nunca persistir credentials.
+- Nunca incluir DATABASE_URL en logs, commits, reportes o screenshots.
+- Después de cualquier script temporal de DB:
+  eliminarlo y verificar git status.
 
 ## 4. Secretos y Seguridad (no negociable)
 - Nada de secretos hardcodeados: ni defaults en código, ni en SQL, ni en migrations,

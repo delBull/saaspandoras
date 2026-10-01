@@ -164,3 +164,77 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ code: 'INTERNAL_ERROR', message: error.message }, { status: 500 });
   }
 }
+
+export async function POST(req: NextRequest) {
+  try {
+    const ip = clientIpFromHeaders(req.headers);
+    const rl = checkRateLimit(`growth-pipeline-post:${ip}`, 20, 60_000);
+    if (!rl.allowed) {
+      return NextResponse.json({ code: 'RATE_LIMITED', message: 'Too many requests.' }, { status: 429 });
+    }
+
+    const body = await req.json();
+    const { organizationId: orgParam, name, email, phone, source, notes, hermesNarrative } = body;
+    // Hermes Omnicanal: narrative metadata (from the Concierge textarea) is
+    // stored as correlation metadata, never as authorization.»»
+    const cleanSlug = (orgParam || '').replace(/^org_/, '').trim();
+    if (!cleanSlug) {
+      return NextResponse.json({ code: 'INVALID_REQUEST', message: 'organizationId is required.' }, { status: 400 });
+    }
+    if (!name && !email) {
+      return NextResponse.json({ code: 'INVALID_REQUEST', message: 'name or email is required.' }, { status: 400 });
+    }
+
+    const auth = await resolveTenant(req, orgParam);
+    if (!auth) {
+      return NextResponse.json({ code: 'UNAUTHENTICATED', message: 'Authentication required.' }, { status: 401 });
+    }
+
+    try {
+      await capabilityRegistry.assertCapability(auth.organizationId, 'growth.crm');
+    } catch (err: any) {
+      return NextResponse.json({ code: 'CAPABILITY_DISABLED', message: err.message }, { status: 403 });
+    }
+
+    // Resolve authoritative project — server-side, never trust body projectId
+    const [project] = await db
+      .select()
+      .from(projects)
+      .where(or(eq(projects.slug, cleanSlug), eq(projects.slug, orgParam)))
+      .limit(1);
+
+    if (!project) {
+      return NextResponse.json({ code: 'PROJECT_NOT_FOUND', message: 'Tenant project not found.' }, { status: 404 });
+    }
+
+    const [newLead] = await db.insert(marketingLeads).values({
+      projectId: project.id,
+      name: String(name || '').trim() || null,
+      email: email ? String(email).trim().toLowerCase() : null,
+      phoneNumber: phone ? String(phone).trim() : null,
+      source: source ? String(source).trim() : 'Growth OS — Manual',
+      status: 'active' as any,
+      intent: 'explore' as any,
+      score: 50,
+      quality: 'medium' as any,
+      ownerContext: 'client' as any,
+      scope: 'b2c' as any,
+      metadata: {
+        notes: notes || '',
+        createdVia: 'growth_os_pipeline_modal',
+        hermesNarrative: hermesNarrative || null, // omnichannel context from Hermes runtime
+        channel: 'growth_os_portal',
+      },
+      consent: false,
+    }).returning();
+
+    if (!newLead) {
+      return NextResponse.json({ code: 'INSERT_FAILED', message: 'Failed to create lead.' }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true, lead: { id: newLead.id, name: newLead.name, email: newLead.email } }, { status: 201 });
+  } catch (error: any) {
+    console.error('[Growth API: pipeline POST] Error:', error);
+    return NextResponse.json({ code: 'INTERNAL_ERROR', message: error.message }, { status: 500 });
+  }
+}

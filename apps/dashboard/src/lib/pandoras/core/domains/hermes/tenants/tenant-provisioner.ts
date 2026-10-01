@@ -34,7 +34,7 @@ import {
   TenantAuthorityManifest, 
   TenantIdentitySoulManifest 
 } from './contracts';
-import { AgentSoul } from '@/lib/hermes/soul/snarai-soul';
+import { AgentSoul, HermesSoulRegistry } from '@/lib/hermes/soul/snarai-soul';
 
 export class TenantProvisioner {
   private static signerInstance: HermesIdentitySigner | null = null;
@@ -444,6 +444,7 @@ export class TenantProvisioner {
         .select({
           slug: projects.slug,
           policyPack: projects.policyPack,
+          identityPack: projects.identityPack,
         })
         .from(projects);
 
@@ -455,6 +456,15 @@ export class TenantProvisioner {
             config.tenantId = config.tenantId || rec.slug!;
             TenantResponsePolicyGate.registerPolicy(config);
             loadedCount++;
+          }
+        }
+        
+        if (rec.identityPack && typeof rec.identityPack === 'object') {
+          const manifest = rec.identityPack as TenantIdentitySoulManifest;
+          if (manifest.tenantId || rec.slug) {
+            manifest.tenantId = manifest.tenantId || rec.slug!;
+            const soul = TenantProvisioner.resolveTenantSoul(manifest);
+            HermesSoulRegistry.registerTenantSoul(manifest.tenantId, soul);
           }
         }
       }

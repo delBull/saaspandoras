@@ -118,6 +118,22 @@ export class HermesRuntime implements HermesCognitiveRuntime {
     // K12-A45: trace recorder is always wrapped in a FailSafe to avoid cognitive failure
     this.traceRecorder = new FailSafeRuntimeTraceRecorder(traceRecorder ?? new NoOpRuntimeTraceRecorder());
     this.toolExecutor = toolExecutor ?? new HermesToolExecutor();
+
+    // K11-EXEC: OWNER-gated ecosystem tools (executive_activate_tenant,
+    // executive_assign_admin, executive_approve_payment) — Fail-closed gate
+    // inside each handler; every call lands in the PlatformAuditLedger.
+    import('./tools/executive-tool-registry')
+      .then(({ registerExecutiveTools, registerCrmTools, registerNftTools }) => {
+        registerExecutiveTools(this.toolExecutor);
+        registerCrmTools(this.toolExecutor);
+        registerNftTools(this.toolExecutor);
+      })
+      .then(() => {
+        console.log('[HermesRuntime] K11-EXEC executive + CRM + NFT tools registered.');
+      })
+      .catch((execErr: any) => {
+        console.warn('[HermesRuntime] K11-EXEC registration warning:', execErr?.message);
+      });
   }
 
   /**
@@ -236,7 +252,7 @@ export class HermesRuntime implements HermesCognitiveRuntime {
              visibility: 'INTERNAL_OPERATIONAL',
              dimension: 'strategy',
              classification: 'TENANT_RESTRICTED'
-          });
+          } as any);
 
           // P7: Apply Knowledge Strategy Avoid Filters (RAG dynamic filtering)
           if (prospectContext.strategy.knowledgeStrategy.avoidTopics.length > 0) {
@@ -251,6 +267,37 @@ export class HermesRuntime implements HermesCognitiveRuntime {
         console.warn('[HermesRuntime] Failed to inject Prospect Intelligence:', e);
       }
       // --- END PROSPECT INTELLIGENCE ---
+
+      // --- CHANNEL MESH CLEARANCE (K27.6) ---
+      try {
+        const { ChannelMeshService, normalizeHermesChannel } = await import('../channels/channel-mesh');
+        const activeChannel = normalizeHermesChannel((controlPlaneContext as any).channel);
+        const filteredKnowledge = [];
+        
+        for (const k of effectiveContext.knowledge) {
+          // Resolve required clearance from item metadata, defaulting to PUBLIC if unset.
+          const itemClearance = (k as any).classification || (k as any).governance?.visibility || 'PUBLIC';
+          
+          const validation = await ChannelMeshService.validateDisclosureClearance({
+            channelType: activeChannel as any, // HermesChannelType
+            requiredClearance: itemClearance,
+            tenantId: canonicalTenantId,
+            artifactId: k.id,
+          });
+          
+          if (validation.allowed) {
+            filteredKnowledge.push(k);
+          } else {
+            // Drop it from the context
+            console.log(`[HermesRuntime] K27.6 Dropping artifact ${k.id} due to Channel Mesh Ceiling on ${activeChannel}.`);
+          }
+        }
+        
+        effectiveContext.knowledge = filteredKnowledge;
+      } catch (err) {
+        console.warn('[HermesRuntime] Non-blocking warning during Channel Mesh clearance validation:', err);
+      }
+      // --- END CHANNEL MESH CLEARANCE ---
 
       // Forward interlocutor, Boss executive authority and Sovereign Canonical Identity Context (F6)
       const rawInterlocutor = (controlPlaneContext as any).interlocutor || controlPlaneContext.identity;
@@ -565,6 +612,23 @@ export class HermesRuntime implements HermesCognitiveRuntime {
       // Step 3b: Pre-LLM Context Hygiene Validation (Phase 2.2 / 3.0 Gate T12)
       const { sanitizedContext: reasoningContext, violations: hygieneViolations } =
         ContextHygieneValidator.validate(rawReasoningContext);
+
+      // Step 3d: Active Journey Skills (K11-HITO-2: Dynamic Skill Loader)
+      // Pure read of the actor's current Journey Stage → procedure Markdown
+      // injected into the prompt (Block 5.5). Fail-open: no journey/stage
+      // simply yields no skills, never blocks the cognitive turn.
+      try {
+        const { HermesSkillResolver } = await import('./skill-resolver');
+        const stageInfo = await new JourneyEngine().getActiveJourneyStageInfo(canonicalTenantId, controlPlaneContext.actorId);
+        if (stageInfo) {
+          const skill = await HermesSkillResolver.resolveSkillForStage(stageInfo.stageId, canonicalTenantId);
+          if (skill) {
+            reasoningContext.activeSkills = [skill];
+          }
+        }
+      } catch (skillErr: any) {
+        console.warn('[HermesRuntime] K11-HITO2 non-blocking skill resolution warning:', skillErr?.message);
+      }
 
       // Step 3c: Pre-LLM Hygiene Contract (KNOW vs USE Delimiter Isolation & Injection Neutralization)
       const knowChunks = ((reasoningContext as any).activeKnowledge || []).map((k: any) => ({

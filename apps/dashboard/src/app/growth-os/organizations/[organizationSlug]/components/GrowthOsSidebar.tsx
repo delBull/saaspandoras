@@ -29,32 +29,63 @@ import {
   ExternalLink,
   Layers,
   FileText,
+  Lock,
 } from 'lucide-react';
 
 interface GrowthOsSidebarProps {
   slugId: string;
   orgName: string;
   hasHermes: boolean;
+  enabledCapabilities?: string[];
 }
 
-export function GrowthOsSidebar({ slugId, orgName, hasHermes }: GrowthOsSidebarProps) {
+export function GrowthOsSidebar({ slugId, orgName, hasHermes, enabledCapabilities = [] }: GrowthOsSidebarProps) {
   const pathname = usePathname();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(true);
+  const [loadingIntent, setLoadingIntent] = useState<string | null>(null);
+
+  const handleLockedClick = async (e: React.MouseEvent, capability?: string, label?: string) => {
+    e.preventDefault();
+    if (!capability) return;
+    
+    // Simple debouncing/visual feedback
+    if (loadingIntent === capability) return;
+    setLoadingIntent(capability);
+
+    try {
+      await fetch('/api/v1/growth/upgrade-intent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ capability, label })
+      });
+      // Optionally show a toast here to the user
+      console.log(`Upgrade intent sent for ${capability}`);
+    } catch (error) {
+      console.error('Failed to send upgrade intent', error);
+    } finally {
+      setTimeout(() => setLoadingIntent(null), 1000);
+    }
+  };
 
   const basePath = `/growth-os/organizations/${slugId}`;
 
   const navItems = [
     { label: 'Overview', href: '', icon: LayoutDashboard, section: 'ops' },
-    { label: 'Growth Campaigns', href: '/growth/marketing', icon: BarChart2, section: 'ops' },
+    { label: 'Growth Campaigns', href: '/growth/marketing', icon: BarChart2, section: 'ops', capability: 'growth.email' },
     { label: 'Mission Control', href: '/missions', icon: Target, section: 'ops' },
-    { label: 'Pipeline & CRM', href: '/pipeline', icon: Users, section: 'ops' },
-    { label: 'Email Marketing', href: '/email', icon: Mail, section: 'ops' },
-    { label: 'NFT Lab & Passes', href: '/nft-lab', icon: Sparkles, section: 'ops' },
-    { label: 'Pay & Finanzas', href: '/finance', icon: Wallet, section: 'ops' },
-    { label: 'Governance Center', href: '/governance', icon: ShieldAlert, section: 'gov' },
-    { label: 'Activity & Audit', href: '/activity', icon: Activity, section: 'gov' },
+    { label: 'Pipeline & CRM', href: '/pipeline', icon: Users, section: 'ops', capability: 'growth.crm' },
+    { label: 'Email Marketing', href: '/email', icon: Mail, section: 'ops', capability: 'growth.email' },
+    { label: 'NFT Lab & Passes', href: '/nft-lab', icon: Sparkles, section: 'ops', capability: 'growth.nft' },
+    { label: 'Pay & Finanzas', href: '/finance', icon: Wallet, section: 'ops', capability: 'growth.finance' },
+    { label: 'Governance Center', href: '/governance', icon: ShieldAlert, section: 'gov', capability: 'growth.governance' },
+    { label: 'Activity & Audit', href: '/activity', icon: Activity, section: 'gov', capability: 'growth.governance' },
   ];
+
+  const hasAccess = (capability?: string) => {
+    if (!capability) return true;
+    return enabledCapabilities.includes(capability);
+  };
 
   const isActive = (href: string) => {
     const fullPath = `${basePath}${href}`;
@@ -120,19 +151,29 @@ export function GrowthOsSidebar({ slugId, orgName, hasHermes }: GrowthOsSidebarP
               {opsItems.map((item) => {
                 const active = isActive(item.href);
                 const Icon = item.icon;
+                const access = hasAccess((item as any).capability);
                 return (
                   <Link
                     key={item.href}
-                    href={`${basePath}${item.href}`}
-                    onClick={() => setIsMobileOpen(false)}
+                    href={access ? `${basePath}${item.href}` : '#'}
+                    onClick={(e) => {
+                      if (!access) {
+                        handleLockedClick(e, (item as any).capability, item.label);
+                      } else {
+                        setIsMobileOpen(false);
+                      }
+                    }}
                     className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                      active
+                      !access 
+                        ? 'opacity-50 cursor-not-allowed text-zinc-500' 
+                        : active
                         ? 'bg-violet-600/20 text-violet-300 border border-violet-500/30 font-semibold'
                         : 'text-zinc-400 hover:text-white hover:bg-white/[0.04]'
                     }`}
                   >
-                    <Icon className={`w-4 h-4 ${active ? 'text-violet-400' : 'text-zinc-400'} shrink-0`} />
-                    <span className="truncate">{item.label}</span>
+                    <Icon className={`w-4 h-4 ${!access ? 'text-zinc-600' : active ? 'text-violet-400' : 'text-zinc-400'} shrink-0`} />
+                    <span className="truncate flex-1">{item.label}</span>
+                    {!access && <Lock className="w-3.5 h-3.5 text-zinc-600 shrink-0" />}
                   </Link>
                 );
               })}
@@ -143,19 +184,29 @@ export function GrowthOsSidebar({ slugId, orgName, hasHermes }: GrowthOsSidebarP
               {govItems.map((item) => {
                 const active = isActive(item.href);
                 const Icon = item.icon;
+                const access = hasAccess((item as any).capability);
                 return (
                   <Link
                     key={item.href}
-                    href={`${basePath}${item.href}`}
-                    onClick={() => setIsMobileOpen(false)}
+                    href={access ? `${basePath}${item.href}` : '#'}
+                    onClick={(e) => {
+                      if (!access) {
+                        handleLockedClick(e, (item as any).capability, item.label);
+                      } else {
+                        setIsMobileOpen(false);
+                      }
+                    }}
                     className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                      active
+                      !access 
+                        ? 'opacity-50 cursor-not-allowed text-zinc-500' 
+                        : active
                         ? 'bg-violet-600/20 text-violet-300 border border-violet-500/30 font-semibold'
                         : 'text-zinc-400 hover:text-white hover:bg-white/[0.04]'
                     }`}
                   >
-                    <Icon className={`w-4 h-4 ${active ? 'text-violet-400' : 'text-zinc-400'} shrink-0`} />
-                    <span className="truncate">{item.label}</span>
+                    <Icon className={`w-4 h-4 ${!access ? 'text-zinc-600' : active ? 'text-violet-400' : 'text-zinc-400'} shrink-0`} />
+                    <span className="truncate flex-1">{item.label}</span>
+                    {!access && <Lock className="w-3.5 h-3.5 text-zinc-600 shrink-0" />}
                   </Link>
                 );
               })}
@@ -195,21 +246,35 @@ export function GrowthOsSidebar({ slugId, orgName, hasHermes }: GrowthOsSidebarP
           {opsItems.map((item) => {
             const active = isActive(item.href);
             const Icon = item.icon;
+            const access = hasAccess((item as any).capability);
             return (
               <Link
                 key={item.href}
-                href={`${basePath}${item.href}`}
-                title={isCollapsed ? item.label : undefined}
+                href={access ? `${basePath}${item.href}` : '#'}
+                onClick={(e) => {
+                  if (!access) {
+                    handleLockedClick(e, (item as any).capability, item.label);
+                  }
+                }}
+                title={isCollapsed ? (access ? item.label : `${item.label} (Locked)`) : undefined}
                 className={`flex items-center ${
                   isCollapsed ? 'justify-center p-3 w-12 h-12 mx-auto' : 'gap-3 px-3 py-2.5'
                 } rounded-xl text-sm font-medium transition-all ${
-                  active
+                  !access 
+                    ? 'opacity-50 cursor-not-allowed text-zinc-500' 
+                    : active
                     ? 'bg-violet-600/20 text-violet-300 border border-violet-500/30 font-semibold shadow-sm'
                     : 'text-zinc-400 hover:text-white hover:bg-white/[0.04]'
                 }`}
               >
-                <Icon className={`w-4 h-4 ${active ? 'text-violet-400' : 'text-zinc-400'} shrink-0`} />
-                {!isCollapsed && <span className="truncate">{item.label}</span>}
+                <div className="relative">
+                  <Icon className={`w-4 h-4 ${!access ? 'text-zinc-600' : active ? 'text-violet-400' : 'text-zinc-400'} shrink-0`} />
+                  {!access && isCollapsed && (
+                    <Lock className="w-2.5 h-2.5 text-zinc-500 absolute -bottom-1 -right-1" />
+                  )}
+                </div>
+                {!isCollapsed && <span className="truncate flex-1">{item.label}</span>}
+                {!isCollapsed && !access && <Lock className="w-3.5 h-3.5 text-zinc-600 shrink-0" />}
               </Link>
             );
           })}
@@ -222,21 +287,30 @@ export function GrowthOsSidebar({ slugId, orgName, hasHermes }: GrowthOsSidebarP
           {govItems.map((item) => {
             const active = isActive(item.href);
             const Icon = item.icon;
+            const access = hasAccess((item as any).capability);
             return (
               <Link
                 key={item.href}
-                href={`${basePath}${item.href}`}
-                title={isCollapsed ? item.label : undefined}
+                href={access ? `${basePath}${item.href}` : '#'}
+                title={isCollapsed ? (access ? item.label : `${item.label} (Locked)`) : undefined}
                 className={`flex items-center ${
                   isCollapsed ? 'justify-center p-3 w-12 h-12 mx-auto' : 'gap-3 px-3 py-2.5'
                 } rounded-xl text-sm font-medium transition-all ${
-                  active
+                  !access 
+                    ? 'opacity-50 cursor-not-allowed text-zinc-500' 
+                    : active
                     ? 'bg-violet-600/20 text-violet-300 border border-violet-500/30 font-semibold shadow-sm'
                     : 'text-zinc-400 hover:text-white hover:bg-white/[0.04]'
                 }`}
               >
-                <Icon className={`w-4 h-4 ${active ? 'text-violet-400' : 'text-zinc-400'} shrink-0`} />
-                {!isCollapsed && <span className="truncate">{item.label}</span>}
+                <div className="relative">
+                  <Icon className={`w-4 h-4 ${!access ? 'text-zinc-600' : active ? 'text-violet-400' : 'text-zinc-400'} shrink-0`} />
+                  {!access && isCollapsed && (
+                    <Lock className="w-2.5 h-2.5 text-zinc-500 absolute -bottom-1 -right-1" />
+                  )}
+                </div>
+                {!isCollapsed && <span className="truncate flex-1">{item.label}</span>}
+                {!isCollapsed && !access && <Lock className="w-3.5 h-3.5 text-zinc-600 shrink-0" />}
               </Link>
             );
           })}

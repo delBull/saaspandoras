@@ -39,26 +39,57 @@ export default function GrowthLayout({
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={navigateTo} className="w-full">
-        <TabsList className="bg-zinc-900 border border-white/10 p-1 mb-6 inline-flex overflow-x-auto max-w-full">
-            <TabsTrigger value="marketing" className="data-[state=active]:bg-purple-600/20 data-[state=active]:text-purple-400">
-                <BarChart2 className="w-4 h-4 mr-2 shrink-0" />
-                <span className="whitespace-nowrap">Dashboard</span>
-            </TabsTrigger>
-            <TabsTrigger value="strategy" className="data-[state=active]:bg-blue-600/20 data-[state=active]:text-blue-400">
-                <Compass className="w-4 h-4 mr-2 shrink-0" />
-                <span className="whitespace-nowrap">Strategy</span>
-            </TabsTrigger>
-            <TabsTrigger value="market-attack" className="data-[state=active]:bg-emerald-600/20 data-[state=active]:text-emerald-400">
-                <Target className="w-4 h-4 mr-2 shrink-0" />
-                <span className="whitespace-nowrap">Campaigns</span>
-            </TabsTrigger>
-            <TabsTrigger value="content" className="data-[state=active]:bg-rose-600/20 data-[state=active]:text-rose-400">
-                <GraduationCap className="w-4 h-4 mr-2 shrink-0" />
-                <span className="whitespace-nowrap">Academy</span>
-            </TabsTrigger>
-        </TabsList>
-      </Tabs>
+      <div className="flex w-full mb-8 overflow-x-auto pb-2 scrollbar-hide">
+        <div className="flex items-center gap-2 bg-[#09090D]/80 backdrop-blur-md border border-white/5 p-1.5 rounded-2xl shadow-xl shadow-black/40">
+          <button
+            onClick={() => navigateTo('marketing')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 ${
+              activeTab === 'marketing'
+                ? 'bg-purple-500/10 text-purple-400 shadow-[inset_0_0_0_1px_rgba(168,85,247,0.2)]'
+                : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.02]'
+            }`}
+          >
+            <BarChart2 className={`w-4 h-4 ${activeTab === 'marketing' ? 'text-purple-400' : 'text-zinc-500'}`} />
+            Dashboard
+          </button>
+          
+          <button
+            onClick={() => navigateTo('strategy')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 ${
+              activeTab === 'strategy'
+                ? 'bg-blue-500/10 text-blue-400 shadow-[inset_0_0_0_1px_rgba(59,130,246,0.2)]'
+                : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.02]'
+            }`}
+          >
+            <Compass className={`w-4 h-4 ${activeTab === 'strategy' ? 'text-blue-400' : 'text-zinc-500'}`} />
+            Strategy
+          </button>
+
+          <button
+            onClick={() => navigateTo('market-attack')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 ${
+              activeTab === 'market-attack'
+                ? 'bg-emerald-500/10 text-emerald-400 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.2)]'
+                : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.02]'
+            }`}
+          >
+            <Target className={`w-4 h-4 ${activeTab === 'market-attack' ? 'text-emerald-400' : 'text-zinc-500'}`} />
+            Campaigns
+          </button>
+
+          <button
+            onClick={() => navigateTo('content')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 ${
+              activeTab === 'content'
+                ? 'bg-rose-500/10 text-rose-400 shadow-[inset_0_0_0_1px_rgba(244,63,114,0.2)]'
+                : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.02]'
+            }`}
+          >
+            <GraduationCap className={`w-4 h-4 ${activeTab === 'content' ? 'text-rose-400' : 'text-zinc-500'}`} />
+            Academy
+          </button>
+        </div>
+      </div>
       
       {/* Content wrapper */}
       <div className="mt-0">

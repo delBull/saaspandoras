@@ -45,6 +45,37 @@ async function handler(req: Request, props: { params: Promise<{ projectId: strin
       }
     }
 
+    // COMMERCIAL GATE: Ensure tenant has an active Hermes license
+    const { installedProducts } = await import('@/db/schema');
+    const { and: drizzleAnd } = await import('drizzle-orm');
+    const hermesInstall = await db.select().from(installedProducts)
+      .where(
+        drizzleAnd(
+          eq(installedProducts.projectId, projectRecord.id),
+          eq(installedProducts.productFamily, 'HERMES')
+        )
+      ).limit(1);
+
+    if (hermesInstall.length === 0 || (hermesInstall[0]!.status !== 'active' && hermesInstall[0]!.status !== 'trial')) {
+      console.warn(`[Telegram Bot] HERMES_SUSPENDED: Tenant ${projectSlug} does not have an active Hermes license.`);
+      const chatId = String((await req.clone().json().catch(() => ({})))?.message?.chat?.id || '');
+      let botToken = metadata?.botConfig?.telegramToken;
+      if (!botToken && projectRecord.tenantRuntimeConfig) {
+        const trc = projectRecord.tenantRuntimeConfig as any;
+        botToken = trc.secrets?.telegramBotToken || trc.telegramBotToken;
+      }
+      if (!botToken) botToken = process.env[`TELEGRAM_${projectSlug.toUpperCase().replace(/-/g, '_')}_BOT_TOKEN`];
+      
+      if (botToken && chatId) {
+        await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chat_id: chatId, text: 'El asistente Hermes está temporalmente inactivo para este proyecto.' })
+        }).catch(() => {});
+      }
+      return NextResponse.json({ success: true, note: 'Hermes suspended' });
+    }
+
     // 2. Resolve token for execution context (B6: Dynamic Channel Bindings)
     // The registration route saves it into w2eConfig.botConfig.telegramToken
     let botToken = metadata?.botConfig?.telegramToken;

@@ -87,6 +87,7 @@ export class SetupProgressService {
     const hermesProd = installed.find((p: any) => p.productFamily === 'HERMES');
     const growthProd = installed.find((p: any) => p.productFamily === 'GROWTH_OS');
     const rwaProd = installed.find((p: any) => p.productFamily === 'CAPITAL');
+    const nftLabProd = installed.find((p: any) => p.product === 'NFT_LAB');
 
     // 3. Parallel Database Signals Gathering
     const [knowledgeCountRes, telegramBindingsRes, leadsCountRes] = await Promise.allSettled([
@@ -222,7 +223,9 @@ export class SetupProgressService {
     ];
 
     const growthCompleted = growthChecklist.filter((c) => c.isCompleted).length;
-    const growthStatus = growthProd ? (growthProd.status === 'active' ? 'ACTIVE' : 'TRIAL') : 'AVAILABLE';
+    const growthStatus = growthProd 
+      ? (growthProd.status === 'active' ? 'ACTIVE' : 'TRIAL') 
+      : (nftLabProd && nftLabProd.status === 'active' ? 'ACTIVE' : 'AVAILABLE');
     const growthState: ModuleSetupState = {
       productKey: 'GROWTH_OS',
       title: 'Growth OS Commercial Engine',

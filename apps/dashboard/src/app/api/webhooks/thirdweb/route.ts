@@ -6,6 +6,7 @@ import { WebhookService } from "@/lib/integrations/webhook-service";
 import { eq, sql } from "drizzle-orm";
 import crypto from "crypto";
 import { LegalEngine } from "@/lib/legal/engine";
+import { paymentInboxEvents } from "@/db/schema";
 
 // Security: Fail-closed signature verification for thirdweb Pay / Engine webhooks.
 // Payloads are signed with HMAC-SHA256 over the raw request body using THIRDWEB_WEBHOOK_SECRET.
@@ -109,9 +110,30 @@ export async function POST(req: Request) {
 
         const isMint = fromAddress === "0x0000000000000000000000000000000000000000" || fromAddress === "0x0";
 
-        // 4. Resolve + VALIDATE purchase BEFORE mutating anything
         const purchaseId = body.metadata?.purchaseId || body.purchaseId;
         let purchase: typeof purchases.$inferSelect | undefined = undefined;
+
+        // P1-6: Payment Event Inbox / Idempotency Boundary
+        const providerEventId = body.eventId || body.webhookId || `${txHash}_${log?.logIndex ?? 0}`;
+        if (purchaseId) {
+            try {
+                const [inboxResult] = await db.insert(paymentInboxEvents).values({
+                    id: providerEventId,
+                    provider: 'THIRDWEB',
+                    paymentIntentId: purchaseId,
+                    payload: body,
+                    status: 'pending',
+                }).onConflictDoNothing().returning({ id: paymentInboxEvents.id });
+
+                if (!inboxResult) {
+                    console.log(`♻️ [THIRDWEB_WEBHOOK] Duplicate event ${providerEventId} for intent ${purchaseId} — idempotent no-op`);
+                    return NextResponse.json({ success: true, idempotent: true });
+                }
+            } catch (inboxErr) {
+                console.error(`❌ [THIRDWEB_WEBHOOK] Failed to record inbox event ${providerEventId}:`, inboxErr);
+                return NextResponse.json({ error: "Inbox persistence failed" }, { status: 500 });
+            }
+        }
 
         if (purchaseId) {
             purchase = await db.query.purchases.findFirst({ where: eq(purchases.purchaseId, purchaseId) });
@@ -136,12 +158,14 @@ export async function POST(req: Request) {
             // Zero-value transfers are never purchases
             if ((Number(value) || 0) <= 0) {
                 console.error(`❌ [THIRDWEB_WEBHOOK] ${purchaseId} reported value ${value} — refusing`);
+                await db.update(paymentInboxEvents).set({ status: 'failed', error: 'Zero value' }).where(eq(paymentInboxEvents.id, providerEventId));
                 return NextResponse.json({ error: "Invalid transfer value" }, { status: 400 });
             }
 
             // Completing a purchase for an unknown wallet is a red flag
             if (!isHexWallet(toAddress)) {
                 console.error(`❌ [THIRDWEB_WEBHOOK] ${purchaseId} recipient is not a valid wallet — refusing`);
+                await db.update(paymentInboxEvents).set({ status: 'failed', error: 'Invalid recipient' }).where(eq(paymentInboxEvents.id, providerEventId));
                 return NextResponse.json({ error: "Invalid recipient" }, { status: 400 });
             }
         }
@@ -286,6 +310,12 @@ export async function POST(req: Request) {
             } catch (webhookError) {
                 console.warn('⚠️ Failed to queue mint webhook:', webhookError);
             }
+        }
+
+        if (purchaseId) {
+            await db.update(paymentInboxEvents)
+                .set({ status: 'processed', processedAt: new Date() })
+                .where(eq(paymentInboxEvents.id, providerEventId));
         }
 
         return NextResponse.json({ success: true });
