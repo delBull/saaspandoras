@@ -414,7 +414,7 @@ export function AdminTenantsView({ tenants, actorRole = 'VIEWER' }: AdminTenants
                               </div>
                             </div>
                             
-                            <div className="group relative z-20">
+                            <div className="group/btn relative z-20">
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -431,7 +431,7 @@ export function AdminTenantsView({ tenants, actorRole = 'VIEWER' }: AdminTenants
                               >
                                 <InfinityIcon className={`w-4 h-4 ${upgradingId === t.id ? 'animate-pulse' : ''}`} />
                               </button>
-                              <div className="absolute bottom-full right-0 md:left-1/2 md:-translate-x-1/2 mb-2 w-56 md:w-64 px-3 py-2 bg-[#1A1A24] text-xs text-zinc-300 rounded-lg border border-violet-500/30 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity shadow-xl">
+                              <div className="absolute bottom-full right-0 md:left-1/2 md:-translate-x-1/2 mb-2 w-56 md:w-64 px-3 py-2 bg-[#1A1A24] text-xs text-zinc-300 rounded-lg border border-violet-500/30 opacity-0 group-hover/btn:opacity-100 pointer-events-none transition-opacity shadow-xl z-50">
                                 <strong className="text-violet-400 block mb-1">Pase Directo (Full Access)</strong>
                                 <span className="leading-relaxed">Activa todas las verticales y módulos (incluyendo NFT Lab) para este tenant sin ejecutar cobros on-chain.</span>
                               </div>
