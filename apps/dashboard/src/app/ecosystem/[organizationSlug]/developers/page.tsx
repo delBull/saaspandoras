@@ -5,6 +5,7 @@ import { DeveloperDomainService } from '@/lib/platform/developers.service';
 import { DevelopersClient } from '@/app/portal/[organizationSlug]/developers/DevelopersClient';
 import { Code2, KeyRound, ExternalLink, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
+import { DevelopersIntroModal } from '@/components/ecosystem/DevelopersIntroModal';
 
 export default async function EcosystemDevelopersPage({ 
   params 
@@ -29,7 +30,9 @@ export default async function EcosystemDevelopersPage({
   }
 
   return (
-    <div className="w-full space-y-8 animate-fadeIn">
+    <div className="w-full space-y-8 animate-fadeIn relative">
+      <DevelopersIntroModal />
+      
       {/* Header section */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-white/10">
         <div>
