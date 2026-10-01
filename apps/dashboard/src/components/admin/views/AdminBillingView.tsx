@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { usePlatformInspector } from '../inspector/PlatformInspectorContext';
 import { toast } from 'sonner';
+import { useSearchParams } from 'next/navigation';
 
 interface TenantCreditRow {
   tenantId: string;
@@ -83,6 +84,12 @@ export function AdminBillingView({
   treasuryWallet,
 }: AdminBillingViewProps) {
   const { inspect } = usePlatformInspector();
+  const searchParams = useSearchParams();
+  const tenantFilter = searchParams?.get('tenant');
+  
+  const filteredCredits = tenantFilter ? credits.filter(c => c.tenantId.toLowerCase() === tenantFilter.toLowerCase()) : credits;
+  const filteredEvents = tenantFilter ? events.filter(e => e.tenantId.toLowerCase() === tenantFilter.toLowerCase()) : events;
+
   const [selectedTenant, setSelectedTenant] = useState<TenantCreditRow | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [markupInput, setMarkupInput] = useState<number>(35);
@@ -92,8 +99,8 @@ export function AdminBillingView({
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
-  const totalPages = Math.ceil(events.length / itemsPerPage);
-  const currentEvents = events.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const totalPages = Math.ceil(filteredEvents.length / itemsPerPage);
+  const currentEvents = filteredEvents.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const openAdjustModal = (row: TenantCreditRow) => {
     setSelectedTenant(row);
@@ -167,8 +174,50 @@ export function AdminBillingView({
           Hermes GPU Compute & Contabilidad Interna
         </h2>
         <p className="text-xs text-zinc-400 mt-0.5">
-          Auditoría de cómputo serverless RunPod, trazabilidad de márgenes y saldos de crédito por organización.
+          Auditoría de cómputo (Front, Back, IA), trazabilidad de márgenes y saldos de crédito por organización.
         </p>
+      </div>
+
+      {/* Breakdown per vertical */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {/* Frontend / Edge */}
+        <div className="p-4 rounded-xl bg-gradient-to-br from-indigo-500/10 to-transparent border border-indigo-500/20 shadow-sm flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-mono uppercase tracking-wider text-indigo-400 block mb-1">Frontend & Edge</span>
+            <span className="text-lg font-bold text-white font-mono">
+              ${filteredEvents.filter(e => e.capability.includes('front') || e.capability.includes('edge')).reduce((acc, curr) => acc + curr.rawCostUsd, 0).toFixed(2)} USD
+            </span>
+          </div>
+          <div className="w-10 h-10 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-400">
+            <Layers className="w-5 h-5" />
+          </div>
+        </div>
+
+        {/* Backend & Base de Datos */}
+        <div className="p-4 rounded-xl bg-gradient-to-br from-cyan-500/10 to-transparent border border-cyan-500/20 shadow-sm flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-mono uppercase tracking-wider text-cyan-400 block mb-1">Backend & DB</span>
+            <span className="text-lg font-bold text-white font-mono">
+              ${filteredEvents.filter(e => e.capability.includes('back') || e.capability.includes('db')).reduce((acc, curr) => acc + curr.rawCostUsd, 0).toFixed(2)} USD
+            </span>
+          </div>
+          <div className="w-10 h-10 rounded-full bg-cyan-500/10 flex items-center justify-center text-cyan-400">
+            <Server className="w-5 h-5" />
+          </div>
+        </div>
+
+        {/* IA / LLM / GPU */}
+        <div className="p-4 rounded-xl bg-gradient-to-br from-purple-500/10 to-transparent border border-purple-500/20 shadow-sm flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-mono uppercase tracking-wider text-purple-400 block mb-1">Inteligencia & GPU</span>
+            <span className="text-lg font-bold text-white font-mono">
+              ${filteredEvents.filter(e => !e.capability.includes('front') && !e.capability.includes('edge') && !e.capability.includes('back') && !e.capability.includes('db')).reduce((acc, curr) => acc + curr.rawCostUsd, 0).toFixed(2)} USD
+            </span>
+          </div>
+          <div className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-400">
+            <Zap className="w-5 h-5" />
+          </div>
+        </div>
       </div>
 
       {/* Financial KPIs */}
@@ -269,14 +318,14 @@ export function AdminBillingView({
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/[0.04] text-xs">
-                {credits.length === 0 ? (
+                {filteredCredits.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="py-8 text-center text-zinc-500">
                       No hay balances de crédito registrados aún.
                     </td>
                   </tr>
                 ) : (
-                  credits.map((row) => (
+                  filteredCredits.map((row) => (
                     <tr key={row.tenantId} className="hover:bg-white/[0.02] transition-colors">
                       <td className="py-3.5 px-4 font-mono font-semibold text-white">
                         {row.tenantId}
@@ -363,7 +412,7 @@ export function AdminBillingView({
               <p className="text-xs text-zinc-400">Haz clic en cualquier evento para auditar costos y márgenes en el Drawer.</p>
             </div>
             <span className="text-[11px] font-mono text-zinc-500">
-              Últimos {events.length} eventos
+              Últimos {filteredEvents.length} eventos
             </span>
           </div>
 
@@ -381,7 +430,7 @@ export function AdminBillingView({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/[0.04] text-xs">
-                  {events.length === 0 ? (
+                  {filteredEvents.length === 0 ? (
                     <tr>
                       <td colSpan={6} className="py-8 text-center text-zinc-500">
                         No hay eventos de cómputo registrados aún.

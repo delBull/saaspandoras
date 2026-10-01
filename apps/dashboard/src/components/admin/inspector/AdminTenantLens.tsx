@@ -105,12 +105,21 @@ export function AdminTenantLens({ tenant }: AdminTenantLensProps) {
 
       {/* Compute & Billing Telemetry */}
       <div className="space-y-2">
-        <h5 className="text-[11px] font-mono uppercase tracking-wider text-zinc-500">
-          Contabilidad de Cómputo (GPU RunPod)
-        </h5>
+        <div className="flex items-center justify-between">
+          <h5 className="text-[11px] font-mono uppercase tracking-wider text-zinc-500">
+            Contabilidad Consolidada (Front, Back, IA)
+          </h5>
+          <Link
+            href={`/admin?tab=billing&tenant=${tenant.slug}`}
+            className="flex items-center gap-1 text-[10px] font-semibold text-purple-400 hover:text-purple-300 transition-colors"
+          >
+            Ver Reporte
+            <ExternalLink className="w-3 h-3" />
+          </Link>
+        </div>
         <div className="p-4 rounded-xl bg-[#14141E] border border-white/[0.08] space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-zinc-400">Saldo Producción:</span>
+            <span className="text-zinc-400">Saldo Producción (Global):</span>
             <span className="font-mono font-bold text-white text-sm">
               ${tenant.compute.creditBalanceUsd.toFixed(2)} USD
             </span>
@@ -134,7 +143,7 @@ export function AdminTenantLens({ tenant }: AdminTenantLensProps) {
             </span>
           </div>
           <div className="flex items-center justify-between text-zinc-400">
-            <span>Total Gastado en Cómputo:</span>
+            <span>Total Gastado (Todas las capas):</span>
             <span className="font-mono text-amber-400">
               ${tenant.compute.totalSpentUsd.toFixed(2)} USD
             </span>
