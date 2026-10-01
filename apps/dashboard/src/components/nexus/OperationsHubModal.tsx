@@ -18,12 +18,15 @@ import {
   ExternalLink,
   FileText,
   Handshake,
+  Calendar,
 } from 'lucide-react';
 import TaskTerminal, { TerminalTask } from './TaskTerminal';
 import { TaskItem } from './taskTypes';
 import { NexusHermesTerminal } from '@/app/nexus/settings/NexusHermesTerminal';
 import type { OperatorContext } from '@/app/nexus/settings/SettingsClient';
 import { OperationsBroadcastTab } from './OperationsBroadcastTab';
+
+export type Tab = 'REGISTER' | 'DATAROOM' | 'WORK_ENGINE' | 'ACTIVITY';
 
 interface IPAsset {
   id: string;
@@ -125,8 +128,6 @@ const INITIAL_ASSETS: IPAsset[] = [
   }
 ];
 
-type Tab = 'REGISTER' | 'DATAROOM' | 'TERMINAL' | 'BROADCASTS';
-
 interface OpsModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -138,9 +139,11 @@ interface OpsModalProps {
 }
 
 export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName, userEmail, userRole }: OpsModalProps) {
-  const isSuperAdmin = (userRole || '').toUpperCase().trim() === 'SUPER_ADMIN';
+  const role = (userRole || '').toUpperCase().trim();
+  const isSuperAdmin = role === 'SUPER_ADMIN';
+  const isOpsAdmin = isSuperAdmin || role === 'ADMIN' || role === 'OPERATIONS';
 
-  const [tab, setTab] = useState<Tab>('TERMINAL');
+  const [tab, setTab] = useState<Tab>('WORK_ENGINE');
   const [terminalMode, setTerminalMode] = useState<'TASK' | 'HERMES'>('TASK');
   const [assets, setAssets] = useState<IPAsset[]>(INITIAL_ASSETS);
   const [selectedAsset, setSelectedAsset] = useState<IPAsset | null>(INITIAL_ASSETS[1] ?? null);
@@ -151,12 +154,12 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
   const [deals, setDeals] = useState<any[]>([]);
   const [loadingDeals, setLoadingDeals] = useState(false);
 
-  // Auto-fallback if a non-superadmin was on REGISTER
+  // Auto-fallback if a non-admin was on REGISTER
   useEffect(() => {
-    if (tab === 'REGISTER' && !isSuperAdmin) {
-      setTab('TERMINAL');
+    if (tab === 'REGISTER' && !isOpsAdmin) {
+      setTab('WORK_ENGINE');
     }
-  }, [tab, isSuperAdmin]);
+  }, [tab, isOpsAdmin]);
 
   const operatorContext: OperatorContext | null = userName
     ? {
@@ -348,12 +351,12 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
   if (!isOpen) return null;
 
   const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
-    { id: 'TERMINAL', label: 'TERMINAL', icon: <TerminalSquare className="w-3.5 h-3.5" /> },
-    ...(isSuperAdmin
+    { id: 'WORK_ENGINE', label: 'MY WORK & TASKS', icon: <TerminalSquare className="w-3.5 h-3.5" /> },
+    ...(isOpsAdmin
       ? [{ id: 'REGISTER' as Tab, label: `OPS REGISTER (${assets.length})`, icon: <Layers className="w-3.5 h-3.5" /> }]
       : []),
     { id: 'DATAROOM', label: 'DATA ROOM', icon: <FolderGit2 className="w-3.5 h-3.5" /> },
-    { id: 'BROADCASTS', label: '📢 AVISOS / BROADCASTS', icon: <Bell className="w-3.5 h-3.5" /> },
+    { id: 'ACTIVITY', label: 'ACTIVITY & INCIDENTS', icon: <Activity className="w-3.5 h-3.5" /> },
   ];
 
   const assetBadge = (status: IPAsset['status']) => {
@@ -397,7 +400,17 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
               </div>
             </div>
 
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-3 shrink-0">
+              <button
+                onClick={() => {
+                  setTab('WORK_ENGINE');
+                  setTerminalMode(terminalMode === 'HERMES' ? 'TASK' : 'HERMES');
+                }}
+                className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-mono text-[10px] transition-colors ${terminalMode === 'HERMES' && tab === 'WORK_ENGINE' ? 'border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20' : 'border-indigo-500/30 bg-indigo-500/10 text-indigo-300 hover:bg-indigo-500/20'}`}
+              >
+                <TerminalSquare className="w-3 h-3" />
+                {terminalMode === 'HERMES' && tab === 'WORK_ENGINE' ? 'sudo task_terminal' : 'sudo wake_up_hermes'}
+              </button>
               <span className="hidden lg:flex items-center gap-1.5 font-mono text-[10px] text-zinc-500">
                 <Activity className="w-3 h-3 text-purple-300" />
                 v2.5
@@ -429,37 +442,43 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
             ))}
           </div>
 
-          {/* TAB: TERMINAL */}
-          {tab === 'TERMINAL' && (
-            <div className="p-5 overflow-y-auto flex-1 space-y-4">
+          {/* TAB: WORK ENGINE */}
+          {tab === 'WORK_ENGINE' && (
+            <div className="p-5 overflow-y-auto flex-1 space-y-6">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-xs font-mono uppercase tracking-widest text-purple-300">
-                    {terminalMode === 'HERMES' ? 'Hermes Kernel · Terminal Conversacional' : 'Adicionador de Tareas Pendientes'}
+                    {terminalMode === 'HERMES' ? 'Hermes Kernel · Asistente Operativo' : 'Nexus Work Engine · Adicionador de Tareas'}
                   </p>
                   <p className="text-[11px] text-zinc-500 font-mono mt-0.5">
                     {terminalMode === 'HERMES'
-                      ? 'Misma terminal que Nexus Settings · /api/nexus/hermes-chat'
-                      : 'Responde las preguntas del terminal · la tarea queda pendiente y se envía a #pandoras-security'}
+                      ? 'Terminal conversacional integrada para delegar trabajo operativo a Hermes.'
+                      : 'Ingresa comandos estructurados para despachar tareas a #pandoras-security.'}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => setTerminalMode(terminalMode === 'HERMES' ? 'TASK' : 'HERMES')}
-                    className={`hidden sm:block px-3 py-1 rounded-lg border font-mono text-[10px] transition-colors ${terminalMode === 'HERMES' ? 'border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20' : 'border-indigo-500/30 bg-indigo-500/10 text-indigo-300 hover:bg-indigo-500/20'}`}
+                  <a
+                    href="/nexus/agenda"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg border border-zinc-700 bg-zinc-800/50 hover:bg-zinc-800 text-zinc-300 font-mono text-[10px] transition-colors"
                   >
-                    {terminalMode === 'HERMES' ? 'sudo task_terminal' : 'sudo wake_up_hermes'}
-                  </button>
+                    <Calendar className="w-3 h-3" />
+                    Abrir Agenda (Sovereign Meet)
+                  </a>
                   <span className="hidden sm:block px-2 py-1 rounded-lg border border-purple-500/20 bg-purple-500/10 text-purple-300 font-mono text-[10px]">
-                    sudo nexus ops
+                    sudo nexus work
                   </span>
                 </div>
               </div>
-              {terminalMode === 'HERMES' ? (
-                <NexusHermesTerminal role={userRole} operatorContext={operatorContext} autoBoot />
-              ) : (
-                <TaskTerminal mode="TASK" onTaskCreated={handleTerminalTask} userName={userName} userRole={userRole} />
-              )}
+              
+              <div className="flex-1">
+                {terminalMode === 'HERMES' ? (
+                  <NexusHermesTerminal role={userRole} operatorContext={operatorContext} autoBoot />
+                ) : (
+                  <TaskTerminal mode="TASK" onTaskCreated={handleTerminalTask} userName={userName} userRole={userRole} />
+                )}
+              </div>
             </div>
           )}
 
@@ -729,66 +748,68 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
                 )}
               </div>
 
-              {/* Corporate Data Room Directory Structure */}
-              <div className="space-y-3 pt-2">
-                <p className="text-[11px] text-zinc-400 font-mono uppercase tracking-wider">
-                  Estructura General del Corporate Data Room (/nexus)
-                </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="p-3.5 rounded-xl border border-white/10 bg-[#0C0C10] space-y-1.5 hover:border-white/20 transition-colors">
-                    <div className="flex items-center gap-2 text-purple-300 font-mono text-xs">
-                      <FolderGit2 className="w-4 h-4" />
-                      <span>01_company</span>
+              {/* Corporate Data Room Directory Structure (Only for Operations/Admins) */}
+              {isOpsAdmin && (
+                <div className="space-y-3 pt-4 border-t border-white/5 mt-4">
+                  <p className="text-[11px] text-zinc-400 font-mono uppercase tracking-wider mt-4">
+                    Estructura General del Corporate Data Room (/nexus)
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="p-3.5 rounded-xl border border-white/10 bg-[#0C0C10] space-y-1.5 hover:border-white/20 transition-colors">
+                      <div className="flex items-center gap-2 text-purple-300 font-mono text-xs">
+                        <FolderGit2 className="w-4 h-4" />
+                        <span>01_company</span>
+                      </div>
+                      <p className="text-xs text-zinc-400">Estatutos de constitución, libro de accionistas de MXHUB S.A. de C.V. y resoluciones corporativas de asamblea.</p>
                     </div>
-                    <p className="text-xs text-zinc-400">Estatutos de constitución, libro de accionistas de MXHUB S.A. de C.V. y resoluciones corporativas de asamblea.</p>
-                  </div>
 
-                  <div className="p-3.5 rounded-xl border border-white/10 bg-[#0C0C10] space-y-1.5 hover:border-white/20 transition-colors">
-                    <div className="flex items-center gap-2 text-rose-300 font-mono text-xs">
-                      <Shield className="w-4 h-4" />
-                      <span>02_ip</span>
+                    <div className="p-3.5 rounded-xl border border-white/10 bg-[#0C0C10] space-y-1.5 hover:border-white/20 transition-colors">
+                      <div className="flex items-center gap-2 text-rose-300 font-mono text-xs">
+                        <Shield className="w-4 h-4" />
+                        <span>02_ip</span>
+                      </div>
+                      <p className="text-xs text-zinc-400">Registro IMPI PANDORAS™, depósitos de código fuente, marcas denominativas y expedientes AEP.</p>
                     </div>
-                    <p className="text-xs text-zinc-400">Registro IMPI PANDORAS™, depósitos de código fuente, marcas denominativas y expedientes AEP.</p>
-                  </div>
 
-                  <div className="p-3.5 rounded-xl border border-white/10 bg-[#0C0C10] space-y-1.5 hover:border-white/20 transition-colors">
-                    <div className="flex items-center gap-2 text-indigo-300 font-mono text-xs">
-                      <Code2 className="w-4 h-4" />
-                      <span>03_technology</span>
+                    <div className="p-3.5 rounded-xl border border-white/10 bg-[#0C0C10] space-y-1.5 hover:border-white/20 transition-colors">
+                      <div className="flex items-center gap-2 text-indigo-300 font-mono text-xs">
+                        <Code2 className="w-4 h-4" />
+                        <span>03_technology</span>
+                      </div>
+                      <p className="text-xs text-zinc-400">Arquitectura Growth OS v3.0, repositorios bajo control, smart contracts verificados y deployer keys.</p>
                     </div>
-                    <p className="text-xs text-zinc-400">Arquitectura Growth OS v3.0, repositorios bajo control, smart contracts verificados y deployer keys.</p>
-                  </div>
 
-                  <div className="p-3.5 rounded-xl border border-white/10 bg-[#0C0C10] space-y-1.5 hover:border-white/20 transition-colors">
-                    <div className="flex items-center gap-2 text-emerald-300 font-mono text-xs">
-                      <Cpu className="w-4 h-4" />
-                      <span>04_business</span>
+                    <div className="p-3.5 rounded-xl border border-white/10 bg-[#0C0C10] space-y-1.5 hover:border-white/20 transition-colors">
+                      <div className="flex items-center gap-2 text-emerald-300 font-mono text-xs">
+                        <Cpu className="w-4 h-4" />
+                        <span>04_business</span>
+                      </div>
+                      <p className="text-xs text-zinc-400">Modelos financieros, proyecciones de cobro de Platform Fees/Royalty Fees y pipeline de alianzas RWA.</p>
                     </div>
-                    <p className="text-xs text-zinc-400">Modelos financieros, proyecciones de cobro de Platform Fees/Royalty Fees y pipeline de alianzas RWA.</p>
-                  </div>
 
-                  <div className="p-3.5 rounded-xl border border-white/10 bg-[#0C0C10] space-y-1.5 hover:border-white/20 transition-colors">
-                    <div className="flex items-center gap-2 text-cyan-300 font-mono text-xs">
-                      <FolderGit2 className="w-4 h-4" />
-                      <span>05_legal</span>
+                    <div className="p-3.5 rounded-xl border border-white/10 bg-[#0C0C10] space-y-1.5 hover:border-white/20 transition-colors">
+                      <div className="flex items-center gap-2 text-cyan-300 font-mono text-xs">
+                        <FolderGit2 className="w-4 h-4" />
+                        <span>05_legal</span>
+                      </div>
+                      <p className="text-xs text-zinc-400">Master License Agreement (Holding ➔ USA LLC), convenios de confidencialidad NDA y licencias territoriales.</p>
                     </div>
-                    <p className="text-xs text-zinc-400">Master License Agreement (Holding ➔ USA LLC), convenios de confidencialidad NDA y licencias territoriales.</p>
-                  </div>
 
-                  <div className="p-3.5 rounded-xl border border-white/10 bg-[#0C0C10] space-y-1.5 hover:border-white/20 transition-colors">
-                    <div className="flex items-center gap-2 text-amber-300 font-mono text-xs">
-                      <ArrowUpRight className="w-4 h-4" />
-                      <span>06_investor</span>
+                    <div className="p-3.5 rounded-xl border border-white/10 bg-[#0C0C10] space-y-1.5 hover:border-white/20 transition-colors">
+                      <div className="flex items-center gap-2 text-amber-300 font-mono text-xs">
+                        <ArrowUpRight className="w-4 h-4" />
+                        <span>06_investor</span>
+                      </div>
+                      <p className="text-xs text-zinc-400">Institutional Pitch, Data Room index, modelos SAFE y estructura de participación en Pandoras USA LLC.</p>
                     </div>
-                    <p className="text-xs text-zinc-400">Institutional Pitch, Data Room index, modelos SAFE y estructura de participación en Pandoras USA LLC.</p>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
 
-          {/* TAB: BROADCASTS & NOTIFICATIONS */}
-          {tab === 'BROADCASTS' && (
+          {/* TAB: ACTIVITY & INCIDENTS */}
+          {tab === 'ACTIVITY' && (
             <OperationsBroadcastTab
               userName={userName}
               userEmail={userEmail}
@@ -803,8 +824,8 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
               MXHUB ECOSISTEMA BLOCKCHAIN S.A. DE C.V. · HOLDING
             </span>
             <div className="flex items-center gap-3 shrink-0">
-              {/* Assignee & Discord controls strictly visible on TERMINAL tab */}
-              {tab === 'TERMINAL' && (
+              {/* Assignee & Discord controls strictly visible on WORK_ENGINE tab */}
+              {tab === 'WORK_ENGINE' && (
                 <>
                   <select
                     value={selectedAssignee}
