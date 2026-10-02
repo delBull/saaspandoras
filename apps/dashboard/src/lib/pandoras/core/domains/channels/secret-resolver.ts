@@ -1,3 +1,5 @@
+import { resolveMasterPhoneNumberId } from '@/lib/whatsapp/config';
+
 export interface SecretResolver {
   resolve(credentialsRef: string): Promise<string>;
 }
@@ -58,7 +60,7 @@ export class EnvironmentSecretResolver implements SecretResolver {
       }
       
       const devToken = process.env.HERMES_WHATSAPP_TOKEN || process.env.META_WHATSAPP_TOKEN;
-      const devPhoneId = process.env.HERMES_WHATSAPP_PHONE_NUMBER || process.env.META_PHONE_NUMBER_ID;
+      const devPhoneId = resolveMasterPhoneNumberId();
       if (devToken && devPhoneId) {
         return `${devToken}|${devPhoneId}`;
       }

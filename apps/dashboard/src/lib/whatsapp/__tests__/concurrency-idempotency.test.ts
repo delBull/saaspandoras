@@ -7,6 +7,10 @@ describe('⚡ Suite B: Concurrency, Idempotency & Persistent Ledger', () => {
   beforeEach(() => {
     PlatformAuditLedgerService.resetForTesting();
     WhatsAppDispatcher.resetDeduplicationForTesting();
+    // Pin canonical + legacy vars so .env (auto-loaded by bun) cannot shadow the test phone id.
+    process.env.HERMES_PHONE_NUMBER_ID = 'master_phone_id_pandoras';
+    process.env.WHATSAPP_PHONE_NUMBER_ID = 'master_phone_id_pandoras';
+    process.env.META_PHONE_NUMBER_ID = 'master_phone_id_pandoras';
   });
 
   it('IDEMP-01: Inbound message with already processed wamid is deduplicated fail-safe', async () => {

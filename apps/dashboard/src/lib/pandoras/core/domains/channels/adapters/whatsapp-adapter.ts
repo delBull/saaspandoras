@@ -6,6 +6,7 @@ import { SecretResolver, EnvironmentSecretResolver, DatabaseSecretResolver } fro
 import { BindingResolver, DatabaseBindingResolver, WhatsAppIdentity } from '../binding-resolver';
 import { SafeHttpClient } from '../../hermes/runtime/egress-guard';
 import { OrganizationSDK } from '@/lib/platform/organization-sdk';
+import { resolveMasterPhoneNumberId } from '@/lib/whatsapp/config';
 
 export interface HermesWhatsAppEnvelope {
   source: 'whatsapp';
@@ -127,10 +128,10 @@ export class WhatsAppAdapter implements ChannelAdapter {
           const org = await OrganizationSDK.resolve(input.organizationId);
           const slugSafe = org.slug.replace(/-/g, '_').toUpperCase();
           token = process.env[`META_WHATSAPP_TOKEN_${slugSafe}`] || process.env.META_WHATSAPP_TOKEN || 'mock_token';
-          phoneNumberId = process.env[`META_PHONE_NUMBER_ID_${slugSafe}`] || process.env.META_PHONE_NUMBER_ID || process.env.HERMES_WHATSAPP_PHONE_NUMBER || 'mock_phone_id';
+          phoneNumberId = process.env[`META_PHONE_NUMBER_ID_${slugSafe}`] || resolveMasterPhoneNumberId() || 'mock_phone_id';
         } catch (e) {
           token = process.env.META_WHATSAPP_TOKEN || 'mock_token';
-          phoneNumberId = process.env.META_PHONE_NUMBER_ID || process.env.HERMES_WHATSAPP_PHONE_NUMBER || 'mock_phone_id';
+          phoneNumberId = resolveMasterPhoneNumberId() || 'mock_phone_id';
         }
       }
 

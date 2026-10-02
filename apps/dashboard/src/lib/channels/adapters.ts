@@ -1,6 +1,7 @@
 import { db } from "@/db";
 import { channelIdentityBindings } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
+import { resolveMasterPhoneNumberId } from "@/lib/whatsapp/config";
 
 export interface ChannelSendRequest {
   identityId: string;
@@ -86,7 +87,7 @@ export class WhatsAppAdapter implements ChannelAdapter {
 
     const waId = binding.externalUserId;
     // For Phase 4, we use env. Future: fetch from tenant db.
-    const phoneNumberId = process.env.HERMES_WHATSAPP_PHONE_NUMBER_ID || process.env.HERMES_WHATSAPP_PHONE_NUMBER;
+    const phoneNumberId = resolveMasterPhoneNumberId();
     const token = process.env.WHATSAPP_ACCESS_TOKEN; 
 
     if (!phoneNumberId || !token) {

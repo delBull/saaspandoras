@@ -7,6 +7,9 @@ describe('🚪 Suite C: WhatsApp Dispatcher Boundary & Phone Registry', () => {
   const masterPhone = '109876543210';
 
   beforeEach(() => {
+    // Canonical primary var is loaded from .env by bun; pin it to the test value
+    // so it does not shadow the registry under test.
+    process.env.HERMES_PHONE_NUMBER_ID = masterPhone;
     process.env.WHATSAPP_PHONE_NUMBER_ID = masterPhone;
     process.env.META_PHONE_NUMBER_ID = masterPhone;
   });
@@ -23,9 +26,10 @@ describe('🚪 Suite C: WhatsApp Dispatcher Boundary & Phone Registry', () => {
                 },
                 messages: [
                   {
-                    from: '5215500000000',
-                    id: 'wamid.HBgLdW5rbm93bg==',
-                    text: { body: 'Ataque o mensaje espurio' },
+from: '5215500000000',
+                  id: 'wamid.HBgLdW5rbm93bg==',
+                  type: 'text',
+                  text: { body: 'Ataque o mensaje espurio' },
                   },
                 ],
               },

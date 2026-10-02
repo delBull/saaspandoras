@@ -15,6 +15,7 @@ import { eq } from 'drizzle-orm';
 import { HumanHandoffProtocol } from '@/lib/hermes/human-handoff';
 import { InteractionRouter } from '@/lib/hermes/interaction-router';
 import { sendWhatsAppMessage } from './utils/client';
+import { resolveMasterPhoneNumberId } from './config';
 import { buildCanonicalWhatsAppConversationId, maskPhoneNumber } from './utils/conversation-id';
 import { getDefaultRuntime } from '@/lib/pandoras/core/domains/hermes/runtime/hermes-runtime';
 import { formatWhatsAppText } from './utils/formatter';
@@ -97,7 +98,7 @@ export class WhatsAppDispatcher {
   static async resolveTargetByPhoneNumberId(phoneNumberId?: string): Promise<ResolvedPhoneTarget | null> {
     if (!phoneNumberId) return null;
 
-    const masterPhoneId = (process.env.WHATSAPP_PHONE_NUMBER_ID || process.env.META_PHONE_NUMBER_ID || '').trim();
+    const masterPhoneId = resolveMasterPhoneNumberId();
 
     // 1. Check if incoming message arrives on Pandora's Master WhatsApp Number
     if (masterPhoneId && String(phoneNumberId).trim() === masterPhoneId) {

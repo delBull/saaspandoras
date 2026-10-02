@@ -13,6 +13,7 @@
 
 import { SignalWireService } from '@/lib/integrations/signalwire-service';
 import { maskPhoneNumber } from '@/lib/whatsapp/utils/conversation-id';
+import { resolveMasterPhoneNumberId } from '@/lib/whatsapp/config';
 
 export interface OutboundMessagePayload {
   to: string;
@@ -37,10 +38,7 @@ export interface WhatsAppProvider {
 // ─────────────────────────────────────────────────────────────────────────────
 export class MetaWhatsAppProvider implements WhatsAppProvider {
   async sendMessage(payload: OutboundMessagePayload): Promise<OutboundMessageResult> {
-    const phoneNumberId =
-      process.env.WHATSAPP_PHONE_NUMBER_ID ||
-      process.env.HERMES_WHATSAPP_PHONE_NUMBER_ID ||
-      process.env.META_PHONE_NUMBER_ID;
+    const phoneNumberId = resolveMasterPhoneNumberId();
 
     const token = process.env.WHATSAPP_ACCESS_TOKEN;
 
