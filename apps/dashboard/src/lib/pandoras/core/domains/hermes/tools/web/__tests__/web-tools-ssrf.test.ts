@@ -1,15 +1,17 @@
-import { describe, it, expect, beforeEach } from '@jest/globals';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { WebFetchTool } from '../web-fetch-tool';
 import { WebExtractTool } from '../web-extract-tool';
 import { WebSearchTool, MockWebSearchProvider } from '../web-search-provider';
 import { WebCrawlTool } from '../web-crawl-tool';
 import { HermesToolExecutor } from '../../../runtime/tool-executor';
+import { registerWebTools } from '../index';
 
 describe('🌐 Hermes Web Intelligence & Anti-SSRF Defense Suite (F2)', () => {
   let executor: HermesToolExecutor;
 
   beforeEach(() => {
     executor = new HermesToolExecutor();
+    registerWebTools(executor);
     WebSearchTool.setProvider(new MockWebSearchProvider());
   });
 

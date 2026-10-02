@@ -32,7 +32,7 @@ describe('PlatformCapabilityRegistryService (F9.2)', () => {
     role: 'ADMIN',
     walletAddress: '0x1111111111111111111111111111111111111111',
     sessionStartedAt: new Date().toISOString(),
-    isDiscord2faVerified: false,
+    isDiscord2faVerified: true,
   };
 
   const operator: PlatformActor = {
@@ -53,9 +53,9 @@ describe('PlatformCapabilityRegistryService (F9.2)', () => {
     isDiscord2faVerified: false,
   };
 
-  it('PCAP-01: Catalog contains exactly 13 canonical platform capabilities', () => {
+  it('PCAP-01: Catalog contains exactly 25 canonical platform capabilities', () => {
     const all = PlatformCapabilityRegistryService.getAllDefinitions();
-    expect(all.length).toBe(13);
+    expect(all.length).toBe(25);
   });
 
   it('PCAP-02: SUPER_ADMIN with 2FA has authority over all capabilities including CRITICAL (A and B)', () => {

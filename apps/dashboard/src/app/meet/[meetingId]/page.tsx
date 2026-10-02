@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { meetings } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { SovereignMeetClient } from "@/components/meet/SovereignMeetClient";
+import { getNexusAuthContext } from "@/lib/nexus/nexus-rbac";
 
 export const metadata: Metadata = {
     title: "Sovereign Meet | Pandora's",
@@ -59,10 +60,18 @@ export default async function MeetPage({ params }: { params: Promise<{ meetingId
         // Non-fatal — we proceed with default orgId
     }
 
-    // Generate a server-side signed joinRef (same mechanism as /agenda endpoint).
-    // collaboratorId = 'guest:<meetingId>' → token endpoint grants 'participant' role.
+    const authCtx = await getNexusAuthContext();
+    const isGuest = !authCtx.isAuthenticated;
+    
+    // We strictly use the authenticated collaborator ID if present.
+    // If they are a guest, they remain 'guest:<meetingId>'.
+    // The Jitsi JaaS token generation in /api/v1/meet/token handles the roles based on this ID.
+    const collaboratorId = authCtx.isAuthenticated ? authCtx.collaboratorId : `guest:${meetingId}`;
+    const name = authCtx.isAuthenticated ? authCtx.name : "Guest";
+    const email = authCtx.isAuthenticated ? authCtx.email : "guest@pandoras.finance";
+
     const joinRef = jwt.sign(
-        { meetingId, collaboratorId: `guest:${meetingId}`, orgId },
+        { meetingId, collaboratorId, orgId, name, email },
         MEET_JOIN_SECRET,
         { algorithm: "HS256", expiresIn: "15m" }
     );

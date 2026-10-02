@@ -9,7 +9,7 @@
  * - K22-RLS-REAL: Row-Level Security Enabled on Hermes Tables
  */
 
-import { describe, it, expect } from '@jest/globals';
+import { describe, it, expect } from 'vitest';
 import { TenantSessionTokenSigner } from '../tenant-session-token';
 import { db } from '../../../../../../../db';
 import { sql } from 'drizzle-orm';

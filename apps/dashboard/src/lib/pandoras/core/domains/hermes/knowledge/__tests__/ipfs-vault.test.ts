@@ -3,7 +3,7 @@
  * apps/dashboard/src/lib/pandoras/core/domains/hermes/knowledge/__tests__/ipfs-vault.test.ts
  */
 
-import { describe, it, expect, beforeAll } from '@jest/globals';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { TenantIpfsVaultService } from '../ipfs-vault';
 import { HermesIdentitySigner } from '../../identity/identity-signer';
 import type { EncryptionContextAAD } from '../envelope-vault';

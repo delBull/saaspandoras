@@ -25,8 +25,9 @@ import {
   resolveNexusTmaSession,
 } from '../nexus-tma-auth';
 
-// ─── Top-level mock (Bun requires vi.mock to be hoisted) ─────────────────────
-const mockFindFirst = vi.fn();
+const { mockFindFirst } = vi.hoisted(() => ({
+  mockFindFirst: vi.fn()
+}));
 vi.mock('@/db', () => ({
   db: {
     query: {

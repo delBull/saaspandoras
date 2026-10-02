@@ -3,18 +3,19 @@ import { NurtureEngine, LeadNurtureState } from '../nurture-engine';
 import { NurtureTriggerEvent, NurturePolicy } from '../../contracts/nurture';
 
 describe('Hermes Multichannel Nurture Engine — Phase 4 Test Suite', () => {
+  const activeHoursTime = new Date('2026-09-12T16:00:00Z'); // 16:00 UTC (outside quiet hours 23:00 - 13:00)
+  const quietHoursTime = new Date('2026-09-12T02:00:00Z');  // 02:00 UTC (inside quiet hours)
+
   const baseLeadState: LeadNurtureState = {
     leadId: 'lead-789',
     totalFollowUpsSent: 1,
-    lastTouchTimestamp: new Date(Date.now() - 36 * 3600 * 1000).toISOString(), // 36 hours ago (cooldown clear)
+    lastTouchTimestamp: new Date(activeHoursTime.getTime() - 36 * 3600 * 1000).toISOString(), // 36 hours ago (cooldown clear)
     hasWhatsAppConsent: true,
     hasEmailConsent: true,
     email: 'carlos@empresa.com',
     phoneNumber: '+5213221234567'
   };
 
-  const activeHoursTime = new Date('2026-09-12T16:00:00Z'); // 16:00 UTC (outside quiet hours 23:00 - 13:00)
-  const quietHoursTime = new Date('2026-09-12T02:00:00Z');  // 02:00 UTC (inside quiet hours)
 
   it('triggers email dossier for lead inactive for 24h', () => {
     const event: NurtureTriggerEvent = {
@@ -29,7 +30,6 @@ describe('Hermes Multichannel Nurture Engine — Phase 4 Test Suite', () => {
     };
 
     const result = NurtureEngine.evaluateTrigger(event, baseLeadState, undefined, activeHoursTime);
-
     expect(result.shouldTrigger).toBe(true);
     expect(result.proposal?.channel).toBe('EMAIL');
     expect(result.proposal?.templateIdentifier).toBe('real-estate-dossier-welcome');

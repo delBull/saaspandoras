@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from '@jest/globals';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { WebBrowserTool, MockBrowserProvider } from '../browser-provider';
 import { HermesToolExecutor } from '../../../runtime/tool-executor';
 

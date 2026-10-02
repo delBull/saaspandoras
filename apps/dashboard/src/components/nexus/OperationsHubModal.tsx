@@ -850,7 +850,7 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
                     Cursos, certificaciones operativas y tracks ejecutivos para roles institucionales (COO, CMO, RWA).
                   </p>
                   <a
-                    href="/admin/academy"
+                    href="https://academy.pandoras.finance"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center justify-between w-full px-3.5 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs font-mono transition-colors hover:bg-emerald-500/20"
@@ -870,7 +870,7 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
                     Gestor narrativo de onboarding, configurador de estaciones (Sovereign Doctrine) y FAQs de Hermes.
                   </p>
                   <a
-                    href="/admin/guides"
+                    href="/admin/hermes"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center justify-between w-full px-3.5 py-2 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-mono transition-colors hover:bg-indigo-500/20"

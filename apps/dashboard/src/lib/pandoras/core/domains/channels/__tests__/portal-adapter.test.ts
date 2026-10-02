@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from './test-helpers';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { PortalAdapter } from '../adapters/portal-adapter';
 import { ControlPlaneContext } from '../../control-plane/application/context';
 import { InvalidChannelPayloadError } from '../channel-errors';

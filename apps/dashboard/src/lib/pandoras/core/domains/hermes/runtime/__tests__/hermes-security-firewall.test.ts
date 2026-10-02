@@ -11,7 +11,7 @@
  * - Blast Radius Containment: Simulated Compromised LLM Execution
  */
 
-import { describe, it, expect } from '@jest/globals';
+import { describe, it, expect } from 'vitest';
 import { KnowledgeEnvelopeVault, DefaultKmsKekProvider } from '../../knowledge/envelope-vault';
 import { EgressGuard, SafeHttpClient } from '../egress-guard';
 import { ToolAuthorizationGate } from '../tool-authorization-gate';

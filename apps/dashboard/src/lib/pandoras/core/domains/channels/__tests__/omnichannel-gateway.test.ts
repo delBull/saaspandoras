@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from './test-helpers';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { DefaultOmnichannelGateway } from '../omnichannel-gateway';
 import { ControlPlaneContext } from '../../control-plane/application/context';
 import { DuplicateMessageError } from '../channel-errors';

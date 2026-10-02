@@ -76,10 +76,10 @@ describe('🏛️ Hermes Tenant Identity & Schedule Link Separation', () => {
     const schedulingCap = reasoningContext.activeCapabilities.find(c => c.id === 'scheduling.book');
     expect(schedulingCap).toBeDefined();
     
-    // Suggested action must contain clean slug /schedule/snarai, NOT raw UUID
-    const scheduleAction = (schedulingCap!.suggestedActions || []).find(a => a.includes('/schedule/'));
+    // Suggested action must contain clean slug /events/snarai, NOT raw UUID
+    const scheduleAction = (schedulingCap!.suggestedActions || []).find(a => a.includes('/events/'));
     expect(scheduleAction).toBeDefined();
-    expect(scheduleAction).toContain('/schedule/snarai');
+    expect(scheduleAction).toContain('/events/snarai');
     expect(scheduleAction).not.toContain('9079ecf5-2162-4078-bddf-66b607e2d32f');
   });
 
@@ -105,7 +105,7 @@ describe('🏛️ Hermes Tenant Identity & Schedule Link Separation', () => {
     const schedulingCap = reasoningContext.activeCapabilities.find(c => c.id === 'scheduling.book');
     expect(schedulingCap).toBeDefined();
 
-    const scheduleAction = (schedulingCap!.suggestedActions || []).find(a => a.includes('/schedule/'));
-    expect(scheduleAction).toContain('/schedule/pandoras');
+    const scheduleAction = (schedulingCap!.suggestedActions || []).find(a => a.includes('/events/'));
+    expect(scheduleAction).toContain('/events/pandoras');
   });
 });

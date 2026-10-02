@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from '@jest/globals';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { EventSpine, ChannelMessageReceivedPayload, ChannelMessageSendPayload } from '../../../../events/event-spine';
 import { CognitiveRuntimeListener } from '../cognitive-runtime-listener';
 import { StrategyGovernanceBridge } from '../strategy-governance-bridge';
@@ -44,7 +44,7 @@ describe('Governance Pipeline Integration (Cognitive -> Strategy -> Governance -
     );
 
     const inboundMessage: NormalizedInboundMessage = {
-      organizationId: 'org_snarai',
+      organizationId: 'snarai',
       channel: {
         type: 'whatsapp',
         bindingId: 'wb_123',
@@ -78,9 +78,15 @@ describe('Governance Pipeline Integration (Cognitive -> Strategy -> Governance -
     });
 
     // Verify outbound message was produced through the Governance bridge
+    let retries = 20;
+    while (!outboundPublished && retries > 0) {
+      await new Promise(resolve => setTimeout(resolve, 50));
+      retries--;
+    }
+    
     expect(outboundPublished).toBe(true);
     expect(outboundPayload).toBeDefined();
     expect(outboundPayload.targetProvider).toBe('whatsapp');
-    expect(outboundPayload.normalizedMessage.organizationId).toBe('org_snarai');
+    expect(outboundPayload.normalizedMessage.organizationId).toBe('snarai');
   });
 });

@@ -1,15 +1,17 @@
-import { describe, it, expect, beforeEach } from '@jest/globals';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { SeoAuditEngine } from '../seo-audit-engine';
 import { SeoContentEngine } from '../seo-content-engine';
 import { SeoSchemaEngine } from '../seo-schema-engine';
 import { SeoCompetitorEngine } from '../seo-competitor-engine';
 import { HermesToolExecutor } from '../../../runtime/tool-executor';
+import { registerSeoTools } from '../index';
 
 describe('🎯 Hermes SEO Intelligence Engine Suite (F4)', () => {
   let executor: HermesToolExecutor;
 
   beforeEach(() => {
     executor = new HermesToolExecutor();
+    registerSeoTools(executor);
   });
 
   const validHtml = `

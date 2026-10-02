@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
     // 'guest:<meetingId>' is the collaboratorId used by /meet/[meetingId] for
     // unauthenticated leads arriving via booking confirmation links.
     const isGuestLead = collaboratorId.startsWith('guest:');
-    const isHost = !isGuestLead && meeting.hostCollaboratorId === collaboratorId;
+    const isHost = !isGuestLead && meeting.hostCollaboratorId?.toString() === collaboratorId;
     const role = isHost ? "host" : "participant";
     const participantName = isGuestLead ? "Invitado" : `Collaborator ${collaboratorId.substring(0, 8)}`;
 

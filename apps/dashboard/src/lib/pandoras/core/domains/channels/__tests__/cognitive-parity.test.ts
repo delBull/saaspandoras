@@ -1,4 +1,4 @@
-import { describe, it, expect } from './test-helpers';
+import { describe, it, expect } from 'vitest';
 import { PortalAdapter } from '../adapters/portal-adapter';
 import { TelegramAdapter } from '../adapters/telegram-adapter';
 import { ControlPlaneContext } from '../../control-plane/application/context';

@@ -41,13 +41,7 @@ export async function isAdmin(address?: string | null): Promise<boolean> {
   }
 
 
-  // ⚡ ADMIN BYPASS: Marco's Admin Wallet (from env var)
-  const MARCO_ADMIN = (process.env.MARCO_ADMIN_WALLET || "").toLowerCase();
-  if (MARCO_ADMIN && lower === MARCO_ADMIN) return true;
 
-  // ⚡ Optimistic check for Super Admin (No DB call)
-  const superAdmin = (process.env.NEXT_PUBLIC_SUPER_ADMIN_WALLET || process.env.SUPER_ADMIN_WALLET || "0x_undefined_admin").toLowerCase();
-  if (lower === superAdmin && superAdmin !== "0x_undefined_admin") return true;
 
   try {
     // 1. Check administrators table (case-insensitive)

@@ -5,7 +5,7 @@
  * Invariants of Journey Progression, Optimistic Concurrency, and Fail-Closed Boundaries.
  */
 
-import { describe, it, expect, beforeEach } from '@jest/globals';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { DefaultRuntimePolicyValidator } from '../policy-validator';
 import { JourneyEngine } from '../journey-engine';
 import { JourneyTransitionValidator } from '../../journeys/transition-validator';
@@ -17,6 +17,9 @@ import {
 } from '../../journeys/contracts';
 import { PostgresConversationMemoryProvider } from '../memory/postgres-memory-provider';
 import { RuntimePolicy, ReasoningContext, ReasoningOutput } from '../contracts';
+import { HermesToolExecutor } from '../tool-executor';
+import { KnowledgeEngine } from '../knowledge-engine';
+import { ContextHygieneValidator } from '../context-hygiene-validator';
 
 describe('Hermes OS Safety Contract — Fase 2.2 & 3.0 Certification', () => {
   let policyValidator: DefaultRuntimePolicyValidator;
@@ -401,7 +404,6 @@ describe('Hermes OS Safety Contract — Fase 2.2 & 3.0 Certification', () => {
   // T10: Tool Authorization & Execution Boundary Gate
   // ────────────────────────────────────────────────────────────────────────────
   it('T10: Tool Authorization & Execution — Precondition blocks unauthorized tool execution', async () => {
-    const { HermesToolExecutor } = require('../tool-executor');
     const executor = new HermesToolExecutor();
 
     // 1. Adversary prompts Hermes to execute internal holding tool without clearance
@@ -443,15 +445,14 @@ describe('Hermes OS Safety Contract — Fase 2.2 & 3.0 Certification', () => {
   // T11: Knowledge Retrieval Boundary (Tenant RAG Scope Enforcement)
   // ────────────────────────────────────────────────────────────────────────────
   it('T11: Knowledge Retrieval Boundary — Scope check guarantees 0 cross-tenant chunks', async () => {
-    const { KnowledgeEngine } = require('../knowledge-engine');
     const knowledgeEngine = new KnowledgeEngine();
 
     const normalizedTenantA = {
       organizationId: 'snarai',
-      channel: { type: 'web', bindingId: 'w1' },
-      actor: { identityId: 'usr1' },
+      channel: { type: 'portal' as const, bindingId: 'w1', externalConversationId: 'w1' },
+      actor: { identityId: 'usr1', externalActorId: 'usr1' },
       conversation: { conversationId: 'conv1' },
-      message: { messageId: 'm1', content: 'Dame información del proyecto' },
+      message: { messageId: 'm1', externalMessageId: 'm1', content: 'Dame información del proyecto' },
       correlationId: 'c1',
       idempotencyKey: 'i1',
       receivedAt: new Date()
@@ -471,7 +472,7 @@ describe('Hermes OS Safety Contract — Fase 2.2 & 3.0 Certification', () => {
   // T12: Pre-LLM Context Hygiene Validator Gate
   // ────────────────────────────────────────────────────────────────────────────
   it('T12: Context Pre-LLM Boundary — ContextHygieneValidator detects and sanitizes forbidden secrets', () => {
-    const { ContextHygieneValidator } = require('../context-hygiene-validator');
+    // 1. Construct a contaminated context with injected secrets and invalid statuses
 
     // 1. Construct a contaminated context with injected secrets and invalid statuses
     const contaminatedContext: ReasoningContext = {

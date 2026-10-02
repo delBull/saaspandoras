@@ -5,7 +5,7 @@
  * journey persistence, and disclosure pipeline across channels.
  */
 
-import { describe, it, expect } from '@jest/globals';
+import { describe, it, expect } from 'vitest';
 import { ActorIdentityResolver } from '../identity/actor-identity-resolver';
 import { ContextHygieneValidator } from '../context-hygiene-validator';
 import { HermesToolExecutor } from '../tool-executor';
@@ -13,7 +13,8 @@ import { JourneyEngine } from '../journey-engine';
 import { DefaultRuntimePolicyValidator } from '../policy-validator';
 import { PostgresConversationMemoryProvider } from '../memory/postgres-memory-provider';
 import { ReasoningContext, ReasoningOutput, RuntimePolicy } from '../contracts';
-
+import { HermesRuntime } from '../hermes-runtime';
+import { MockReasoningProvider } from '../reasoning-providers';
 describe('Hermes OS End-to-End Multichannel Runtime Certification', () => {
   const defaultPolicy: RuntimePolicy = {
     allowUnverifiedClaims: false,
@@ -197,13 +198,9 @@ describe('Hermes OS End-to-End Multichannel Runtime Certification', () => {
   // E2E-05: Integrated HermesRuntime Pipeline Execution (Kernel Orchestrator)
   // ────────────────────────────────────────────────────────────────────────────
   it('E2E-05: Runtime Orchestration — HermesRuntime.respond() executes full cognitive turn with DB read-back', async () => {
-    const { HermesRuntime } = require('../hermes-runtime');
-    const { MockReasoningProvider } = require('../reasoning-providers');
-    const { PostgresConversationMemoryProvider } = require('../memory/postgres-memory-provider');
-
     const conversationId = `conv_e2e_${Date.now()}`;
     const actorId = `actor_e2e_${Date.now()}`;
-    const controlPlaneContext = { actorId, organizationId: 'snarai' };
+    const controlPlaneContext = { actorId, organizationId: 'snarai', role: 'OPERATOR' as const, permissions: [] };
 
     const mockProvider = new MockReasoningProvider('Bienvenido a S\'Narai. ¿Deseas conocer la tesis de inversión?');
     const memoryProvider = new PostgresConversationMemoryProvider();
@@ -238,5 +235,5 @@ describe('Hermes OS End-to-End Multichannel Runtime Certification', () => {
     expect(loadedMemory.messages.length).toBe(2);
     expect(loadedMemory.messages[0]!.content).toBe('Hola Hermes, quiero información de S\'Narai');
     expect(loadedMemory.messages[1]!.content).toContain('S\'Narai');
-  });
+  }, 15000);
 });

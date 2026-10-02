@@ -1,4 +1,4 @@
-import { describe, it, expect } from '@jest/globals';
+import { describe, it, expect } from 'vitest';
 import { HermesKernel } from '../runtimes/hermes-kernel';
 import { HermesJourneyEngine } from '../journey-engine';
 import { ContactContext, MemoryContext } from '../../pandoras/core/contracts/execution-contracts';

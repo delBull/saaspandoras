@@ -235,17 +235,7 @@ export async function getNexusAuthContext(
     const sessionWallet = (session?.address || reqHeaders.get('x-wallet-address') || reqHeaders.get('x-thirdweb-address'))?.toLowerCase();
 
     if (sessionWallet && isVerified) {
-      const CANONICAL_ADMINS = [
-        '0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9',
-        '0x121a897f0f5a9b7c44756f40bdb2c8e87d2834fa',
-        '0x96631d6c5295f1f08334888c5d6f3a246fa9c3ba',
-      ];
-      const isSuperWallet = 
-        CANONICAL_ADMINS.includes(sessionWallet) ||
-        sessionWallet === (process.env.NEXT_PUBLIC_SUPER_ADMIN_WALLET || process.env.SUPER_ADMIN_WALLET || '').toLowerCase() ||
-        sessionWallet === (process.env.MARCO_ADMIN_WALLET || '').toLowerCase();
-
-      const isPlatformAdmin = isSuperWallet || await isAdmin(sessionWallet);
+      const isPlatformAdmin = await isAdmin(sessionWallet);
 
       if (isPlatformAdmin) {
         // Resolve completion fields for sovereign administrators so the registration gate
@@ -257,7 +247,7 @@ export async function getNexusAuthContext(
           .limit(1);
 
         let email: string | null = superUser?.email ?? null;
-        let name: string | null = superUser?.name ?? (sessionWallet === '0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9' ? 'Marco' : null);
+        let name: string | null = superUser?.name ?? null;
         let whatsappPhone: string | null = null;
 
         // Resolve collaborator record via email or admin env list
@@ -288,15 +278,8 @@ export async function getNexusAuthContext(
           }
         }
 
-        // Default sovereign operator values for Marco's primary wallet if unpopulated
-        if (sessionWallet === '0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9') {
-          name = name || 'Marco';
-          email = email || 'admin@pandoras.finance';
-          whatsappPhone = whatsappPhone || '+523222741987';
-        }
-
         // Self-heal: Synchronize users.role to 'super_admin' in background if out of sync
-        if (superUser && superUser.role !== 'super_admin' && isSuperWallet) {
+        if (superUser && superUser.role !== 'super_admin') {
           db.update(users)
             .set({ role: 'super_admin' })
             .where(eq(users.id, superUser.id))

@@ -1,6 +1,8 @@
-import { describe, it, expect, beforeEach } from '@jest/globals';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { AutonomousResearchEngine } from '../autonomous-research-engine';
 import { HermesToolExecutor } from '../../../runtime/tool-executor';
+
+import { registerResearchTools } from '../index';
 
 describe('🛰️ Hermes Autonomous Research Workflows Suite (F7)', () => {
   let executor: HermesToolExecutor;
@@ -8,6 +10,7 @@ describe('🛰️ Hermes Autonomous Research Workflows Suite (F7)', () => {
   beforeEach(() => {
     AutonomousResearchEngine.clearHistory();
     executor = new HermesToolExecutor();
+    registerResearchTools(executor);
   });
 
   it('debe ejecutar una misión de inteligencia competitiva y retornar oportunidades de captura', async () => {

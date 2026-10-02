@@ -16,8 +16,9 @@ export const maxDuration = 30;
 export const dynamic = 'force-dynamic';
 import { projects as projectsSchema } from "@/db/schema";
 import { projectApiSchema } from "@/lib/project-schema-api";
-import { getAuth, isAdmin } from "@/lib/auth";
+import { getAuth } from "@/lib/auth";
 import { headers } from "next/headers";
+import { getNexusAuthContext } from "@/lib/nexus/nexus-rbac";
 import { eq, and } from "drizzle-orm";
 import slugify from "slugify";
 import { sanitizeLogData, validateRequestBody } from "@/lib/security-utils";
@@ -28,13 +29,10 @@ interface RouteParams {
 }
 
 export async function GET(_request: Request, { params }: RouteParams) {
-  const { session } = await getAuth(await headers());
+  const auth = await getNexusAuthContext(await headers());
 
-  // Check if user is admin using either userId or address
-  const userIsAdmin = await isAdmin(session?.address) ||
-    await isAdmin(session?.address);
-
-  if (!userIsAdmin) {
+  // Capability gate: tenants.manage (kept consistent with PUT on this route)
+  if (!auth.isAuthenticated || !auth.permissions?.['tenants.manage']) {
     return NextResponse.json({ message: "No autorizado" }, { status: 403 });
   }
 
@@ -158,11 +156,12 @@ export async function GET(_request: Request, { params }: RouteParams) {
 }
 
 export async function PATCH(request: Request, { params }: RouteParams) {
-  const { session } = await getAuth(await headers());
+  const reqHeaders = await headers();
+  const auth = await getNexusAuthContext(reqHeaders);
+  const { session } = await getAuth(reqHeaders);
 
-  // Check if user is admin using either userId or address
-  const userIsAdmin = await isAdmin(session?.address) ||
-    await isAdmin(session?.address);
+  // Capability gate for admin operations; owner scope resolved below
+  const hasTenantPermission = auth.isAuthenticated && !!auth.permissions?.['tenants.manage'];
 
   const { slug } = await params;
   const projectId = Number(slug);
@@ -205,16 +204,15 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
     // --- AUTHENTICATION & AUTHORIZATION ---
     const userWallet = (session?.address)?.toLowerCase();
-    const isAdminUser = userIsAdmin;
     const isOwner = userWallet && existingProject.applicantWalletAddress?.toLowerCase() === userWallet;
 
-    if (!isAdminUser && !isOwner) {
+    if (!hasTenantPermission && !isOwner) {
       return NextResponse.json({ message: "No autorizado para editar este proyecto" }, { status: 403 });
     }
 
     // Case 1: Simple Status Update (Admin Only)
     if (body.status && !body.isBasicEdit) {
-      if (!isAdminUser) {
+      if (!hasTenantPermission) {
         return NextResponse.json({ message: "Solo admins pueden cambiar el estado" }, { status: 403 });
       }
 
@@ -314,20 +312,18 @@ export async function PATCH(request: Request, { params }: RouteParams) {
   }
 }
 
-import { getNexusAuthContext } from "@/lib/nexus/nexus-rbac";
-
 export async function PUT(request: Request, { params }: RouteParams) {
   const reqHeaders = await headers();
   const auth = await getNexusAuthContext(reqHeaders);
   
-  const isSuperAdmin = auth.role === 'SUPER_ADMIN';
-  const isAdminRole = auth.role === 'ADMIN';
+  const hasTenantAccess = !!auth.permissions?.['tenants.manage'];
+  const isSuperAdmin = !!auth.permissions?.ecosystem;
   
-  if (!auth.isAuthenticated || (!isSuperAdmin && !isAdminRole)) {
+  if (!auth.isAuthenticated || !hasTenantAccess) {
     return NextResponse.json({ message: "No autorizado" }, { status: 403 });
   }
   
-  const isDiscord2faVerified = isSuperAdmin; // 2FA is simulated as true only for SUPER_ADMIN
+  const isDiscord2faVerified = isSuperAdmin; // 2FA is simulated as true only for SUPER_ADMIN/ecosystem
 
 
   const { slug } = await params;
@@ -498,13 +494,10 @@ export async function PUT(request: Request, { params }: RouteParams) {
 }
 
 export async function DELETE(request: Request, { params }: RouteParams) {
-  const { session } = await getAuth(await headers());
+  const auth = await getNexusAuthContext(await headers());
 
-  // Check if user is admin using either userId or address
-  const userIsAdmin = await isAdmin(session?.address) ||
-    await isAdmin(session?.address);
-
-  if (!userIsAdmin) {
+  // Capability gate: tenants.manage (same gate as GET/PUT)
+  if (!auth.isAuthenticated || !auth.permissions?.['tenants.manage']) {
     return NextResponse.json({ message: "No autorizado" }, { status: 403 });
   }
 

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from '@jest/globals';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { HermesToolExecutor } from '../runtime/tool-executor';
 import { ToolAuthorizationGate } from '../runtime/tool-authorization-gate';
 import { WebFetchTool } from '../tools/web/web-fetch-tool';

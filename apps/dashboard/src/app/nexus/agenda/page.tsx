@@ -1,7 +1,7 @@
 import { getNexusAuthContext } from "@/lib/nexus/nexus-rbac";
 import { db } from "@/db";
 import { eq, or, and, inArray } from "drizzle-orm";
-import { meetings, meetingParticipants, schedulingBookings, users } from "@/db/schema";
+import { meetings, meetingParticipants, schedulingBookings, nexusCollaborators } from "@/db/schema";
 import jwt from "jsonwebtoken";
 import Link from "next/link";
 import { ArrowLeft, Calendar, Video } from "lucide-react";
@@ -41,7 +41,7 @@ export default async function NexusAgendaPage({ searchParams }: { searchParams: 
       eq(meetings.canonicalOrgId, orgId),
       inArray(meetings.status, ["scheduled", "live"]),
       or(
-        eq(meetings.hostCollaboratorId, collaboratorId.toString()),
+        eq(meetings.hostCollaboratorId, Number(collaboratorId)),
         inArray(meetings.id, participantMeetingIds)
       )
     );
@@ -49,7 +49,7 @@ export default async function NexusAgendaPage({ searchParams }: { searchParams: 
     whereClause = and(
       eq(meetings.canonicalOrgId, orgId),
       inArray(meetings.status, ["scheduled", "live"]),
-      eq(meetings.hostCollaboratorId, collaboratorId.toString())
+      eq(meetings.hostCollaboratorId, Number(collaboratorId))
     );
   }
 
@@ -57,11 +57,11 @@ export default async function NexusAgendaPage({ searchParams }: { searchParams: 
     .select({
       meeting: meetings,
       booking: schedulingBookings,
-      host: users,
+      host: nexusCollaborators,
     })
     .from(meetings)
     .leftJoin(schedulingBookings, eq(meetings.appointmentId, schedulingBookings.id))
-    .leftJoin(users, eq(meetings.hostCollaboratorId, users.id))
+    .leftJoin(nexusCollaborators, eq(meetings.hostCollaboratorId, nexusCollaborators.id))
     .where(whereClause)
     .orderBy(meetings.startsAt);
 
@@ -97,7 +97,7 @@ export default async function NexusAgendaPage({ searchParams }: { searchParams: 
         ) : (
           <div className="space-y-4">
             {agendaRows.map((row) => {
-              const isHost = row.meeting.hostCollaboratorId === collaboratorId.toString();
+              const isHost = row.meeting.hostCollaboratorId?.toString() === collaboratorId.toString();
               const startsAt = row.meeting.startsAt ? new Date(row.meeting.startsAt) : now;
               const endsAt = row.meeting.endsAt ? new Date(row.meeting.endsAt) : new Date(startsAt.getTime() + 30 * 60000);
               

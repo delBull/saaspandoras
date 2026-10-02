@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
     }
 
     const url = new URL(req.url);
-    const requestedSlug = url.searchParams.get('slug');
+    const requestedSlug = url.searchParams.get('slug') || url.searchParams.get('organizationSlug');
     const auth = await resolveCanonicalAuthSession(req, requestedSlug || undefined);
     if (!auth) {
       return NextResponse.json({ code: 'UNAUTHENTICATED', message: 'Hermes session required.' }, { status: 401 });

@@ -44,8 +44,8 @@ export async function GET(req: Request) {
       name: p.projectTitle ?? p.projectId,
     }));
 
-    // Add the canonical org if SUPER_ADMIN and not already listed
-    if (role === 'SUPER_ADMIN' && !workspaces.find((w) => w.id === 'pandoras')) {
+    // Add the canonical org if ecosystem is true and not already listed
+    if (permissions.ecosystem && !workspaces.find((w) => w.id === 'pandoras')) {
       workspaces.unshift({ id: 'pandoras', name: 'Pandoras HQ' });
     }
 

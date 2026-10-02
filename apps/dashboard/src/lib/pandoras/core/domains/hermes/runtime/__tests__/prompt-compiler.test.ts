@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from '@jest/globals';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { PromptCompiler } from '../prompt-compiler';
 import { ConversationContext } from '../conversation-context';
 import { CognitiveScopeViolation } from '../scope-validator';

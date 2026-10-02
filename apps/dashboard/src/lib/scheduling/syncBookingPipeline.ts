@@ -102,7 +102,6 @@ export async function syncBookingToPipeline(params: SyncBookingPipelineParams) {
       id: newMeetingId,
       canonicalOrgId,
       appointmentId: bookingId,
-      hostCollaboratorId: hostUserId || 'usr_platform_admin_default',
       startsAt: slotStartTime,
       endsAt: slotEndTime,
       status: 'scheduled',

@@ -12,7 +12,7 @@
  * 7. WhatsApp Length Guard: Payloads > 3000 chars are protected against Cloud API truncation.
  */
 
-import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { NextRequest } from 'next/server';
 import { GET, POST, PATCH } from '../broadcasts/route';
 import { formatBroadcastWhatsAppMessage } from '@/lib/nexus/broadcast-formatter';

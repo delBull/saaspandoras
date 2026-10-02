@@ -73,7 +73,7 @@ export const SECTIONS: NexusSection[] = [
     bgAccent: "bg-purple-500/10",
     cap: "institutionalBooks",
     links: [
-      { label: "Academy & Leadership Curriculum", note: "Alumnos, curriculum COO/CFO y emisión de blueprints de certificación.", href: "/nexus/academy" },
+      { label: "Academy & Leadership Curriculum", note: "Alumnos, curriculum COO/CFO y emisión de blueprints de certificación.", href: "https://academy.pandoras.finance", external: true },
       { label: "Pandoras Institutional Framework (Libros 0–VIII)", note: "Cuerpo documental institucional.", href: "https://pandoras.finance/libros", external: true },
       { label: "IOM System & Architecture (5 Layers)", note: "Sistema operativo institucional.", href: "https://pandoras.finance/libros/constitucion", external: true },
       { label: "Pandoras Asset Standard (PAS v1.0)", note: "Estándar de activos, Libro IV.", href: "https://pandoras.finance/libros/libro-iv", external: true },

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from '@jest/globals';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { GeoCitabilityEngine } from '../geo-citability-engine';
 import { HermesToolExecutor } from '../../../runtime/tool-executor';
 

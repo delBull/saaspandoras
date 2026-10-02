@@ -57,12 +57,7 @@ vi.mock('./tool-executor', () => ({
 
 vi.mock('@/lib/marketing/identity-resolver', () => ({
   IdentityResolver: {
-    resolveIdentity: vi.fn().mockResolvedValue({
-      id: 'mock_id',
-      canonicalId: 'mock_canonical',
-      marketingIdentityId: 'mock_identity_1',
-      email: 'test@example.com'
-    })
+    resolveIdentity: vi.fn().mockResolvedValue('mock_identity_1')
   }
 }));
 
@@ -127,12 +122,7 @@ vi.mock('@/db', () => ({
 
 vi.mock('@/lib/marketing/identity-resolver', () => ({
   IdentityResolver: {
-    resolveIdentity: vi.fn().mockResolvedValue({
-      id: 'mock_id',
-      canonicalId: 'mock_canonical',
-      marketingIdentityId: 'mock_identity_1',
-      email: 'test@example.com'
-    })
+    resolveIdentity: vi.fn().mockResolvedValue('mock_identity_1')
   }
 }));
 
@@ -149,6 +139,7 @@ describe('HermesCognitiveRuntime - Prospect Intelligence Integration', () => {
   it('should inject prospect intelligence summary into effective context', async () => {
     const input: RuntimeInput = {
       controlPlaneContext: {
+        channel: 'INTERNAL_DASHBOARD',
         actorId: 'test_user_1',
         organizationId: 'pandoras',
         identity: { identityId: 'test_user_1', userId: 'test_user_1' }

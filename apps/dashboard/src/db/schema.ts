@@ -1616,7 +1616,7 @@ export const meetings = pgTable("meetings", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   canonicalOrgId: text("canonical_org_id").notNull(), // Strict Tenant Isolation
   appointmentId: text("appointment_id").references(() => schedulingBookings.id), // Link to Agenda
-  hostCollaboratorId: varchar("host_collaborator_id", { length: 255 }).references(() => users.id).notNull(), // The actual owner/host
+  hostCollaboratorId: integer("host_collaborator_id").references(() => nexusCollaborators.id), // The actual owner/host
   
   status: meetingStatusEnum("status").default("scheduled").notNull(),
   
@@ -4651,6 +4651,22 @@ export const nexusTasks = pgTable('nexus_tasks', {
 
 export type NexusTask = typeof nexusTasks.$inferSelect;
 export type NewNexusTask = typeof nexusTasks.$inferInsert;
+
+export const nexusPresence = pgTable('nexus_presence', {
+  id: serial('id').primaryKey(),
+  collaboratorId: integer('collaborator_id')
+    .notNull()
+    .unique()
+    .references(() => nexusCollaborators.id),
+  status: varchar('status', { length: 50 }).default('OFFLINE').notNull(),
+  context: varchar('context', { length: 255 }),
+  preferredChannel: varchar('preferred_channel', { length: 50 }).default('NEXUS_CHAT').notNull(),
+  lastSeenAt: timestamp('last_seen_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export type NexusPresence = typeof nexusPresence.$inferSelect;
+export type NewNexusPresence = typeof nexusPresence.$inferInsert;
 
 /**
  * 🚀 Campaign Proposals

@@ -67,7 +67,13 @@ describe('📧 Nexus Collaborators Request Route (/api/nexus/collaborators/reque
   });
 
   it('REQ-02: Allows email-only magic link requests gracefully without requiring whatsappPhone', async () => {
-    mockExistingCollaborator = null;
+    mockExistingCollaborator = {
+      id: 10,
+      name: 'Existing Operator',
+      email: 'new_operator@pandoras.finance',
+      role: 'COLLABORATOR',
+      status: 'ACTIVE',
+    };
     mockIsNexusAdminEmail = false;
 
     const req = new NextRequest('http://localhost/api/nexus/collaborators/request', {
@@ -109,7 +115,8 @@ describe('📧 Nexus Collaborators Request Route (/api/nexus/collaborators/reque
     expect(sendMagicLinkCalls.length).toBe(1);
   });
 
-  it('REQ-04: Successfully processes registration when new user provides both email and whatsappPhone', async () => {
+  it('REQ-04: Forbids registration when non-admin tries to provision a new user via /request', async () => {
+    mockRequireNexusAdmin = false;
     mockExistingCollaborator = null;
 
     const req = new NextRequest('http://localhost/api/nexus/collaborators/request', {
@@ -123,18 +130,21 @@ describe('📧 Nexus Collaborators Request Route (/api/nexus/collaborators/reque
     });
 
     const res = await POST(req);
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(403);
     const data = await res.json();
-    expect(data.ok).toBe(true);
-    expect(createOrUpdateCalls.length).toBe(1);
-    expect(createOrUpdateCalls[0].whatsappPhone).toBe('+5215551122334');
-    expect(notifyProvisioningCalls.length).toBe(1);
-    expect(notifyProvisioningCalls[0].email).toBe('collaborator@external.com');
+    expect(data.error).toContain('Acceso denegado');
+    expect(createOrUpdateCalls.length).toBe(0);
   });
 
   it('REQ-05: Non-admin caller cannot escalate privileges to ADMIN or SUPER_ADMIN', async () => {
     mockRequireNexusAdmin = false;
-    mockExistingCollaborator = null;
+    mockExistingCollaborator = {
+      id: 5,
+      name: 'Attacker',
+      email: 'attacker@example.com',
+      role: 'COLLABORATOR',
+      status: 'ACTIVE',
+    };
 
     const req = new NextRequest('http://localhost/api/nexus/collaborators/request', {
       method: 'POST',

@@ -35,13 +35,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }
 
     // 4. Enforce Hierarchical Delegation Restrictions
-    if (auth.role !== 'SUPER_ADMIN') {
-      // A non-SUPER_ADMIN (even with users.manage) cannot edit a SUPER_ADMIN or another ADMIN
+    if (!auth.permissions?.ecosystem) {
+      // An actor without ecosystem capability cannot edit a SUPER_ADMIN or another ADMIN
       if (targetUser.role === 'SUPER_ADMIN' || targetUser.role === 'ADMIN') {
         return NextResponse.json({ ok: false, error: 'Unauthorized: Cannot edit higher or equal privileged users' }, { status: 403 });
       }
 
-      // A non-SUPER_ADMIN cannot grant SUPER_ADMIN or ADMIN role
+      // An actor without ecosystem capability cannot grant SUPER_ADMIN or ADMIN role
       if (role === 'SUPER_ADMIN' || role === 'ADMIN' || role === 'admin' || role === 'super_admin') {
         return NextResponse.json({ ok: false, error: 'Unauthorized: Cannot grant higher or equal privileged roles' }, { status: 403 });
       }

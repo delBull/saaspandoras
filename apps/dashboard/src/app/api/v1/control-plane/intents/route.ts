@@ -114,7 +114,8 @@ export async function GET(req: NextRequest) {
         or(
           eq(operationalIntents.organizationId, orgParam),
           eq(operationalIntents.organizationId, `org_${cleanSlug}`),
-          eq(operationalIntents.organizationId, cleanSlug)
+          eq(operationalIntents.organizationId, cleanSlug),
+          eq(operationalIntents.organizationId, auth.organizationId)
         )
       )
       .orderBy(desc(operationalIntents.createdAt));
@@ -173,7 +174,7 @@ export async function POST(req: NextRequest) {
 
     if (action === 'SIMULATE') {
       const missionId = simulationPayload?.missionId || 'mission_demo_1';
-      const cleanOrgId = (organizationId || auth.organizationId).trim();
+      const cleanOrgId = auth.organizationId;
       const generatedId = `intent_${Date.now()}`;
 
       const inserted = await db
@@ -215,6 +216,7 @@ export async function POST(req: NextRequest) {
       const normalizedIntentOrg = intentRow.organizationId.replace(/^org_/, '').toLowerCase();
       const normalizedAuthOrg = auth.organizationId.replace(/^org_/, '').toLowerCase();
       if (normalizedIntentOrg !== normalizedAuthOrg) {
+        console.log('DEBUG MISMATCH:', { intentOrg: intentRow.organizationId, authOrg: auth.organizationId, normalizedIntentOrg, normalizedAuthOrg });
         return NextResponse.json({ code: 'FORBIDDEN', message: 'Intent does not belong to this organization.' }, { status: 403 });
       }
 

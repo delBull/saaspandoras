@@ -14,7 +14,8 @@ vi.mock('@/db', () => ({
   db: {
     select: vi.fn().mockReturnThis(),
     from: vi.fn().mockReturnThis(),
-    where: vi.fn().mockResolvedValue([]),
+    where: vi.fn().mockReturnThis(),
+    limit: vi.fn().mockResolvedValue([]),
     insert: vi.fn().mockReturnThis(),
     values: vi.fn().mockResolvedValue([]),
     update: vi.fn().mockReturnThis(),

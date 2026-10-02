@@ -3,7 +3,7 @@
  * apps/dashboard/src/lib/pandoras/core/domains/hermes/runtime/sandbox/__tests__/hermes-runtime-isolation.test.ts
  */
 
-import { describe, it, expect } from '@jest/globals';
+import { describe, it, expect } from 'vitest';
 import { EphemeralMemoryScrubber } from '../memory-scrubber';
 import { RuntimeIntegrityGuard } from '../integrity-guard';
 import { HermesCodeSandbox } from '../code-sandbox';

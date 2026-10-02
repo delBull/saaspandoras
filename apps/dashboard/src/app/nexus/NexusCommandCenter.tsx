@@ -14,7 +14,7 @@ import { INITIAL_TASKS, TaskItem } from "@/components/nexus/taskTypes";
 import { useActiveWallet, useDisconnect } from "thirdweb/react";
 
 import { NexusShell } from "@/components/nexus/shell/NexusShell";
-import { NexusSidebar } from "@/components/nexus/shell/NexusSidebar";
+import { NexusCommandPalette } from "@/components/nexus/shell/NexusCommandPalette";
 import { NexusHeader } from "@/components/nexus/shell/NexusHeader";
 import { NexusWorkspace } from "@/components/nexus/shell/NexusWorkspace";
 import { NexusContextBar } from "@/components/nexus/shell/NexusContextBar";
@@ -263,18 +263,7 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
 
   return (
     <NexusShell>
-      <NexusSidebar
-        role={role}
-        wallet={wallet}
-        sidebarOpen={sidebarOpen}
-        setShowGuideSidebar={setShowGuideSidebar}
-        setIsTourOpen={setIsTourOpen}
-        setIsSettingsOpen={setIsSettingsOpen}
-        showDisplayControls={showDisplayControls}
-        setShowDisplayControls={setShowDisplayControls}
-        getRoleBadge={getRoleBadge}
-        onLogout={handleLogout}
-      />
+      <NexusCommandPalette auth={auth} onOpenSettings={() => setIsSettingsOpen(true)} />
       
       <NexusHeader role={role} setIsOpsModalOpen={setIsOpsModalOpen} />
 

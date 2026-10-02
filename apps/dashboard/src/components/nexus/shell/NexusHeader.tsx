@@ -65,7 +65,8 @@ export function NexusHeader({ role, setIsOpsModalOpen }: NexusHeaderProps) {
           )}
           {role === "SUPER_ADMIN" && (
             <Link
-              href="/admin/academy"
+              href="https://academy.pandoras.finance"
+              target="_blank"
               className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-purple-500/30 bg-purple-500/10 text-purple-300 text-[10px] tracking-wider hover:bg-purple-500/20 transition-colors shrink-0"
             >
               <GraduationCap className="w-3 h-3" />

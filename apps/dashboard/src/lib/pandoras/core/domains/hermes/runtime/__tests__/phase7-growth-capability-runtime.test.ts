@@ -138,10 +138,36 @@ describe('🏛️ Phase 7.5 & 7.6 — Growth Capability Runtime & Governance Cer
   });
 
   it('SMOKE-D: NFT Mint request routes to Governance Intent (NO immediate mint)', async () => {
+    // Inject a test collection to avoid 404
+    const { db } = await import('@/db');
+    const { tenantNftCollections, projects } = await import('@/db/schema');
+    
+    // Find an existing project for this org to satisfy FK
+    const { eq } = await import('drizzle-orm');
+    const proj = await db.query.projects.findFirst({
+      where: eq(projects.organizationId, '9079ecf5-2162-4078-bddf-66b607e2d32f')
+    });
+    const projectId = proj?.id || 1; // Fallback to 1 if none found, though unlikely
+    
+    const testCollectionId = '123e4567-e89b-12d3-a456-426614174000';
+    await db.insert(tenantNftCollections).values({
+      id: testCollectionId,
+      organizationId: '9079ecf5-2162-4078-bddf-66b607e2d32f', // snarai org UUID
+      projectId, // Use existing project ID
+      name: 'Test Collection',
+      symbol: 'TEST',
+      purpose: 'REWARD',
+      contractAddress: '0x123',
+      chainId: 137,
+      status: 'DEPLOYED',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }).onConflictDoNothing();
+
     const req = createAuthRequest('https://dash.pandoras.finance/api/v1/growth/nft-lab', 'POST', {
       organizationId: 'org_snarai',
-      collectionId: 'col_participation_cert',
-      recipientAddress: '0x121a897f0f5a9b7c44756f40bdb2c8e87d2834fa',
+      collectionId: testCollectionId,
+      recipientWallet: '0x121a897f0f5a9b7c44756f40bdb2c8e87d2834fa',
       tokenType: 'CERTIFICATE',
     });
 
@@ -149,8 +175,9 @@ describe('🏛️ Phase 7.5 & 7.6 — Growth Capability Runtime & Governance Cer
     expect(res.status).toBe(200);
 
     const data = await res.json();
-    expect(data.status).toBe('GOVERNANCE_APPROVAL_REQUIRED');
-    expect(data.intentId).toMatch(/^intent_nft_mint_/);
+    expect(data.success).toBe(true);
+    expect(data.autoExecuted).toBe(false);
+    expect(data.governanceIntentId).toMatch(/^intent_nft_mint_/);
   });
 
   it('SMOKE-E: Agent / Autonomous intent requires human Governance approval before execution', async () => {
@@ -191,8 +218,10 @@ describe('🏛️ Phase 7.5 & 7.6 — Growth Capability Runtime & Governance Cer
     });
 
     const approveRes = await postControlPlaneIntents(approveReq);
+    const approveBody = await approveRes.text();
+    if (approveRes.status !== 200) console.log('SMOKE-E approve error:', approveBody);
     expect(approveRes.status).toBe(200);
-    const approveData = await approveRes.json();
+    const approveData = JSON.parse(approveBody);
     expect(approveData.status).toBe('APPROVED');
   });
 

@@ -10,11 +10,19 @@
  * Path 5: Defense-in-Depth: Gate Blocks Unauthorized Tool Call at Runtime
  */
 
-import { describe, it, expect } from '@jest/globals';
+import { describe, it, expect } from 'vitest';
 import { getDefaultRuntime, HermesRuntime } from '../runtime/hermes-runtime';
+import { registerWebTools } from '../tools/web';
+import { registerSeoTools } from '../intelligence/seo';
+import { registerResearchTools } from '../intelligence/research';
 
 describe('🏛️ Hermes Runtime & Tool Gateway Production Integration Suite', () => {
   const runtime = getDefaultRuntime();
+  
+  // Register necessary tools for the integration test
+  registerWebTools(runtime.getToolExecutor());
+  registerSeoTools(runtime.getToolExecutor());
+  registerResearchTools(runtime.getToolExecutor());
 
   // ── PATH 1: RUNTIME -> GATE -> TOOL -> PROVIDER (WEB EXTRACT) ──────────
   it('Path 1: Runtime dispatches web.extract with active capability through ToolAuthorizationGate', async () => {
@@ -72,6 +80,7 @@ describe('🏛️ Hermes Runtime & Tool Gateway Production Integration Suite', (
       },
       [{ id: 'seo.audit', description: 'SEO Technical and Content Audit' }]
     );
+    console.log("AUDIT", auditResponse);
 
     expect(auditResponse.success).toBe(true);
     const data = auditResponse.data as any;
@@ -100,6 +109,7 @@ describe('🏛️ Hermes Runtime & Tool Gateway Production Integration Suite', (
       },
       [{ id: 'research.run_mission', description: 'Autonomous Market Research' }]
     );
+    console.log("RESEARCH", researchResponse);
 
     expect(researchResponse.success).toBe(true);
     const report = researchResponse.data as any;
@@ -141,6 +151,7 @@ describe('🏛️ Hermes Runtime & Tool Gateway Production Integration Suite', (
       },
       [{ id: 'research.run_mission', description: 'Autonomous Market Research' }]
     );
+    console.log("CRON", cronResponse);
 
     expect(cronResponse.success).toBe(true);
     const report = cronResponse.data as any;

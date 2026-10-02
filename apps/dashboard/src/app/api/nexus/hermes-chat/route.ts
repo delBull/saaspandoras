@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
       walletAddress: operatorContext?.wallet || operatorContext?.address,
     });
 
-    const isBoss = interlocutor.isBoss || validatedRole === 'SUPER_ADMIN';
+    const isBoss = interlocutor.isBoss || !!auth.permissions?.institutionalBooks;
     const effectiveName = interlocutor.name || operatorContext?.name || (isBoss ? 'Marco' : 'Operador');
     const actorId = interlocutor.actorId || operatorContext?.email || operatorContext?.id || `nexus_${validatedRole.toLowerCase()}`;
 

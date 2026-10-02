@@ -10,7 +10,7 @@
  * NEVER fallback to another tenant.
  */
 
-import { describe, it, expect } from '@jest/globals';
+import { describe, it, expect } from 'vitest';
 import { CognitiveContextBuilder } from '../../addons/context-merger';
 import { PostgresConversationMemoryProvider } from '../memory/postgres-memory-provider';
 import { TenantKnowledgeStore } from '@/lib/hermes/knowledge/tenant-knowledge-store';

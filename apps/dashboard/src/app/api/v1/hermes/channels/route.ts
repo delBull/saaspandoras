@@ -26,7 +26,7 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const clientHint = searchParams.get('tenantId') || searchParams.get('org') || undefined;
+    const clientHint = searchParams.get('tenantId') || searchParams.get('org') || searchParams.get('organizationSlug') || undefined;
 
     const session = await resolveDemandSession(req, clientHint);
     if (!session) {

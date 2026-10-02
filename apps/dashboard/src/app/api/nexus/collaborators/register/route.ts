@@ -51,8 +51,8 @@ export async function POST(req: NextRequest) {
     const normalizedEmail = email.toLowerCase().trim();
 
     // Ownership guard: un actor solo puede completar su propio registro.
-    // SUPER_ADMIN puede registrar en nombre de otros.
-    if (auth.role !== 'SUPER_ADMIN' && auth.email && auth.email !== normalizedEmail) {
+    // users.manage puede registrar en nombre de otros.
+    if (!auth.permissions['users.manage'] && auth.email && auth.email !== normalizedEmail) {
       return NextResponse.json(
         { error: 'Solo puedes completar tu propio registro.' },
         { status: 403 }
@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
     // - Everything else (self-registration via magic link) → PENDING until an admin approves
     //   from the admin queue (/admin/collaborators). No auto-grant for new signups.
     const isPrivilegedActor =
-      auth.role === 'SUPER_ADMIN' || auth.role === 'ADMIN' || isNexusAdmin || auth.provisionStatus === 'ACTIVE';
+      auth.permissions['users.manage'] || isNexusAdmin || auth.provisionStatus === 'ACTIVE';
     const desiredStatus: NexusProvisionStatus = isPrivilegedActor ? 'ACTIVE' : 'PENDING';
 
     const [existing] = await db

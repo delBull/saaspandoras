@@ -169,16 +169,16 @@ export const PANDORAS_ECOSYSTEM_CLAIMS: EcosystemDoctrineClaim[] = [
     category: 'FACT',
     disclosureClearance: 'TENANT_RESTRICTED',
     targetSurface: 'DASH_PANDORAS',
-    subArea: 'Data Room & Academia (/nexus/academy)',
-    canonicalAssertion: "La vertical de Data Room Institucional y Academia (/nexus/academy) aloja los libros fundacionales, whitepapers, contratos modelo y el Knowledge Graph interactivo para la debida diligencia (due diligence) y certificación de operadores del protocolo.",
+    subArea: 'Data Room & Academia (academy.pandoras.finance)',
+    canonicalAssertion: "La vertical de Data Room Institucional y Academia (academy.pandoras.finance) aloja los libros fundacionales, whitepapers, contratos modelo y el Knowledge Graph interactivo para la debida diligencia (due diligence) y certificación de operadores del protocolo.",
     permittedPhrasings: [
-      'Data Room Institucional y Academia en /nexus/academy',
+      'Data Room Institucional y Academia en academy.pandoras.finance',
       'Knowledge Graph interactivo y manuales de certificación',
       'repositorio documental para due diligence y libros rectores',
     ],
     provenance: computeProvenance(
       'nexus-academy-data-room',
-      "La vertical de Data Room Institucional y Academia (/nexus/academy) aloja los libros fundacionales, whitepapers, contratos modelo y el Knowledge Graph interactivo para la debida diligencia (due diligence) y certificación de operadores del protocolo."
+      "La vertical de Data Room Institucional y Academia (academy.pandoras.finance) aloja los libros fundacionales, whitepapers, contratos modelo y el Knowledge Graph interactivo para la debida diligencia (due diligence) y certificación de operadores del protocolo."
     ),
   },
   {

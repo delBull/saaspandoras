@@ -36,7 +36,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
     if (!rl.allowed) return NextResponse.json({ success: false, message: 'RATE_LIMITED' }, { status: 429 });
 
     const nexus = await getNexusAuthContext();
-    const sessionAdmin = nexus.isAuthenticated && (nexus.role === 'SUPER_ADMIN' || nexus.role === 'ADMIN');
+    const sessionAdmin = nexus.isAuthenticated && !!nexus.permissions?.['tenants.manage'];
     const adminToken = req.headers.get('x-admin-token');
     const tokenOk = Boolean(process.env.ADMIN_TOKEN && adminToken && adminToken === process.env.ADMIN_TOKEN);
     if (!sessionAdmin && !tokenOk) {
@@ -54,9 +54,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
       return NextResponse.json({ success: false, message: 'Project not found' }, { status: 404 });
     }
 
-    const isSuperAdmin = nexus.isAuthenticated && nexus.role === 'SUPER_ADMIN';
+    const isSuperAdmin = nexus.isAuthenticated && !!nexus.permissions?.ecosystem;
 
-    // DIRECT PROVISIONING FOR SUPER_ADMIN
+    // DIRECT PROVISIONING FOR ECOSYSTEM
     if (isSuperAdmin) {
       const intentId = `intent_full_access_auto_${Date.now()}`;
       await db.insert(operationalIntents).values({
@@ -188,11 +188,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ sl
     const intentId = body.intentId;
     if (!intentId) return NextResponse.json({ success: false, message: 'intentId required' }, { status: 400 });
 
-    // SUPER-ONLY gate: x-admin-token OR NexusRole SUPER_ADMIN (not ADMIN).
+    // SUPER-ONLY gate: x-admin-token OR Nexus ecosystem capability.
     const nexus = await getNexusAuthContext();
     const adminToken = req.headers.get('x-admin-token');
     const tokenOk = Boolean(process.env.ADMIN_TOKEN && adminToken && adminToken === process.env.ADMIN_TOKEN);
-    const superAdmin = nexus.isAuthenticated && nexus.role === 'SUPER_ADMIN';
+    const superAdmin = nexus.isAuthenticated && !!nexus.permissions?.ecosystem;
     if (!tokenOk && !superAdmin) {
       return NextResponse.json({ success: false, message: 'Forbidden — Super Admin only' }, { status: 403 });
     }

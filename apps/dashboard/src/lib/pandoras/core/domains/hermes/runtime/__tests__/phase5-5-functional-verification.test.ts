@@ -8,13 +8,12 @@
  * - getProjectStatusConfig()
  */
 
+import { vi, describe, it, expect, beforeEach } from 'vitest';
+
 // Mock next/headers before importing resolvePortalContext
 let mockCookieStore: Map<string, { value: string }> = new Map();
 
-// @ts-ignore
-const { mock } = await import('bun:test');
-
-mock.module('next/headers', () => ({
+vi.mock('next/headers', () => ({
   cookies: async () => ({
     get: (name: string) => mockCookieStore.get(name),
   }),
@@ -23,7 +22,7 @@ mock.module('next/headers', () => ({
   }),
 }));
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { afterEach } from 'vitest';
 import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
 import { validatePortalSession } from '@/lib/platform/portal-auth';
 import { getProjectStatusConfig, CANONICAL_PROJECT_STATUSES } from '@/lib/project-status';

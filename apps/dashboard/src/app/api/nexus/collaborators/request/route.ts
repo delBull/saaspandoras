@@ -60,6 +60,15 @@ export async function POST(req: NextRequest) {
     const isAdminCaller = await requireNexusAdmin(req);
     const isAdminTarget = isNexusAdminEmail(cleanEmail);
 
+    // API Gate Hardening: Only admins can provision NEW collaborators via this endpoint.
+    // Non-admins can only request a magic link for an EXISTING collaborator.
+    if (!isExistingCollaborator && !isAdminCaller) {
+      return NextResponse.json(
+        { error: 'Acceso denegado. No existe un colaborador con este correo.' },
+        { status: 403, headers: cors }
+      );
+    }
+
     // Enforce role safety: only admin callers can assign elevated roles or custom permissions
     const effectiveRole = isAdminCaller
       ? (role || existingCollaborator?.role || 'COLLABORATOR')

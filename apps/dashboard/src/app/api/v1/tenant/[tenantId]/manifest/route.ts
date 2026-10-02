@@ -13,6 +13,7 @@ import { RuntimeManifestFactory, type TenantRuntimeManifest } from '@pandoras/ru
 import { db } from '@/db';
 import { projects } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { resolveMasterPhoneNumberId } from '@/lib/whatsapp/config';
 
 export const dynamic = 'force-dynamic';
 
@@ -61,7 +62,7 @@ export async function GET(
         whatsapp: {
           provider: 'meta',
           tier: 'enterprise',
-          phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID,
+          phoneNumberId: resolveMasterPhoneNumberId() || undefined,
           tokenRef: 'vault:whatsapp_token', // Vault key reference, never raw
           ...(dbConfig?.providers?.whatsapp || {})
         },

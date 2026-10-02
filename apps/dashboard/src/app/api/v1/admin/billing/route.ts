@@ -19,7 +19,7 @@ export async function PATCH(req: NextRequest) {
     // 1. Resolve Platform Authority Server-Side
     const auth = await getNexusAuthContext(req.headers);
 
-    if (!auth.isAuthenticated || (auth.role !== 'SUPER_ADMIN' && auth.role !== 'ADMIN')) {
+    if (!auth.isAuthenticated || !auth.permissions['finance.manage']) {
       return NextResponse.json({ ok: false, error: 'Unauthorized: Platform Admin role required' }, { status: 403 });
     }
 
@@ -30,7 +30,7 @@ export async function PATCH(req: NextRequest) {
       walletAddress: auth.wallet || null,
       email: auth.email || null,
       sessionStartedAt: new Date().toISOString(),
-      isDiscord2faVerified: auth.role === 'SUPER_ADMIN',
+      isDiscord2faVerified: !!auth.permissions.ecosystem,
     };
 
     const body = await req.json();

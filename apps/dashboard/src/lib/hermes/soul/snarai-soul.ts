@@ -181,7 +181,9 @@ export const SNARAI_SOUL: AgentSoul = {
 // SOUL REGISTRY — Add new project souls here as Hermes expands to new tenants
 // ─────────────────────────────────────────────────────────────────────────────
 
-const SOUL_REGISTRY: Record<string, AgentSoul> = {};
+const SOUL_REGISTRY: Record<string, AgentSoul> = {
+  snarai: SNARAI_SOUL,
+};
 
 export class HermesSoulRegistry {
   static registerTenantSoul(projectSlug: string, soul: AgentSoul): void {

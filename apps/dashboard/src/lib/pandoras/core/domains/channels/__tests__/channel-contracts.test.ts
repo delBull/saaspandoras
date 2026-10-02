@@ -1,4 +1,4 @@
-import { describe, it, expect } from './test-helpers';
+import { describe, it, expect } from 'vitest';
 import { ChannelType, ChannelInboundMessage } from '../channel-types';
 import { NormalizedInboundMessage } from '../normalized-message';
 import { OrganizationChannelBinding } from '../channel-binding-types';

@@ -10,7 +10,7 @@
  * - Suite E: Connection Pool Contamination Resistance (Transaction Scoping)
  */
 
-import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import postgres from 'postgres';
 import { TenantSessionTokenSigner } from '../tenant-session-token';
 
@@ -147,8 +147,8 @@ describe('Hermes OS Milestone 5.0 — K22.1 PostgreSQL Boundary Penetration Cert
 
       // Insert a test conversation under another organization using master
       await sql`
-        INSERT INTO hermes_conversations (id, organization_id, conversation_id)
-        VALUES ('conv_test_isolation_1', 'snarai', 'conv_iso_1')
+        INSERT INTO hermes_conversations (id, organization_id, conversation_id, channel)
+        VALUES ('conv_test_isolation_1', 'snarai', 'conv_iso_1', 'web')
         ON CONFLICT (id) DO NOTHING;
       `;
 

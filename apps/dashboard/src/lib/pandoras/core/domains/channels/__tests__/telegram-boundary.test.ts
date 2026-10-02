@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from './test-helpers';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { TelegramAdapter } from '../adapters/telegram-adapter';
 import { EnvironmentSecretResolver } from '../secret-resolver';
 import { DatabaseBindingResolver } from '../binding-resolver';

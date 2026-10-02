@@ -3,7 +3,7 @@
  * apps/dashboard/src/lib/pandoras/core/domains/hermes/identity/__tests__/hermes-identity-certification.test.ts
  */
 
-import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { HermesIdentitySigner } from '../identity-signer';
 import { HermesIdentityVerifier } from '../identity-verifier';
 import { HermesToolExecutor } from '../../runtime/tool-executor';

@@ -9,6 +9,7 @@
 
 import { InterlocutorResolver } from '@/lib/hermes/identity/interlocutor-resolver';
 import { SecurityAuditLogger } from '@/lib/pandoras/core/domains/hermes/runtime/security-audit-logger';
+import { SystemInvariantEnforcer } from './invariants';
 
 export interface DiagnosticResult {
   file?: string;
@@ -107,7 +108,6 @@ export class CodeOperatorService {
     }
 
     // 🛡️ HARD INVIOLABLE BOUND: Hermes cannot mutate its own executive authority or security rules
-    const { SystemInvariantEnforcer } = require('./invariants');
     const invariantCheck = SystemInvariantEnforcer.checkCodeFilesInvariant(params.files);
     if (!invariantCheck.allowed) {
       return {

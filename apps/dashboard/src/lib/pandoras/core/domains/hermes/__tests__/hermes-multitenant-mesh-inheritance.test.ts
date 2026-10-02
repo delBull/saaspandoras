@@ -9,7 +9,7 @@
  * 4. CANONICAL_ADDONS includes hermes.composite.search_intelligence.
  */
 
-import { describe, it, expect } from '@jest/globals';
+import { describe, it, expect } from 'vitest';
 import { CognitiveContextBuilder } from '../addons/context-merger';
 import { CANONICAL_ADDONS } from '../addons/catalog';
 import { ToolAuthorizationGate } from '../runtime/tool-authorization-gate';

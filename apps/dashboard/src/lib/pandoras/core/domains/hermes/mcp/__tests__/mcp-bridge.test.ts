@@ -1,6 +1,7 @@
-import { describe, it, expect, beforeEach } from '@jest/globals';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { HermesMcpBridge } from '../mcp-bridge';
 import { HermesToolExecutor } from '../../runtime/tool-executor';
+import { registerMcpTools } from '../index';
 
 describe('🔌 Hermes MCP Bridge Transport & Zero-Trust Suite (F6)', () => {
   let bridge: HermesMcpBridge;
@@ -10,6 +11,7 @@ describe('🔌 Hermes MCP Bridge Transport & Zero-Trust Suite (F6)', () => {
     bridge = HermesMcpBridge.getInstance();
     bridge.clear();
     executor = new HermesToolExecutor();
+    registerMcpTools(executor);
   });
 
   it('ANTI-SSRF: debe rechazar servidores MCP con endpoints dirigidos a Cloud Metadata o IPs prohibidas', async () => {

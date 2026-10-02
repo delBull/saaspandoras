@@ -7,7 +7,7 @@ export function CopyLinkButton({ meetingId }: { meetingId: string }) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
-    const link = `https://dash.pandoras.finance/meet/${meetingId}`;
+    const link = `${window.location.origin}/meet/${meetingId}`;
     navigator.clipboard.writeText(link);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);

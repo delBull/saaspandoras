@@ -91,9 +91,9 @@ describe('🔐 Hermes OS Milestone 2.1 — Telegram Identity & Tenant Membership
     });
 
     it('MEM-002: Rejects non-existent workspace with 404', async () => {
-      expect(async () => {
+      await expect(async () => {
         await HermesWorkspaceResolver.resolveCanonicalWorkspace('non_existent_workspace_xyz_999');
-      }).toThrow();
+      }).rejects.toThrow();
     });
   });
 
@@ -109,12 +109,12 @@ describe('🔐 Hermes OS Milestone 2.1 — Telegram Identity & Tenant Membership
     it('MEM-004: validateTenantAccess strictly rejects unauthorized tenant UUID (403 Forbidden)', async () => {
       const fakeOrgUuid = '99999999-9999-9999-9999-999999999999';
       
-      expect(async () => {
+      await expect(async () => {
         await membershipService.validateTenantAccess({
           telegramUserId: 'unauthorized_tg_user_123',
           targetOrganizationId: fakeOrgUuid,
         });
-      }).toThrow(HermesTenantAccessDeniedError);
+      }).rejects.toThrow(HermesTenantAccessDeniedError);
     });
   });
 

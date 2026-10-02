@@ -5,7 +5,7 @@ import {
   meetings,
   meetingParticipants,
   schedulingBookings,
-  users
+  nexusCollaborators
 } from '@/db/schema';
 import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
 import jwt from 'jsonwebtoken';
@@ -40,7 +40,7 @@ export async function GET(req: Request) {
         eq(meetings.canonicalOrgId, orgId),
         inArray(meetings.status, ['scheduled', 'live']),
         or(
-          eq(meetings.hostCollaboratorId, collaboratorId.toString()),
+          eq(meetings.hostCollaboratorId, Number(collaboratorId)),
           inArray(meetings.id, participantMeetingIds)
         )
       );
@@ -48,7 +48,7 @@ export async function GET(req: Request) {
       whereClause = and(
         eq(meetings.canonicalOrgId, orgId),
         inArray(meetings.status, ['scheduled', 'live']),
-        eq(meetings.hostCollaboratorId, collaboratorId.toString())
+        eq(meetings.hostCollaboratorId, Number(collaboratorId))
       );
     }
 
@@ -57,18 +57,18 @@ export async function GET(req: Request) {
       .select({
         meeting: meetings,
         booking: schedulingBookings,
-        host: users
+        host: nexusCollaborators
       })
       .from(meetings)
       .leftJoin(schedulingBookings, eq(meetings.appointmentId, schedulingBookings.id))
-      .leftJoin(users, eq(meetings.hostCollaboratorId, users.id))
+      .leftJoin(nexusCollaborators, eq(meetings.hostCollaboratorId, nexusCollaborators.id))
       .where(whereClause)
       .orderBy(meetings.startsAt);
 
     const now = new Date();
 
     const formattedMeetings = agendaRows.map((row) => {
-      const isHost = row.meeting.hostCollaboratorId === collaboratorId.toString();
+      const isHost = row.meeting.hostCollaboratorId?.toString() === collaboratorId.toString();
       const startsAt = row.meeting.startsAt ? new Date(row.meeting.startsAt) : now;
       const endsAt = row.meeting.endsAt ? new Date(row.meeting.endsAt) : new Date(startsAt.getTime() + 30 * 60000);
       

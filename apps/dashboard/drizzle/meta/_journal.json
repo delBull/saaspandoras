@@ -540,6 +540,20 @@
       "when": 1790795425206,
       "tag": "0076_eminent_prowler",
       "breakpoints": true
+    },
+    {
+      "idx": 77,
+      "version": "7",
+      "when": 1790892172692,
+      "tag": "0077_whole_legion",
+      "breakpoints": true
+    },
+    {
+      "idx": 78,
+      "version": "7",
+      "when": 1790898206988,
+      "tag": "0078_condemned_barracuda",
+      "breakpoints": true
     }
   ]
 }
