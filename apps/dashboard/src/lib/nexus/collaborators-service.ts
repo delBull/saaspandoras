@@ -11,7 +11,7 @@ import { nexusCollaborators } from '@/db/schema';
 import { eq, lt, or, and, sql, gt } from 'drizzle-orm';
 import { resend } from '@/lib/resend';
 import crypto from 'crypto';
-import { getAuth, isAdmin } from '@/lib/auth';
+
 import { headers as nextHeaders } from 'next/headers';
 import { WhatsAppAdapter } from '@/lib/pandoras/core/domains/channels/adapters/whatsapp-adapter';
 import type { NexusProvisionStatus } from '@/db/schema';
@@ -47,12 +47,7 @@ export async function requireNexusAdmin(req?: Request | Headers): Promise<boolea
       return true;
     }
 
-    const { session, isVerified } = await getAuth(reqHeaders);
-    if (isVerified && session?.address && await isAdmin(session.address)) return true;
 
-    // Fallback: check thirdweb/wallet headers
-    const walletHeader = reqHeaders.get('x-thirdweb-address') || reqHeaders.get('x-wallet-address') || reqHeaders.get('x-user-address');
-    if (walletHeader && await isAdmin(walletHeader)) return true;
 
     return false;
   } catch (err) {

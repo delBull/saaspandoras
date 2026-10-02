@@ -37,12 +37,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
 
     const nexus = await getNexusAuthContext();
     const sessionAdmin = nexus.isAuthenticated && !!nexus.permissions?.['tenants.manage'];
-    const adminToken = req.headers.get('x-admin-token');
-    const tokenOk = Boolean(process.env.ADMIN_TOKEN && adminToken && adminToken === process.env.ADMIN_TOKEN);
-    if (!sessionAdmin && !tokenOk) {
+    if (!sessionAdmin) {
       return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
     }
-    const requestedBy = (tokenOk ? 'admin_token' : null) || nexus.wallet || 'unknown_operator';
+    const requestedBy = nexus.wallet || 'unknown_operator';
 
     const { slug } = await params;
     const [project] = await db
@@ -190,10 +188,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ sl
 
     // SUPER-ONLY gate: x-admin-token OR Nexus ecosystem capability.
     const nexus = await getNexusAuthContext();
-    const adminToken = req.headers.get('x-admin-token');
-    const tokenOk = Boolean(process.env.ADMIN_TOKEN && adminToken && adminToken === process.env.ADMIN_TOKEN);
     const superAdmin = nexus.isAuthenticated && !!nexus.permissions?.ecosystem;
-    if (!tokenOk && !superAdmin) {
+    if (!superAdmin) {
       return NextResponse.json({ success: false, message: 'Forbidden — Super Admin only' }, { status: 403 });
     }
 
@@ -219,7 +215,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ sl
       return NextResponse.json({ success: false, message: 'Intent already processed by another approver.' }, { status: 409 });
     }
 
-    const approvedBy = tokenOk ? 'admin_token' : (nexus.wallet || 'super_admin');
+    const approvedBy = nexus.wallet || 'super_admin';
     const { slug: slug } = await params;
     const { provisionFullAccess } = await import('@/lib/admin/full-access-provision.service');
     const { results } = await provisionFullAccess(slug, approvedBy);

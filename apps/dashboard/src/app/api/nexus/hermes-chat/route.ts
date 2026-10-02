@@ -7,7 +7,6 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { requireNexusAdmin } from '@/lib/nexus/collaborators-service';
 import { getDefaultRuntime, isHermesEnabled } from '@/lib/pandoras/core/domains/hermes/runtime/hermes-runtime';
 import type { ControlPlaneContext } from '@/lib/pandoras/core/domains/hermes/knowledge/types';
 import type { RuntimeMessage } from '@/lib/pandoras/core/domains/hermes/runtime/contracts';

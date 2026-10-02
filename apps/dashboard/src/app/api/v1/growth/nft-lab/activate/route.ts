@@ -22,15 +22,9 @@ import type { PlanKey } from '@/lib/platform/product-registry';
 
 export const runtime = 'nodejs';
 
-const VALID_PLANS = new Set<PlanKey>(['sandbox', 'starter', 'growth', 'enterprise']);
+import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
 
-/** Simple admin token check — reuses the same admin guard pattern as other admin routes */
-function isAdminRequest(req: NextRequest): boolean {
-  const adminToken = req.headers.get('x-admin-token');
-  const expectedToken = process.env.ADMIN_SECRET_TOKEN;
-  if (!expectedToken) return false; // fail-closed: no token configured → reject
-  return adminToken === expectedToken;
-}
+const VALID_PLANS = new Set<PlanKey>(['sandbox', 'starter', 'growth', 'enterprise']);
 
 export async function POST(req: NextRequest) {
   try {
@@ -41,7 +35,8 @@ export async function POST(req: NextRequest) {
     }
 
     // ── Admin gate — fail-closed ─────────────────────────────────────────
-    if (!isAdminRequest(req)) {
+    const auth = await getNexusAuthContext();
+    if (!auth.isAuthenticated || (!auth.permissions?.ecosystem && !auth.permissions?.['tenants.manage'])) {
       return NextResponse.json({ code: 'FORBIDDEN', message: 'Admin access required.' }, { status: 403 });
     }
 
