@@ -115,6 +115,8 @@ export function middleware(request: NextRequest) {
   }
 
   // 0.2.4 Hard Redirect for /academy accessed outside of academy subdomain
+  // DESACTIVADO TEMPORALMENTE para permitir acceso sin DNS:
+  /*
   if (!isAcademySubdomain && (pathname === "/academy" || pathname.startsWith("/academy/"))) {
     const isStaging = host.includes('staging');
     const targetHost = host.startsWith('localhost') || host.includes('127.0.0.1')
@@ -134,6 +136,7 @@ export function middleware(request: NextRequest) {
 
     return NextResponse.redirect(targetUrl, 301);
   }
+  */
 
   // 0.3 Admin Decoupling Protection (Redirect dash to admin)
   // TODO: Uncomment this once DNS propagates and admin.pandoras.finance is fully verified.

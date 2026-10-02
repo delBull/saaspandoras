@@ -18,13 +18,13 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Unauthorized: Admin privileges or valid unlock token required.' }, { status: 401 });
     }
 
-    const { getNexusAuthContext } = require('@/lib/nexus/nexus-rbac');
+    const { getNexusAuthContext, checkNexusPermission } = require('@/lib/nexus/nexus-rbac');
     const authCtx = await getNexusAuthContext(req.headers);
-    const isSuperAdmin = authCtx.role === 'SUPER_ADMIN';
+    const hasEcosystem = checkNexusPermission(authCtx, 'ecosystem');
 
     let candidates = await AcademyStore.listCandidatesAsync();
 
-    if (!isSuperAdmin) {
+    if (!hasEcosystem) {
       // Isolate candidates to the specific track/tenant mapping for this admin
       const orgScope = (authCtx.canonicalOrgId || '').toUpperCase();
       candidates = candidates.filter(c => c.targetRole.toUpperCase() === orgScope || orgScope === 'ALL_TRACKS');
@@ -68,12 +68,12 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { action, name, email, phone, targetRole, notes, candidateId } = body;
 
-    const { getNexusAuthContext } = require('@/lib/nexus/nexus-rbac');
+    const { getNexusAuthContext, checkNexusPermission } = require('@/lib/nexus/nexus-rbac');
     const authCtx = await getNexusAuthContext(req.headers);
-    const isSuperAdmin = authCtx.role === 'SUPER_ADMIN';
+    const hasEcosystem = checkNexusPermission(authCtx, 'ecosystem');
     const orgScope = (authCtx.canonicalOrgId || '').toUpperCase();
 
-    if (!isSuperAdmin) {
+    if (!hasEcosystem) {
       if (action === 'REINVITE' && candidateId) {
         const existing = await AcademyStore.getCandidateAsync(candidateId);
         if (existing && existing.targetRole.toUpperCase() !== orgScope && orgScope !== 'ALL_TRACKS') {

@@ -35,9 +35,11 @@ export async function GET() {
   } catch (error: any) {
     // Migration-lag tolerance: if the nexus_presence table has not been applied
     // to the active environment yet, report empty presence instead of a 500.
+    const errorMessage = error?.message || '';
+    const causeMessage = error?.cause?.message || '';
     const relationMissing =
-      typeof error?.message === 'string' &&
-      /relation "?nexus_presence"? does not exist|undefined_table|_nexus_presence/.test(error.message);
+      /relation "?nexus_presence"? does not exist|undefined_table|_nexus_presence/.test(errorMessage) ||
+      /relation "?nexus_presence"? does not exist|undefined_table|_nexus_presence/.test(causeMessage);
     if (relationMissing) {
       console.warn('[PRESENCE_GET] nexus_presence table not found yet (migration pending) — returning empty.');
       return NextResponse.json({ presence: [] });

@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Shield,
   Plus,
@@ -29,8 +29,15 @@ import { TaskItem } from './taskTypes';
 import { NexusHermesTerminal } from '@/app/nexus/settings/NexusHermesTerminal';
 import type { OperatorContext } from '@/app/nexus/settings/SettingsClient';
 import { OperationsBroadcastTab } from './OperationsBroadcastTab';
+import { OperationsIncidentCenter } from './OperationsIncidentCenter';
+import { OperationsApprovalsTab } from './OperationsApprovalsTab';
+import { OperationsClientsTab } from './OperationsClientsTab';
+import { OperationsKnowledgeTab } from './OperationsKnowledgeTab';
+import { OperationsCollaboratorsTab } from './OperationsCollaboratorsTab';
+import TasksPanel from './TasksPanel';
+import { CheckCircle, Building2 } from 'lucide-react';
 
-export type Tab = 'REGISTER' | 'DATAROOM' | 'WORK_ENGINE' | 'ACTIVITY' | 'KNOWLEDGE';
+export type Tab = 'REGISTER' | 'CLIENTS' | 'DATAROOM' | 'WORK_ENGINE' | 'ACTIVITY' | 'KNOWLEDGE' | 'COHORTS' | 'APPROVALS';
 
 interface IPAsset {
   id: string;
@@ -141,12 +148,34 @@ interface OpsModalProps {
   userEmail?: string;
   userRole?: string;
   permissions?: Record<string, boolean>;
+  activeTab?: Tab;
+  onTabChange?: (tab: Tab) => void;
 }
 
-export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName, userEmail, userRole, permissions = {} }: OpsModalProps) {
+export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName, userEmail, userRole, permissions = {}, activeTab, onTabChange }: OpsModalProps) {
   const isOpsAdmin = !!permissions['growth.manage'] || !!permissions['ecosystem'] || !!permissions['nexus.manage'];
 
-  const [tab, setTab] = useState<Tab>('WORK_ENGINE');
+  const [tab, setInternalTab] = useState<Tab>(activeTab || 'WORK_ENGINE');
+
+  useEffect(() => {
+    if (activeTab) setInternalTab(activeTab);
+  }, [activeTab]);
+
+  const setTab = (newTab: Tab) => {
+    setInternalTab(newTab);
+    if (onTabChange) onTabChange(newTab);
+  };
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [workLeftWidth, setWorkLeftWidth] = useState(50);
+  const [activityLeftWidth, setActivityLeftWidth] = useState(50);
+  // Resize by click instead of drag for smoother UX
+  const cycleWidth = (current: number, setter: (val: number) => void) => {
+    if (current === 50) setter(70);
+    else if (current === 70) setter(30);
+    else setter(50);
+  };
+
   const [terminalMode, setTerminalMode] = useState<'TASK' | 'HERMES'>('TASK');
   const [assets, setAssets] = useState<IPAsset[]>(INITIAL_ASSETS);
   const [selectedAsset, setSelectedAsset] = useState<IPAsset | null>(INITIAL_ASSETS[1] ?? null);
@@ -166,11 +195,11 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
 
   const operatorContext: OperatorContext | null = userName
     ? {
-        name: userName,
-        email: userEmail ?? '',
-        role: userRole || 'VIEWER',
-        permissions: {},
-      }
+      name: userName,
+      email: userEmail ?? '',
+      role: userRole || 'VIEWER',
+      permissions: {},
+    }
     : null;
 
   const [showAssetForm, setShowAssetForm] = useState(false);
@@ -190,7 +219,7 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
     if (storedAssets) {
       try { setAssets(JSON.parse(storedAssets)); } catch { }
     }
-    
+
     fetch('/api/nexus/collaborators/list')
       .then(res => res.json())
       .then(data => {
@@ -293,7 +322,7 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
 
   const getWalletHeaders = (): Record<string, string> => {
     if (typeof window === 'undefined') return {};
-    const wallet = 
+    const wallet =
       localStorage.getItem('snarai_wallet') ||
       localStorage.getItem('user_wallet') ||
       localStorage.getItem('walletAddress') ||
@@ -314,7 +343,7 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
         console.log("[HERMES META API] Enviando WhatsApp a ID:", selectedAssignee, "Mensaje:", message);
         await fetch('/api/nexus/assignments', {
           method: 'POST',
-          headers: { 
+          headers: {
             'Content-Type': 'application/json',
             ...getWalletHeaders()
           },
@@ -326,7 +355,7 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
             task: selectedAsset ? selectedAsset.name : undefined,
           }),
         }).catch(() => null);
-        
+
         // Also keep Discord log if needed, or rely on fallback in assignments route
       } else {
         const res = await fetch('/api/nexus/tasks', {
@@ -358,9 +387,14 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
     ...(isOpsAdmin
       ? [{ id: 'REGISTER' as Tab, label: `OPS REGISTER (${assets.length})`, icon: <Layers className="w-3.5 h-3.5" /> }]
       : []),
-    { id: 'DATAROOM', label: 'DATA ROOM', icon: <FolderGit2 className="w-3.5 h-3.5" /> },
+    { id: 'CLIENTS', label: 'CLIENTS & CRM', icon: <Building2 className="w-3.5 h-3.5" /> },
+    { id: 'DATAROOM', label: 'DATA ROOM & VAULT', icon: <FolderGit2 className="w-3.5 h-3.5" /> },
+    ...(isOpsAdmin
+      ? [{ id: 'COHORTS' as Tab, label: 'COHORTS', icon: <Shield className="w-3.5 h-3.5" /> }]
+      : []),
     { id: 'KNOWLEDGE', label: 'KNOWLEDGE BASE', icon: <BookOpen className="w-3.5 h-3.5" /> },
     { id: 'ACTIVITY', label: 'ACTIVITY & INCIDENTS', icon: <Activity className="w-3.5 h-3.5" /> },
+    { id: 'APPROVALS', label: 'APPROVALS', icon: <CheckCircle className="w-3.5 h-3.5" /> },
   ];
 
   const assetBadge = (status: IPAsset['status']) => {
@@ -434,11 +468,10 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
               <button
                 key={t.id}
                 onClick={() => setTab(t.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-mono text-[10px] tracking-wider transition-all whitespace-nowrap ${
-                  tab === t.id
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-mono text-[10px] tracking-wider transition-all whitespace-nowrap ${tab === t.id
                     ? 'border border-purple-500/30 bg-purple-500/10 text-purple-300'
                     : 'border border-white/10 bg-black/40 text-zinc-500 hover:text-zinc-200 hover:border-white/20'
-                }`}
+                  }`}
               >
                 {t.icon}
                 {t.label}
@@ -475,13 +508,37 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
                   </span>
                 </div>
               </div>
-              
-              <div className="flex-1">
-                {terminalMode === 'HERMES' ? (
-                  <NexusHermesTerminal role={userRole} operatorContext={operatorContext} autoBoot />
-                ) : (
-                  <TaskTerminal mode="TASK" onTaskCreated={handleTerminalTask} userName={userName} userRole={userRole} />
-                )}
+
+              <div
+                ref={tab === 'WORK_ENGINE' ? containerRef : null}
+                className="flex flex-col lg:flex-row flex-1 min-h-0 relative gap-6"
+                style={{ '--left-pct': `${workLeftWidth}%`, '--right-pct': `${100 - workLeftWidth}%` } as React.CSSProperties}
+              >
+                <div className="flex flex-col min-h-0 h-[600px] overflow-hidden transition-all duration-300 w-full lg:w-[calc(var(--left-pct)-12px)]">
+                  {terminalMode === 'HERMES' ? (
+                    <NexusHermesTerminal role={userRole} operatorContext={operatorContext} autoBoot />
+                  ) : (
+                    <TaskTerminal mode="TASK" onTaskCreated={handleTerminalTask} userName={userName} userRole={userRole} />
+                  )}
+                </div>
+
+                <div
+                  className="hidden lg:flex absolute top-0 bottom-0 w-6 -ml-3 cursor-pointer group items-center justify-center z-10 hover:scale-110 transition-transform"
+                  style={{ left: `var(--left-pct)` }}
+                  onClick={(e) => { e.preventDefault(); cycleWidth(workLeftWidth, setWorkLeftWidth); }}
+                  title="Haz clic para ajustar el tamaño de los paneles"
+                >
+                  <div className="flex flex-col items-center justify-center py-4 px-1 rounded-full border shadow-lg transition-all bg-[#08080A] border-white/20 group-hover:border-purple-500/50 group-hover:bg-purple-500/20 group-hover:shadow-purple-500/20">
+                    <div className="flex gap-0.5">
+                      <div className="w-0.5 h-8 rounded-full bg-white/40 group-hover:bg-purple-400" />
+                      <div className="w-0.5 h-8 rounded-full bg-white/40 group-hover:bg-purple-400" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col min-h-0 h-[600px] border border-white/10 rounded-2xl overflow-hidden w-full lg:w-[calc(var(--right-pct)-12px)]">
+                  <TasksPanel tasks={tasks} setTasks={setTasks} role={userRole} forceOpen={true} />
+                </div>
               </div>
             </div>
           )}
@@ -605,11 +662,10 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
                       <div
                         key={asset.id}
                         onClick={() => setSelectedAsset(asset)}
-                        className={`p-4 rounded-xl border transition-all cursor-pointer flex flex-col justify-between ${
-                          isSelected
+                        className={`p-4 rounded-xl border transition-all cursor-pointer flex flex-col justify-between ${isSelected
                             ? 'border-purple-500/40 bg-purple-500/[0.04]'
                             : 'border-white/10 bg-[#0C0C10] hover:border-white/20'
-                        }`}
+                          }`}
                       >
                         <div className="flex items-start justify-between gap-2 mb-2">
                           <span className="text-xs text-zinc-100">{asset.name}</span>
@@ -655,6 +711,11 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
                 </div>
               )}
             </div>
+          )}
+
+          {/* TAB: CLIENTS & CRM */}
+          {tab === 'CLIENTS' && (
+            <OperationsClientsTab />
           )}
 
           {/* TAB: DATA ROOM */}
@@ -715,13 +776,12 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
                             {deal.kind || 'ACUERDO'}
                           </span>
                           <span
-                            className={`text-[10px] font-mono px-2 py-0.5 rounded border ${
-                              deal.status === 'SIGNED' || deal.status === 'EXECUTED'
+                            className={`text-[10px] font-mono px-2 py-0.5 rounded border ${deal.status === 'SIGNED' || deal.status === 'EXECUTED'
                                 ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
                                 : deal.status === 'REVIEW'
-                                ? 'border-cyan-500/30 bg-cyan-500/10 text-cyan-300'
-                                : 'border-amber-500/30 bg-amber-500/10 text-amber-300'
-                            }`}
+                                  ? 'border-cyan-500/30 bg-cyan-500/10 text-cyan-300'
+                                  : 'border-amber-500/30 bg-amber-500/10 text-amber-300'
+                              }`}
                           >
                             {deal.status}
                           </span>
@@ -809,87 +869,95 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
                   </div>
                 </div>
               )}
+
+              {/* Sovereign Vault / Personal Data Room */}
+              <div className="space-y-3 pt-4 border-t border-white/5 mt-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-emerald-400 font-mono uppercase tracking-wider flex items-center gap-2">
+                    <Shield className="w-3.5 h-3.5" />
+                    <span>SOVEREIGN VAULT (CREDENTIALS)</span>
+                  </h4>
+                </div>
+
+                <div className="p-6 border border-emerald-500/20 rounded-xl bg-emerald-950/10">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <h5 className="text-sm font-bold text-emerald-300">Personal Knowledge & Identity Vault</h5>
+                      <p className="text-xs text-emerald-400/60 mt-1 leading-relaxed">
+                        Tu bóveda de conocimiento soberano. Documentos subidos aquí estarán encriptados y disponibles como contexto prioritario para tus instancias de Hermes.
+                      </p>
+                    </div>
+                    <button className="px-3 py-1.5 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 text-[10px] font-mono border border-emerald-500/30 whitespace-nowrap transition-colors">
+                      + SUBIR CREDENCIAL
+                    </button>
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="p-3 bg-black/40 border border-emerald-500/10 rounded-lg flex items-center gap-3">
+                      <div className="p-2 bg-emerald-500/10 rounded">
+                        <FileText className="w-4 h-4 text-emerald-400" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-white font-medium">Perfil Profesional KYC</p>
+                        <p className="text-[10px] text-zinc-500 font-mono">Verificado • IPFS K26</p>
+                      </div>
+                    </div>
+                    <div className="p-3 bg-black/40 border border-emerald-500/10 rounded-lg flex flex-col justify-center items-center gap-2 border-dashed opacity-60 hover:opacity-100 cursor-pointer transition-opacity">
+                      <p className="text-[10px] text-emerald-400 font-mono text-center">Sin Documentos Extra</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
-          {/* TAB: ACTIVITY & INCIDENTS */}
+          {/* TAB: COHORTS */}
+          {tab === 'COHORTS' && (
+            <OperationsCollaboratorsTab isAdmin={isOpsAdmin} />
+          )}
+
           {/* TAB: KNOWLEDGE BASE */}
           {tab === 'KNOWLEDGE' && (
-            <div className="p-5 overflow-y-auto flex-1 space-y-6">
-              {/* Architecture Lock Banner */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border border-rose-500/20 bg-rose-500/[0.04]">
-                <div>
-                  <p className="text-[11px] text-rose-300 font-mono uppercase font-bold flex items-center gap-1.5">
-                    <BrainCircuit className="w-3.5 h-3.5" />
-                    <span>SOVEREIGN KNOWLEDGE VAULT (K25/IPFS)</span>
-                  </p>
-                  <p className="text-xs text-zinc-400 mt-0.5">
-                    Interfaz unificada para la Academia, Guías Operativas y Matriz Cognitiva de Hermes.
-                  </p>
-                </div>
-                <a
-                  href="/admin/hermes"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-3.5 py-1.5 rounded-lg border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 text-xs font-mono flex items-center gap-1.5 transition-colors shrink-0"
-                >
-                  <TerminalSquare className="w-3.5 h-3.5" />
-                  <span>Hermes QA Command</span>
-                  <ExternalLink className="w-3.5 h-3.5" />
-                </a>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Pandora's Academy */}
-                <div className="p-5 rounded-xl border border-white/10 bg-[#0C0C10] flex flex-col h-full hover:border-emerald-500/30 transition-all group">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-4 group-hover:scale-105 transition-transform">
-                    <GraduationCap className="w-5 h-5" />
-                  </div>
-                  <h3 className="text-sm font-semibold text-zinc-100 mb-1.5">Pandora's Academy</h3>
-                  <p className="text-xs text-zinc-400 mb-4 flex-1">
-                    Cursos, certificaciones operativas y tracks ejecutivos para roles institucionales (COO, CMO, RWA).
-                  </p>
-                  <a
-                    href="https://academy.pandoras.finance"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-between w-full px-3.5 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs font-mono transition-colors hover:bg-emerald-500/20"
-                  >
-                    <span>Abrir Academy Console</span>
-                    <ArrowUpRight className="w-3.5 h-3.5" />
-                  </a>
-                </div>
-
-                {/* Ecosystem Guides */}
-                <div className="p-5 rounded-xl border border-white/10 bg-[#0C0C10] flex flex-col h-full hover:border-indigo-500/30 transition-all group">
-                  <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 mb-4 group-hover:scale-105 transition-transform">
-                    <Map className="w-5 h-5" />
-                  </div>
-                  <h3 className="text-sm font-semibold text-zinc-100 mb-1.5">Ecosystem Guides & Tours</h3>
-                  <p className="text-xs text-zinc-400 mb-4 flex-1">
-                    Gestor narrativo de onboarding, configurador de estaciones (Sovereign Doctrine) y FAQs de Hermes.
-                  </p>
-                  <a
-                    href="/admin/hermes"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-between w-full px-3.5 py-2 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-mono transition-colors hover:bg-indigo-500/20"
-                  >
-                    <span>Editar Ecosystem Guides</span>
-                    <ArrowUpRight className="w-3.5 h-3.5" />
-                  </a>
-                </div>
-              </div>
-            </div>
+            <OperationsKnowledgeTab />
           )}
 
           {tab === 'ACTIVITY' && (
-            <OperationsBroadcastTab
-              userName={userName}
-              userEmail={userEmail}
-              userRole={userRole}
-              collaborators={collaborators}
-            />
+            <div
+              ref={tab === 'ACTIVITY' ? containerRef : null}
+              className="flex flex-col lg:flex-row gap-6 flex-1 min-h-0 p-5 overflow-hidden relative"
+              style={{ '--left-pct': `${activityLeftWidth}%`, '--right-pct': `${100 - activityLeftWidth}%` } as React.CSSProperties}
+            >
+              <div className="flex flex-col min-h-0 overflow-hidden relative transition-all duration-300 w-full lg:w-[calc(var(--left-pct)-12px)]">
+                <OperationsBroadcastTab
+                  userName={userName}
+                  userEmail={userEmail}
+                  userRole={userRole}
+                  collaborators={collaborators}
+                />
+              </div>
+
+              <div
+                className="hidden lg:flex absolute top-5 bottom-5 w-6 -ml-3 cursor-pointer group items-center justify-center z-10 hover:scale-110 transition-transform"
+                style={{ left: `var(--left-pct)` }}
+                onClick={(e) => { e.preventDefault(); cycleWidth(activityLeftWidth, setActivityLeftWidth); }}
+                title="Haz clic para ajustar el tamaño de los paneles"
+              >
+                <div className="flex flex-col items-center justify-center py-4 px-1 rounded-full border shadow-lg transition-all bg-[#08080A] border-white/20 group-hover:border-purple-500/50 group-hover:bg-purple-500/20 group-hover:shadow-purple-500/20">
+                  <div className="flex gap-0.5">
+                    <div className="w-0.5 h-8 rounded-full bg-white/40 group-hover:bg-purple-400" />
+                    <div className="w-0.5 h-8 rounded-full bg-white/40 group-hover:bg-purple-400" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col min-h-0 overflow-hidden relative w-full lg:w-[calc(var(--right-pct)-12px)]">
+                <OperationsIncidentCenter />
+              </div>
+            </div>
+          )}
+
+          {tab === 'APPROVALS' && (
+            <OperationsApprovalsTab />
           )}
 
           {/* Footer status bar */}

@@ -36,6 +36,7 @@ import { toast } from 'sonner';
 interface HermesIntelligencePanelProps {
   organizationSlug: string;
   organizationName: string;
+  onClose?: () => void;
 }
 
 interface MessageItem {
@@ -65,7 +66,7 @@ const DEFAULT_TOPICS: TopicItem[] = [
   { id: 'journeys', title: 'Journeys & Embudo', icon: Bot },
 ];
 
-export function HermesIntelligencePanel({ organizationSlug, organizationName }: HermesIntelligencePanelProps) {
+export function HermesIntelligencePanel({ organizationSlug, organizationName, onClose }: HermesIntelligencePanelProps) {
   const [topics, setTopics] = useState<TopicItem[]>(DEFAULT_TOPICS);
   const [activeTopic, setActiveTopic] = useState<TopicItem>(DEFAULT_TOPICS[0]!);
   const [showNewTopicInput, setShowNewTopicInput] = useState(false);
@@ -425,6 +426,18 @@ export function HermesIntelligencePanel({ organizationSlug, organizationName }: 
           >
             <Trash2 size={15} />
           </button>
+
+          {/* Close Panel Button (when used in a Drawer) */}
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              title="Cerrar panel"
+              className="text-neutral-500 hover:text-white p-1.5 rounded-lg hover:bg-white/[0.04] transition-colors ml-1 border-l border-white/10 pl-2.5"
+            >
+              <X size={18} />
+            </button>
+          )}
         </div>
       </div>
 

@@ -57,35 +57,15 @@ export function HermesAmbientDrawer({ isOpen, onClose, organizationSlug, organiz
       <div 
         className="fixed top-0 right-0 h-[100dvh] w-full sm:w-[450px] md:w-[500px] bg-[#12121A] border-l border-white/[0.08] shadow-2xl z-[99999] flex flex-col transform transition-transform animate-in slide-in-from-right duration-300 ease-out"
       >
-        {/* Drawer Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06] bg-[#0C0C12] shrink-0">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-600/30 to-purple-600/30 flex items-center justify-center border border-indigo-500/30 shrink-0 shadow-inner">
-              <Brain size={16} className="text-indigo-300" />
-            </div>
-            <div className="min-w-0">
-              <h3 className="text-white font-medium text-sm tracking-wide truncate">Hermes Ambient AI</h3>
-              <p className="text-indigo-400/80 text-[10px] font-semibold tracking-wider uppercase truncate font-mono">
-                Asistente Cognitivo Soberano
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 text-neutral-400 hover:text-white rounded-xl hover:bg-white/[0.06] transition-colors shrink-0"
-            title="Cerrar (ESC)"
-          >
-            <X size={20} />
-          </button>
-        </div>
+        {/* Drawer Header is omitted because HermesIntelligencePanel has its own header */}
 
-        {/* Drawer Body - Reusing the Intelligence Panel but adapting it slightly if needed */}
+        {/* Drawer Body */}
         <div className="flex-1 overflow-hidden relative">
            <HermesIntelligencePanel 
              organizationSlug={organizationSlug} 
              organizationName={organizationName}
+             onClose={onClose}
            />
-           {/* Note: The IntelligencePanel has its own top header, we might want to tweak it but for now it works as a fully featured chat */}
         </div>
       </div>
     </>

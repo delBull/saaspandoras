@@ -54,8 +54,8 @@ export default function NexusSettingsPage({ isUserAdmin = false, userRole = "OPE
   // Drawer state
   const [isTerminalOpen, setIsTerminalOpen] = useState(false);
 
-  // Tabs state - SuperAdmin inicia en "team", los demás colaboradores inician en "terminal"
-  const [activeTab, setActiveTab] = useState<"team" | "agents" | "terminal" | "display" | "alerts">("terminal");
+  // Tabs state - SuperAdmin inicia en "team", los demás colaboradores inician en "agents"
+  const [activeTab, setActiveTab] = useState<"team" | "agents" | "display" | "alerts">("agents");
   const [alertHistory, setAlertHistory] = useState<any[]>([]);
 
   const canManageAgenda = isUserAdmin || userRole === "ADMIN" || !!operatorContext?.permissions?.["calendar.manage"];
@@ -187,17 +187,7 @@ export default function NexusSettingsPage({ isUserAdmin = false, userRole = "OPE
             <Bot className="w-4 h-4" />
             Cognitive Agents
           </button>
-          <button
-            onClick={() => setActiveTab("terminal")}
-            className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 ${
-              activeTab === "terminal"
-                ? "border-amber-400 text-amber-400"
-                : "border-transparent text-zinc-500 hover:text-zinc-300"
-            }`}
-          >
-            <Settings className="w-4 h-4" />
-            Hermes Terminal
-          </button>
+          {/* Hermes Terminal Tab removed */}
           <button
             onClick={() => setActiveTab("display")}
             className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 ${
@@ -308,24 +298,7 @@ export default function NexusSettingsPage({ isUserAdmin = false, userRole = "OPE
               )}
             </div>
           </motion.div>
-        ) : (
-          /* ── HERMES TERMINAL TAB ── */
-          <div className="flex flex-col" style={{ height: '600px' }}>
-            <div className="mb-4">
-              <h2 className="text-base font-semibold text-white flex items-center gap-2">
-                <Settings className="w-4 h-4 text-amber-400" />
-                Hermes OS Terminal
-              </h2>
-              <p className="text-xs text-zinc-500 mt-0.5">
-                Consola conversacional para operadores. Usa voz (Whisper) o texto. Comienza con{" "}
-                <code className="text-amber-400 font-mono">sudo wake_up_hermes</code>.
-              </p>
-            </div>
-            <div className="flex-1 min-h-0">
-              <NexusHermesTerminal role={isUserAdmin ? "SUPER_ADMIN" : "OPERATOR"} operatorContext={operatorContext} />
-            </div>
-          </div>
-        )}
+        ) : null}
       </div>
 
 

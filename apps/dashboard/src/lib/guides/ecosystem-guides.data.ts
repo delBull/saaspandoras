@@ -133,7 +133,7 @@ export const ECOSYSTEM_STATIONS: EcosystemStation[] = [
     category: 'RESOURCES',
     badgeColor: 'purple',
     iconName: 'BookOpen',
-    targetUrl: '/nexus/academy',
+    targetUrl: process.env.NODE_ENV === 'development' ? 'http://academy.localhost:3000/console' : 'https://academy.pandoras.finance/console',
     allowedRoles: ['SUPER_ADMIN', 'ADMIN', 'MARKETING', 'OPERATOR', 'VIEWER'],
     hermesGreeting: 'El bastión de conocimiento y principios rectores.',
     hermesNarrative:

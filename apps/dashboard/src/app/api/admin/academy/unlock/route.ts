@@ -38,14 +38,12 @@ export async function POST(req: NextRequest) {
     const auth = await getNexusAuthContext(req.headers);
     if (
       auth.isAuthenticated &&
-      (auth.role === "SUPER_ADMIN" ||
-        auth.role === "ADMIN" ||
-        (auth.role as string) === "MANAGER" ||
+      (checkNexusPermission(auth, "ecosystem") ||
         checkNexusPermission(auth, "nexus.manage") ||
         checkNexusPermission(auth, "users.manage") ||
         Boolean(auth.permissions?.academyAdmin))
     ) {
-      const inheritedRole = (auth.role === "SUPER_ADMIN" || auth.role === "ADMIN") ? "admin" : "manager";
+      const inheritedRole = checkNexusPermission(auth, "ecosystem") ? "admin" : "manager";
       return NextResponse.json({
         ok: true,
         unlocked: true,
@@ -84,7 +82,7 @@ export async function POST(req: NextRequest) {
       const { getCollaboratorByEmail } = await import('@/lib/nexus/collaborators-service');
       const collab = await getCollaboratorByEmail(targetEmail);
       if (collab && collab.status === 'ACTIVE') {
-        if (collab.role === 'SUPER_ADMIN' || collab.role === 'ADMIN') {
+        if (collab.permissions?.ecosystem || collab.role === 'SUPER_ADMIN' || collab.role === 'ADMIN') {
           resolvedRole = "admin";
         } else if (collab.permissions?.academyAdmin || collab.role === 'MARKETING' || collab.role === 'OPERATOR' || (collab.role as string) === 'MANAGER') {
           resolvedRole = "manager";

@@ -19,11 +19,7 @@ export default async function AdminAcademyPage({
   const hasAcademyPermission = 
     auth.isAuthenticated && (
       auth.role === "SUPER_ADMIN" ||
-      auth.role === "ADMIN" ||
-      (auth.role as string) === "MANAGER" ||
-      checkNexusPermission(auth, "nexus.manage") ||
-      checkNexusPermission(auth, "users.manage") ||
-      Boolean(auth.permissions?.academyAdmin)
+      auth.role === "ADMIN"
     );
 
   let unlocked = hasAcademyPermission;
@@ -40,9 +36,6 @@ export default async function AdminAcademyPage({
         if (collab.role === 'SUPER_ADMIN' || collab.role === 'ADMIN') {
           unlocked = true;
           userRole = 'admin';
-        } else if (collab.permissions?.academyAdmin || (collab.role as string) === 'MANAGER') {
-          unlocked = true;
-          userRole = 'manager';
         }
       }
     } catch {}

@@ -14,14 +14,10 @@ import { INITIAL_TASKS, TaskItem } from "@/components/nexus/taskTypes";
 import { useActiveWallet, useDisconnect } from "thirdweb/react";
 
 import { NexusShell } from "@/components/nexus/shell/NexusShell";
-import { UnifiedIndexModal } from "@/components/nexus/UnifiedIndexModal";
 import { NexusCommandPalette } from "@/components/nexus/shell/NexusCommandPalette";
 import { NexusHeader } from "@/components/nexus/shell/NexusHeader";
 import { NexusWorkspace } from "@/components/nexus/shell/NexusWorkspace";
 import { NexusContextBar } from "@/components/nexus/shell/NexusContextBar";
-import { NexusSidebar } from "@/components/nexus/shell/NexusSidebar";
-import { PresenceDock } from "@/components/nexus/presence-dock";
-import { HermesAmbientDrawer } from "@/components/hermes-portal/HermesAmbientDrawer";
 
 interface NexusCommandCenterProps {
   auth: NexusAuthContext;
@@ -43,10 +39,7 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
   const [isOpsModalOpen, setIsOpsModalOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showDisplayControls, setShowDisplayControls] = useState(false);
-  const [isHermesAmbientOpen, setIsHermesAmbientOpen] = useState(false);
-  const [isUnifiedIndexOpen, setIsUnifiedIndexOpen] = useState(false);
   const sidebarOpen = showGuideSidebar === true;
-  const [opsActiveTab, setOpsActiveTab] = useState<any>('WORK_ENGINE');
 
   useEffect(() => {
     try {
@@ -270,57 +263,14 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
 
   return (
     <NexusShell>
-      <NexusCommandPalette auth={auth} onOpenSettings={() => setIsSettingsOpen(true)} onOpenHermes={(initialQuery) => {
-        // TODO: Handle passing initial query to Hermes Ambient Drawer if needed later.
-        setIsHermesAmbientOpen(true);
-      }} />
+      <NexusCommandPalette auth={auth} onOpenSettings={() => setIsSettingsOpen(true)} />
       
-      <div className="flex flex-1 w-full overflow-hidden relative">
-        <NexusSidebar 
-          auth={auth} 
-          onAction={(action) => {
-            if (action === 'hermes') {
-              setIsHermesAmbientOpen(true);
-            } else if (action === 'UNIFIED_INDEX') {
-              setIsUnifiedIndexOpen(true);
-            } else if (action === 'SETTINGS') {
-              setIsSettingsOpen(true);
-            } else {
-              setOpsActiveTab(action);
-              setIsOpsModalOpen(true);
-            }
-          }} 
-        />
-        
-        <div className="flex-1 flex flex-col min-w-0 bg-[#0A0A0E]">
-          <NexusHeader role={role} setIsOpsModalOpen={setIsOpsModalOpen} onOpenHermes={() => setIsHermesAmbientOpen(true)} />
+      <NexusHeader role={role} setIsOpsModalOpen={setIsOpsModalOpen} />
 
-          <div className="flex-1 flex overflow-hidden min-h-0 relative">
-            {!isUnifiedIndexOpen ? (
-              <NexusWorkspace 
-                auth={auth} 
-                sidebarOpen={sidebarOpen} 
-                tasks={tasks}
-                onAction={(action) => {
-                  if (action === 'hermes') {
-                    setIsHermesAmbientOpen(true);
-                  } else if (action === 'SETTINGS') {
-                    setIsSettingsOpen(true);
-                  } else {
-                    setOpsActiveTab(action);
-                    setIsOpsModalOpen(true);
-                  }
-                }}
-              />
-            ) : (
-              <UnifiedIndexModal 
-                auth={auth} 
-                onClose={() => setIsUnifiedIndexOpen(false)} 
-              />
-            )}
+      <div className="flex-1 flex overflow-hidden min-h-0">
+        <NexusWorkspace auth={auth} sidebarOpen={sidebarOpen} />
 
-            <TasksPanel tasks={tasks} setTasks={setTasks} role={role ?? undefined} />
-
+        <TasksPanel tasks={tasks} setTasks={setTasks} role={role ?? undefined} />
 
         <AnimatePresence>
           {showWelcomePanel && (
@@ -397,12 +347,9 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
             </motion.div>
           )}
         </AnimatePresence>
-          </div>
-        </div>
       </div>
 
-      <NexusContextBar auth={auth} />
-      <PresenceDock hidden={isOpsModalOpen || isSettingsOpen || isHermesAmbientOpen || isUnifiedIndexOpen} />
+      <NexusContextBar />
 
       <HermesFloatingGuide
         role={tourRole}
@@ -421,8 +368,6 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
         userEmail={auth.email ?? undefined}
         userRole={role ?? undefined}
         permissions={auth.permissions as any}
-        activeTab={opsActiveTab}
-        onTabChange={(tab) => setOpsActiveTab(tab)}
       />
 
       <NexusCentralNotificationModal
@@ -438,9 +383,9 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
       <AnimatePresence>
         {isSettingsOpen && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
             transition={{ type: "tween", duration: 0.25 }}
             className="fixed inset-0 z-[110] bg-[#08080A] overflow-y-auto custom-scrollbar"
           >
@@ -458,13 +403,6 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
           </motion.div>
         )}
       </AnimatePresence>
-
-      <HermesAmbientDrawer 
-        isOpen={isHermesAmbientOpen}
-        onClose={() => setIsHermesAmbientOpen(false)}
-        organizationSlug="pandoras-core"
-        organizationName="Pandoras Growth OS"
-      />
     </NexusShell>
   );
 }

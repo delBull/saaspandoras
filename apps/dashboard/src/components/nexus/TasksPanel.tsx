@@ -21,6 +21,7 @@ interface Props {
   tasks: TaskItem[];
   setTasks: React.Dispatch<React.SetStateAction<TaskItem[]>>;
   role?: string;
+  forceOpen?: boolean;
 }
 
 const prioBadge = (p: TaskItem['priority']) => {
@@ -29,8 +30,8 @@ const prioBadge = (p: TaskItem['priority']) => {
   return 'border-white/10 bg-black/40 text-zinc-400';
 };
 
-export default function TasksPanel({ tasks, setTasks, role = 'VIEWER' }: Props) {
-  const [open, setOpen] = useState(true);
+export default function TasksPanel({ tasks, setTasks, role = 'VIEWER', forceOpen = false }: Props) {
+  const [open, setOpen] = useState(forceOpen ? true : false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [completing, setCompleting] = useState<string | null>(null);
   const [evText, setEvText] = useState('');
@@ -501,11 +502,11 @@ export default function TasksPanel({ tasks, setTasks, role = 'VIEWER' }: Props) 
           <button onClick={onClose} className="p-1 text-zinc-400 hover:text-white rounded-lg">
             <X className="w-4 h-4" />
           </button>
-        ) : (
+        ) : !forceOpen ? (
           <button onClick={() => setOpen(false)} className="p-1 text-zinc-400 hover:text-white rounded-lg">
             <ChevronRight className="w-4 h-4" />
           </button>
-        )}
+        ) : null}
       </div>
     </div>
   );
@@ -514,8 +515,12 @@ export default function TasksPanel({ tasks, setTasks, role = 'VIEWER' }: Props) 
     <>
       {/* Desktop docked panel */}
       <div
-        className={`hidden md:flex flex-col shrink-0 border-l border-white/[0.08] bg-[#07070A] transition-[width] duration-300 overflow-hidden ${
-          open ? 'w-[360px]' : 'w-12'
+        className={`hidden md:flex flex-col shrink-0 border-white/[0.08] transition-all duration-300 overflow-hidden ${
+          forceOpen 
+            ? 'w-full h-full bg-transparent border-l-0' 
+            : open 
+              ? 'w-[360px] border-l bg-[#07070A]' 
+              : 'w-12 border-l bg-[#07070A]'
         }`}
       >
         {open ? (

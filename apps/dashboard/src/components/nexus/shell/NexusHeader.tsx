@@ -2,14 +2,15 @@
 
 import React from "react";
 import Link from "next/link";
-import { Activity, TerminalSquare, Handshake, Code2, GraduationCap } from "lucide-react";
+import { Activity, TerminalSquare, Handshake, Code2, GraduationCap, BrainCircuit } from "lucide-react";
 
 interface NexusHeaderProps {
   role: string | null;
   setIsOpsModalOpen: (val: boolean) => void;
+  onOpenHermes?: () => void;
 }
 
-export function NexusHeader({ role, setIsOpsModalOpen }: NexusHeaderProps) {
+export function NexusHeader({ role, setIsOpsModalOpen, onOpenHermes }: NexusHeaderProps) {
   return (
     <header className="h-12 shrink-0 relative z-20 flex items-center justify-between px-4 md:px-6 bg-[#07070B] border-b border-white/[0.08] font-mono">
       <div className="flex items-center gap-3 min-w-0">
@@ -40,6 +41,15 @@ export function NexusHeader({ role, setIsOpsModalOpen }: NexusHeaderProps) {
           UNIFIED INDEX
         </span>
         <div className="flex items-center gap-2 shrink-0">
+          {onOpenHermes && (
+            <button
+              onClick={onOpenHermes}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-indigo-500/30 bg-indigo-500/10 text-indigo-300 text-[10px] tracking-wider hover:bg-indigo-500/20 transition-colors shrink-0"
+            >
+              <BrainCircuit className="w-3 h-3" />
+              HERMES
+            </button>
+          )}
           <button
             onClick={() => setIsOpsModalOpen(true)}
             className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-purple-500/30 bg-purple-500/10 text-purple-300 text-[10px] tracking-wider hover:bg-purple-500/20 transition-colors shrink-0"
@@ -65,7 +75,7 @@ export function NexusHeader({ role, setIsOpsModalOpen }: NexusHeaderProps) {
           )}
           {role === "SUPER_ADMIN" && (
             <Link
-              href="https://academy.pandoras.finance"
+              href={process.env.NODE_ENV === 'development' ? 'http://academy.localhost:3000/console' : 'https://academy.pandoras.finance/console'}
               target="_blank"
               className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-purple-500/30 bg-purple-500/10 text-purple-300 text-[10px] tracking-wider hover:bg-purple-500/20 transition-colors shrink-0"
             >

@@ -15,9 +15,10 @@ export interface CollaboratorPresence {
   preferredChannel: PreferredChannel;
 }
 
-export function PresenceDock() {
+export function PresenceDock({ hidden = false }: { hidden?: boolean }) {
   const [isOpen, setIsOpen] = useState(false);
   const [presenceList, setPresenceList] = useState<CollaboratorPresence[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     let mounted = true;
@@ -52,6 +53,8 @@ export function PresenceDock() {
         }
       } catch (err) {
         console.error('Failed to fetch presence', err);
+      } finally {
+        if (mounted) setIsLoading(false);
       }
     };
 
@@ -120,21 +123,30 @@ export function PresenceDock() {
     </div>
   );
 
+  const MAX_VISIBLE = 5;
+  const visiblePresence = presenceList.slice(0, MAX_VISIBLE);
+  const overflowCount = Math.max(0, presenceList.length - MAX_VISIBLE);
+
+  if (!isLoading && presenceList.length === 0) {
+    return null;
+  }
+
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
+    <div className={`fixed bottom-4 left-1/2 -translate-x-1/2 z-40 transition-opacity duration-300 ${hidden ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+      
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="mb-4 w-80 bg-zinc-900 border border-white/10 rounded-xl shadow-2xl overflow-hidden backdrop-blur-xl"
+            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+            className="absolute bottom-16 left-1/2 -translate-x-1/2 mb-2 w-72 bg-zinc-900 border border-white/10 rounded-xl shadow-2xl overflow-hidden backdrop-blur-xl"
           >
-            <div className="p-4 border-b border-white/10 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-white">Nexus Team</h3>
+            <div className="p-3 border-b border-white/10 flex items-center justify-between bg-black/20">
+              <h3 className="text-sm font-semibold text-white">Nexus Roster</h3>
               <span className="text-xs text-white/50">{online.length} en línea</span>
             </div>
-            <div className="p-2 max-h-96 overflow-y-auto space-y-4">
+            <div className="p-2 max-h-72 overflow-y-auto space-y-3 custom-scrollbar">
               
               {online.length > 0 && (
                 <div>
@@ -158,24 +170,52 @@ export function PresenceDock() {
               )}
 
               {presenceList.length === 0 && (
-                <div className="p-4 text-center text-sm text-white/50">No hay colaboradores registrados.</div>
+                <div className="p-4 text-center text-xs text-white/50">No hay colaboradores registrados.</div>
               )}
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-14 h-14 bg-white text-black rounded-full flex items-center justify-center shadow-lg hover:scale-105 transition-transform"
-      >
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M16 21V19C16 17.9391 15.5786 16.9217 14.8284 16.1716C14.0783 15.4214 13.0609 15 12 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M8.5 11C10.7091 11 12.5 9.20914 12.5 7C12.5 4.79086 10.7091 3 8.5 3C6.29086 3 4.5 4.79086 4.5 7C4.5 9.20914 6.29086 11 8.5 11Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M23 21V19C22.9993 18.1137 22.7044 17.2528 22.1614 16.5523C21.6184 15.8519 20.8581 15.3516 20 15.13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M16 3.13C16.8604 3.35031 17.623 3.85071 18.1676 4.55232C18.7122 5.25392 19.0078 6.11683 19.0078 7.005C19.0078 7.89318 18.7122 8.75608 18.1676 9.45769C17.623 10.1593 16.8604 10.6597 16 10.88" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
-      </button>
+      <div className="flex items-center gap-2 p-2 bg-[#1A1A24]/80 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl shadow-black/50">
+        
+        {visiblePresence.map(p => (
+          <div key={p.id} className="relative group flex items-center justify-center">
+            <div 
+              className="w-10 h-10 rounded-xl bg-zinc-800/80 border border-white/10 flex items-center justify-center text-white/70 font-medium text-sm transition-all duration-300 hover:scale-110 hover:-translate-y-2 cursor-pointer hover:bg-zinc-700 hover:border-white/20"
+              onClick={() => setIsOpen(!isOpen)}
+            >
+              {p.name.charAt(0).toUpperCase()}
+            </div>
+            
+            <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-[2px] border-[#1A1A24] ${getStatusColor(p.status)}`} />
+            
+            {/* Tooltip */}
+            <div className="absolute -top-12 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none flex flex-col items-center">
+              <div className="bg-black/90 text-white text-[10px] px-2 py-1 rounded whitespace-nowrap border border-white/10 flex flex-col items-center">
+                <span className="font-semibold">{p.name}</span>
+                <span className="text-white/60">{p.context || (p.status === 'ONLINE' ? 'Disponible' : p.status)}</span>
+              </div>
+              <div className="w-2 h-2 bg-black/90 border-r border-b border-white/10 rotate-45 -mt-1.5" />
+            </div>
+          </div>
+        ))}
+
+        {overflowCount > 0 && (
+          <div 
+            onClick={() => setIsOpen(!isOpen)}
+            className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/60 font-medium text-xs transition-all duration-300 hover:scale-110 hover:-translate-y-2 cursor-pointer hover:bg-white/10 hover:text-white"
+          >
+            +{overflowCount}
+          </div>
+        )}
+
+        {presenceList.length === 0 && isLoading && (
+          <div className="px-4 py-2 text-xs text-white/50 font-mono flex items-center justify-center">
+            Scanning presence...
+          </div>
+        )}
+      </div>
     </div>
   );
 }
