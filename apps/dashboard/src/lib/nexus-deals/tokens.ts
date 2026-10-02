@@ -43,6 +43,12 @@ export function verifyDealToken(token: string): DealTokenPayload | null {
  * Se envía al canal privado de Discord como embed con link único (2h).
  */
 async function hmacSign(payload: string): Promise<string> {
+  if (!ADMIN_UNLOCK_SECRET) {
+    // Fail-gracefully: secret not configured in this environment.
+    // Return a deterministic placeholder — tokens signed this way will
+    // fail verifyUnlockToken (expected !== sig), so they are safe.
+    return "no-secret-configured";
+  }
   const encoder = new TextEncoder();
   const keyData = encoder.encode(ADMIN_UNLOCK_SECRET);
   const cryptoKey = await crypto.subtle.importKey(

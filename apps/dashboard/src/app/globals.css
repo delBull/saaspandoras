@@ -1,8 +1,8 @@
+@import '@pandoras/display-engine/styles.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@import '@pandoras/display-engine/styles.css';
 
 @layer base {
   :root {
