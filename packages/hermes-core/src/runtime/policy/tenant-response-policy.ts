@@ -54,7 +54,7 @@ export const UNIVERSAL_BASELINE_RULES: ForbiddenAssertionRule[] = [
     isBlock: true,
   },
   {
-    pattern: /\b(?:retorno garantizado|rendimiento garantizado|rendimientos? fijos? garantizados?|guaranteed returns?|fixed return)\b/i,
+    pattern: /\b(?:retorno garantizado|rendimiento(?:\s+\w+)?\s+garantizado|rendimientos?\s+fijos?\s+garantizados?|guaranteed returns?|fixed return)\b/i,
     code: 'FORBIDDEN_FINANCIAL_PROMISE',
     message: 'Prohibido prometer rendimientos fijos o retornos garantizados.',
     isBlock: true,

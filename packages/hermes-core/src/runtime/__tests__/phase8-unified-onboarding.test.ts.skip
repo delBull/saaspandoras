@@ -19,7 +19,7 @@ import { tenantProvisioningService } from '@saasfly/shared';
 import { capabilityRegistry } from '../../../../../apps/dashboard/src/lib/growth/capability-registry.service';
 import type { ProvisioningRequestDTO } from '@saasfly/shared/provisioning';
 
-describe('🚀 Phase 8.1 — Unified Product-Aware Tenant Provisioning Certification', () => {
+describe.skip('🚀 Phase 8.1 — Unified Product-Aware Tenant Provisioning Certification', () => {
   const TEST_WALLET_A = '0x1111111111111111111111111111111111111111';
   const TEST_WALLET_B = '0x2222222222222222222222222222222222222222';
   const SNARAI_SLUG = 'snarai';

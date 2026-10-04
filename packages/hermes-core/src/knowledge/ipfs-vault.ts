@@ -18,15 +18,15 @@ import {
 import { EphemeralMemoryScrubber } from '../runtime/sandbox/memory-scrubber';
 import { HermesIdentitySigner } from '../identity/identity-signer';
 import { VaultAuthorizationGate, type VaultAccessContext } from './vault-authorization-gate';
-import { 
-  SovereignIpfsOrchestrator, 
-  MockIpfsProvider,
-  type SovereignIpfsConfig,
-  type IpfsProvider,
-  type IpfsReplicationStatus,
-  type ArtifactStorageCategory,
-  type DurabilityProof,
-} from './ipfs';
+import { SovereignIpfsOrchestrator } from './ipfs/orchestrator';
+import { MockIpfsProvider } from './ipfs/mock-provider';
+import type { 
+  SovereignIpfsConfig,
+  IpfsProvider,
+  IpfsReplicationStatus,
+  ArtifactStorageCategory,
+  DurabilityProof,
+} from './ipfs/contracts';
 
 export type { 
   EncryptedKnowledgeArtifact, 

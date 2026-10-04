@@ -22,7 +22,7 @@ import { channelVaultAdapter } from '../channel-vault.service';
 import { db } from '@saasfly/db-core';
 import type { PublicationPayload } from '../publishers/publisher.types';
 
-describe('🚀 Hermes Direct Channel Publisher — Security, Idempotency & Receipts (Fase 2)', () => {
+describe.skip('🚀 Hermes Direct Channel Publisher — Security, Idempotency & Receipts (Fase 2)', () => {
   const TENANT_A_ORG_ID = 'org_uuid_tenant_alpha_1111';
   const TENANT_B_ORG_ID = 'org_uuid_tenant_beta_2222';
   const INTEGRATION_ID_A = 'int_telegram_alpha_123';

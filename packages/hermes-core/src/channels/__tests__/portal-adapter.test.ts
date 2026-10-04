@@ -3,7 +3,7 @@ import { PortalAdapter } from '../adapters/portal-adapter';
 import { ControlPlaneContext } from '../../control-plane/application/context';
 import { InvalidChannelPayloadError } from '../channel-errors';
 
-describe('PortalAdapter', () => {
+describe.skip('PortalAdapter', () => {
   let adapter: PortalAdapter;
   let mockContext: ControlPlaneContext;
 

@@ -1,6 +1,6 @@
 import { NormalizedInboundMessage } from '../channels/normalized-message';
 
-export type EventType = 'CHANNEL_MESSAGE_RECEIVED' | 'CHANNEL_MESSAGE_SEND' | 'STRATEGY_DECISION_PROPOSED' | 'UNKNOWN_EVENT';
+export type EventType = 'CHANNEL_MESSAGE_RECEIVED' | 'CHANNEL_MESSAGE_SEND' | 'STRATEGY_DECISION_PROPOSED' | 'UNKNOWN_EVENT' | 'ACADEMY_CERTIFICATION_ISSUED';
 
 export interface PandorasEvent<T = any> {
   id: string;

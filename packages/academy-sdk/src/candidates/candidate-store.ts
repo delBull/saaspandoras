@@ -13,6 +13,7 @@
 
 import { createHash } from 'crypto';
 import { db } from "@saasfly/db-core";
+import { EventSpine } from "@saasfly/hermes-core";
 import {
   academyCandidates,
   academyInvitations,
@@ -941,8 +942,9 @@ class AcademyStoreSingleton {
           attemptResult: fullAttempt.attemptResult,
           agentSigner: signer,
         });
-      } catch (e) {
-        console.warn('⚠️ [AcademyStore] IPFS Certification anchoring warning (proceeding with base cert):', e);
+      } catch (e: any) {
+        console.error('❌ [AcademyStore] Sovereign Sign & IPFS Anchoring failed. Certification aborted:', e);
+        throw new Error(`CERTIFICATION_FAILED: No se pudo anclar el certificado en IPFS o firmar el EIP-712. ${e.message}`);
       }
 
       assessment.certified = true;
@@ -998,6 +1000,24 @@ class AcademyStoreSingleton {
             })
             .where(eq(academyCandidates.id, candidate.id));
         }
+
+        // 🛡️ Emit event to Event Spine
+        try {
+          EventSpine.getInstance().publish({
+            id: `evt_cert_${finalCertification.id}_${Date.now()}`,
+            type: 'ACADEMY_CERTIFICATION_ISSUED',
+            timestamp: new Date().toISOString(),
+            payload: {
+              certificationId: finalCertification.id,
+              candidateId: assessment.candidateId,
+              programId: assessment.programId,
+              ipfsCid: finalCertification.ipfsCid
+            }
+          } as any);
+        } catch (e) {
+          console.error('⚠️ [AcademyStore] Error emitting Event Spine event:', e);
+        }
+
       } catch (e) {
         console.warn('⚠️ [AcademyStore] DB Finalize certification failed:', e);
       }

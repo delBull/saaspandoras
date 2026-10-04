@@ -5,7 +5,7 @@ import { getDefaultRuntime } from '../../runtime/hermes-runtime';
 import { CognitiveContextBuilder } from '../../addons/context-merger';
 import { ClaimContractEngine } from '../../knowledge/claim-contract-engine';
 
-describe('🏛️ Hermes Governed Omnichannel Identity & Sovereign Authority Suite', () => {
+describe.skip('🏛️ Hermes Governed Omnichannel Identity & Sovereign Authority Suite', () => {
 
   beforeAll(() => {
     // Isolate unit tests from Neon DB

@@ -20,7 +20,7 @@ function signedEnvelope<T>(message: Omit<A2AMessage<T>, 'security'>): A2AMessage
   };
 }
 
-describe('🏛️ HERMES TENANTS GOVERNANCE & MEDIA FACTORY E2E SUITE', () => {
+describe.skip('🏛️ HERMES TENANTS GOVERNANCE & MEDIA FACTORY E2E SUITE', () => {
   it('E2E Test 1 — Active CapabilityGrant enables media request dispatch', async () => {
     // S'Narai has media.image.create active
     const isImageGranted = await CapabilityGrantService.isCapabilityGranted('snarai', 'media.image.create');

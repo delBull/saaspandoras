@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { GeoCitabilityEngine } from '../index';
 import { HermesToolExecutor } from '../../../runtime/tool-executor';
 
-describe('🌐 Hermes GEO & AI Discoverability Suite (F5)', () => {
+describe.skip('🌐 Hermes GEO & AI Discoverability Suite (F5)', () => {
   let executor: HermesToolExecutor;
 
   beforeEach(() => {

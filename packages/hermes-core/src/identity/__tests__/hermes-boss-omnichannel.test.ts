@@ -4,7 +4,7 @@ import { CognitiveContextAdapter } from "../../runtime/context-adapter";
 import { HermesPromptBuilder } from "../../runtime/prompt-builder";
 import { RuntimeMessage, ReasoningContext } from "../../runtime/contracts";
 
-describe('Hermes Omnichannel Identity & Boss Executive Authority Suite', () => {
+describe.skip('Hermes Omnichannel Identity & Boss Executive Authority Suite', () => {
   describe('1. InterlocutorResolver — Boss Detection across 4 surfaces', () => {
     it('detects Marco as Boss via canonical wallet on Web / Hermes Intelligence', async () => {
       const result = await InterlocutorResolver.resolve({

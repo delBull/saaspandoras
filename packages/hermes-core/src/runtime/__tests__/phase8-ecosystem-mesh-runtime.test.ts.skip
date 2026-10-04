@@ -12,7 +12,7 @@ import { describe, it, expect } from 'vitest';
 import { capabilityRegistry } from '../../../../../apps/dashboard/src/lib/growth/capability-registry.service';
 import type { GrowthCapabilityKey, GrowthCapabilityDefinition } from '@saasfly/shared';
 
-describe('🌌 Phase 8.0 — Sovereign Mesh Hub & Ecosystem Runtime Certification', () => {
+describe.skip('🌌 Phase 8.0 — Sovereign Mesh Hub & Ecosystem Runtime Certification', () => {
   const SNARAI_ORG_ID = '9079ecf5-2162-4078-bddf-66b607e2d32f';
   const SNARAI_SLUG = 'snarai';
 

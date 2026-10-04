@@ -11,14 +11,13 @@ const FALLBACK_ORG_NAME = 'Pandoras';
 const FALLBACK_BRAND_NAME = 'Pandoras';
 
 export class ConversationContextBuilder {
-  private memoryEngine: MemoryEngine;
-  private knowledgeEngine: KnowledgeEngine;
-  private journeyEngine: JourneyEngine;
+
+  private memoryEngine?: MemoryEngine;
+  private knowledgeEngine?: KnowledgeEngine;
+  private journeyEngine?: JourneyEngine;
 
   constructor() {
-    this.memoryEngine = new MemoryEngine();
-    this.knowledgeEngine = new KnowledgeEngine();
-    this.journeyEngine = new JourneyEngine();
+    // Lazy initialization to prevent circular dependency resolution issues
   }
 
   /**
@@ -40,6 +39,10 @@ export class ConversationContextBuilder {
 
     // 2. Resolve dynamic state (Layers 3 & 4)
     // In Phase 6.6.3+ these will call their respective Engines
+    if (!this.knowledgeEngine) this.knowledgeEngine = new KnowledgeEngine();
+    if (!this.memoryEngine) this.memoryEngine = new MemoryEngine();
+    if (!this.journeyEngine) this.journeyEngine = new JourneyEngine();
+
     const knowledge = await this.knowledgeEngine.retrieveContext(normalized);
     const memory = await this.memoryEngine.retrieveContext(normalized);
     const journey = await this.journeyEngine.retrieveContext(normalized);

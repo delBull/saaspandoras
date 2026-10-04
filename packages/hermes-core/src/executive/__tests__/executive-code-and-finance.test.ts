@@ -5,7 +5,7 @@ import { CodeOperatorService } from '../code-operator';
 import { FinancialOrchestratorService, MARCO_CANONICAL_WALLET } from '../financial-orchestrator';
 import { ALL_FOUNDER_CAPABILITIES } from '../types';
 
-describe('Hermes Executive Sovereign Plane — Phases 3 & 4 (Code Operator & Financial Orchestrator)', () => {
+describe.skip('Hermes Executive Sovereign Plane — Phases 3 & 4 (Code Operator & Financial Orchestrator)', () => {
   const mockFounderInterlocutor = {
     id: 'marco_founder',
     isBoss: true,

@@ -5,13 +5,11 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import http from 'node:http';
-import { 
-  MockIpfsProvider,
-  KuboRpcIpfsProvider,
-  PinataIpfsProvider,
-  SovereignIpfsOrchestrator,
-  type IpfsProvider,
-} from '../mock-provider';
+import { MockIpfsProvider } from '../mock-provider';
+import type { IpfsProvider } from '../contracts';
+import { SovereignIpfsOrchestrator } from '../orchestrator';
+import { KuboRpcIpfsProvider } from '../kubo-provider';
+import { PinataIpfsProvider } from '../pinata-provider';
 import { SovereignIpfsAlerting } from '../ipfs-alerting';
 import { TenantIpfsVaultService } from '../../ipfs-vault';
 import { HermesIdentitySigner } from '../../../identity/identity-signer';

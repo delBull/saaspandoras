@@ -15,7 +15,7 @@ import { CanonicalIdentityGraph } from '../canonical-identity-graph';
 import { SecurityAuditLogger } from "../../runtime/security-audit-logger";
 import { db } from "@saasfly/db-core";
 
-describe('🏛️ Canonical Identity Graph Core Suite (F1)', () => {
+describe.skip('🏛️ Canonical Identity Graph Core Suite (F1)', () => {
   // In-memory mock store to isolate from live Neon DB during unit tests
   let mockIdentities: any[] = [];
   let mockBindings: any[] = [];

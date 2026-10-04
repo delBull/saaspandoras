@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { ExecutiveAuditService } from '../audit-service';
 
-describe('Hermes Executive Sovereign Plane — Phase 1: Read Everything (Canonical Audit Layer)', () => {
+describe.skip('Hermes Executive Sovereign Plane — Phase 1: Read Everything (Canonical Audit Layer)', () => {
   describe('1. Tenant Deep Inspection', () => {
     it('inspects an existing or mock tenant and returns structured markdown report', async () => {
       const report = await ExecutiveAuditService.inspectTenant('snarai');

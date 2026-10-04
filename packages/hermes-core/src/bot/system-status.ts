@@ -1,7 +1,7 @@
 import { sql } from "@saasfly/db-core";
 import { db } from '@saasfly/db-core';
 import { hermesSecurityEvents, hermesKnowledge } from '@saasfly/db-core/schema';
-import { SovereignIpfsOrchestrator } from '..';
+import { SovereignIpfsOrchestrator } from '../knowledge/ipfs/orchestrator';
 
 export interface HermesSystemStatus {
   postgres: { online: boolean };

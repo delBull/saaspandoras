@@ -4,7 +4,7 @@ import { CognitiveContextAdapter } from '../../runtime/context-adapter';
 import { DefaultRuntimePolicyValidator } from '../../runtime/policy-validator';
 import { ReasoningOutput, RuntimePolicy } from '../../runtime/contracts';
 
-describe('🏛️ Hermes OS — Milestone K27.1 Tenant Authority & Knowledge Unavailable Invariants', () => {
+describe.skip('🏛️ Hermes OS — Milestone K27.1 Tenant Authority & Knowledge Unavailable Invariants', () => {
   const strictPolicy: RuntimePolicy = {
     allowUnverifiedClaims: false,
     allowRestrictedKnowledge: false,

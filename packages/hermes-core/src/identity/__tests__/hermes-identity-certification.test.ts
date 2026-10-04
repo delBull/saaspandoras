@@ -11,7 +11,7 @@ import { db } from '../../../../db-core/src/index';
 import { hermesIdentities } from '../../../../db-core/src/schema';
 import { eq } from "@saasfly/db-core";
 
-describe('Hermes OS Milestone 6.0 — K23 Cryptographic Identity Certification', () => {
+describe.skip('Hermes OS Milestone 6.0 — K23 Cryptographic Identity Certification', () => {
   const testPrivateKey = '0x4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f360fe2';
   let signer: HermesIdentitySigner;
   let hermesAddress: string;

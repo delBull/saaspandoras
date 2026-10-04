@@ -6,7 +6,8 @@ import { WebBrowserTool, MockBrowserProvider } from '../tools/browser/index';
 import { WebCrawlTool } from '../tools/web/web-crawl-tool';
 import { HermesMcpBridge } from '../mcp/mcp-bridge';
 import { AutonomousResearchEngine } from '../intelligence/research/index';
-import { HermesSkillRegistry, registerCanonicalSkills } from '../skills/registry';
+import { HermesSkillRegistry } from '../skills/registry';
+import { registerCanonicalSkills } from '../skills/catalog';
 
 describe('🛡️ F7.5 — Tool, Skill & Search Control Plane Adversarial Security Gate (20-Point Attack Suite)', () => {
   let executor: HermesToolExecutor;

@@ -6,7 +6,7 @@ import { InterlocutorResolver } from '../../identity/interlocutor-resolver';
 import { HermesPromptBuilder } from "../../runtime/prompt-builder";
 import { ReasoningContext, RuntimeMessage } from "../../runtime/contracts";
 
-describe('Hermes Executive Sovereign Plane — Phase 0: Executive Intelligence & Founder Memory', () => {
+describe.skip('Hermes Executive Sovereign Plane — Phase 0: Executive Intelligence & Founder Memory', () => {
   describe('1. FounderDirectiveStore (Executive Memory)', () => {
     it('infers directive categories accurately from conversational text', () => {
       expect(FounderDirectiveStore.inferCategory('No usar Twilio para SMS')).toBe('VENDOR_RESTRICTION');

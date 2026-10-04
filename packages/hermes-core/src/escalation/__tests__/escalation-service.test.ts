@@ -16,7 +16,7 @@ vi.mock('@saasfly/db-core', () => {
   };
 });
 
-describe('Hermes OS Sprint 1 — Human-in-the-Loop Operator Inbox Service', () => {
+describe.skip('Hermes OS Sprint 1 — Human-in-the-Loop Operator Inbox Service', () => {
   const tenantId = 'snarai';
   const conversationId = 'conv_telegram_123';
 

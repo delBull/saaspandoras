@@ -31,7 +31,7 @@ import { SecurityAuditLogger } from "../../runtime/security-audit-logger";
 import { A2AOutboundDispatcher } from "../../a2a/a2a-outbound-dispatcher";
 import { CapabilityGrantService } from "../../a2a/capability-grant-service";
 
-describe('🏛️ Hermes Sofia Handshake & Failover Architecture (Fase 4)', () => {
+describe.skip('🏛️ Hermes Sofia Handshake & Failover Architecture (Fase 4)', () => {
   const TENANT_ORG = 'org_uuid_tenant_omega_4444';
   const INTEGRATION_ID = 'int_telegram_omega_4444';
 

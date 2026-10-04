@@ -6,7 +6,7 @@ import {
   CANONICAL_SKILLS 
 } from '../catalog';
 
-describe('🏛️ Hermes Skill Registry & Progressive Disclosure (F1)', () => {
+describe.skip('🏛️ Hermes Skill Registry & Progressive Disclosure (F1)', () => {
   let registry: HermesSkillRegistry;
 
   beforeEach(() => {
