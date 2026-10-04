@@ -68,3 +68,4 @@ export * from './provisioning/contracts';
 export * from './whatsapp/utils/client';
 export * from './whatsapp/utils/client';
 export * from './channels/whatsapp/whatsapp-provider';
+export * from './channels/whatsapp/signalwire-service';

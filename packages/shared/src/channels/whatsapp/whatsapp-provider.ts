@@ -11,7 +11,7 @@
  *    and reserved for a dedicated Channel Provisioning phase.
  */
 
-import { SignalWireService } from '@/lib/integrations/signalwire-service';
+import { SignalWireService } from './signalwire-service';
 import { maskPhoneNumber } from '../../whatsapp/utils/conversation-id';
 import { resolveMasterPhoneNumberId } from '../../whatsapp/config';
 

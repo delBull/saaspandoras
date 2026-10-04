@@ -22,7 +22,7 @@ import { eq, sql } from "@saasfly/db-core";
 import { sendBookingConfirmedEmail } from '@/lib/email/scheduler-mailer';
 import { sendSchedulerTelegramAlert } from '@/lib/scheduling/scheduler-telegram-notifier';
 import { sendSchedulerNotification } from '@/lib/discord/scheduler-notifier';
-import { SignalWireService } from '@/lib/integrations/signalwire-service';
+import { SignalWireService } from '@saasfly/shared';
 
 export interface SyncBookingPipelineParams {
   bookingId: string;

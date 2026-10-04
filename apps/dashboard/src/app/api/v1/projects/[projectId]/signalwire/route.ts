@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateBotResponse } from '@saasfly/shared';
-import { SignalWireService } from '@/lib/integrations/signalwire-service';
+import { SignalWireService } from '@saasfly/shared';
 import { db } from '@saasfly/db';
 import { projects, securityEvents } from '@saasfly/db/schema';
 import { eq, desc } from "@saasfly/db-core";
