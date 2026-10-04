@@ -41,9 +41,9 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { COO_EXECUTIVE_PROGRAM } from "@saasfly/academy-sdk";
-import { AcademyCandidate } from "@saasfly/academy-sdk";
-import type { AcademyModule } from "@saasfly/academy-sdk";
+import { COO_EXECUTIVE_PROGRAM } from "@saasfly/academy-sdk/client";
+import { AcademyCandidate } from "@saasfly/academy-sdk/client";
+import type { AcademyModule } from "@saasfly/academy-sdk/client";
 
 // ─── TRACKS & PROGRAMS CATALOG ───────────────────────────────────────────────
 

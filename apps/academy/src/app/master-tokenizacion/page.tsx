@@ -45,6 +45,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+const DASHBOARD_URL = process.env.NEXT_PUBLIC_DASHBOARD_URL || 'https://dash.pandoras.finance';
+
 export default function MasterTokenizacionLanding() {
   const [isApplicationModalOpen, setIsApplicationModalOpen] = useState(false);
   const [selectedProfile, setSelectedProfile] = useState<'realtor' | 'agency' | 'developer'>('realtor');
@@ -68,7 +70,7 @@ export default function MasterTokenizacionLanding() {
     setIsSubmitting(true);
     try {
       // Sincronización transparente con el lead engine de Pandora's
-      const res = await fetch('/api/public/leads/capture', {
+      const res = await fetch(`${DASHBOARD_URL}/api/public/leads/capture`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

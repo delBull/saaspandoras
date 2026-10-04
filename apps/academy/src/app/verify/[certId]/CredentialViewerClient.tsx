@@ -29,7 +29,7 @@ import {
   Play,
   Loader2
 } from 'lucide-react';
-import { UNLOCKED_BLUEPRINTS, SIMULATOR_SCENARIOS, UnlockedBlueprintDoc, SimulatorCrisisScenario } from '@saasfly/academy-sdk';
+import { UNLOCKED_BLUEPRINTS, SIMULATOR_SCENARIOS, UnlockedBlueprintDoc, SimulatorCrisisScenario } from '@saasfly/academy-sdk/client';
 
 interface CredentialViewerProps {
   cert: {
