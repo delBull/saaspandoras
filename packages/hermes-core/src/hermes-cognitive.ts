@@ -37,15 +37,12 @@ export class HermesCognitiveLayer {
     // 2. Fetch Memory (DB decoupled)
     const memory = await MemoryProvider.getRecentHistory(request.identityId);
 
-    // 3. Invoke Cognitive Provider
     let cognitiveProvider: CognitiveProvider;
     const providerType = process.env.HERMES_COGNITIVE_PROVIDER;
     if (providerType === "stub") {
       cognitiveProvider = new TestStubProvider();
-    } else if (providerType === "ollama") {
-      cognitiveProvider = new OllamaProvider();
     } else {
-      throw new Error(`[HermesCognitiveLayer] FATAL: HERMES_COGNITIVE_PROVIDER is not configured or invalid (got: ${providerType}). Must be 'ollama' or 'stub'.`);
+      cognitiveProvider = new OllamaProvider();
     }
     
     const cognitiveResponse = await cognitiveProvider.generateResponse({
