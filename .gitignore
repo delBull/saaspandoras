@@ -93,3 +93,6 @@ graphify-out/
 apps/dashboard/.env.vercel
 apps/dashboard/.env.vercel.prod
 apps/dashboard/.env*.prod
+
+# accidental bun cache dir
+/~/
