@@ -1,4 +1,4 @@
-import { SafeHttpClient } from "../../../hermes-core/src/runtime/egress-guard";
+import { SafeHttpClient } from "@saasfly/hermes-core";
 
 export interface EmailNotificationPayload {
   toEmail: string;

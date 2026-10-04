@@ -468,7 +468,7 @@ export * from './nexus/legacy/notifications/TelegramDispatcher';
 export * from './identity/index';
 export { EscalationService } from './escalation/escalation-service';
 export { HermesNotificationDispatcher } from './notifications/notification-dispatcher';
-export type { RuntimeMessage, RuntimeStreamEvent, ToolAuthorizationRequest, KnowledgeClassificationTier } from './runtime/contracts';
+export type { RuntimeMessage, RuntimeStreamEvent, ToolAuthorizationRequest, KnowledgeClassificationTier, ReasoningContext } from './runtime/contracts';
 export { HermesCognitiveLayer } from './hermes-cognitive';
 export type { KnowledgeDimension, GovernedKnowledgeItem, KnowledgeVisibility, KnowledgeMutationEvent } from './knowledge/types';
 export type { EscalationReason, EscalationStatus } from './escalation/escalation-service';

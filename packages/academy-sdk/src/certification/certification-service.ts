@@ -1,7 +1,7 @@
 import { createHash } from 'crypto';
 import { AcademyCertification, AssessmentAttemptResult, AcademyProgram } from '../types';
-import { HermesIdentitySigner } from "../../../hermes-core/src/identity/identity-signer";
-import { TenantIpfsVaultService } from "../../../hermes-core/src/knowledge/ipfs-vault";
+import { HermesIdentitySigner } from "@saasfly/hermes-core";
+import { TenantIpfsVaultService } from "@saasfly/hermes-core";
 
 export class CertificationService {
   /**

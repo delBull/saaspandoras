@@ -33,7 +33,7 @@ import { AssessmentEngine } from '../assessment/assessment-engine';
 import { KnowledgeSnapshotManager } from '../snapshots/snapshot-manager';
 import { AcademyNotifier } from '../notifications/academy-notifier';
 import { CertificationService } from '../certification/certification-service';
-import { HermesIdentitySigner } from "../../../hermes-core/src/identity/identity-signer";
+import { HermesIdentitySigner } from "@saasfly/hermes-core";
 
 class AcademyStoreSingleton {
   private candidates: Map<string, AcademyCandidate> = new Map();

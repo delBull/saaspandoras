@@ -10,8 +10,8 @@
 
 import { AcademyAssessment, AcademyKnowledgeSnapshot, HermesEvaluationProposal } from '../types';
 import { KnowledgeSnapshotManager } from '../snapshots/snapshot-manager';
-import { OllamaReasoningProvider } from "../../../hermes-core/src/runtime/reasoning-providers";
-import { ReasoningContext } from "../../../hermes-core/src/runtime/contracts";
+import { OllamaReasoningProvider } from "@saasfly/hermes-core";
+import { ReasoningContext } from "@saasfly/hermes-core";
 
 export class HermesAcademyEvaluator {
   private static provider = new OllamaReasoningProvider();
