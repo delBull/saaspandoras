@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { EscalationService, EscalationStatus, EscalationReason, ChannelType } from '@/lib/hermes/escalation/escalation-service';
+import { EscalationService, EscalationStatus, EscalationReason, ChannelType } from '@saasfly/hermes-core';
 import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
 
 export async function GET(
@@ -45,7 +45,7 @@ export async function POST(
       organizationId: orgId,
       conversationId,
       actorId,
-      channel: (channel as ChannelType) || 'TELEGRAM',
+      channel: (channel as any) || 'TELEGRAM',
       reason: (reason as EscalationReason) || 'MANUAL',
       notes,
     });

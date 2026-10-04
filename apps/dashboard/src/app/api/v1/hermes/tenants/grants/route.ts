@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { CapabilityGrantService, SUPPORTED_MEDIA_CAPABILITIES } from '@/lib/pandoras/core/domains/hermes/a2a/capability-grant-service';
-import { TenantAuthorityService } from '@/lib/pandoras/core/domains/hermes/tenants/tenant-authority';
+import { CapabilityGrantService, SUPPORTED_MEDIA_CAPABILITIES } from '@saasfly/hermes-core';
+import { TenantAuthorityService } from '@saasfly/hermes-core';
 import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
 import { validateAdminSession } from '@/lib/admin-auth';
-import { HermesNotificationDispatcher } from '@/lib/hermes/notifications/notification-dispatcher';
+import { HermesNotificationDispatcher } from '@saasfly/hermes-core';
 
 export const dynamic = 'force-dynamic';
 

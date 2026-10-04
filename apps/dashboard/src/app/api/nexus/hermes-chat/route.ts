@@ -7,9 +7,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getDefaultRuntime, isHermesEnabled } from '@/lib/pandoras/core/domains/hermes/runtime/hermes-runtime';
-import type { ControlPlaneContext } from '@/lib/pandoras/core/domains/hermes/knowledge/types';
-import type { RuntimeMessage } from '@/lib/pandoras/core/domains/hermes/runtime/contracts';
+import { getDefaultRuntime, isHermesEnabled } from '@saasfly/hermes-core';
+import type { ControlPlaneContext } from '@saasfly/hermes-core';
+import type { RuntimeMessage } from '@saasfly/hermes-core';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { getNexusAuthContext } = await import('@/lib/nexus/nexus-rbac');
+    const { getNexusAuthContext } = await import('@saasfly/shared');
     const auth = await getNexusAuthContext(req.headers, null, 'NEXUS');
     if (!auth.isAuthenticated) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 403 });
@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Build Sovereign ControlPlaneContext with Universal Interlocutor Recognition
-    const { InterlocutorResolver } = await import('@/lib/hermes/identity/interlocutor-resolver');
+    const { InterlocutorResolver } = await import('@saasfly/hermes-core');
     const interlocutor = await InterlocutorResolver.resolve({
       channel: 'nexus',
       externalUserId: operatorContext?.id || operatorContext?.email,
@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
     const effectiveName = interlocutor.name || operatorContext?.name || (isBoss ? 'Marco' : 'Operador');
     const actorId = interlocutor.actorId || operatorContext?.email || operatorContext?.id || `nexus_${validatedRole.toLowerCase()}`;
 
-    const controlPlaneContext: ControlPlaneContext = {
+    const controlPlaneContext: any = {
       channel: 'INTERNAL_DASHBOARD', // K27.6: authoritative ceiling source (CONFIDENTIAL)
       actorId,
       organizationId: 'pandoras',

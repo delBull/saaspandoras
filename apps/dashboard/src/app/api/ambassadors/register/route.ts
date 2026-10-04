@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/db';
-import { ambassadors } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { ambassadors } from '@saasfly/db/schema';
+import { eq } from "@saasfly/db-core";
 import { sendAmbassadorOTPEmail } from '@/lib/email/ambassador-mailer';
-import { projects } from '@/db/schema';
-import { withSecurity, isValidWalletAddress, isValidEmail, registerRateLimiter } from '@/lib/security-utils';
+import { projects } from '@saasfly/db/schema';
+import { withSecurity, isValidWalletAddress, isValidEmail, registerRateLimiter } from '@saasfly/shared';
 import crypto from 'crypto';
 
 async function handler(req: Request) {

@@ -16,7 +16,7 @@ import {
   Info
 } from 'lucide-react';
 import type { Project } from '@/types/admin';
-import { getProjectStatusConfig } from '@/lib/project-status';
+import { getProjectStatusConfig } from '@saasfly/shared';
 
 interface ProtocolSandboxPreviewModalProps {
   project: Project;

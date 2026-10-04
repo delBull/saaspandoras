@@ -1,8 +1,8 @@
-import { db } from "@/db";
-import { integrationClients, webhookEvents } from "@/db/schema";
+import { db } from "@saasfly/db-core";
+import { integrationClients, webhookEvents } from "@saasfly/db-core";
 import { createHash, randomBytes } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { eq, and } from "drizzle-orm";
+import { eq, and } from "@saasfly/db-core";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +34,7 @@ async function isAdminAuthorized(req: NextRequest): Promise<boolean> {
   }
 
   // Method 2: Verified JWT session (browser dashboard)
-  const { getAuth } = await import("@/lib/auth");
+  const { getAuth } = await import("@saasfly/auth-sdk");
   const auth = await getAuth();
   if (auth.isVerified && auth.session?.address) {
     try {

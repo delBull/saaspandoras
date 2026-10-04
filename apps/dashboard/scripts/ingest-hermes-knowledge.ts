@@ -14,11 +14,11 @@
 
 import fs from 'fs';
 import path from 'path';
-import { db } from '../src/db';
-import { hermesKnowledge } from '../src/db/schema';
-import { TenantIpfsVaultService } from '../src/lib/pandoras/core/domains/hermes/knowledge/ipfs-vault';
-import { HermesIdentitySigner } from '../src/lib/pandoras/core/domains/hermes/identity/identity-signer';
-import type { KnowledgeClassificationTier } from '../src/lib/pandoras/core/domains/hermes/runtime/contracts';
+import { db } from '@saasfly/db-core';
+import { hermesKnowledge } from '@saasfly/db-core/schema';
+import { TenantIpfsVaultService } from '@saasfly/hermes-core';
+import { HermesIdentitySigner } from '@saasfly/hermes-core';
+import type { KnowledgeClassificationTier } from '@saasfly/hermes-core';
 
 async function main() {
   const args = process.argv.slice(2);

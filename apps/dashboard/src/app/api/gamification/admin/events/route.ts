@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getAuth, isAdmin } from '@/lib/auth';
+import { getAuth, isAdmin } from '@saasfly/auth-sdk';
 import { trackGamificationEvent } from '@/lib/gamification/service';
 
 export async function POST(request: Request) {

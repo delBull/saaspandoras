@@ -6,8 +6,8 @@
  * 
  * Run: bun run create-bridge-tables.ts
  */
-import { db } from '../src/db';
-import { sql } from 'drizzle-orm';
+import { db } from '@saasfly/db-core';
+import { sql } from "@saasfly/db-core";
 
 async function main() {
     console.log('\n🔧 Creating Telegram Bridge Tables...\n');

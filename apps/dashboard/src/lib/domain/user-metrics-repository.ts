@@ -1,6 +1,7 @@
-import { db } from "@/db";
-import { users } from "@/db/schema";
-import { eq, sql, not, isNull, gte } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { users } from "@saasfly/db-core";
+import { not } from 'drizzle-orm';
+import { eq, sql, isNull, gte } from '@saasfly/db-core';
 
 export class UserMetricsRepository {
   /**

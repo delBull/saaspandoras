@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { headers } from "next/headers";
-import { sql } from "drizzle-orm";
+import { sql } from "@saasfly/db-core";
 
-import { db } from "~/db";
-import { administrators } from "@/db/schema";
-import { SUPER_ADMIN_WALLET } from "@/lib/constants";
+import { db } from "@saasfly/db-core";
+import { administrators } from "@saasfly/db-core";
+import { SUPER_ADMIN_WALLET } from "@saasfly/auth-sdk";
 import { validateAdminSession } from "@/lib/admin-auth";
 import { logger } from "@/lib/logger";
 import { TelemetryService } from "@/lib/security/telemetry";

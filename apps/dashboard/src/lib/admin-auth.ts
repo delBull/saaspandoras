@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { getAuth, isAdmin } from "@/lib/auth";
+import { getAuth, isAdmin } from "@saasfly/auth-sdk";
 import { headers } from "next/headers";
-import { verifyUnlockToken } from "@/lib/nexus-deals/tokens";
+import { verifyUnlockToken } from "@saasfly/nexus-deals-sdk";
 import { logger } from "./logger";
 
 export interface AdminSession {
@@ -82,7 +82,7 @@ export async function validateAdminSession(reqHeaders?: Headers): Promise<{ sess
  * Autoriza la consola del Deal Room (Nivel 2) usando el sistema de RBAC unificado.
  * Acepta sesión de administrador Web3 O token de desbloqueo HMAC / Magic Link.
  */
-import { getNexusAuthContext } from "@/lib/nexus/nexus-rbac";
+import { getNexusAuthContext } from '@saasfly/shared';
 
 export async function validateDealRoomAccess(
   request: Request

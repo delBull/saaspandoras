@@ -1,6 +1,6 @@
-import { db } from "@/db";
-import { platformAssets, campaignAssets } from "@/db/schema";
-import { eq, desc, sql } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { platformAssets, campaignAssets } from "@saasfly/db-core";
+import { eq, desc, sql } from "@saasfly/db-core";
 import { PlatformAssetDTO, AssetType, AssetMetadata } from "./dto";
 
 export class AssetRepository {

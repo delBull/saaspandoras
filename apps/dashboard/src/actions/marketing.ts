@@ -1,9 +1,9 @@
 'use server';
 
-import { db } from "@/db";
-import { marketingExecutions, marketingCampaigns, users, clients, goldenLinks, campaigns } from "@/db/schema";
-import { eq, desc, and } from "drizzle-orm";
-import { getAuth, isAdmin } from "@/lib/auth";
+import { db } from "@saasfly/db-core";
+import { marketingExecutions, marketingCampaigns, users, clients, goldenLinks, campaigns } from "@saasfly/db-core";
+import { eq, desc, and } from "@saasfly/db-core";
+import { getAuth, isAdmin } from "@saasfly/auth-sdk";
 import { headers } from "next/headers";
 
 export async function getMarketingDashboardStats() {

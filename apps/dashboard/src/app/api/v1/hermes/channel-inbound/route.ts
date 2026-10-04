@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ChannelContext, ChannelOutboundPayload } from '@/lib/hermes/channel-gateway';
-import { ChannelGatewayAdapter } from '@/lib/hermes/bot/channel-gateway-adapter';
+import { GatewayChannelContext, ChannelOutboundPayload } from '@saasfly/hermes-core';
+import { ChannelGatewayAdapter } from '@saasfly/hermes-core';
 
 const adapter = new ChannelGatewayAdapter();
 
@@ -11,10 +11,10 @@ const adapter = new ChannelGatewayAdapter();
  */
 export async function POST(req: NextRequest) {
   try {
-    const payload = (await req.json()) as ChannelContext;
+    const payload = (await req.json()) as GatewayChannelContext;
 
     if (!payload || !payload.channel || !payload.message || !payload.externalUserId || !payload.externalConversationId) {
-      return NextResponse.json({ ok: false, error: 'Invalid ChannelContext payload' }, { status: 400 });
+      return NextResponse.json({ ok: false, error: 'Invalid GatewayChannelContext payload' }, { status: 400 });
     }
 
     // 1. Authenticate the Edge Transport (Fail-Closed)
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
 
     const requestId = payload.metadata?.requestId;
     if (requestId) {
-        const { getRedis, isRedisHealthy } = await import('@/lib/redis');
+        const { getRedis, isRedisHealthy } = await import('@saasfly/shared');
         const redis = getRedis();
         if (redis && isRedisHealthy()) {
             const idempotencyKey = `hermes_inbound_idempotency:${requestId}`;

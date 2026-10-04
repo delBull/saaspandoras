@@ -1,6 +1,6 @@
-import { db } from '../src/db';
-import { portalOnboardingState } from '../src/db/schema';
-import { eq } from 'drizzle-orm';
+import { db } from '@saasfly/db-core';
+import { portalOnboardingState } from '@saasfly/db-core/schema';
+import { eq } from "@saasfly/db-core";
 
 async function main() {
   await db.delete(portalOnboardingState).where(eq(portalOnboardingState.tenantId, 'snarai'));

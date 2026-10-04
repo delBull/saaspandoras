@@ -11,8 +11,8 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import type { PortalPermission } from '@/lib/portal/permissions';
-import type { PortalOrganization } from '@/lib/portal/portal-types';
+import type { PortalPermission } from '@saasfly/shared';
+import type { PortalOrganization } from '@saasfly/shared';
 import type { LucideIcon } from 'lucide-react';
 import {
   LayoutDashboard,

@@ -2,7 +2,7 @@
 
 import type { MessageView } from '@/components/hermes-portal/conversations/ConversationsDashboard';
 import { DashApi } from '@/lib/dash-api';
-import { EscalationService } from '@/lib/hermes/escalation/escalation-service';
+import { EscalationService } from '@saasfly/hermes-core';
 import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
 
 export async function getConversationMessages(organizationSlug: string, conversationId: string): Promise<MessageView[]> {

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { db } from "~/db";
-import { sql } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { sql } from "@saasfly/db-core";
 import { harmonizeProject } from "@/lib/projects/harmonizer";
 
 export const dynamic = 'force-dynamic';

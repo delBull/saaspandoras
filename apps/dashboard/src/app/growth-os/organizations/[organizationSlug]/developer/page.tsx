@@ -1,12 +1,12 @@
 import React from 'react';
 import { DeveloperHubClient } from './DeveloperHubClient';
-import { db } from '@/db';
-import { projects } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { db } from '@saasfly/db-core';
+import { projects } from '@saasfly/db-core';
+import { eq } from "@saasfly/db-core";
 import { IntegrationKeyService } from '@/lib/integrations/auth';
-import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
-import { PlatformCapabilityRegistryService } from '@/lib/admin/platform-capability-registry.service';
-import { PlatformActor, PlatformRole } from '@/lib/dash-contracts/admin';
+import { getNexusAuthContext } from '@saasfly/shared';
+import { PlatformCapabilityRegistryService } from '@saasfly/shared';
+import { PlatformActor, PlatformRole } from '@saasfly/shared';
 import { redirect } from 'next/navigation';
 
 export default async function DeveloperHubPage({ params }: { params: Promise<{ organizationSlug: string }> }) {

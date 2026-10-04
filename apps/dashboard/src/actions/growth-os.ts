@@ -1,9 +1,9 @@
 "use server";
 
-import { db } from "@/db";
-import { marketingLeads, projects, growthActionsLog } from "@/db/schema";
-import { eq } from "drizzle-orm";
-import { getAuth, isAdmin } from "@/lib/auth";
+import { db } from "@saasfly/db-core";
+import { marketingLeads, projects, growthActionsLog } from "@saasfly/db-core";
+import { eq } from "@saasfly/db-core";
+import { getAuth, isAdmin } from "@saasfly/auth-sdk";
 import { headers } from "next/headers";
 import { resolveGrowthAction } from "@/lib/marketing/growth-engine/engine";
 import { executeGrowthActions } from "@/lib/marketing/growth-engine/actions";
@@ -83,7 +83,7 @@ export async function recordCallOutcome(data: {
             payload: { outcome, notes, dealValue, recordedBy: session.address }
         });
         
-        const { HermesLearningLoop } = await import("@/lib/hermes/memory/learning-loop");
+        const { HermesLearningLoop } = await import("@saasfly/hermes-core");
         HermesLearningLoop.processLeadEvents(leadId).catch(e => console.error("Failed to process Hermes lead events on call", e));
 
         // 4. Trigger Growth Engine

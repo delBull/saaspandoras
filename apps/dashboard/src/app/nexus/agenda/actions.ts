@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getNexusAuthContext } from "@/lib/nexus/nexus-rbac";
+import { getNexusAuthContext } from '@saasfly/shared';
 import { CancelMeetingHandler } from "@/lib/nexus/meeting-domain";
 
 export async function cancelMeetingAction(meetingId: string) {

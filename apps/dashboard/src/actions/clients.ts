@@ -1,11 +1,11 @@
 "use server";
 
-import { db } from "@/db";
-import { clients, paymentLinks, transactions, sowTemplates, marketingLeads } from "@/db/schema";
-import { desc, eq, sql } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { clients, paymentLinks, transactions, sowTemplates, marketingLeads } from "@saasfly/db-core";
+import { desc, eq, sql } from "@saasfly/db-core";
 import { sendEmail } from "@/lib/email/client";
 import { sendPaymentNotification } from "@/lib/discord/notifier";
-import { getAuth, isAdmin } from "@/lib/auth";
+import { getAuth, isAdmin } from "@saasfly/auth-sdk";
 import { extractOfferMetadataFromDescription } from "@/lib/commercial/offers";
 
 // ZERO TRUST GUARD: requires a verified JWT session with admin privileges.

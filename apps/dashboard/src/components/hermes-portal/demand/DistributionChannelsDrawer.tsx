@@ -35,7 +35,7 @@ import { Badge } from '@/components/ui/badge';
 import type {
   SanitizedChannelDTO,
   ChannelCapabilityCatalogItem,
-} from '@/lib/hermes/channels/tenant-channel.service';
+} from '@saasfly/hermes-core';
 
 interface DistributionChannelsDrawerProps {
   isOpen: boolean;
@@ -411,7 +411,7 @@ export function DistributionChannelsDrawer({
                     <button
                       key={cat.channel}
                       type="button"
-                      onClick={() => setSelectedChannelType(cat.channel)}
+                      onClick={() => setSelectedChannelType(cat.channel as "telegram" | "x" | "newsletter")}
                       className={`p-3 rounded-xl border text-left transition-all ${
                         isSelected
                           ? 'border-indigo-500 bg-indigo-500/15 text-white'

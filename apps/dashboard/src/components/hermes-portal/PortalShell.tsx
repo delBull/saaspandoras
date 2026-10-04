@@ -10,7 +10,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import type { PortalContext } from '@/lib/portal/portal-types';
+import type { PortalContext } from '@saasfly/shared';
 import { PortalSidebar } from '@/components/hermes-portal/PortalSidebar';
 import { SovereignHeader } from '@/components/sovereign-mesh/SovereignHeader';
 import { PortalInspector } from '@/components/hermes-portal/PortalInspector';

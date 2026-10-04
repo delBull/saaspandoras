@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AttributionService } from '@/lib/marketing/attribution-service';
-import { getAuth, isAdmin } from '@/lib/auth';
+import { getAuth, isAdmin } from '@saasfly/auth-sdk';
 import { headers } from 'next/headers';
 
 export const dynamic = 'force-dynamic';

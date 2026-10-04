@@ -1,10 +1,10 @@
 import { requireEnvUrl } from '@/lib/env-utils';
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
-import { getAuth } from "@/lib/auth";
-import { db } from "~/db";
-import { userReferrals as referralsTable } from "@/db/schema";
-import { eq, count, sql } from "drizzle-orm";
+import { getAuth } from "@saasfly/auth-sdk";
+import { db } from "@saasfly/db-core";
+import { userReferrals as referralsTable } from "@saasfly/db-core";
+import { eq, count, sql } from "@saasfly/db-core";
 
 // API para obtener información de referidos personales
 export async function GET() {

@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { validatePortalSession } from '@/lib/platform/portal-auth';
-import { db } from '@/db';
-import { installedProducts } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { validatePortalSession } from '@saasfly/shared';
+import { db } from '@saasfly/db';
+import { installedProducts } from '@saasfly/db/schema';
+import { eq } from "@saasfly/db-core";
 
 export async function PATCH(request: Request) {
   try {

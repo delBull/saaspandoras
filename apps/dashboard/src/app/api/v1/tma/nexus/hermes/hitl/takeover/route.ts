@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
-import { db } from '@/db';
-import { eq, and } from 'drizzle-orm';
-import { nexusActionRequests, hermesConversations, hermesEscalations, auditLogs } from '@/db/schema';
+import { getNexusAuthContext } from '@saasfly/shared';
+import { db } from '@saasfly/db';
+import { eq, and } from "@saasfly/db-core";
+import { nexusActionRequests, hermesConversations, hermesEscalations, auditLogs } from '@saasfly/db/schema';
 
 export async function POST(req: Request) {
   try {

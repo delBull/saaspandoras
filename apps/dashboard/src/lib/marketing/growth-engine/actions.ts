@@ -1,6 +1,6 @@
-import { eq, and, gt, sql, desc } from 'drizzle-orm';
-import { db } from '@/db';
-import { marketingLeads, courses, growthActionsLog, projects, purchases } from '@/db/schema';
+import { eq, and, gt, sql, desc } from "@saasfly/db-core";
+import { db } from '@saasfly/db';
+import { marketingLeads, courses, growthActionsLog, projects, purchases } from '@saasfly/db/schema';
 import { GrowthActionType, LeadContextPayload, ProjectContextPayload, GrowthMetadata, LeadState } from './types';
 import { notificationService, ensureNotificationServiceConfigured } from '@/lib/notifications';
 

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { AgentRegistry } from '@/lib/pandoras/core/domains/hermes/a2a/agent-registry';
+import { AgentRegistry } from '@saasfly/hermes-core';
 
 export const dynamic = 'force-dynamic';
 

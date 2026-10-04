@@ -1,0 +1,13 @@
+import type { Config } from "tailwindcss";
+import sharedConfig from "@saasfly/tailwind-config";
+
+const config: Pick<Config, "prefix" | "presets" | "content"> = {
+  content: [
+    "./src/**/*.tsx",
+    "../../packages/ui/src/**/*.tsx",
+    "../../packages/pandoras/display-engine/src/**/*.tsx",
+  ],
+  presets: [sharedConfig],
+};
+
+export default config;

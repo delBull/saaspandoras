@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { LinkIntentService } from "@/lib/identity/link-intent-token";
+import { LinkIntentService } from "@saasfly/auth-sdk";
 import { IntegrationKeyService } from "@/lib/integrations/auth";
-import { TenantAuthorityService } from "@/lib/pandoras/core/domains/hermes/tenants/tenant-authority";
+import { TenantAuthorityService } from "@saasfly/hermes-core";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

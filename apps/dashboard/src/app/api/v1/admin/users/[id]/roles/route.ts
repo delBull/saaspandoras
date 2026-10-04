@@ -1,9 +1,9 @@
 import { NextResponse, NextRequest } from 'next/server';
-import { db } from '@/db';
-import { users, nexusCollaborators } from '@/db/schema';
-import { eq } from 'drizzle-orm';
-import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
-import { PlatformActor } from '@/lib/dash-contracts/admin';
+import { db } from '@saasfly/db';
+import { users, nexusCollaborators } from '@saasfly/db/schema';
+import { eq } from "@saasfly/db-core";
+import { getNexusAuthContext } from '@saasfly/shared';
+import { PlatformActor } from '@saasfly/shared';
 import type { UserRole } from '@/types/admin';
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

@@ -7,10 +7,10 @@
  */
 
 import { NextResponse } from 'next/server';
-import { getDefaultRuntime } from '@/lib/pandoras/core/domains/hermes/runtime/hermes-runtime';
-import { db } from '@/db';
-import { projects } from '@/db/schema';
-import { eq, or } from 'drizzle-orm';
+import { getDefaultRuntime } from '@saasfly/hermes-core';
+import { db } from '@saasfly/db';
+import { projects } from '@saasfly/db/schema';
+import { eq, or } from "@saasfly/db-core";
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;

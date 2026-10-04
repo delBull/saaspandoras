@@ -2,11 +2,11 @@
 
 import crypto from "crypto";
 
-import { db } from "@/db";
-import { schedulingSlots, schedulingBookings, users, marketingLeads, clients, projects } from "@/db/schema";
-import { eq, and, gte, desc, lt, or, sql } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { schedulingSlots, schedulingBookings, users, marketingLeads, clients, projects } from "@saasfly/db-core";
+import { eq, and, gte, desc, lt, or, sql } from "@saasfly/db-core";
 import { Resend } from 'resend';
-import { getAuth, isAdmin } from "@/lib/auth";
+import { getAuth, isAdmin } from "@saasfly/auth-sdk";
 import { headers } from "next/headers";
 
 // Helper: Ensure valid UUIDs are used (implement per your project needs or rely on crypto.randomUUID default in schema)
@@ -736,7 +736,7 @@ export async function completeCall(bookingId: string, outcome: 'interested' | 'n
           .set({ 
             status: leadStatus as any, 
             updatedAt: new Date(),
-            score: outcome === 'interested' ? sql`${marketingLeads.score} + 100` : marketingLeads.score
+            score: outcome === 'interested' ? sql`${marketingLeads.score} + 100` as any : marketingLeads.score
           })
           .where(eq(marketingLeads.email, booking.leadEmail));
 

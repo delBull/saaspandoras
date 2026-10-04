@@ -1,6 +1,6 @@
-import { db } from "@/db";
-import { marketingLeads } from "@/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { marketingLeads } from "@saasfly/db-core";
+import { eq, desc } from "@saasfly/db-core";
 
 export class LeadRepository {
   static async findAllLeads() {

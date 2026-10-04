@@ -7,8 +7,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import {
   updateCollaboratorPermissions,
   requireNexusAdmin,
-} from '@/lib/nexus/collaborators-service';
-import type { NexusPermissionsOverride } from '@/db/schema';
+} from '@saasfly/hermes-core';
+import type { NexusPermissionsOverride } from '@saasfly/db/schema';
 
 function getCorsHeaders(req: NextRequest) {
   const origin = req.headers.get('origin') || '*';

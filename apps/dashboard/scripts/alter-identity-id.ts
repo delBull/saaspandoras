@@ -1,4 +1,4 @@
-import { sql } from '../src/lib/database';
+import { sql } from '@saasfly/db-core';
 
 async function migrate() {
   console.log("Altering channel_identity_bindings.identity_id to varchar...");

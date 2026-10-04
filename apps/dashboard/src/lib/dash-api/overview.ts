@@ -3,8 +3,8 @@
  * src/lib/dash-api/overview.ts
  */
 
-import type { GetOverviewResponseDTO } from '@/lib/dash-contracts/overview';
-import type { DashApiError } from '@/lib/dash-contracts/journeys';
+import type { GetOverviewResponseDTO } from '@saasfly/shared';
+import type { DashApiError } from '@saasfly/shared';
 import { resolveApiBaseUrl, getServerAuthHeaders } from './utils';
 
 export class DashApiOverviewClient {

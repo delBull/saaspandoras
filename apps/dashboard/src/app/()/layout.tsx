@@ -1,7 +1,7 @@
 
 import { headers as _headers, cookies } from "next/headers";
-import { getAuth, isAdmin } from "@/lib/auth";
-import { SUPER_ADMIN_WALLET } from "@/lib/constants";
+import { getAuth, isAdmin } from "@saasfly/auth-sdk";
+import { SUPER_ADMIN_WALLET } from "@saasfly/auth-sdk";
 import { DashboardClientWrapper } from "./dashboard-client-wrapper";
 import { ProjectModalProvider } from "@/contexts/ProjectModalContext";
 

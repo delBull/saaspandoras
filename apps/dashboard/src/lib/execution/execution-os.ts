@@ -1,13 +1,13 @@
-import { db } from "@/db";
-import { channelOutbox } from "@/db/schema";
-import { OperationalIntent } from "../hermes/hermes-cognitive";
+import { db } from "@saasfly/db-core";
+import { channelOutbox } from "@saasfly/db-core";
+import { OperationalIntent } from '@saasfly/hermes-core';
 
 export class ExecutionOS {
   /**
    * Receives an OperationalIntent from Hermes.
    * Passes it through Governance and queues it in the Outbox.
    */
-  static async execute(intent: OperationalIntent) {
+  static async execute(intent: any) {
     console.log(`[ExecutionOS] Received intent for event ${intent.correlationId}: ${intent.action}`);
 
     // 1. Governance / Policy Check

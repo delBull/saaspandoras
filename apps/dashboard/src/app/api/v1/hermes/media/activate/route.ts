@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
-import { hermesMediaRequests } from '@/db/schema';
-import { TenantAuthorityService } from '@/lib/pandoras/core/domains/hermes/tenants/tenant-authority';
+import { db } from '@saasfly/db';
+import { hermesMediaRequests } from '@saasfly/db/schema';
+import { TenantAuthorityService } from '@saasfly/hermes-core';
 import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
-import { CapabilityGrantService, SUPPORTED_MEDIA_CAPABILITIES } from '@/lib/pandoras/core/domains/hermes/a2a/capability-grant-service';
+import { CapabilityGrantService, SUPPORTED_MEDIA_CAPABILITIES } from '@saasfly/hermes-core';
 import { sendBusinessNotification } from '@/lib/discord/business-notifier';
-import { HermesNotificationDispatcher } from '@/lib/hermes/notifications/notification-dispatcher';
+import { HermesNotificationDispatcher } from '@saasfly/hermes-core';
 
 export const dynamic = 'force-dynamic';
 

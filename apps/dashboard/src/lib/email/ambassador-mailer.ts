@@ -1,6 +1,6 @@
-import { db } from "@/db";
-import { projects } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { projects } from "@saasfly/db-core";
+import { eq } from "@saasfly/db-core";
 import { sendEmail } from "./client";
 
 export interface AmbassadorWelcomeProps {

@@ -1,8 +1,8 @@
 "use server";
 
-import { ControlPlaneContextFactory } from "@/lib/pandoras/core/domains/hermes/knowledge/context-factory";
-import { KnowledgeGovernanceService } from "@/lib/pandoras/core/domains/hermes/knowledge/service";
-import { KnowledgeStatus, KnowledgeDimension, KnowledgeVisibility, KnowledgeSource } from "@/lib/pandoras/core/domains/hermes/knowledge/types";
+import { ControlPlaneContextFactory } from "@saasfly/hermes-core";
+import { KnowledgeService } from "@saasfly/hermes-core";
+import { KnowledgeStatus, KnowledgeDimension, KnowledgeVisibility, KnowledgeSource } from "@saasfly/hermes-core";
 
 /**
  * Server Action Frontier for Hermes Knowledge Governance Console
@@ -13,7 +13,7 @@ export async function discoverKnowledgeAction(
   payload: { dimension: KnowledgeDimension, key: string, content: string, visibility: KnowledgeVisibility, source: KnowledgeSource, sourceReference?: string }
 ) {
   const context = await ControlPlaneContextFactory.fromSession(tenantId);
-  return await KnowledgeGovernanceService.discover(context, payload);
+  return await KnowledgeService.discover(context, payload);
 }
 
 export async function approveKnowledgeAction(
@@ -22,7 +22,7 @@ export async function approveKnowledgeAction(
   expectedVersion: number
 ) {
   const context = await ControlPlaneContextFactory.fromSession(tenantId);
-  return await KnowledgeGovernanceService.approveKnowledge(context, knowledgeId, expectedVersion);
+  return await KnowledgeService.approveKnowledge(context, knowledgeId, expectedVersion);
 }
 
 export async function rejectKnowledgeAction(
@@ -31,7 +31,7 @@ export async function rejectKnowledgeAction(
   reason: string
 ) {
   const context = await ControlPlaneContextFactory.fromSession(tenantId);
-  return await KnowledgeGovernanceService.rejectKnowledge(context, knowledgeId, reason);
+  return await KnowledgeService.rejectKnowledge(context, knowledgeId, reason);
 }
 
 export async function editKnowledgeAction(
@@ -40,31 +40,31 @@ export async function editKnowledgeAction(
   newContent: string
 ) {
   const context = await ControlPlaneContextFactory.fromSession(tenantId);
-  return await KnowledgeGovernanceService.editKnowledge(context, activeKnowledgeId, newContent);
+  return await KnowledgeService.editKnowledge(context, activeKnowledgeId, newContent);
 }
 
 // --- Query Actions ---
 
 export async function getKnowledgeByStatusAction(tenantId: string, status: KnowledgeStatus) {
   const context = await ControlPlaneContextFactory.fromSession(tenantId);
-  return await KnowledgeGovernanceService.getKnowledgeByStatus(context.organizationId, status);
+  return await KnowledgeService.getKnowledgeByStatus(context.organizationId, status);
 }
 
 export async function getAuditTrailAction(tenantId: string) {
   const context = await ControlPlaneContextFactory.fromSession(tenantId);
-  return await KnowledgeGovernanceService.getAuditTrail(context.organizationId);
+  return await KnowledgeService.getAuditTrail(context.organizationId);
 }
 
 export async function getExclusionRegisterAction(tenantId: string) {
   const context = await ControlPlaneContextFactory.fromSession(tenantId);
-  return await KnowledgeGovernanceService.getExclusionRegister(context.organizationId);
+  return await KnowledgeService.getExclusionRegister(context.organizationId);
 }
 
 // --- Add-On Marketplace Actions ---
 
-import { AddOnRegistryService } from "@/lib/pandoras/core/domains/hermes/addons/registry";
-import { AddOnInstallationManager } from "@/lib/pandoras/core/domains/hermes/addons/installation-manager";
-import { AddOnGovernanceService } from "@/lib/pandoras/core/domains/hermes/addons/governance";
+import { AddOnRegistryService } from "@saasfly/hermes-core";
+import { AddOnInstallationManager } from "@saasfly/hermes-core";
+import { AddOnGovernanceService } from "@saasfly/hermes-core";
 
 export async function getMarketplaceAddOnsAction(tenantId: string) {
   const context = await ControlPlaneContextFactory.fromSession(tenantId);
@@ -113,7 +113,7 @@ export async function suspendAddOnAction(tenantId: string, installationId: strin
 
 // --- Runtime Context Probe Action ---
 
-import { CognitiveContextBuilder } from "@/lib/pandoras/core/domains/hermes/addons/context-merger";
+import { CognitiveContextBuilder } from "@saasfly/hermes-core";
 
 export async function getEffectiveContextAction(tenantId: string) {
   const context = await ControlPlaneContextFactory.fromSession(tenantId);

@@ -1,6 +1,6 @@
-import { db } from "@/db";
-import { users } from "@/db/schema";
-import { and, eq, isNull } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { users } from "@saasfly/db-core";
+import { and, eq, isNull } from "@saasfly/db-core";
 
 /**
  * 🧬 Access Classification Service (Genesis Strategy)

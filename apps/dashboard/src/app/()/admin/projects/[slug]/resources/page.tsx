@@ -1,8 +1,8 @@
-import { db } from "@/db";
-import { projects, platformAssets } from "@/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { projects, platformAssets } from "@saasfly/db-core";
+import { eq, desc } from "@saasfly/db-core";
 import { notFound } from "next/navigation";
-import { getAuth } from "@/lib/auth";
+import { getAuth } from "@saasfly/auth-sdk";
 import { headers } from "next/headers";
 import { UnauthorizedAccess } from "@/components/admin/UnauthorizedAccess";
 import { ResourceDashboard } from "./ResourceDashboard";

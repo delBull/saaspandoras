@@ -1,10 +1,10 @@
 'use server';
 
 import { EventRepository } from "@/lib/domain/event-repository";
-import { getAuth, isAdmin } from "@/lib/auth";
-import { db } from "@/db";
-import { daoMembers } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { getAuth, isAdmin } from "@saasfly/auth-sdk";
+import { db } from "@saasfly/db-core";
+import { daoMembers } from "@saasfly/db-core";
+import { eq, and } from "@saasfly/db-core";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 

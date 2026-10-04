@@ -5,7 +5,7 @@ import { getContract, prepareContractCall } from "thirdweb";
 import { useActiveAccount, useActiveWalletChain, useSwitchActiveWalletChain, useIsAutoConnecting, useSendTransaction, useDisconnect, useActiveWallet } from "thirdweb/react";
 import { useToast } from "@saasfly/ui/use-toast";
 import { config } from "@/config";
-import { client } from "@/lib/thirdweb-client";
+import { client } from "@saasfly/shared";
 import { PANDORAS_KEY_ABI } from "@/lib/pandoras-key-abi";
 import { useEOAIdentity } from "@/hooks/useEOAIdentity";
 import { AccessState } from "@/lib/access/state-machine";

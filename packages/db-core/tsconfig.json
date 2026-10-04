@@ -1,0 +1,12 @@
+{
+  "extends": "@saasfly/typescript-config/base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+    "esModuleInterop": true
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
+}

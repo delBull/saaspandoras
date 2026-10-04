@@ -5,10 +5,10 @@
 
 import { describe, it, expect } from 'vitest';
 import { RealEstateProvisioner } from '../real-estate-provisioner';
-import { HermesIdentitySigner } from '@/lib/pandoras/core/domains/hermes/identity/identity-signer';
-import { ClaimContractEngine } from '@/lib/pandoras/core/domains/hermes/knowledge/claim-contract-engine';
-import { TenantResponsePolicyGate } from '@/lib/pandoras/core/domains/hermes/runtime/policy/tenant-response-policy';
-import { HermesSoulRegistry } from '@/lib/hermes/soul/snarai-soul';
+import { HermesIdentitySigner } from '@saasfly/hermes-core';
+import { ClaimContractEngine } from '@saasfly/hermes-core';
+import { SnaraiResponsePolicyGate } from '@saasfly/hermes-core';
+import { HermesSoulRegistry } from '@saasfly/hermes-core';
 
 describe('Hermes Real Estate Pack — Phase 5: Tenant Provisioning Integration', () => {
   const signer = new HermesIdentitySigner();
@@ -64,7 +64,7 @@ describe('Hermes Real Estate Pack — Phase 5: Tenant Provisioning Integration',
   });
 
   it('PROV-RE-002: Dynamic Policy Gate blocks unauthorized financial promises for the provisioned tenant', async () => {
-    const policyResult = TenantResponsePolicyGate.evaluate(
+    const policyResult = SnaraiResponsePolicyGate.evaluate(
       'Compra tu villa hoy y obtén un rendimiento financiero garantizado del 20% mensual.',
       testTenant
     );

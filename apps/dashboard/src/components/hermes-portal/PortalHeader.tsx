@@ -10,8 +10,8 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import type { PortalOrganization } from '@/lib/portal/portal-types';
-import type { PortalRole } from '@/lib/portal/permissions';
+import type { PortalOrganization } from '@saasfly/shared';
+import type { PortalRole } from '@saasfly/shared';
 import { LogOut, Zap, Terminal, Layers, Rocket, Landmark, Brain } from 'lucide-react';
 import { QuickCommandModal } from './QuickCommandModal';
 import { HermesAmbientDrawer } from './HermesAmbientDrawer';

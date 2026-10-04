@@ -1,5 +1,5 @@
 import { provisionFullAccess } from '@/lib/admin/full-access-provision.service';
-import { db } from '@/db';
+import { db } from '@saasfly/db';
 
 async function run() {
   try {

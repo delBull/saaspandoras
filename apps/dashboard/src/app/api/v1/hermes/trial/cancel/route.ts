@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { tryResolvePortalContext } from '@/lib/portal/resolve-portal-context';
-import { HermesTrialTimelineService } from '@/lib/hermes/trial/hermes-trial-timeline.service';
-import { db } from '@/db';
-import { projects, installedProducts } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { HermesTrialTimelineService } from '@saasfly/hermes-core';
+import { db } from '@saasfly/db';
+import { projects, installedProducts } from '@saasfly/db/schema';
+import { eq, and } from "@saasfly/db-core";
 
 export const dynamic = 'force-dynamic';
 

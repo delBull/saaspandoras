@@ -1,8 +1,9 @@
 
 import { NextResponse } from 'next/server';
-import { db } from '@/db'; // Assuming Drizzle DB
-import { daoActivitySubmissions, daoActivities, projects } from '@/db/schema'; // Updated imports
-import { eq, and, sql, not, inArray, lt } from 'drizzle-orm';
+import { db } from '@saasfly/db'; // Assuming Drizzle DB
+import { daoActivitySubmissions, daoActivities, projects } from '@saasfly/db/schema'; // Updated imports
+import { not } from 'drizzle-orm';
+import { eq, and, sql, inArray, lt } from '@saasfly/db-core';
 import { sendDelayedDistributionAlert } from '@/lib/discord/alert-notifier';
 
 // Force dynamic if using GET

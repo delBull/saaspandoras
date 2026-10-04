@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { db } from "~/db";
-import { daoRewards, userBalances, withdrawals } from "~/db/schema";
-import { eq, and, isNull, sql } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { daoRewards, userBalances, withdrawals } from "@saasfly/db-core";
+import { eq, and, isNull, sql } from "@saasfly/db-core";
 import { verifyMessage } from "viem";
 import { withSecurity, withdrawRateLimiter, isValidWalletAddress } from "~/lib/security-utils";
 import {

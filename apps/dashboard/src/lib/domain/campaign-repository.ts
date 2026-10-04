@@ -1,6 +1,6 @@
-import { db } from "@/db";
-import { campaigns, campaignStats, projects, demandEvents, campaignTrackers, shortlinks, campaignAssets, platformAssets, marketingCampaigns } from "@/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { campaigns, campaignStats, projects, demandEvents, campaignTrackers, shortlinks, campaignAssets, platformAssets, marketingCampaigns } from "@saasfly/db-core";
+import { eq, desc } from "@saasfly/db-core";
 import { EventRepository } from "./event-repository";
 
 export class CampaignRepository {

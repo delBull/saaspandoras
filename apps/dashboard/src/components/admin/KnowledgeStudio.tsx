@@ -12,7 +12,7 @@ import {
   GovernedKnowledgeItem, 
   KnowledgeMutationEvent, 
   KnowledgeDimension
-} from '@/lib/pandoras/core/domains/hermes/knowledge/types';
+} from '@saasfly/hermes-core';
 
 import { 
   approveKnowledgeAction,
@@ -50,11 +50,11 @@ export default function KnowledgeStudio({ tenantId }: { tenantId: string }) {
   // Load Data
   const loadData = useCallback(async () => {
     try {
-      const items = await getKnowledgeByStatusAction(tenantId, 'ACTIVE');
-      const discovered = await getKnowledgeByStatusAction(tenantId, 'DISCOVERED');
-      const pending = await getKnowledgeByStatusAction(tenantId, 'PENDING_REVIEW');
-      const rejected = await getKnowledgeByStatusAction(tenantId, 'REJECTED');
-      const superseded = await getKnowledgeByStatusAction(tenantId, 'SUPERSEDED');
+      const items = await getKnowledgeByStatusAction(tenantId, 'ACTIVE' as any);
+      const discovered = await getKnowledgeByStatusAction(tenantId, 'DISCOVERED' as any);
+      const pending = await getKnowledgeByStatusAction(tenantId, 'PENDING_REVIEW' as any);
+      const rejected = await getKnowledgeByStatusAction(tenantId, 'REJECTED' as any);
+      const superseded = await getKnowledgeByStatusAction(tenantId, 'SUPERSEDED' as any);
       
       setKnowledgeItems([...items, ...discovered, ...pending, ...rejected, ...superseded]);
       
@@ -555,23 +555,23 @@ function AuditTab({ logs }: { logs: KnowledgeMutationEvent[] }) {
       
       <div className="space-y-2">
         {logs.slice().map(log => (
-          <div key={log.eventId} className="border border-zinc-800 bg-zinc-900/30 rounded-xl p-4 flex gap-4 text-xs font-mono items-center">
+          <div key={(log as any).eventId} className="border border-zinc-800 bg-zinc-900/30 rounded-xl p-4 flex gap-4 text-xs font-mono items-center">
             <div className="text-zinc-500 min-w-[120px]">
               {new Date(log.timestamp).toLocaleTimeString()}
             </div>
             <div className="w-24">
               <Badge className={
-                log.action === 'APPROVE' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' :
-                log.action === 'REJECT' ? 'bg-red-500/10 text-red-400 border-red-500/30' :
+                (log as any).action === 'APPROVE' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' :
+                (log as any).action === 'REJECT' ? 'bg-red-500/10 text-red-400 border-red-500/30' :
                 'bg-amber-500/10 text-amber-400 border-amber-500/30'
               }>
-                {log.action}
+                {(log as any).action}
               </Badge>
             </div>
             <div className="text-zinc-300 truncate max-w-sm">
-              Actor: <span className="text-indigo-400">{log.actorId}</span> → Item: <span className="text-zinc-500">{log.knowledgeId}</span>
+              Actor: <span className="text-indigo-400">{(log as any).actorId}</span> → Item: <span className="text-zinc-500">{(log as any).knowledgeId}</span>
             </div>
-            {log.reason && <div className="text-zinc-500 ml-auto italic">"{log.reason}"</div>}
+            {(log as any).reason && <div className="text-zinc-500 ml-auto italic">"{(log as any).reason}"</div>}
           </div>
         ))}
       </div>

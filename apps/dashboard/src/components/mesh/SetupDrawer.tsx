@@ -14,7 +14,7 @@ import {
   ShieldCheck,
   Zap,
 } from 'lucide-react';
-import type { EcosystemSetupSummary, ModuleSetupState } from '@/lib/mesh/setup-progress.service';
+import type { EcosystemSetupSummary, ModuleSetupState } from '@saasfly/shared';
 
 interface SetupDrawerProps {
   isOpen: boolean;

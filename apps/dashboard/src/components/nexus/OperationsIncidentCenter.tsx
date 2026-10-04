@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ShieldAlert, AlertOctagon, Activity, ServerCrash, RefreshCw, CheckCircle2, Webhook, Link2 } from 'lucide-react';
 
 export interface Incident {
@@ -45,12 +45,41 @@ const MOCK_INCIDENTS: Incident[] = [
 ];
 
 export function OperationsIncidentCenter() {
-  const [incidents, setIncidents] = useState<Incident[]>(MOCK_INCIDENTS);
+  const [incidents, setIncidents] = useState<Incident[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  const fetchIncidents = () => {
+    setIsRefreshing(true);
+    fetch('/api/nexus/incidents')
+      .then(res => res.json())
+      .then(data => {
+        if (data.incidents) {
+          const mapped = data.incidents.map((i: any) => ({
+            id: i.id,
+            title: i.title,
+            source: i.source,
+            severity: i.severity,
+            status: i.status,
+            timestamp: i.createdAt,
+            details: i.details
+          }));
+          setIncidents(mapped);
+        }
+      })
+      .catch(err => console.error(err))
+      .finally(() => {
+        setIsRefreshing(false);
+        setLoading(false);
+      });
+  };
+
+  useEffect(() => {
+    fetchIncidents();
+  }, []);
 
   const handleRefresh = () => {
-    setIsRefreshing(true);
-    setTimeout(() => setIsRefreshing(false), 800);
+    fetchIncidents();
   };
 
   const getSourceIcon = (source: Incident['source']) => {

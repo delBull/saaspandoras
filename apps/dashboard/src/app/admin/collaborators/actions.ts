@@ -9,11 +9,11 @@
 
 import { revalidatePath } from "next/cache";
 import crypto from "crypto";
-import { db } from "@/db";
-import { nexusCollaborators, users, type NexusProvisionStatus } from "@/db/schema";
-import { eq } from "drizzle-orm";
-import { getNexusAuthContext } from "@/lib/nexus/nexus-rbac";
-import { sendCollaboratorMagicLink } from "@/lib/nexus/collaborators-service";
+import { db } from "@saasfly/db-core";
+import { nexusCollaborators, users, type NexusProvisionStatus } from "@saasfly/db-core";
+import { eq } from "@saasfly/db-core";
+import { getNexusAuthContext } from '@saasfly/shared';
+import { sendCollaboratorMagicLink } from '@saasfly/hermes-core';
 
 export interface AdminActionResult {
   success: boolean;

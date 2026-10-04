@@ -7,10 +7,10 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { AssessmentEngine } from '@/lib/pandoras/core/domains/academy/assessment/assessment-engine';
-import { CANONICAL_KNOWLEDGE_DOCS } from '@/lib/pandoras/core/domains/academy/curriculum/knowledge-sources';
-import { KnowledgeSnapshotManager } from '@/lib/pandoras/core/domains/academy/snapshots/snapshot-manager';
-import { verifyAdminRequest } from '@/lib/pandoras/core/domains/academy/security/admin-auth';
+import { AssessmentEngine } from '@saasfly/academy-sdk';
+import { CANONICAL_KNOWLEDGE_DOCS } from '@saasfly/academy-sdk';
+import { KnowledgeSnapshotManager } from '@saasfly/academy-sdk';
+import { verifyAdminRequest } from '@saasfly/academy-sdk';
 
 export const dynamic = 'force-dynamic';
 

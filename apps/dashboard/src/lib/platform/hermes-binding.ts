@@ -1,6 +1,6 @@
-import { db } from "@/db";
-import { installedProducts } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { installedProducts } from "@saasfly/db-core";
+import { eq } from "@saasfly/db-core";
 import type { HermesBindingInfo } from "@/types/admin";
 
 /**

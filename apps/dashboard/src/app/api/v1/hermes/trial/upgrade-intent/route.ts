@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolvePortalContext, tryResolvePortalContext } from '@/lib/portal/resolve-portal-context';
-import { HermesTrialTimelineService } from '@/lib/hermes/trial/hermes-trial-timeline.service';
-import { db } from '@/db';
-import { projects } from '@/db/schema';
-import { eq, sql } from 'drizzle-orm';
+import { HermesTrialTimelineService } from '@saasfly/hermes-core';
+import { db } from '@saasfly/db';
+import { projects } from '@saasfly/db/schema';
+import { eq, sql } from "@saasfly/db-core";
 import crypto from 'crypto';
 
 export const dynamic = 'force-dynamic';

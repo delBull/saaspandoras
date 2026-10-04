@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { db } from "~/db";
-import { projects as projectsSchema } from "@/db/schema";
-import { eq } from "drizzle-orm";
-import { getAuth, isAdmin } from "@/lib/auth";
+import { db } from "@saasfly/db-core";
+import { projects as projectsSchema } from "@saasfly/db-core";
+import { eq } from "@saasfly/db-core";
+import { getAuth, isAdmin } from "@saasfly/auth-sdk";
 import { headers } from "next/headers";
 
 // ⚠️ EXPLICITAMENTE USAR Node.js RUNTIME para APIs que usan PostgreSQL

@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/db';
-import { nexusDealComments, nexusDealRooms, nexusDealSigners } from '@/db/schema';
-import { eq } from 'drizzle-orm';
-import { resend } from '@/lib/resend';
+import { db } from '@saasfly/db';
+import { nexusDealComments, nexusDealRooms, nexusDealSigners } from '@saasfly/db/schema';
+import { eq } from "@saasfly/db-core";
+import { resend } from '@saasfly/shared';
 import NexusDealComment from '@/emails/NexusDealComment';
 import { validateDealRoomAccess } from '@/lib/admin-auth';
 

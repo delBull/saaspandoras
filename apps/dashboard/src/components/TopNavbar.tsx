@@ -19,7 +19,7 @@ import { WalletBalance, NetworkSelector, ConnectWalletButton } from "@/component
 import { SUPPORTED_NETWORKS } from "@/config/networks";
 import { usePathname } from "next/navigation";
 import { PendingRewardsNotification } from "@/components/PendingRewardsNotification";
-import { client } from "@/lib/thirdweb-client";
+import { client } from "@saasfly/shared";
 import { inAppWallet, createWallet } from "thirdweb/wallets";
 import { wallets } from "@/lib/wallets";
 import { config } from "@/config";
@@ -27,7 +27,7 @@ import { useTour } from "@/components/onboarding/TourEngine";
 import { RocketLaunchIcon, BeakerIcon, GlobeAltIcon } from "@heroicons/react/24/outline";
 import { useRealGamification } from "@/hooks/useRealGamification";
 import { SandboxTransition } from "./SandboxTransition";
-import { resolveIpfsUrl } from "@/lib/utils";
+import { resolveIpfsUrl } from "@saasfly/shared";
 import { hasFullPlatformAccess } from "@/lib/roles";
 
 interface TopNavbarProps {

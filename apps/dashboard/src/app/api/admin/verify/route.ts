@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { getAuth, isAdmin } from "@/lib/auth";
-import { SUPER_ADMIN_WALLET } from "@/lib/constants";
+import { getAuth, isAdmin } from "@saasfly/auth-sdk";
+import { SUPER_ADMIN_WALLET } from "@saasfly/auth-sdk";
 import { withTimeout } from "@/lib/access/resilience";
 
 // ⚠️ EXPLICITAMENTE USAR Node.js RUNTIME para APIs que usan PostgreSQL

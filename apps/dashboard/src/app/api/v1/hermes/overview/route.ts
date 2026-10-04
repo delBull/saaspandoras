@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { checkRateLimit, clientIpFromHeaders } from '@/lib/hermes/auth/rate-limiter';
-import { resolveCanonicalAuthSession } from '@/lib/hermes/auth/canonical-resolver';
-import { HermesOverviewService } from '@/lib/hermes/overview/service';
+import { checkRateLimit, clientIpFromHeaders } from '@saasfly/hermes-core';
+import { resolveCanonicalAuthSession } from '@saasfly/hermes-core';
+import { HermesOverviewService } from '@saasfly/hermes-core';
 
 export const dynamic = 'force-dynamic';
 

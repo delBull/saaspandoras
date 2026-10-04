@@ -1,6 +1,6 @@
-import { db } from "@/db";
-import { outboxEvents } from "@/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { outboxEvents } from "@saasfly/db-core";
+import { eq, sql } from "@saasfly/db-core";
 
 export interface OutboxEvent {
   id: string;

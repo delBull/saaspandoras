@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getWhatsAppUrl } from "@/lib/whatsapp/config/landingConfig";
+import { getWhatsAppUrl } from "@/lib/whatsapp/config";
 
 export default function WhatsAppUtilityForm() {
   const [loading, setLoading] = useState(false);

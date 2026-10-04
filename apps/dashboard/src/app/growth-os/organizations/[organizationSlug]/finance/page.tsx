@@ -1,5 +1,5 @@
 import { DashApi } from '@/lib/dash-api';
-import type { TenantWalletConfigDTO } from '@/lib/dash-contracts/growth';
+import type { TenantWalletConfigDTO } from '@saasfly/shared';
 import { 
   Wallet, 
   ShieldCheck, 

@@ -4,13 +4,13 @@ import { useState, useMemo } from 'react';
 import Image from 'next/image';
 import type { UserData, UserRole } from '@/types/admin';
 import { UserKeyStatus } from './UserKeyStatus';
-import { resolveIpfsUrl } from '@/lib/utils';
+import { resolveIpfsUrl } from '@saasfly/shared';
 import { BrainCircuit } from 'lucide-react';
 
 const USERS_PER_PAGE = 10;
 
 import { UserRolesDrawer } from './UserRolesDrawer';
-import { PlatformActor } from '@/lib/dash-contracts/admin';
+import { PlatformActor } from '@saasfly/shared';
 
 interface UsersTableProps {
   users: UserData[];

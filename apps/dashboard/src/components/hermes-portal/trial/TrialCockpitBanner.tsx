@@ -11,7 +11,7 @@ import {
   Target,
   AlertCircle,
 } from 'lucide-react';
-import type { PortalTrialContext } from '@/lib/portal/portal-types';
+import type { PortalTrialContext } from '@saasfly/shared';
 import { TrialUpgradeModal } from './TrialUpgradeModal';
 
 interface TrialCockpitBannerProps {

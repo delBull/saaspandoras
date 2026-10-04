@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies, headers } from "next/headers";
-import { verifyJWT } from "@/lib/auth";
+import { verifyJWT } from "@saasfly/auth-sdk";
 
 export const runtime = "nodejs";
 

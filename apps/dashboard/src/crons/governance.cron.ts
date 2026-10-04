@@ -1,4 +1,4 @@
-import { db } from '@/db';
+import { db } from '@saasfly/db';
 import { GovernanceService } from '@pandoras/agora-engine';
 import { DrizzleGovernanceStorageAdapter } from '@/agora-adapters/drizzle.governance.adapter';
 

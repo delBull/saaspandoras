@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
-import { db } from "~/db";
-import { projects } from "~/db/schema";
-import { eq } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { projects } from "@saasfly/db-core";
+import { eq } from "@saasfly/db-core";
 import { withSecurity, withdrawRateLimiter, isValidWalletAddress } from "~/lib/security-utils";
 import { deployProjectController } from "~/lib/treasury/factory";
 import { getUsdcAddress } from "~/lib/treasury/usdc-contract";
 
 import { headers } from "next/headers";
-import { getAuth } from "~/lib/auth";
+import { getAuth } from "@saasfly/auth-sdk";
 
 const DEFAULT_DAILY_LIMIT = BigInt(500 * 1_000_000); // 500 USDC
 

@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { getAuth, isSuperAdmin } from '@/lib/auth';
-import { db } from '@/db';
-import { telegramPoints } from '@/db/schema';
-import { eq, sql } from 'drizzle-orm';
+import { getAuth, isSuperAdmin } from '@saasfly/auth-sdk';
+import { db } from '@saasfly/db';
+import { telegramPoints } from '@saasfly/db/schema';
+import { eq, sql } from "@saasfly/db-core";
 
 export const dynamic = 'force-dynamic';
 

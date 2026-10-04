@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
-import { getAuth, isAdmin } from "@/lib/auth";
-import { generateUnlockToken } from "@/lib/nexus-deals/tokens";
-import { sendDealRoomUnlockEmbed } from "@/lib/nexus-deals/discord";
+import { getAuth, isAdmin } from "@saasfly/auth-sdk";
+import { generateUnlockToken } from "@saasfly/nexus-deals-sdk";
+import { sendDealRoomUnlockEmbed } from "@saasfly/nexus-deals-sdk";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

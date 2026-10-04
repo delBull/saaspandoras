@@ -1,7 +1,7 @@
 import { headers, cookies } from "next/headers";
-import { getAuth, isAdmin } from "@/lib/auth";
+import { getAuth, isAdmin } from "@saasfly/auth-sdk";
 import { UnauthorizedAccess } from "@/components/admin/UnauthorizedAccess";
-import { SUPER_ADMIN_WALLET } from "@/lib/constants";
+import { SUPER_ADMIN_WALLET } from "@saasfly/auth-sdk";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 

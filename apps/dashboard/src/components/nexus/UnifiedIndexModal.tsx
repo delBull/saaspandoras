@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import type { NexusAuthContext } from "@/lib/nexus/nexus-rbac";
+import type { NexusAuthContext } from "@saasfly/shared";
 
 interface NexusLink {
   label: string;

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { eq } from "drizzle-orm";
+import { eq } from "@saasfly/db-core";
 import { headers } from "next/headers";
 
 // ⚠️ Dynamic imports para evitar problemas de build
@@ -22,11 +22,11 @@ async function loadDependencies() {
 
 async function loadAuthHelpers() {
   if (!getAuth) {
-    const authModule = await import("@/lib/auth");
+    const authModule = await import("@saasfly/auth-sdk");
     getAuth = authModule.getAuth;
   }
   if (!getSuperAdminWallet) {
-    const constantsModule = await import("@/lib/constants");
+    const constantsModule = await import("@saasfly/auth-sdk");
     getSuperAdminWallet = constantsModule.getSuperAdminWallet;
   }
 }

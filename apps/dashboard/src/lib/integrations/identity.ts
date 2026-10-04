@@ -1,6 +1,6 @@
-import { db } from "@/db";
-import { marketingIdentities, users } from "@/db/schema";
-import { eq, or } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { marketingIdentities, users } from "@saasfly/db-core";
+import { eq, or } from "@saasfly/db-core";
 import { PlatformEventPayload } from "./events-schema";
 
 export class IdentityService {

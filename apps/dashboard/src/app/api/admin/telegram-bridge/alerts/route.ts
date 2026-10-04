@@ -6,9 +6,9 @@
  * - recent alert history (last 24h)
  */
 import { NextResponse } from 'next/server';
-import { getAuth, isAdmin } from '@/lib/auth';
-import { db } from '@/db';
-import { sql } from 'drizzle-orm';
+import { getAuth, isAdmin } from '@saasfly/auth-sdk';
+import { db } from '@saasfly/db';
+import { sql } from "@saasfly/db-core";
 import { ALERT_RULES } from '@/lib/alerts/rules';
 
 export const dynamic = 'force-dynamic';

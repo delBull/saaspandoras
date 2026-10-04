@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireNexusAdmin } from '@/lib/nexus/collaborators-service';
-import { sealContactDoctrine, getContactDoctrineSeal } from '@/lib/hermes/identity/contact-doctrine';
+import { requireNexusAdmin } from '@saasfly/hermes-core';
+import { sealContactDoctrine, getContactDoctrineSeal } from '@saasfly/hermes-core';
 
 /**
  * 🔐 POST /api/v1/identity/contact-doctrine

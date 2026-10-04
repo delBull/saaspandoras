@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
+import { db } from '@saasfly/db';
 import { 
   marketingLeads, 
   marketingLeadEvents, 
@@ -10,16 +10,16 @@ import {
   projects,
   partnerReputationEvents,
   ambassadors
-} from '@/db/schema';
-import { eq, and, or, sql, ilike } from 'drizzle-orm';
+} from '@saasfly/db/schema';
+import { eq, and, or, sql, ilike } from "@saasfly/db-core";
 import { IntegrationKeyService } from '@/lib/integrations/auth';
 import { IdentityService } from '@/lib/marketing/identity-service';
 import { resolveGrowthAction } from '@/lib/marketing/growth-engine/engine';
 import { executeGrowthActions, computeNextGrowthMetadata } from '@/lib/marketing/growth-engine/actions';
-import { IdentityResolver } from '@/lib/marketing/identity-resolver';
+import { IdentityResolver } from '@saasfly/shared';
 import { AttributionManager } from '@/lib/marketing/scoring-engine';
-import { resolveProjectSlug } from '@/lib/project-utils';
-import { detectProductFromOrigin } from '@/lib/platform/product-registry';
+import { resolveProjectSlug } from '@saasfly/shared';
+import { detectProductFromOrigin } from '@saasfly/shared';
 
 
 export const dynamic = 'force-dynamic';

@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/db';
-import { nexusDealRooms, nexusDealSigners, nexusDealAuditEvents } from '@/db/schema';
-import { eq, inArray, and } from 'drizzle-orm';
-import { resend } from '@/lib/resend';
+import { db } from '@saasfly/db';
+import { nexusDealRooms, nexusDealSigners, nexusDealAuditEvents } from '@saasfly/db/schema';
+import { eq, inArray, and } from "@saasfly/db-core";
+import { resend } from '@saasfly/shared';
 
 import NexusDealReminder from '@/emails/NexusDealReminder';
 

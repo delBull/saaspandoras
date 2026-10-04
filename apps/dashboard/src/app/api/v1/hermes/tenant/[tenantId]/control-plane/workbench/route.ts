@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/db';
-import { installedProducts, projects, hermesJobs, hermesJournal } from '@/db/schema';
-import { eq, and, inArray, sql, desc } from 'drizzle-orm';
-import { getAuth } from '@/lib/auth';
-import { validatePortalSession } from '@/lib/platform/portal-auth';
-import { DomainPackLoader } from '@/lib/hermes/packs/domain-pack-loader';
+import { db } from '@saasfly/db';
+import { installedProducts, projects, hermesJobs, hermesJournal } from '@saasfly/db/schema';
+import { eq, and, inArray, sql, desc } from "@saasfly/db-core";
+import { getAuth } from '@saasfly/auth-sdk';
+import { validatePortalSession } from '@saasfly/shared';
+import { DomainPackLoader } from '@saasfly/hermes-core';
 
 type Profile = 'operator' | 'tenant';
 

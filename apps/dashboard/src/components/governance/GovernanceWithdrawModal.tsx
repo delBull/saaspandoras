@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useActiveAccount, useReadContract } from "thirdweb/react";
 import { getContract, prepareContractCall } from "thirdweb";
-import { client } from "@/lib/thirdweb-client";
+import { client } from "@saasfly/shared";
 import { config } from "@/config";
 import { governanceABI } from "@/lib/governance-abi";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";

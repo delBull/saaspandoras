@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { getAuth } from "@/lib/auth";
+import { getAuth } from "@saasfly/auth-sdk";
 import { headers } from "next/headers";
 import { gamificationEngine, EventType } from "@pandoras/gamification";
-import { db } from "~/db";
-import { courses, courseEnrollments } from "~/db/schema";
-import { eq, and, sql } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { courses, courseEnrollments } from "@saasfly/db-core";
+import { eq, and, sql } from "@saasfly/db-core";
 
 export const dynamic = 'force-dynamic';
 

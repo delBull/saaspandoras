@@ -70,7 +70,7 @@ const QuestionIcon = () => (
 // Componentes importados para el sistema completo
 import WhatsAppLeadForm from "@/components/WhatsAppLeadForm";
 import WhatsAppUtilityForm from "@/components/WhatsAppUtilityForm";
-import { cn } from "@/lib/utils";
+import { cn } from "@saasfly/shared";
 
 
 // --- CONFIGURACIÓN Y CONSTANTES ---

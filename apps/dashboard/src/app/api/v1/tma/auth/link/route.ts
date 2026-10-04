@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyMessage } from 'viem';
 import crypto from 'crypto';
-import { CanonicalIdentityGraph } from '@/lib/identity/canonical-identity-graph';
+import { CanonicalIdentityGraph } from '@saasfly/hermes-core';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

@@ -1,6 +1,6 @@
-import { db } from "../db";
-import { users } from "../db/schema";
-import { eq, isNull, and } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { users } from "@saasfly/db-core/schema";
+import { eq, isNull, and } from "@saasfly/db-core";
 
 /**
  * Script para migrar usuarios existentes al modelo de Identidad Unificada.

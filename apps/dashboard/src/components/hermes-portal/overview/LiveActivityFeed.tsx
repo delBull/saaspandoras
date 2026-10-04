@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import type { ActivityEventView } from '@/lib/portal/portal-types';
+import type { ActivityEventView } from '@saasfly/shared';
 import { Activity, MessageSquare, BookOpen, Send, CheckCircle, AlertTriangle } from 'lucide-react';
 
 interface LiveActivityFeedProps {

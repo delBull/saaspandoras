@@ -1,6 +1,6 @@
-import { db } from '@/db';
-import { marketingLeadEvents, marketingLeads } from '@/db/schema';
-import { eq, desc, inArray } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { marketingLeadEvents, marketingLeads } from '@saasfly/db/schema';
+import { eq, desc, inArray } from "@saasfly/db-core";
 import { GrowthEvent } from './types';
 import { computeBehavioralMetrics, resolveGrowthAction } from './engine';
 import { executeGrowthActions } from './actions';

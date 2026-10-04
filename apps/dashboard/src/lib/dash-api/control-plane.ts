@@ -3,8 +3,8 @@
  * src/lib/dash-api/control-plane.ts
  */
 
-import type { ControlPlaneOverviewDTO, GetPendingIntentsResponseDTO, OperationalIntentDTO } from '@/lib/dash-contracts/control-plane';
-import type { DashApiError } from '@/lib/dash-contracts/journeys';
+import type { ControlPlaneOverviewDTO, GetPendingIntentsResponseDTO, OperationalIntentDTO } from '@saasfly/shared';
+import type { DashApiError } from '@saasfly/shared';
 import { resolveApiBaseUrl, getServerAuthHeaders } from './utils';
 
 export class DashApiControlPlaneClient {

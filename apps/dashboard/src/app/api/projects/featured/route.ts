@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
-import { db } from "~/db";
-import { projects } from "~/db/schema";
-import { eq, and, inArray } from "drizzle-orm";
-import { getAuth } from "@/lib/auth";
+import { db } from "@saasfly/db-core";
+import { projects } from "@saasfly/db-core";
+import { eq, and, inArray } from "@saasfly/db-core";
+import { getAuth } from "@saasfly/auth-sdk";
 
 // GET - Obtener todos los proyectos featured
 export async function GET() {

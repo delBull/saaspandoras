@@ -1,10 +1,10 @@
 /**
  * 🛡️ Full-Access Provisioning Service (shared: request + approve flows)
  */
-import { db } from '@/db';
-import { projects, installedProducts } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
-import { NftLabActivationService } from '@/lib/growth/nft/nft-lab-activation.service';
+import { db } from '@saasfly/db';
+import { projects, installedProducts } from '@saasfly/db/schema';
+import { eq, and } from "@saasfly/db-core";
+import { NftLabActivationService } from '@saasfly/nexus-deals-sdk';
 
 export type Family = 'GROWTH_OS' | 'HERMES' | 'CAPITAL' | 'NFT_LAB';
 

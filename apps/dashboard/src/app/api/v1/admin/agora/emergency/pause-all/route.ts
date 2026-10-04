@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/db';
-import { protocolConfigs } from '@/db/schema';
-import { sql } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { protocolConfigs } from '@saasfly/db/schema';
+import { sql } from "@saasfly/db-core";
 import { validateAdminSession } from '@/lib/admin-auth';
 
 /**

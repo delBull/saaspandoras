@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { apiRateLimiter } from '@/lib/security-utils';
+import { apiRateLimiter } from '@saasfly/shared';
 
 export const dynamic = 'force-dynamic';
 

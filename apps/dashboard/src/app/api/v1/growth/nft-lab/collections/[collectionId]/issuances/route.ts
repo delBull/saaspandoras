@@ -11,9 +11,9 @@
  * Sorting: ?sort=createdAt_desc (default) | createdAt_asc | mintedAt_desc
  */
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
-import { tenantNftCollections, tenantNftIssuances } from '@/db/schema';
-import { eq, and, desc, asc, count } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { tenantNftCollections, tenantNftIssuances } from '@saasfly/db/schema';
+import { eq, and, desc, asc, count } from "@saasfly/db-core";
 import { IntegrationKeyService } from '@/lib/integrations/auth';
 
 export async function GET(

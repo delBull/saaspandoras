@@ -4,9 +4,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { AcademyStore } from '@/lib/pandoras/core/domains/academy/candidates/candidate-store';
-import { generateSoulboundSvg } from '@/lib/pandoras/core/domains/academy/certification/badge-generator';
-import { getProgramByRoleOrId } from '@/lib/pandoras/core/domains/academy/curriculum/program-registry';
+import { AcademyStore } from '@saasfly/academy-sdk';
+import { generateSoulboundSvg } from '@saasfly/academy-sdk';
+import { getProgramByRoleOrId } from '@saasfly/academy-sdk';
 
 export const dynamic = 'force-dynamic';
 

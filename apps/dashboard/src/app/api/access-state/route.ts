@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { cookies, headers } from "next/headers";
-import { db } from "@/db";
-import { users, securityEvents, projects } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { users, securityEvents, projects } from "@saasfly/db-core";
+import { eq } from "@saasfly/db-core";
 import { config } from "@/config";
-import { isAdmin } from "@/lib/auth";
+import { isAdmin } from "@saasfly/auth-sdk";
 import { AccessState } from "@/lib/access/state-machine";
 import { accessCache, isRateLimited, dbBreaker, withTimeout } from "@/lib/access/resilience";
 import { resolveUXConfig } from "@/lib/access/experiment-engine";
@@ -77,7 +77,7 @@ export async function GET(req: Request): Promise<NextResponse> {
         }
 
         // 🔐 3. VERIFICATION
-        const { verifyJWT } = await import("@/lib/auth");
+        const { verifyJWT } = await import("@saasfly/auth-sdk");
         const payload = await verifyJWT(token);
 
         if (!payload) {

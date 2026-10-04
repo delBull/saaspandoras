@@ -1,6 +1,6 @@
-import { db } from "@/db";
-import { eq, and } from "drizzle-orm";
-import { marketingCampaigns } from "@/db/schema";
+import { db } from "@saasfly/db-core";
+import { eq, and } from "@saasfly/db-core";
+import { marketingCampaigns } from "@saasfly/db-core";
 import { CampaignRepository } from "./campaign-repository";
 import { LeadDomainService } from "./lead-domain-service";
 

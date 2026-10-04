@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
-import { db } from "~/db";
-import { daoThreads, projects } from "~/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { daoThreads, projects } from "@saasfly/db-core";
+import { eq, desc } from "@saasfly/db-core";
 import { getSuperAdminWallet } from "~/lib/constants";
-import { getAuth } from "~/lib/auth";
+import { getAuth } from "@saasfly/auth-sdk";
 
 export const dynamic = 'force-dynamic';
 

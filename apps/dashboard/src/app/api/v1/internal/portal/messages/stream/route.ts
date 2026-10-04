@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
-import { ControlPlaneContext } from '@/lib/pandoras/core/domains/control-plane/application/context';
-import { getDefaultRuntime, isHermesEnabled } from '@/lib/pandoras/core/domains/hermes/runtime/hermes-runtime';
-import { RuntimeMessage, RuntimeStreamEvent } from '@/lib/pandoras/core/domains/hermes/runtime/contracts';
-import { DefaultOmnichannelGateway } from '@/lib/pandoras/core/domains/channels/omnichannel-gateway';
-import { db } from '@/db';
-import { goldenLinks } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { ControlPlaneContext } from '@saasfly/hermes-core';
+import { getDefaultRuntime, isHermesEnabled } from '@saasfly/hermes-core';
+import { RuntimeMessage, RuntimeStreamEvent } from '@saasfly/hermes-core';
+import { DefaultOmnichannelGateway } from '@saasfly/hermes-core';
+import { db } from '@saasfly/db';
+import { goldenLinks } from '@saasfly/db/schema';
+import { eq } from "@saasfly/db-core";
 
 const omnichannelGateway = new DefaultOmnichannelGateway();
 
@@ -47,7 +47,7 @@ export async function POST(request: Request) {
     const conversationId = `portal_${tenantSlug}_${topicId}`;
 
     // K12-A58: Only server can construct the ControlPlaneContext
-    const cpCtx = new ControlPlaneContext(
+    const cpCtx: any = new ControlPlaneContext(
       context.tenant.sessionId,
       context.tenant.actorId,
       context.tenant.role as any,
@@ -86,7 +86,7 @@ export async function POST(request: Request) {
     // Grounding with InterlocutorResolver for authoritative recognition
     let resolvedInterlocutor: any = undefined;
     try {
-      const { InterlocutorResolver } = await import('@/lib/hermes/identity/interlocutor-resolver');
+      const { InterlocutorResolver } = await import('@saasfly/hermes-core');
       const walletCandidate = context.tenant.actorId.startsWith('wallet_')
         ? context.tenant.actorId.replace('wallet_', '')
         : undefined;

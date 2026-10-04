@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { getRoomByPublicId } from "@/lib/nexus-deals/repo";
-import { verifyDealToken } from "@/lib/nexus-deals/tokens";
-import { db } from "@/db";
-import { nexusDealAttachments } from "@/db/schema";
-import { sendDealRoomAttachmentAlert } from "@/lib/nexus-deals/discord";
-import { eq, desc } from "drizzle-orm";
+import { getRoomByPublicId } from "@saasfly/nexus-deals-sdk";
+import { verifyDealToken } from "@saasfly/nexus-deals-sdk";
+import { db } from "@saasfly/db-core";
+import { nexusDealAttachments } from "@saasfly/db-core";
+import { sendDealRoomAttachmentAlert } from "@saasfly/nexus-deals-sdk";
+import { eq, desc } from "@saasfly/db-core";
 import { put } from "@vercel/blob";
 import path from "path";
 import crypto from "crypto";

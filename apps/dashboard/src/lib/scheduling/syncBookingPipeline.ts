@@ -16,9 +16,9 @@
  *    - Discord Webhook integration.
  */
 
-import { db } from '@/db';
-import { marketingLeads, clients, projects, meetings } from '@/db/schema';
-import { eq, sql } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { marketingLeads, clients, projects, meetings } from '@saasfly/db/schema';
+import { eq, sql } from "@saasfly/db-core";
 import { sendBookingConfirmedEmail } from '@/lib/email/scheduler-mailer';
 import { sendSchedulerTelegramAlert } from '@/lib/scheduling/scheduler-telegram-notifier';
 import { sendSchedulerNotification } from '@/lib/discord/scheduler-notifier';

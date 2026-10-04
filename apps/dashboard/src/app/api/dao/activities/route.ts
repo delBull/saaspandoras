@@ -1,8 +1,8 @@
 
 import { NextResponse } from 'next/server';
-import { db } from '@/db';
-import { daoActivities, projects } from '@/db/schema';
-import { eq, desc, and } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { daoActivities, projects } from '@saasfly/db/schema';
+import { eq, desc, and } from "@saasfly/db-core";
 import { verifyMessage } from "viem";
 
 export async function GET(req: Request) {

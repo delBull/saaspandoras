@@ -1,4 +1,4 @@
-import type { ShortlinkEvent } from "@/db/schema";
+import type { ShortlinkEvent } from "@saasfly/db-core";
 import { format } from "date-fns";
 
 // Agrupar clics por día

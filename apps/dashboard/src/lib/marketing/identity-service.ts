@@ -1,6 +1,6 @@
-import { db } from '@/db';
-import { marketingLeads } from '@/db/schema';
-import { eq, or, and, isNull } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { marketingLeads } from '@saasfly/db/schema';
+import { eq, or, and, isNull } from "@saasfly/db-core";
 import { createHash } from 'crypto';
 
 export class IdentityService {

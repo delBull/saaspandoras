@@ -21,7 +21,7 @@
 import { useState } from 'react';
 import { Rocket, Loader2, CheckCircle2, XCircle, Wallet2, Sparkles } from 'lucide-react';
 import { ConnectButton, useActiveAccount, TransactionButton, useSendTransaction } from 'thirdweb/react';
-import { client } from '@/lib/thirdweb-client';
+import { client } from '@saasfly/shared';
 import { defineChain } from 'thirdweb';
 
 interface DeployConfigEntry {

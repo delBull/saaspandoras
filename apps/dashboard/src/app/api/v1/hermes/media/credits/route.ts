@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { TenantCreditLedgerService } from '@/lib/hermes/compute/tenant-credit-ledger.service';
+import { TenantCreditLedgerService } from '@saasfly/hermes-core';
 
 export const dynamic = 'force-dynamic';
 

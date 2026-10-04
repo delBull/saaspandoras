@@ -1,9 +1,9 @@
-import { db } from '@/db';
-import { marketingLeads, projects } from '@/db/schema';
-import { eq } from 'drizzle-orm';
-import { PlatformActor } from '@/lib/dash-contracts/admin';
-import { PlatformCapabilityRegistryService } from './platform-capability-registry.service';
-import { PlatformAuditLedgerService } from './platform-audit-ledger.service';
+import { db } from '@saasfly/db';
+import { marketingLeads, projects } from '@saasfly/db/schema';
+import { eq } from "@saasfly/db-core";
+import { PlatformActor } from '@saasfly/shared';
+import { PlatformCapabilityRegistryService } from '@saasfly/shared';
+import { PlatformAuditLedgerService } from '@saasfly/hermes-core';
 
 export interface ProvisioningIntentResult {
   success: boolean;

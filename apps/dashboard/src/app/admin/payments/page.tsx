@@ -1,5 +1,5 @@
 import React from 'react';
-import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
+import { getNexusAuthContext } from '@saasfly/shared';
 import { PaymentsDashboard } from '@/components/admin/payments/PaymentsDashboard';
 import { AdminAccessGate } from '../AdminAccessGate';
 

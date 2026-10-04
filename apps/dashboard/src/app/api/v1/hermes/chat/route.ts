@@ -11,13 +11,13 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { HermesRuntime, getDefaultRuntime } from '@/lib/pandoras/core/domains/hermes/runtime/hermes-runtime';
-import { ActorIdentityBindingService } from '@/lib/pandoras/core/domains/hermes/runtime/prompt-hygiene-contract';
-import type { ControlPlaneContext } from '@/lib/pandoras/core/domains/hermes/knowledge/types';
-import { checkTenantRateLimit, buildRateLimitHeaders } from '@/lib/hermes/auth/rate-limiter';
-import { SessionTokenService } from '@/lib/hermes/auth/session-token.service';
-import { resolveCanonicalAuthSession } from '@/lib/hermes/auth/canonical-resolver';
-import { setupProgressService } from '@/lib/mesh/setup-progress.service';
+import { HermesRuntime, getDefaultRuntime } from '@saasfly/hermes-core';
+import { ActorIdentityBindingService } from '@saasfly/hermes-core';
+import type { ControlPlaneContext } from '@saasfly/hermes-core';
+import { checkTenantRateLimit, buildRateLimitHeaders } from '@saasfly/hermes-core';
+import { SessionTokenService } from '@saasfly/hermes-core';
+import { resolveCanonicalAuthSession } from '@saasfly/hermes-core';
+import { setupProgressService } from '@saasfly/shared';
 export const dynamic = 'force-dynamic';
 
 const sessionTokenService = new SessionTokenService();
@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 3. Mandatory Actor Identity Binding with Cryptographic Proof
-    const { InterlocutorResolver } = await import('@/lib/hermes/identity/interlocutor-resolver');
+    const { InterlocutorResolver } = await import('@saasfly/hermes-core');
     const callerWallet = req.headers.get('x-wallet-address') || req.headers.get('x-thirdweb-address') || undefined;
     const interlocutor = await InterlocutorResolver.resolve({
       channel: 'web',
@@ -104,7 +104,7 @@ export async function POST(req: NextRequest) {
     );
 
     // 4. ControlPlaneContext with cryptographic session & interlocutor
-    const controlPlaneContext: ControlPlaneContext & { boundActorSession: any } = {
+    const controlPlaneContext: any = {
       organizationId: effectiveOrgId,
       actorId: interlocutor.actorId,
       role: (interlocutor.isBoss ? 'OWNER' : auth.role) as any,
@@ -124,7 +124,7 @@ export async function POST(req: NextRequest) {
 
     if (surface) {
       try {
-        const { SurfaceRegistry } = await import('@/lib/pandoras/core/domains/hermes/context/surface-definition');
+        const { SurfaceRegistry } = await import('@saasfly/hermes-core');
         const surfaceDef = SurfaceRegistry.getSurface(surface);
 
         controlPlaneContext.surfaceContext = {

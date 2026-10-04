@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { resolveDiscoveryManifest } from '@/lib/hermes/discovery/discovery-router';
-import { LLMsRenderer } from '@/lib/hermes/discovery/renderers/llms-renderer';
+import { resolveDiscoveryManifest } from '@saasfly/hermes-core';
+import { LLMsRenderer } from '@saasfly/hermes-core';
 
 export const dynamic = 'force-dynamic';
 

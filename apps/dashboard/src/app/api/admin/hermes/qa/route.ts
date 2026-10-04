@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { HermesQARunner } from '@/lib/pandoras/core/domains/hermes/qa/runner/qa-runner';
+import { HermesQARunner } from '@saasfly/hermes-core';
 
 export const dynamic = 'force-dynamic';
 

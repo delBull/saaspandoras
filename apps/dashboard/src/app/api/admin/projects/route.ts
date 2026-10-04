@@ -1,18 +1,18 @@
 
 import { NextResponse } from "next/server";
-import { db } from "~/db";
+import { db } from "@saasfly/db-core";
 
 // ⚠️ EXPLICITAMENTE USAR Node.js RUNTIME para APIs que usan PostgreSQL
 export const runtime = "nodejs";
-import { projects as projectsSchema } from "@/db/schema";
-import { sql } from "drizzle-orm";
+import { projects as projectsSchema } from "@saasfly/db-core";
+import { sql } from "@saasfly/db-core";
 import { projectApiSchema } from "@/lib/project-schema-api";
 import { validateAdminSession } from "@/lib/admin-auth";
 import { getHermesBinding } from "@/lib/platform/hermes-binding";
 import { logger } from "@/lib/logger";
 import { headers } from "next/headers";
 import slugify from "slugify";
-import { validateRequestBody } from "@/lib/security-utils";
+import { validateRequestBody } from "@saasfly/shared";
 
 export async function GET(request: Request) {
   const { session, errorResponse } = await validateAdminSession(request.headers);

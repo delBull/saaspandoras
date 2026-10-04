@@ -1,5 +1,5 @@
 import { db } from '~/db';
-import { sql } from 'drizzle-orm';
+import { sql } from "@saasfly/db-core";
 import { missions, outboxEvents } from '~/db/schema';
 import { getOrganizationOverview, getActiveMissions, getPendingIntents, getMissionAuditTrail, approveIntent } from '~/app/growth-os/organizations/[id]/actions';
 import { OutboxProcessor } from '~/lib/outbox/processor';

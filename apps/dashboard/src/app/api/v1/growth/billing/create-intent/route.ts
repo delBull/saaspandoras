@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db";
-import { privatePaymentLinks, projects } from "@/db/schema";
-import { resolveCanonicalAuthSession } from "@/lib/hermes/auth/canonical-resolver";
-import { eq } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { privatePaymentLinks, projects } from "@saasfly/db-core";
+import { resolveCanonicalAuthSession } from "@saasfly/hermes-core";
+import { eq } from "@saasfly/db-core";
 
 export const runtime = "nodejs";
 

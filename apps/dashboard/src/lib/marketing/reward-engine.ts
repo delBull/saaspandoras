@@ -1,6 +1,7 @@
-import { db } from '@/db';
-import { marketingLeads, marketingLeadEvents, marketingRewardLogs, users } from '@/db/schema';
-import { eq, and, notInArray, sql } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { marketingLeads, marketingLeadEvents, marketingRewardLogs, users } from '@saasfly/db/schema';
+import { not } from 'drizzle-orm';
+import { eq, and, inArray, sql } from '@saasfly/db-core';
 import { GamificationService } from '@/lib/gamification/service';
 
 /**

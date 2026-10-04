@@ -1,10 +1,10 @@
-import { db } from '@/db';
-import { projects, installedProducts, marketingLeads, operationalIntents, hermesEvents } from '@/db/schema';
-import { eq, and, count, desc } from 'drizzle-orm';
-import { CanonicalAuthSession } from '@/lib/hermes/auth/canonical-resolver';
+import { db } from '@saasfly/db';
+import { projects, installedProducts, marketingLeads, operationalIntents, hermesEvents } from '@saasfly/db/schema';
+import { eq, and, count, desc } from "@saasfly/db-core";
+import { CanonicalAuthSession } from '@saasfly/hermes-core';
 import { capabilityRegistry } from '@/lib/growth/capability-registry.service';
 import { getTreasuryBalances, isDeployedContract } from '@/lib/growth/treasury-onchain';
-import type { GrowthOverviewDTO } from '@/lib/dash-contracts/growth';
+import type { GrowthOverviewDTO } from '@saasfly/shared';
 
 export class GrowthOverviewService {
   public static async getOverview(session: CanonicalAuthSession): Promise<GrowthOverviewDTO> {
@@ -166,7 +166,7 @@ export class GrowthOverviewService {
     lastEvents: { id: string; description: string; timestamp: string; actor: string }[];
   }> {
     try {
-      const { HermesPaymentEventInbox } = await import('@/lib/pandoras/core/domains/hermes/payments/core/event-inbox');
+      const { HermesPaymentEventInbox } = await import('@saasfly/hermes-core');
       return await HermesPaymentEventInbox.vigilanceSnapshot(organizationId);
     } catch (err: any) {
       console.warn('[GrowthOverviewService] Vigilance snapshot fallback:', err?.message);

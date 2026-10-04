@@ -3,7 +3,7 @@
 
 import { ShortlinksManager } from '@/components/admin/ShortlinksManager';
 import { AdminAuthGuard } from "@/components/admin/AdminAuthGuard";
-import { getAuth, isAdmin } from "@/lib/auth";
+import { getAuth, isAdmin } from "@saasfly/auth-sdk";
 import { headers } from "next/headers";
 import { UnauthorizedAccess } from "@/components/admin/UnauthorizedAccess";
 

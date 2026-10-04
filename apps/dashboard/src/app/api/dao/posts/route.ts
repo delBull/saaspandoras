@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { db } from "~/db";
-import { daoPosts, daoThreads } from "~/db/schema";
-import { eq, asc } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { daoPosts, daoThreads } from "@saasfly/db-core";
+import { eq, asc } from "@saasfly/db-core";
 
 export const dynamic = 'force-dynamic';
 

@@ -1,13 +1,13 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
-import { getAuth, isAdmin } from '@/lib/auth';
+import { getAuth, isAdmin } from '@saasfly/auth-sdk';
 
 // Resend API Integration for Marketing Metrics
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const RESEND_BASE_URL = 'https://api.resend.com/v1';
 
-import { sql } from '@/lib/database';
+import { sql } from '@saasfly/db-core';
 
 /**
  * Get real email metrics from database when available, otherwise fallback to API/simulated
@@ -65,7 +65,7 @@ async function getEmailMetrics(timeRange: '24h' | '7d' | '30d' = '7d') {
           COUNT(*) FILTER (WHERE type = 'educational_nurture' AND status = 'delivered') as educational_delivered
         FROM email_metrics
         WHERE created_at >= ${startDate}
-      ` as any[];
+      ` as any;
 
       console.log('📊 Database metrics result:', realMetrics[0]);
 

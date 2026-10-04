@@ -11,7 +11,7 @@ import type {
   JourneyDTO, 
   ToggleJourneyStatusResponseDTO,
   DashApiError
-} from '@/lib/dash-contracts/journeys';
+} from '@saasfly/shared';
 import { resolveApiBaseUrl, getServerAuthHeaders } from './utils';
 
 export class DashApiJourneysClient {

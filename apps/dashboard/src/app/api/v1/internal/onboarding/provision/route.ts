@@ -7,9 +7,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { tenantProvisioningService } from '@/lib/provisioning/tenant-provisioning.service';
-import type { ProvisioningRequestDTO } from '@/lib/dash-contracts/provisioning';
-import { getAuth } from '@/lib/auth';
+import { tenantProvisioningService } from '@saasfly/shared';
+import type { ProvisioningRequestDTO } from '@saasfly/shared';
+import { getAuth } from '@saasfly/auth-sdk';
 
 export const dynamic = 'force-dynamic';
 

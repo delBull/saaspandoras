@@ -3,7 +3,7 @@ import { OutboxProcessor } from "@/lib/outbox/processor";
 
 // Wire the Execution Bridge handlers (operational_intent::OPERATIONAL_INTENT_APPROVED)
 // into the global outbox registry before the processor drains events.
-import "~/lib/pandoras/composition/execution-composition";
+import "@/lib/hermes/composition";
 
 // Configured for Vercel Cron. This route should only be accessible via cron.
 // We can use a shared secret in headers to secure it.

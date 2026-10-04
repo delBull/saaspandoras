@@ -7,7 +7,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { ReceiptExplorerService } from '@/lib/pandoras/core/domains/hermes/receipts/receipt-explorer';
+import { ReceiptExplorerService } from '@saasfly/hermes-core';
 
 export const dynamic = 'force-dynamic';
 

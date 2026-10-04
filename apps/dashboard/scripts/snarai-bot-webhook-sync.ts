@@ -30,8 +30,8 @@ async function main() {
     process.exit(1);
   }
 
-  const { db } = await import('../src/db');
-  const { projects } = await import('../src/db/schema');
+  const { db } = await import('@saasfly/db-core');
+  const { projects } = await import('@saasfly/db-core');
   const { eq } = await import('drizzle-orm');
 
   const [project] = await db.select().from(projects).where(eq(projects.slug, 'snarai')).limit(1);

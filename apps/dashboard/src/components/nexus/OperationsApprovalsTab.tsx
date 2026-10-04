@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { CheckCircle, XCircle, Shield, AlertCircle, Clock, UserCircle, Activity } from 'lucide-react';
 
 export interface ApprovalRequest {
@@ -45,7 +45,33 @@ const MOCK_APPROVALS: ApprovalRequest[] = [
 ];
 
 export function OperationsApprovalsTab() {
-  const [approvals, setApprovals] = useState<ApprovalRequest[]>(MOCK_APPROVALS);
+  const [approvals, setApprovals] = useState<ApprovalRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/nexus/approvals')
+      .then(res => res.json())
+      .then(data => {
+        if (data.approvals) {
+          // Map backend schema to UI schema
+          const mapped = data.approvals.map((a: any) => ({
+            id: a.id,
+            who: { name: a.proposerName, email: '', role: '' },
+            what: a.what,
+            why: a.why,
+            resource: a.resourceScope,
+            capability: a.capabilityRequired,
+            status: a.status,
+            nextAction: a.nextAction,
+            timestamp: a.createdAt,
+            risk: a.riskLevel
+          }));
+          setApprovals(mapped);
+        }
+      })
+      .catch(err => console.error(err))
+      .finally(() => setLoading(false));
+  }, []);
 
   const handleAction = (id: string, action: 'APPROVED' | 'REJECTED') => {
     setApprovals(prev => prev.map(app => app.id === id ? { ...app, status: action } : app));

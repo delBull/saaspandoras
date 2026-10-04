@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { db } from "~/db";
-import { daoActivities, userBalances, gamificationEvents } from "~/db/schema";
-import { eq, sql, and, desc } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { daoActivities, userBalances, gamificationEvents } from "@saasfly/db-core";
+import { eq, sql, and, desc } from "@saasfly/db-core";
 import { GamificationService } from "~/lib/gamification/service";
 
 export async function POST(request: Request) {

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getAuth, isAdmin } from '@/lib/auth';
+import { getAuth, isAdmin } from '@saasfly/auth-sdk';
 import { headers } from 'next/headers';
 
 const DISCORD_WEBHOOK_LEADS = process.env.DISCORD_WEBHOOK_WHATSAPP_LEADS || '';

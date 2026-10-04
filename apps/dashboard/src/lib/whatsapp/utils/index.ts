@@ -1,2 +1,1 @@
-// WhatsApp utility exports
-export { sendWhatsAppMessage, sendInteractiveMessage } from './client';
+export { sendWhatsAppMessage, sendInteractiveMessage } from '@saasfly/shared';

@@ -13,9 +13,9 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveDemandSession } from '@/app/api/v1/hermes/demand/route';
-import { CapabilityGrantService } from '@/lib/pandoras/core/domains/hermes/a2a/capability-grant-service';
-import { directChannelPublisher } from '@/lib/hermes/channels/publishers/direct-channel-publisher';
-import type { PublicationPayload } from '@/lib/hermes/channels/publishers/publisher.types';
+import { CapabilityGrantService } from '@saasfly/hermes-core';
+import { directChannelPublisher } from '@saasfly/hermes-core';
+import type { PublicationPayload } from '@saasfly/hermes-core';
 
 export const dynamic = 'force-dynamic';
 

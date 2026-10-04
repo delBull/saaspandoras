@@ -1,14 +1,14 @@
-import { db } from "~/db"; 
+import { db } from "@saasfly/db-core"; 
 import { NextResponse } from "next/server";
 import { syncThirdwebUser } from "@/lib/user-sync";
-// import { drizzle } from "drizzle-orm/postgres-js";
+// import { drizzle } from "@saasfly/db-core"postgres-js";
 // import postgres from "postgres";
 
 // Database connection will be validated at runtime
 
 // const client = postgres(connectionString);
 // const db = drizzle(client, { schema: { projects: projectsSchema } });
-import { sql } from "drizzle-orm";
+import { sql } from "@saasfly/db-core";
 
 export async function POST(request: Request) {
   try {

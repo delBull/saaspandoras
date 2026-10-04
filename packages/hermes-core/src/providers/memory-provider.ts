@@ -1,0 +1,63 @@
+import { db } from "@saasfly/db-core";
+import { platformEvents, hermesCognitiveProfiles } from "@saasfly/db-core";
+import { eq, or, and, desc } from "@saasfly/db-core";
+import { validate as isUuid } from "uuid";
+
+export interface ConversationMessage {
+  role: "user" | "assistant";
+  content: string;
+  timestamp: string;
+}
+
+export interface MemoryContext {
+  recentHistory: ConversationMessage[];
+  cognitiveProfile?: {
+    behavioralTraits: string[] | null;
+    optimalApproach: string | null;
+  } | null;
+}
+
+export class MemoryProvider {
+  /**
+   * Fetches the recent conversation history for a given identity.
+   * Abstracts away the DB layer so HermesCognitiveLayer doesn't know about Drizzle/Postgres.
+   */
+  static async getRecentHistory(identityId: string, limit: number = 10): Promise<MemoryContext> {
+    const events = isUuid(identityId) ? await db.query.platformEvents.findMany({
+      where: and(
+        eq(platformEvents.identityId, identityId),
+        or(
+          eq(platformEvents.eventType, "MESSAGE_RECEIVED"),
+          eq(platformEvents.eventType, "MESSAGE_SENT")
+        )
+      ),
+      orderBy: [desc(platformEvents.occurredAt)],
+      limit
+    }) : [];
+
+    // Reverse to chronological order (oldest first)
+    const chronologicalEvents = events.reverse();
+
+    const recentHistory: ConversationMessage[] = chronologicalEvents.map(evt => {
+      const payload = evt.payload as { text?: string };
+      const role: "user" | "assistant" = evt.eventType === "MESSAGE_RECEIVED" ? "user" : "assistant";
+      return {
+        role,
+        content: payload?.text || "",
+        timestamp: evt.occurredAt?.toISOString() || new Date().toISOString()
+      };
+    }).filter(msg => msg.content !== "");
+
+    // Fetch cognitive profile
+    const profile = await db.query.hermesCognitiveProfiles.findFirst({
+      where: eq(hermesCognitiveProfiles.userId, identityId)
+    });
+
+    const cognitiveProfile = profile ? {
+      behavioralTraits: profile.behavioralTraits || null,
+      optimalApproach: profile.optimalApproach || null,
+    } : null;
+
+    return { recentHistory, cognitiveProfile };
+  }
+}

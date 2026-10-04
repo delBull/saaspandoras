@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { NexusActionDispatcher } from '../nexus-action-dispatcher';
-import { db } from '@/db';
-import { nexusActionRequests, nexusCollaborators } from '@/db/schema';
-import { eq } from 'drizzle-orm';
-import { resolveEffectivePermissions } from '../nexus-rbac';
+import { NexusActionDispatcher } from '@saasfly/hermes-core';
+import { db } from '@saasfly/db-core';
+import { nexusActionRequests, nexusCollaborators } from '@saasfly/db-core/schema';
+import { eq } from "@saasfly/db-core";
+import { resolveEffectivePermissions } from '@saasfly/shared';
 
 vi.mock('@/db', () => ({
   db: {

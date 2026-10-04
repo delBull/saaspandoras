@@ -8,7 +8,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { BaileysWhatsAppProvider } from '@/lib/whatsapp/providers/baileys';
-import { getAuth, isAdmin } from '@/lib/auth';
+import { getAuth, isAdmin } from '@saasfly/auth-sdk';
 import { headers } from 'next/headers';
 
 export const dynamic = 'force-dynamic';

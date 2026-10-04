@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireNexusAdmin } from '@/lib/nexus/collaborators-service';
-import { db } from '@/db';
-import { nexusCollaborators } from '@/db/schema';
-import { eq } from 'drizzle-orm';
-import { sendWhatsAppMessage } from '@/lib/whatsapp/utils/client';
+import { requireNexusAdmin } from '@saasfly/hermes-core';
+import { db } from '@saasfly/db';
+import { nexusCollaborators } from '@saasfly/db/schema';
+import { eq } from "@saasfly/db-core";
+import { sendWhatsAppMessage } from '@saasfly/shared';
 
 export const runtime = 'nodejs'; // Use nodejs because whatsapp crypto might fail on edge
 

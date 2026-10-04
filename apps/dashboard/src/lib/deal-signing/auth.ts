@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { SignJWT, jwtVerify } from 'jose';
-import { resend } from '@/lib/resend';
-import { SUPER_ADMIN_WALLET } from '@/lib/constants';
+import { resend } from '@saasfly/shared';
+import { SUPER_ADMIN_WALLET } from '@saasfly/auth-sdk';
 
 /**
  * Resolve the Sovereign Sign JWT secret lazily.

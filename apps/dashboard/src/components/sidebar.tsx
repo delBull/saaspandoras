@@ -19,15 +19,15 @@ import {
   ViewfinderCircleIcon,
   BuildingLibraryIcon,
 } from "@heroicons/react/24/outline";
-import { cn } from "@/lib/utils";
+import { cn } from "@saasfly/shared";
 import { useActiveAccount, useDisconnect, useActiveWallet } from "thirdweb/react";
 import { ethereum } from "thirdweb/chains";
 import { WalletBalance, NetworkSelector, ConnectWalletButton } from "@/components/wallet";
 import { SUPPORTED_NETWORKS, DEFAULT_NETWORK } from "@/config/networks";
-import { SUPER_ADMIN_WALLET } from "@/lib/constants";
+import { SUPER_ADMIN_WALLET } from "@saasfly/auth-sdk";
 import { Hash, PackageCheckIcon, BookOpen, Lock, HelpCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { useRealGamification } from '@/hooks/useRealGamification';
-import { resolveIpfsUrl } from '@/lib/utils';
+import { resolveIpfsUrl } from '@saasfly/shared';
 import { usePathname } from 'next/navigation';
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { hasFullPlatformAccess } from "@/lib/roles";

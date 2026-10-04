@@ -6,8 +6,8 @@ import { Playfair_Display, Inter } from "next/font/google";
 import { EventRegistrationForm } from "./EventRegistrationForm";
 import { CinematicIntro } from "./CinematicIntro";
 import { Metadata } from "next";
-import { resolveIpfsUrl } from "@/lib/utils";
-import { sanitizeUrl } from "@/lib/project-utils";
+import { resolveIpfsUrl } from "@saasfly/shared";
+import { sanitizeUrl } from "@saasfly/shared";
 
 const playfair = Playfair_Display({ subsets: ["latin"], weight: ["400", "600", "700"] });
 const inter = Inter({ subsets: ["latin"], weight: ["200", "300", "400", "600"] });

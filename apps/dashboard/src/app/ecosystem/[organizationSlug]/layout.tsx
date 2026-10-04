@@ -3,7 +3,7 @@ import { notFound, redirect } from 'next/navigation';
 import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
 import { SovereignHeader } from '@/components/sovereign-mesh/SovereignHeader';
 import { EcosystemFooter } from '@/components/ecosystem/EcosystemFooter';
-import { setupProgressService } from '@/lib/mesh/setup-progress.service';
+import { setupProgressService } from '@saasfly/shared';
 import { SimulationAlert } from '@/components/hermes-portal/SimulationAlert';
 import { DashboardProvider } from '@pandoras/display-engine';
 import '@pandoras/display-engine/styles.css';

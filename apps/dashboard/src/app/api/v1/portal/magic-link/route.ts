@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
-import { projects, installedProducts, users, accessRequests, marketingLeads } from '@/db/schema';
-import { eq, desc, or, sql } from 'drizzle-orm';
-import { generatePortalToken } from '@/lib/platform/portal-auth';
+import { db } from '@saasfly/db';
+import { projects, installedProducts, users, accessRequests, marketingLeads } from '@saasfly/db/schema';
+import { eq, desc, or, sql } from "@saasfly/db-core";
+import { generatePortalToken } from '@saasfly/shared';
 import { sendEmail } from '@/lib/email/client';
 
 const MAGIC_LINK_EMAIL_DAILY_LIMIT = 3;

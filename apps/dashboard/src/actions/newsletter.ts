@@ -2,7 +2,7 @@
 
 import { ProjectRepository } from "@/lib/domain/project-repository";
 import { revalidatePath } from "next/cache";
-import { resend, FROM_EMAIL } from "@/lib/resend";
+import { resend, FROM_EMAIL } from '@saasfly/shared';
 
 /* ─── Types ─── */
 

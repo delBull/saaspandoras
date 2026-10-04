@@ -2,9 +2,9 @@
 // Handles /[slug] requests and redirects with analytics tracking
 
 import { redirect } from 'next/navigation';
-import { eq } from 'drizzle-orm';
-import { db } from '~/db';
-import { shortlinks, shortlinkEvents } from '~/db/schema';
+import { eq } from "@saasfly/db-core";
+import { db } from '@saasfly/db-core';
+import { shortlinks, shortlinkEvents } from '@saasfly/db-core';
 import { headers } from 'next/headers';
 import type { Metadata } from 'next';
 import { SmartQRLanding } from '@/components/SmartQRLanding';

@@ -1,6 +1,6 @@
-import { db } from "@/db";
-import { purchases } from "@/db/schema";
-import { gte, sql, and, eq } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { purchases } from "@saasfly/db-core";
+import { gte, sql, and, eq } from "@saasfly/db-core";
 import { NextResponse } from "next/server";
 
 export const dynamic = 'force-dynamic';

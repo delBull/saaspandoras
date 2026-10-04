@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/db';
-import { actionLogs } from '@/db/schema';
-import { eq, desc, and, inArray } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { actionLogs } from '@saasfly/db/schema';
+import { eq, desc, and, inArray } from "@saasfly/db-core";
 
 /**
  * GET /api/v1/admin/agora/analytics/audit

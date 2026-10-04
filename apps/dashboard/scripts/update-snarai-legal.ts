@@ -1,8 +1,8 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { projects } from "../src/db/schema";
-import * as schema from "../src/db/schema";
-import { eq } from "drizzle-orm";
+import { projects } from '@saasfly/db-core/schema';
+import * as schema from '@saasfly/db-core/schema';
+import { eq } from "@saasfly/db-core";
 
 async function main() {
   if (!process.env.DATABASE_URL) {

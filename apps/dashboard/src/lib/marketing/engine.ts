@@ -1,8 +1,8 @@
-import { db } from "@/db";
-import { marketingExecutions, marketingCampaigns, clients, users, projects, marketingLeads, hermesCognitiveProfiles } from "@/db/schema";
-import { eq, and, lte, sql } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { marketingExecutions, marketingCampaigns, clients, users, projects, marketingLeads, hermesCognitiveProfiles } from "@saasfly/db-core";
+import { eq, and, lte, sql } from "@saasfly/db-core";
 import { sendEmail } from "@/lib/email/client";
-import { sendWhatsAppMessage } from "@/lib/whatsapp/utils/client";
+import { sendWhatsAppMessage } from "@saasfly/shared";
 // import { renderToStaticMarkup } from "react-dom/server";
 import { PandorasCampaignEmail } from "@/emails/campaigns/PandorasCampaignEmail";
 

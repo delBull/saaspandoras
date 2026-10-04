@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ExecutionEngine } from '@/lib/hermes/execution-engine';
-import { OrganizationSDK } from '@/lib/platform/organization-sdk';
-import { db } from '@/db';
-import { projects } from '@/db/schema';
-import { eq } from 'drizzle-orm';
-import { HermesExecutionEngine } from '@/lib/hermes/kernel/execution/execution-api';
-import { TelegramAdapter } from '@/lib/hermes/adapters/telegram-adapter';
-import { ExecutionRequest } from '@/lib/hermes/contracts/universal';
-import { DefaultOmnichannelGateway } from '@/lib/pandoras/core/domains/channels/omnichannel-gateway';
-import { DefaultCognitiveChannelDispatcher } from '@/lib/pandoras/core/domains/channels/channel-dispatcher';
-import { DuplicateMessageError, InvalidChannelPayloadError } from '@/lib/pandoras/core/domains/channels/channel-errors';
+import { ExecutionEngine } from '@saasfly/hermes-core';
+import { OrganizationSDK } from '@saasfly/shared';
+import { db } from '@saasfly/db';
+import { projects } from '@saasfly/db/schema';
+import { eq } from "@saasfly/db-core";
+import { HermesExecutionEngine } from '@saasfly/hermes-core';
+import { TelegramAdapter } from '@saasfly/hermes-core';
+import { ExecutionRequest } from '@saasfly/hermes-core';
+import { DefaultOmnichannelGateway } from '@saasfly/hermes-core';
+import { DefaultCognitiveChannelDispatcher } from '@saasfly/hermes-core';
+import { DuplicateMessageError, InvalidChannelPayloadError } from '@saasfly/hermes-core';
 
 const omnichannelGateway = new DefaultOmnichannelGateway();
 const channelDispatcher = new DefaultCognitiveChannelDispatcher();

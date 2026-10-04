@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { resolveDiscoveryManifest } from '@/lib/hermes/discovery/discovery-router';
-import { SitemapRenderer } from '@/lib/hermes/discovery/renderers/sitemap-renderer';
+import { resolveDiscoveryManifest } from '@saasfly/hermes-core';
+import { SitemapRenderer } from '@saasfly/hermes-core';
 
 // GET /api/public/discovery/[slug]/sitemap
 export async function GET(

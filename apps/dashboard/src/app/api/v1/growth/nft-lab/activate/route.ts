@@ -16,13 +16,13 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { checkRateLimit, clientIpFromHeaders } from '@/lib/hermes/auth/rate-limiter';
-import { NftLabActivationService } from '@/lib/growth/nft/nft-lab-activation.service';
-import type { PlanKey } from '@/lib/platform/product-registry';
+import { checkRateLimit, clientIpFromHeaders } from '@saasfly/hermes-core';
+import { NftLabActivationService } from '@saasfly/nexus-deals-sdk';
+import type { PlanKey } from '@saasfly/shared';
 
 export const runtime = 'nodejs';
 
-import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
+import { getNexusAuthContext } from '@saasfly/shared';
 
 const VALID_PLANS = new Set<PlanKey>(['sandbox', 'starter', 'growth', 'enterprise']);
 

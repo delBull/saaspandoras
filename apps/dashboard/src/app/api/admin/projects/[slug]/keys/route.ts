@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db";
-import { projects as projectsSchema, integrationClients } from "@/db/schema";
-import { eq, and, isNull, like } from "drizzle-orm";
-import { getAuth, isAdmin } from "@/lib/auth";
+import { db } from "@saasfly/db-core";
+import { projects as projectsSchema, integrationClients } from "@saasfly/db-core";
+import { eq, and, isNull, like } from "@saasfly/db-core";
+import { getAuth, isAdmin } from "@saasfly/auth-sdk";
 import { headers } from "next/headers";
 import { IntegrationKeyService } from "@/lib/integrations/auth";
 

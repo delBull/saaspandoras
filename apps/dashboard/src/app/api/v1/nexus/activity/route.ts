@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/db';
-import { nexusAuditEvents } from '@/db/schema';
-import { desc, eq } from 'drizzle-orm';
-import { NexusAuthorizationService } from '@/lib/pandoras/core/domains/nexus/nexus-authorization';
+import { db } from '@saasfly/db';
+import { nexusAuditEvents } from '@saasfly/db/schema';
+import { desc, eq } from "@saasfly/db-core";
+import { NexusAuthorizationService } from '@saasfly/hermes-core';
 
 export async function GET(req: Request) {
   try {

@@ -1,9 +1,9 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { db } from "@/db";
-import { auditLogs, integrationPermissionEnum } from "@/db/schema";
+import { db } from "@saasfly/db-core";
+import { auditLogs, integrationPermissionEnum } from "@saasfly/db-core";
 import { IntegrationKeyService } from "@/lib/integrations/auth";
-import { webhookEvents } from '@/db/schema'; // We need to import this if we use WebhookService (or use the service class)
+import { webhookEvents } from '@saasfly/db/schema'; // We need to import this if we use WebhookService (or use the service class)
 
 export const maxDuration = 300; // 5 minutes for deployment
 

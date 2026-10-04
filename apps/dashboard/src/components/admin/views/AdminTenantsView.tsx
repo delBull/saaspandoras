@@ -29,7 +29,7 @@ import {
   Infinity as InfinityIcon
 } from 'lucide-react';
 import { usePlatformInspector } from '../inspector/PlatformInspectorContext';
-import { AdminTenantLensDTO } from '@/lib/dash-contracts/admin';
+import { AdminTenantLensDTO } from '@saasfly/shared';
 import { SovereignIpfsStatusWidget } from '../SovereignIpfsStatusWidget';
 
 interface AdminTenantsViewProps {

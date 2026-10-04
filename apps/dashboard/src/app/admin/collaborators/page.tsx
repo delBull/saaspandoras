@@ -1,9 +1,9 @@
 import React from "react";
-import { getNexusAuthContext } from "@/lib/nexus/nexus-rbac";
+import { getNexusAuthContext } from "@saasfly/shared";
 import { AdminAccessGate } from "../AdminAccessGate";
-import { db } from "@/db";
-import { nexusCollaborators } from "@/db/schema";
-import { desc, sql } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { nexusCollaborators } from "@saasfly/db-core";
+import { desc, sql } from "@saasfly/db-core";
 import { CollaboratorsAdmin } from "@/components/admin/CollaboratorsAdmin";
 
 export const dynamic = "force-dynamic";

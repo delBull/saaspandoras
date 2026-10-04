@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { AutonomousWorkflowEngine } from '@/lib/hermes/workflow-engine';
+import { AutonomousWorkflowEngine } from '@saasfly/hermes-core';
 import { OrganizationLifecycleManager } from '@/lib/platform/lifecycle-manager';
-import { Scheduler } from '@/lib/hermes/kernel/scheduler/scheduler';
+import { Scheduler } from '@saasfly/hermes-core';
 
 export const dynamic = 'force-dynamic';
 

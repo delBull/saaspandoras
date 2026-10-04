@@ -1,5 +1,5 @@
-import { db } from '../src/db/index';
-import { sql } from 'drizzle-orm';
+import { db } from '@saasfly/db-core';
+import { sql } from "@saasfly/db-core";
 
 async function main() {
   try {

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { sql } from "drizzle-orm";
+import { sql } from "@saasfly/db-core";
 import { headers } from "next/headers";
 
 // ⚠️ Dynamic imports para evitar problemas de build
@@ -16,7 +16,7 @@ async function loadDependencies() {
 
 async function loadAuthHelpers() {
   if (!getAuth || !isAdmin) {
-    const authModule = await import("@/lib/auth");
+    const authModule = await import("@saasfly/auth-sdk");
     getAuth = authModule.getAuth;
     isAdmin = authModule.isAdmin;
   }

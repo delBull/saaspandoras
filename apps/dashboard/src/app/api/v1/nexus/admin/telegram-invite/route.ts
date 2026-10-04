@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
-import { nexusCollaborators, nexusTelegramInvites } from '@/db/schema';
-import { eq } from 'drizzle-orm';
-import { getNexusAuthContext, checkNexusPermission } from '@/lib/nexus/nexus-rbac';
+import { db } from '@saasfly/db';
+import { nexusCollaborators, nexusTelegramInvites } from '@saasfly/db/schema';
+import { eq } from "@saasfly/db-core";
+import { getNexusAuthContext, checkNexusPermission } from '@saasfly/shared';
 import crypto from 'crypto';
 
 export async function POST(req: NextRequest) {

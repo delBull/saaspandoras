@@ -1,10 +1,10 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
-import { getAuth } from '@/lib/auth';
-import { db } from '@/db';
-import { users } from '@/db/schema';
-import { eq, and } from "drizzle-orm";
+import { getAuth } from '@saasfly/auth-sdk';
+import { db } from '@saasfly/db';
+import { users } from '@saasfly/db/schema';
+import { eq, and } from "@saasfly/db-core";
 
 export async function PATCH(request: NextRequest) {
   try {

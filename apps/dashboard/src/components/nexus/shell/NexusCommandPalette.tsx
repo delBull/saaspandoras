@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Command, X, Settings, ArrowRight, BrainCircuit, Globe, BookOpen, ShieldCheck, Zap } from 'lucide-react';
 import { SECTIONS, NexusSection, NexusLink } from './types';
 import { useRouter } from 'next/navigation';
-import type { NexusAuthContext } from '@/lib/nexus/nexus-rbac';
+import type { NexusAuthContext } from '@saasfly/shared';
 
 interface NexusCommandPaletteProps {
   auth: NexusAuthContext;

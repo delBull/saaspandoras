@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/db';
-import { projects } from '@/db/schema';
-import { eq } from 'drizzle-orm';
-import { getAuth } from '@/lib/auth';
+import { db } from '@saasfly/db';
+import { projects } from '@saasfly/db/schema';
+import { eq } from "@saasfly/db-core";
+import { getAuth } from '@saasfly/auth-sdk';
 import { headers } from 'next/headers';
 
 export const dynamic = 'force-dynamic';

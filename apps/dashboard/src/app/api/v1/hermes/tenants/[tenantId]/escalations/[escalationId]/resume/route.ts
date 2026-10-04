@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { EscalationService } from '@/lib/hermes/escalation/escalation-service';
+import { EscalationService } from '@saasfly/hermes-core';
 import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
 
 export async function POST(

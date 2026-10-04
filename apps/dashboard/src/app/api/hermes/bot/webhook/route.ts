@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { InterlocutorResolver } from '@/lib/hermes/identity/interlocutor-resolver';
-import { getDefaultRuntime } from '@/lib/pandoras/core/domains/hermes/runtime/hermes-runtime';
-import { db } from '@/db';
-import { projects } from '@/db/schema';
-import { eq, or } from 'drizzle-orm';
+import { InterlocutorResolver } from '@saasfly/hermes-core';
+import { getDefaultRuntime } from '@saasfly/hermes-core';
+import { db } from '@saasfly/db';
+import { projects } from '@saasfly/db/schema';
+import { eq, or } from "@saasfly/db-core";
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -110,7 +110,7 @@ export async function POST(req: NextRequest) {
       tenantSlug = 'pandoras';
     } else if (tenantSlug !== 'pandoras') {
       try {
-        const { TenantAuthorityService } = await import('@/lib/pandoras/core/domains/hermes/tenants/tenant-authority');
+        const { TenantAuthorityService } = await import('@saasfly/hermes-core');
         const canonical = await TenantAuthorityService.resolveCanonicalTenant(tenantSlug);
         if (!canonical) {
           console.warn(`[Hermes Telegram Webhook] 🔒 Rejected unverified/spoofed tenant slug: '${tenantSlug}'. Falling back to 'pandoras'.`);
@@ -127,7 +127,7 @@ export async function POST(req: NextRequest) {
     // 2.5 Enrich Interlocutor with Authoritative Tenant Context (F6 Capa 4)
     if (!interlocutor.tenantContext && tenantSlug) {
       try {
-        const { TenantContextResolver } = await import('@/lib/identity/tenant-context-resolver');
+        const { TenantContextResolver } = await import('@saasfly/hermes-core');
         const resolvedTc = await TenantContextResolver.resolveTenantContext(
           interlocutor.canonicalIdentity || interlocutor.actorId,
           tenantSlug
@@ -166,7 +166,7 @@ export async function POST(req: NextRequest) {
     if (isEscalateCallback || isHumanRequest) {
       // Human Escalation Gate: Registrar alerta y confirmar
       try {
-        const { SecurityAuditLogger } = await import('@/lib/pandoras/core/domains/hermes/runtime/security-audit-logger');
+        const { SecurityAuditLogger } = await import('@saasfly/hermes-core');
         await SecurityAuditLogger.logEvent({
           eventType: 'HUMAN_ESCALATION_REQUESTED',
           actorId: interlocutor.actorId,
@@ -219,7 +219,7 @@ export async function POST(req: NextRequest) {
     let canonicalOrgId = tenantSlug;
     let canonicalOrgName = tenantSlug === 'pandoras' ? "Pandora's Growth OS" : tenantSlug;
     try {
-      const { OrganizationSDK } = await import('@/lib/platform/organization-sdk');
+      const { OrganizationSDK } = await import('@saasfly/shared');
       const org = await OrganizationSDK.resolve(tenantSlug, 'HERMES');
       canonicalOrgId = org.organizationId;
       canonicalOrgName = org.name;

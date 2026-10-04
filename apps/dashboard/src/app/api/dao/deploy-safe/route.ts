@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
-import { db } from "~/db";
-import { projects } from "~/db/schema";
-import { eq } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { projects } from "@saasfly/db-core";
+import { eq } from "@saasfly/db-core";
 import { deploySafeViaMulticall } from "~/lib/treasury/safe-deploy";
 import { withSecurity, withdrawRateLimiter } from "~/lib/security-utils";
 import { getAdminAddress } from "~/lib/treasury/gas-monitor";
 import { verifyMessage } from "viem";
 
 import { headers } from "next/headers";
-import { getAuth } from "~/lib/auth";
+import { getAuth } from "@saasfly/auth-sdk";
 
 interface DeployRequest {
   projectId: number;

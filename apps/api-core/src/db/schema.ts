@@ -9,7 +9,7 @@ import {
     text,
     jsonb,
     uuid
-} from "drizzle-orm/pg-core";
+} from "@saasfly/db-core"pg-core";
 
 // Users table (subset for Auth)
 export const users = pgTable("users", {

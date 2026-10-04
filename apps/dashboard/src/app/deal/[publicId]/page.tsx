@@ -1,9 +1,9 @@
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
-import { getRoomByPublicId, getRoom, publicRoomView, hasEmailSignedNda } from "@/lib/nexus-deals/repo";
-import { verifyDealToken } from "@/lib/nexus-deals/tokens";
-import { KIND_LABEL } from "@/lib/nexus-deals/types";
-import { getNexusAuthContext } from "@/lib/nexus/nexus-rbac";
+import { getRoomByPublicId, getRoom, publicRoomView, hasEmailSignedNda } from "@saasfly/nexus-deals-sdk";
+import { verifyDealToken } from "@saasfly/nexus-deals-sdk";
+import { KIND_LABEL } from "@saasfly/nexus-deals-sdk";
+import { getNexusAuthContext } from "@saasfly/shared";
 import DealSignerClient from "./DealSignerClient";
 
 export const dynamic = "force-dynamic";

@@ -1,8 +1,8 @@
 
 import { NextResponse } from 'next/server';
-import { db } from '@/db'; // Adjust path if needed
-import { governanceEvents } from '@/db/schema';
-import { eq, desc, inArray } from 'drizzle-orm';
+import { db } from '@saasfly/db'; // Adjust path if needed
+import { governanceEvents } from '@saasfly/db/schema';
+import { eq, desc, inArray } from "@saasfly/db-core";
 import { z } from 'zod';
 
 const createEventSchema = z.object({

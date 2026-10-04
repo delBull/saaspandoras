@@ -5,9 +5,9 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
-import { getAuth, isAdmin } from "@/lib/auth";
-import { generateAcademyToken, generateUnlockToken } from "@/lib/nexus-deals/tokens";
-import { sendAcademyUnlockEmbed } from "@/lib/nexus-deals/discord";
+import { getAuth, isAdmin } from "@saasfly/auth-sdk";
+import { generateAcademyToken, generateUnlockToken } from "@saasfly/nexus-deals-sdk";
+import { sendAcademyUnlockEmbed } from "@saasfly/nexus-deals-sdk";
 import { sendEmail } from "@/lib/email/client";
 
 export const runtime = "nodejs";
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 1.1 Colaborador autenticado vía Nexus Token / Cookie → desbloqueo inmediato
-    const { getNexusAuthContext, checkNexusPermission } = await import('@/lib/nexus/nexus-rbac');
+    const { getNexusAuthContext, checkNexusPermission } = await import('@saasfly/shared');
     const auth = await getNexusAuthContext(req.headers);
     if (
       auth.isAuthenticated &&
@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
       resolvedRole = "manager";
     } else {
       // Check in nexus_collaborators table
-      const { getCollaboratorByEmail } = await import('@/lib/nexus/collaborators-service');
+      const { getCollaboratorByEmail } = await import('@saasfly/hermes-core');
       const collab = await getCollaboratorByEmail(targetEmail);
       if (collab && collab.status === 'ACTIVE') {
         if (collab.permissions?.ecosystem || collab.role === 'SUPER_ADMIN' || collab.role === 'ADMIN') {

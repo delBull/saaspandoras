@@ -1,7 +1,7 @@
-import { db } from '@/db';
-import { projects } from '@/db/schema';
-import { eq } from 'drizzle-orm';
-import { SNARAI_SOUL } from '@/lib/hermes/soul/snarai-soul';
+import { db } from '@saasfly/db';
+import { projects } from '@saasfly/db/schema';
+import { eq } from "@saasfly/db-core";
+import { SNARAI_SOUL } from '@saasfly/hermes-core';
 
 async function run() {
   await db.update(projects)

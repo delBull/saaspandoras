@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { db } from "@/db";
-import { projects } from "@/db/schema";
-import { eq } from "drizzle-orm";
-import { getAuth } from '@/lib/auth';
+import { db } from "@saasfly/db-core";
+import { projects } from "@saasfly/db-core";
+import { eq } from "@saasfly/db-core";
+import { getAuth } from '@saasfly/auth-sdk';
 import { headers } from 'next/headers';
-import { withSecurity, apiRateLimiter } from '@/lib/security-utils';
+import { withSecurity, apiRateLimiter } from '@saasfly/shared';
 import { getTreasuryBalances } from '@/lib/growth/treasury-onchain';
 
 async function handler(

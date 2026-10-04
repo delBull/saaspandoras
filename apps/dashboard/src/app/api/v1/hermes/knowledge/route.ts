@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { validatePortalSession } from '@/lib/platform/portal-auth';
-import { OrganizationSDK } from '@/lib/platform/organization-sdk';
-import { SessionTokenService } from '@/lib/hermes/auth/session-token.service';
-import { checkTenantRateLimit, buildRateLimitHeaders } from '@/lib/hermes/auth/rate-limiter';
-import { KnowledgeService } from '@/lib/hermes/knowledge/service';
-import { TenantAuthorityService, CanonicalTenantIdentity } from '@/lib/pandoras/core/domains/hermes/tenants/tenant-authority';
+import { validatePortalSession } from '@saasfly/shared';
+import { OrganizationSDK } from '@saasfly/shared';
+import { SessionTokenService } from '@saasfly/hermes-core';
+import { checkTenantRateLimit, buildRateLimitHeaders } from '@saasfly/hermes-core';
+import { KnowledgeService } from '@saasfly/hermes-core';
+import { TenantAuthorityService, CanonicalTenantIdentity } from '@saasfly/hermes-core';
 import type { 
   AddKnowledgeSourceRequestDTO,
   UpdateKnowledgeFactStatusRequestDTO 
-} from '@/lib/dash-contracts/knowledge';
+} from '@saasfly/shared';
 
 export const dynamic = 'force-dynamic';
 

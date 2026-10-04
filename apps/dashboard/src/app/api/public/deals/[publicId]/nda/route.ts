@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
-import { getRoomByPublicId } from "@/lib/nexus-deals/repo";
-import { hasEmailSignedNda, recordNdaAcceptance } from "@/lib/nexus-deals/repo";
-import { NDA_VERSION, NDA_FULL_TEXT, NDA_SUMMARY_BULLETS, buildNdaSignMessage, getNdaConfig } from "@/lib/nexus-deals/nda-content";
-import { sendNdaSignedAlert } from "@/lib/nexus-deals/discord";
-import { sendNdaConfirmationEmail } from "@/lib/nexus-deals/email";
+import { getRoomByPublicId } from "@saasfly/nexus-deals-sdk";
+import { hasEmailSignedNda, recordNdaAcceptance } from "@saasfly/nexus-deals-sdk";
+import { NDA_VERSION, NDA_FULL_TEXT, NDA_SUMMARY_BULLETS, buildNdaSignMessage, getNdaConfig } from "@saasfly/nexus-deals-sdk";
+import { sendNdaSignedAlert } from "@saasfly/nexus-deals-sdk";
+import { sendNdaConfirmationEmail } from "@saasfly/nexus-deals-sdk";
 import { verifySignature } from "thirdweb/auth";
-import { client } from "@/lib/thirdweb-client";
-import { db } from "@/db";
-import { nexusDealAuditEvents } from "@/db/schema";
+import { client } from "@saasfly/shared";
+import { db } from "@saasfly/db-core";
+import { nexusDealAuditEvents } from "@saasfly/db-core";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

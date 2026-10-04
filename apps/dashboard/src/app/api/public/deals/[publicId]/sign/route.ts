@@ -1,15 +1,15 @@
 import { NextResponse } from "next/server";
-import { getRoomByPublicId, getRoom, markViewed, signRoom, signRoomOnline, hasEmailSignedNda, recordNdaAcceptance } from "@/lib/nexus-deals/repo";
-import { verifyDealToken } from "@/lib/nexus-deals/tokens";
-import { buildSignMessage } from "@/lib/nexus-deals/signing";
-import { buildCombinedSignMessage } from "@/lib/nexus-deals/nda-content";
-import { sendSignatureAlert, sendNdaSignedAlert } from "@/lib/nexus-deals/discord";
-import { sendNdaConfirmationEmail, sendDealSignedEmail } from "@/lib/nexus-deals/email";
+import { getRoomByPublicId, getRoom, markViewed, signRoom, signRoomOnline, hasEmailSignedNda, recordNdaAcceptance } from "@saasfly/nexus-deals-sdk";
+import { verifyDealToken } from "@saasfly/nexus-deals-sdk";
+import { buildSignMessage } from "@saasfly/nexus-deals-sdk";
+import { buildCombinedSignMessage } from "@saasfly/nexus-deals-sdk";
+import { sendSignatureAlert, sendNdaSignedAlert } from "@saasfly/nexus-deals-sdk";
+import { sendNdaConfirmationEmail, sendDealSignedEmail } from "@saasfly/nexus-deals-sdk";
 import { verifySignature } from "thirdweb/auth";
-import { client } from "@/lib/thirdweb-client";
-import { db } from "@/db";
-import { nexusDealAuditEvents } from "@/db/schema";
-import { KIND_LABEL } from "@/lib/nexus-deals/types";
+import { client } from "@saasfly/shared";
+import { db } from "@saasfly/db-core";
+import { nexusDealAuditEvents } from "@saasfly/db-core";
+import { KIND_LABEL } from "@saasfly/nexus-deals-sdk";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

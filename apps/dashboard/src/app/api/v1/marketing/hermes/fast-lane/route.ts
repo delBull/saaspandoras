@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/db';
-import { purchases, users } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { purchases, users } from '@saasfly/db/schema';
+import { eq } from "@saasfly/db-core";
 import crypto from 'crypto';
 
 export async function POST(req: Request) {

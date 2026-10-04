@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getRoomByPublicId, publicRoomView } from "@/lib/nexus-deals/repo";
+import { getRoomByPublicId, publicRoomView } from "@saasfly/nexus-deals-sdk";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

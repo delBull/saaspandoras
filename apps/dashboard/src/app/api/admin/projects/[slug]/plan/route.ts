@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
-import { projects, installedProducts } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
-import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
-import { PlatformAuditLedgerService } from '@/lib/admin/platform-audit-ledger.service';
-import { sendTenantProvisionEmail } from '@/lib/email/tenant-provision-mailer';
+import { db } from '@saasfly/db';
+import { projects, installedProducts } from '@saasfly/db/schema';
+import { eq, and } from "@saasfly/db-core";
+import { getNexusAuthContext } from '@saasfly/shared';
+import { PlatformAuditLedgerService } from '@saasfly/hermes-core';
+import { sendTenantProvisionEmail } from '@saasfly/shared';
 
 export const dynamic = 'force-dynamic';
 

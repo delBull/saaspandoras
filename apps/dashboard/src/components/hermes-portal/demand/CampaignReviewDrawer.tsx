@@ -38,7 +38,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import type { ContentPiece, DemandCampaign } from '@/lib/hermes/demand/demand-distribution.service';
+import type { ContentPiece, DemandCampaign } from '@saasfly/hermes-core';
 
 interface CampaignReviewDrawerProps {
   isOpen: boolean;

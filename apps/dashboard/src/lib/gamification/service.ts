@@ -8,7 +8,7 @@ import type {
   PointsCategory
 } from '@pandoras/gamification';
 import { GamificationEngine } from '@pandoras/gamification';
-import { db } from '@/db';
+import { db } from '@saasfly/db';
 import {
   gamificationProfiles,
   userPoints,
@@ -23,12 +23,12 @@ import {
   daoMembers,
   marketingLeads,
   type GamificationProfile as DrizzleGamificationProfile
-} from '@/db/schema';
+} from '@saasfly/db/schema';
 import { resolveGrowthAction } from '@/lib/marketing/growth-engine/engine';
 import { executeGrowthActions } from '@/lib/marketing/growth-engine/actions';
-import { eq, sql, desc, or, and } from 'drizzle-orm';
+import { eq, sql, desc, or, and } from "@saasfly/db-core";
 import { WebhookService } from '@/lib/integrations/webhook-service';
-import { integrationClients as integrationClientsSchema } from '@/db/schema';
+import { integrationClients as integrationClientsSchema } from '@saasfly/db/schema';
 import crypto from 'crypto';
 
 // Export the class before declaring it

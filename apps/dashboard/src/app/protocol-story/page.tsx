@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, Check, X, ChevronDown, ChevronUp } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@saasfly/shared";
 import { ApplyFormProtocol } from "@/components/apply/ApplyFormProtocol";
 
 // --- COMPONENTS ---

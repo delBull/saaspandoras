@@ -1,20 +1,20 @@
 'use server';
 
-import { db } from "@/db";
+import { db } from "@saasfly/db-core";
 import { 
   campaigns, 
   demandDrafts, 
   demandEvents, 
   campaignStats, 
   projects 
-} from "@/db/schema";
-import { eq, desc, sql, and } from "drizzle-orm";
+} from "@saasfly/db-core";
+import { eq, desc, sql, and } from "@saasfly/db-core";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
-import { shortlinks, campaignTrackers } from "@/db/schema";
+import { shortlinks, campaignTrackers } from "@saasfly/db-core";
 import { CampaignDomainService } from "@/lib/marketing/campaigns.service";
-import { resolvePortalContext } from "@/lib/portal/resolve-portal-context";
-import { getAuth, isAdmin } from "@/lib/auth";
+import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
+import { getAuth, isAdmin } from "@saasfly/auth-sdk";
 
 /**
  * Persists a content draft with its "Content DNA".

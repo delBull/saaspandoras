@@ -1,5 +1,5 @@
 import { db } from '~/db';
-import { sql } from 'drizzle-orm';
+import { sql } from "@saasfly/db-core";
 
 async function main() {
   console.log("Altering outbox_events table...");

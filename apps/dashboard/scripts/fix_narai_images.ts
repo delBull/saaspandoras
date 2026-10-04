@@ -1,6 +1,6 @@
-import { db } from "../src/db";
-import { projects } from "../src/db/schema";
-import { eq } from "drizzle-orm";
+import { db } from '@saasfly/db-core';
+import { projects } from '@saasfly/db-core/schema';
+import { eq } from "@saasfly/db-core";
 
 async function fixNaraiImages() {
   try {

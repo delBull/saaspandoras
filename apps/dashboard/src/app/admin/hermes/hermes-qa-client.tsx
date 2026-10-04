@@ -20,7 +20,7 @@ import {
   Activity
 } from "lucide-react";
 import Link from "next/link";
-import { QACertificationReport, ScenarioResult } from "@/lib/pandoras/core/domains/hermes/qa/types";
+import { QACertificationReport, ScenarioResult } from "@saasfly/hermes-core";
 
 export default function HermesQAPage() {
   const [report, setReport] = useState<QACertificationReport | null>(null);

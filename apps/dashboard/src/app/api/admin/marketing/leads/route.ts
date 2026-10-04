@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
-import { marketingLeads, projects, growthActionsLog } from '@/db/schema';
-import { desc, eq, and, sql } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { marketingLeads, projects, growthActionsLog } from '@saasfly/db/schema';
+import { desc, eq, and, sql } from "@saasfly/db-core";
 
 export const dynamic = 'force-dynamic';
 

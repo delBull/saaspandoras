@@ -1,12 +1,12 @@
-import { db } from "@/db";
+import { db } from "@saasfly/db-core";
 import { 
   campaigns, 
   shortlinks, 
   campaignTrackers, 
   platformAssets,
   ambassadors 
-} from "@/db/schema";
-import { eq, and, ilike } from "drizzle-orm";
+} from "@saasfly/db-core";
+import { eq, and, ilike } from "@saasfly/db-core";
 import { AttributionContext } from "./dto";
 
 export interface ResolvedAttribution {

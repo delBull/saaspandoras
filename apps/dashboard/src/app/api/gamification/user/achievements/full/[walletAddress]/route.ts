@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/db';
-import { achievements, userAchievements, users } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { achievements, userAchievements, users } from '@saasfly/db/schema';
+import { eq } from "@saasfly/db-core";
 
 export async function GET(
   request: Request,

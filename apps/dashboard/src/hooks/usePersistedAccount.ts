@@ -3,7 +3,7 @@
 import { useEffect, useCallback, useState, useRef } from "react";
 import { useActiveAccount, useActiveWallet, useConnect, useDisconnect, useIsAutoConnecting } from "thirdweb/react";
 import { createWallet, type WalletId, smartWallet } from "thirdweb/wallets";
-import { client } from "@/lib/thirdweb-client";
+import { client } from "@saasfly/shared";
 
 
 interface SavedSession {

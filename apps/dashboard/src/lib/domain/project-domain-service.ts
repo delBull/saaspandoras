@@ -1,7 +1,7 @@
-import { db } from '@/db';
-import { projects, platformAssets, campaigns } from '@/db/schema';
-import { eq, ilike } from 'drizzle-orm';
-import { resolveProjectSlug } from '@/lib/project-utils';
+import { db } from '@saasfly/db';
+import { projects, platformAssets, campaigns } from '@saasfly/db/schema';
+import { eq, ilike } from "@saasfly/db-core";
+import { resolveProjectSlug } from '@saasfly/shared';
 import { ProjectDomainAggregate } from './dto';
 
 export class ProjectDomainService {

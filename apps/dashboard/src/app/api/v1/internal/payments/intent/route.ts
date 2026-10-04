@@ -1,10 +1,10 @@
-import { db } from "@/db";
-import { purchases, users, projects, protocolConfigs } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { purchases, users, projects, protocolConfigs } from "@saasfly/db-core";
+import { eq } from "@saasfly/db-core";
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { sendBusinessNotification } from "@/lib/discord/business-notifier";
-import { NexusTeamNotificationDispatcher } from "@/lib/nexus/nexus-team-notification-dispatcher";
+import { NexusTeamNotificationDispatcher } from "@saasfly/shared";
 
 /**
  * POST /api/v1/internal/payments/intent

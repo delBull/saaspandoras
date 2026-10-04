@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { executeGrowthActions } from '@/lib/marketing/growth-engine/actions';
-import { db } from '@/db';
-import { projects } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { projects } from '@saasfly/db/schema';
+import { eq } from "@saasfly/db-core";
 
 export async function POST(request: Request) {
     try {

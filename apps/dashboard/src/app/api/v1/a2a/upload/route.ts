@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { A2ASecurityValidator } from '@/lib/pandoras/core/domains/hermes/a2a/a2a-security-validator';
-import { AgentRegistry } from '@/lib/pandoras/core/domains/hermes/a2a/agent-registry';
-import { A2AMessage } from '@/lib/pandoras/core/domains/hermes/a2a/contracts';
+import { A2ASecurityValidator } from '@saasfly/hermes-core';
+import { AgentRegistry } from '@saasfly/hermes-core';
+import { A2AMessage } from '@saasfly/hermes-core';
 
 export const dynamic = 'force-dynamic';
 

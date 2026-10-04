@@ -1,9 +1,9 @@
 import React from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { db } from '~/db';
-import { projects, projectBriefings } from '~/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { db } from '@saasfly/db-core';
+import { projects, projectBriefings } from '@saasfly/db-core';
+import { eq, and } from "@saasfly/db-core";
 
 export default async function AccessHubPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;

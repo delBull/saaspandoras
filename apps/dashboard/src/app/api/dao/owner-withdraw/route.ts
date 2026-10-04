@@ -8,10 +8,10 @@ import {
   decodeFunctionData,
 } from "viem";
 import { sepolia, base } from "viem/chains";
-import { db } from "~/db";
-import { projects } from "~/db/schema";
-import { eq } from "drizzle-orm";
-import { getAuth } from "~/lib/auth";
+import { db } from "@saasfly/db-core";
+import { projects } from "@saasfly/db-core";
+import { eq } from "@saasfly/db-core";
+import { getAuth } from "@saasfly/auth-sdk";
 import { headers } from "next/headers";
 import { withSecurity, withdrawRateLimiter, isValidWalletAddress } from "~/lib/security-utils";
 

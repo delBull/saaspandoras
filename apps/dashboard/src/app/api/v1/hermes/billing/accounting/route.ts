@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { TenantBillingService } from '@/lib/hermes/compute/tenant-billing.service';
+import { TenantBillingService } from '@saasfly/hermes-core';
 
 export const dynamic = 'force-dynamic';
 

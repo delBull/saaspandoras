@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
-import { projects } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { projects } from '@saasfly/db/schema';
+import { eq, and } from "@saasfly/db-core";
 import { IntegrationKeyService } from '@/lib/integrations/auth';
-import { calculatePhaseStats, fetchProjectOnChainData } from '@/lib/projects/stats';
+import { calculatePhaseStats, fetchProjectOnChainData } from '@saasfly/shared';
 import { InventoryService } from '@/lib/inventory/effective-supply';
 import { unstable_cache } from 'next/cache';
 

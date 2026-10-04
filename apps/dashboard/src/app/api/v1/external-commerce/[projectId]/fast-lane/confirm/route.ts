@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/db';
-import { purchases, projects } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { purchases, projects } from '@saasfly/db/schema';
+import { eq, and } from "@saasfly/db-core";
 import { sendPaymentNotification } from '@/lib/discord/notifier';
 
 export async function POST(

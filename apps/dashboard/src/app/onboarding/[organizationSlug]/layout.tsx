@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
-import { PortalAuthorizationError } from '@/lib/portal/portal-types';
+import { PortalAuthorizationError } from '@saasfly/shared';
 
 interface OnboardingLayoutProps {
   children: React.ReactNode;

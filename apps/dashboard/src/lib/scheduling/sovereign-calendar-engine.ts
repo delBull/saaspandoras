@@ -16,9 +16,9 @@
  * 6. Zero Private Data Leakage: Availability queries never return titles or notes of existing bookings.
  */
 
-import { db } from '@/db';
-import { schedulingSlots, schedulingBookings, projects, users } from '@/db/schema';
-import { eq, and, or, gte, lte, sql, inArray } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { schedulingSlots, schedulingBookings, projects, users } from '@saasfly/db/schema';
+import { eq, and, or, gte, lte, sql, inArray } from "@saasfly/db-core";
 import crypto from 'crypto';
 
 export type CalendarOwnerType = 'tenant' | 'host' | 'project';

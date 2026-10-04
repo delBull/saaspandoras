@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { db } from '~/db';
-import { eq } from 'drizzle-orm';
+import { eq } from "@saasfly/db-core";
 import { projects } from '~/db/schema';
 import { validateAdminSession } from '~/lib/admin-auth';
 

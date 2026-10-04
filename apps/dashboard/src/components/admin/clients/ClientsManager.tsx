@@ -13,7 +13,7 @@ import { Loader2, Plus, CreditCard, Link as LinkIcon, Copy, History, FileText, C
 import { toast } from "sonner";
 import { getClients, createClient, createPaymentLink, getClientLinks, updatePaymentStatus, manualSendReceipt, sendProtocolSOW, advanceProtocolState } from "@/actions/clients";
 import type { ProtocolMetadata } from "@/types/protocol-state";
-import type { clients, paymentLinks } from "@/db/schema";
+import type { clients, paymentLinks } from "@saasfly/db-core";
 import { SOWTemplateManager } from "../sow/SOWTemplateManager";
 import { getSOWTemplates } from "@/actions/sow";
 import { sendMSALink } from "@/actions/clients";

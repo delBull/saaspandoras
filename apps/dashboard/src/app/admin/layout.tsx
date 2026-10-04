@@ -1,7 +1,7 @@
 import React from 'react';
-import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
+import { getNexusAuthContext } from '@saasfly/shared';
 import { PlatformAdminShell } from '@/components/admin/shell/PlatformAdminShell';
-import { PlatformActor, PlatformRole } from '@/lib/dash-contracts/admin';
+import { PlatformActor, PlatformRole } from '@saasfly/shared';
 import { AdminAccessGate } from './AdminAccessGate';
 
 export default async function AdminLayout({

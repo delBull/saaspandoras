@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db";
-import { projects, installedProducts } from "@/db/schema";
-import { eq } from "drizzle-orm";
-import { getAuth } from "@/lib/auth";
+import { db } from "@saasfly/db-core";
+import { projects, installedProducts } from "@saasfly/db-core";
+import { eq } from "@saasfly/db-core";
+import { getAuth } from "@saasfly/auth-sdk";
 import { headers, cookies } from "next/headers";
-import { validatePortalSession } from "@/lib/platform/portal-auth";
-import { SecurityAuditLogger } from "@/lib/pandoras/core/domains/hermes/runtime/security-audit-logger";
+import { validatePortalSession } from "@saasfly/shared";
+import { SecurityAuditLogger } from "@saasfly/hermes-core";
 
 export async function POST(
   req: NextRequest,

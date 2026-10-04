@@ -15,7 +15,7 @@ import {
   SimulatorIndustry, 
   SimulatorGoal, 
   SIMULATOR_INDUSTRIES 
-} from '@/lib/hermes/simulator-types';
+} from '@saasfly/hermes-core';
 
 interface SalesDemoBuilderDrawerProps {
   currentCompany: string;

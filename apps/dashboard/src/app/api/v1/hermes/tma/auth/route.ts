@@ -6,8 +6,8 @@ import {
   SessionTokenService,
   HermesAuthError,
   HermesTenantAccessDeniedError
-} from '@/lib/hermes/auth';
-import { checkRateLimit, clientIpFromHeaders } from '@/lib/hermes/auth/rate-limiter';
+} from '@saasfly/hermes-core';
+import { checkRateLimit, clientIpFromHeaders } from '@saasfly/hermes-core';
 
 const authValidator = new TelegramAuthValidator();
 const membershipService = new HermesTenantMembershipService();

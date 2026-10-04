@@ -1,8 +1,8 @@
 'use server';
 
-import { db } from "@/db";
-import { marketingLeads, marketingLeadEvents, executionRecords, projects } from "@/db/schema";
-import { eq, and, gte, desc, sql, inArray } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { marketingLeads, marketingLeadEvents, executionRecords, projects } from "@saasfly/db-core";
+import { eq, and, gte, desc, sql, inArray } from "@saasfly/db-core";
 
 export interface CommandCenterStats {
   northStar: {

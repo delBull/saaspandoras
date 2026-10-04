@@ -1,7 +1,7 @@
 'use client';
 
 import { ConnectButton } from "thirdweb/react";
-import { client } from "@/lib/thirdweb-client";
+import { client } from "@saasfly/shared";
 import { wallets } from "@/lib/wallets";
 import { defineChain } from "thirdweb";
 import { Shield, ChevronLeft, Globe } from "lucide-react";

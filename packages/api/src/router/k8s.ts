@@ -4,7 +4,7 @@ import { getServerSession } from "next-auth/next";
 import { z } from "zod";
 
 //import { authOptions } from "@saasfly/auth";
-import { db, SubscriptionPlan } from "@saasfly/db";
+import { db, SubscriptionPlan } from "@saasfly/db-core";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 

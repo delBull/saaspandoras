@@ -1,6 +1,6 @@
-import { db } from '@/db';
-import { purchases, projects as projectsSchema } from '@/db/schema';
-import { eq, and, sql, or } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { purchases, projects as projectsSchema } from '@saasfly/db/schema';
+import { eq, and, sql, or } from "@saasfly/db-core";
 import { getRawPhases } from '../phase-utils';
 
 /**

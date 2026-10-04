@@ -1,5 +1,5 @@
 import React from 'react';
-import type { KnowledgeOverviewView } from '@/lib/dash-contracts/knowledge';
+import type { KnowledgeOverviewView } from '@saasfly/shared';
 
 export function KnowledgeHealthPanel({ overview }: { overview: KnowledgeOverviewView }) {
   // If telemetry isn't fully implemented in backend yet, we follow K2.11 rule: No fake metrics.

@@ -1,9 +1,9 @@
 'use server';
 
 import { revalidatePath, revalidateTag } from 'next/cache';
-import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
-import { db } from '@/db';
-import { sql } from 'drizzle-orm';
+import { getNexusAuthContext } from '@saasfly/shared';
+import { db } from '@saasfly/db';
+import { sql } from "@saasfly/db-core";
 
 export async function runAdminOperation(taskName: string) {
   const auth = await getNexusAuthContext();

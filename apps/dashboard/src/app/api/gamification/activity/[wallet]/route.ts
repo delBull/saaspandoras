@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { db } from "@/db";
-import { userPoints, users } from "@/db/schema";
-import { eq, desc, ilike } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { userPoints, users } from "@saasfly/db-core";
+import { eq, desc, ilike } from "@saasfly/db-core";
 
 export async function GET(
   request: Request,

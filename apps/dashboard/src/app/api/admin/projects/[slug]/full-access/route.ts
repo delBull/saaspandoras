@@ -14,17 +14,17 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
-import { projects, operationalIntents } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
-import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
-import { PlatformAuditLedgerService } from '@/lib/admin/platform-audit-ledger.service';
-import { checkRateLimit, clientIpFromHeaders } from '@/lib/hermes/auth/rate-limiter';
+import { db } from '@saasfly/db';
+import { projects, operationalIntents } from '@saasfly/db/schema';
+import { eq, and } from "@saasfly/db-core";
+import { getNexusAuthContext } from '@saasfly/shared';
+import { PlatformAuditLedgerService } from '@saasfly/hermes-core';
+import { checkRateLimit, clientIpFromHeaders } from '@saasfly/hermes-core';
 import {
   provisionFullAccess,
   FULL_ACCESS_FAMILIES,
 } from '@/lib/admin/full-access-provision.service';
-import { sendTenantProvisionEmail } from '@/lib/email/tenant-provision-mailer';
+import { sendTenantProvisionEmail } from '@saasfly/shared';
 // Discord notify via direct webhook fetch
 
 export const runtime = 'nodejs';

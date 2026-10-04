@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
+import { getNexusAuthContext } from '@saasfly/shared';
 
 const INTERNAL_ROLES = new Set(['SUPER_ADMIN', 'ADMIN', 'OPERATOR']);
 

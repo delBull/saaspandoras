@@ -3,8 +3,8 @@
  * src/lib/dash-api/settings.ts
  */
 
-import type { GetSettingsResponseDTO, TenantSettingsDataDTO } from '@/lib/dash-contracts/settings';
-import type { DashApiError } from '@/lib/dash-contracts/journeys';
+import type { GetSettingsResponseDTO, TenantSettingsDataDTO } from '@saasfly/shared';
+import type { DashApiError } from '@saasfly/shared';
 import { resolveApiBaseUrl, getServerAuthHeaders } from './utils';
 
 export class DashApiSettingsClient {

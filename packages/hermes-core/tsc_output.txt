@@ -1,0 +1,429 @@
+src/__tests__/hermes-certification.test.ts(4,26): error TS2305: Module '"../channel-gateway"' has no exported member 'ContactContext'.
+src/__tests__/hermes-certification.test.ts(4,42): error TS2305: Module '"../channel-gateway"' has no exported member 'MemoryContext'.
+src/__tests__/hermes-certification.test.ts(4,57): error TS2305: Module '"../channel-gateway"' has no exported member 'EventContext'.
+src/__tests__/hermes-certification.test.ts(71,7): error TS2353: Object literal may only specify known properties, and 'interactionMode' does not exist in type 'ChannelContext'.
+src/__tests__/hermes-certification.test.ts(133,9): error TS2353: Object literal may only specify known properties, and 'capabilities' does not exist in type 'ChannelContext'.
+src/__tests__/hermes-certification.test.ts(133,43): error TS2339: Property 'capabilities' does not exist on type 'ChannelContext'.
+src/__tests__/hermes-memory-identity.test.ts(4,26): error TS2305: Module '"../runtimes/types"' has no exported member 'MemoryContext'.
+src/__tests__/hermes-memory-identity.test.ts(13,9): error TS2353: Object literal may only specify known properties, and 'contactId' does not exist in type 'ContactContext'.
+src/__tests__/hermes-memory-identity.test.ts(19,9): error TS2353: Object literal may only specify known properties, and 'contactId' does not exist in type 'ContactContext'.
+src/__tests__/hermes-memory-identity.test.ts(24,30): error TS2339: Property 'contactId' does not exist on type 'ContactContext'.
+src/__tests__/hermes-memory-identity.test.ts(24,62): error TS2339: Property 'contactId' does not exist on type 'ContactContext'.
+src/__tests__/hermes-memory-identity.test.ts(60,39): error TS2353: Object literal may only specify known properties, and 'contactId' does not exist in type 'ContactContext'.
+src/__tests__/hermes-memory-identity.test.ts(62,56): error TS2345: Argument of type '{ interactionMode: "conversational"; capabilities: { supportsButtons: boolean; supportsMarkdown: boolean; supportsRichMedia: boolean; supportsLinks: boolean; supportsVoice: boolean; }; constraints: { ...; }; }' is not assignable to parameter of type 'ChannelContext'.
+  Type '{ interactionMode: "conversational"; capabilities: { supportsButtons: boolean; supportsMarkdown: boolean; supportsRichMedia: boolean; supportsLinks: boolean; supportsVoice: boolean; }; constraints: { ...; }; }' is missing the following properties from type 'ChannelContext': channel, externalUserId, externalConversationId, message, metadata
+src/__tests__/hermes-memory-identity.test.ts(68,15): error TS2339: Property 'status' does not exist on type 'ContactContext'.
+src/__tests__/hermes-memory-identity.test.ts(70,62): error TS2345: Argument of type '{ interactionMode: "conversational"; capabilities: { supportsButtons: boolean; supportsMarkdown: boolean; supportsRichMedia: boolean; supportsLinks: boolean; supportsVoice: boolean; }; constraints: { ...; }; }' is not assignable to parameter of type 'ChannelContext'.
+  Type '{ interactionMode: "conversational"; capabilities: { supportsButtons: boolean; supportsMarkdown: boolean; supportsRichMedia: boolean; supportsLinks: boolean; supportsVoice: boolean; }; constraints: { ...; }; }' is missing the following properties from type 'ChannelContext': channel, externalUserId, externalConversationId, message, metadata
+src/__tests__/hermes-memory-identity.test.ts(82,41): error TS2353: Object literal may only specify known properties, and 'contactId' does not exist in type 'ContactContext'.
+src/__tests__/hermes-memory-identity.test.ts(84,54): error TS2345: Argument of type '{ interactionMode: "conversational"; capabilities: { supportsButtons: boolean; supportsMarkdown: boolean; supportsRichMedia: boolean; supportsLinks: boolean; supportsVoice: boolean; }; constraints: { ...; }; }' is not assignable to parameter of type 'ChannelContext'.
+  Type '{ interactionMode: "conversational"; capabilities: { supportsButtons: boolean; supportsMarkdown: boolean; supportsRichMedia: boolean; supportsLinks: boolean; supportsVoice: boolean; }; constraints: { ...; }; }' is missing the following properties from type 'ChannelContext': channel, externalUserId, externalConversationId, message, metadata
+src/__tests__/tool-skill-mesh-adversarial-gate.test.ts(9,31): error TS2305: Module '"../skills/registry"' has no exported member 'registerCanonicalSkills'.
+src/auth/__tests__/telegram-identity-bridge.test.ts(4,3): error TS2305: Module '"../telegram-auth-validator"' has no exported member 'HermesTenantMembershipService'.
+src/auth/__tests__/telegram-identity-bridge.test.ts(5,3): error TS2305: Module '"../telegram-auth-validator"' has no exported member 'HermesWorkspaceResolver'.
+src/auth/__tests__/telegram-identity-bridge.test.ts(6,3): error TS2305: Module '"../telegram-auth-validator"' has no exported member 'SessionTokenService'.
+src/auth/__tests__/telegram-identity-bridge.test.ts(7,3): error TS2459: Module '"../telegram-auth-validator"' declares 'HermesInvalidInitDataError' locally, but it is not exported.
+src/auth/__tests__/telegram-identity-bridge.test.ts(8,3): error TS2459: Module '"../telegram-auth-validator"' declares 'HermesExpiredInitDataError' locally, but it is not exported.
+src/auth/__tests__/telegram-identity-bridge.test.ts(9,3): error TS2305: Module '"../telegram-auth-validator"' has no exported member 'HermesTenantAccessDeniedError'.
+src/auth/tenant-membership.service.ts(78,15): error TS2339: Property 'PlatformCapabilityRegistryService' does not exist on type 'typeof import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/packages/shared/dist/index")'.
+src/bootstrap/execution-bootstrap.ts(2,43): error TS2307: Cannot find module '../core/contracts' or its corresponding type declarations.
+src/bot/channel-gateway-adapter.ts(520,60): error TS2307: Cannot find module '@/lib/integrations/discord/webhook' or its corresponding type declarations.
+src/bot/identity-resolver.ts(5,10): error TS2459: Module '"../proactive/proactive-policy"' declares 'ChannelType' locally, but it is not exported.
+src/builder/HermesBuilder.ts(106,16): error TS2345: Argument of type 'SQL<unknown>' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { id: PgColumn<{ name: "id"; tableName: "projects"; dataType: "number"; columnType: "PgSerial"; data: number; driverParam: number; notNull: true; hasDefault: true; enumValues: undefined; baseColumn: never; }, {}, {}>; }) => SQL<...> | undefined) | undefined'.
+  Type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/node_modules/drizzle-orm/sql/sql").SQL<unknown>' is not assignable to type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/packages/db-core/node_modules/drizzle-orm/sql/sql").SQL<unknown>'.
+    Types have separate declarations of a private property 'shouldInlineParams'.
+src/builder/HermesBuilder.ts(106,19): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(left: Column<ColumnBaseConfig<ColumnDataType, string>, object, object>, right: unknown): SQL<unknown>', gave the following error.
+    Argument of type 'PgColumn<{ name: "slug"; tableName: "projects"; dataType: "string"; columnType: "PgVarchar"; data: string; driverParam: string; notNull: true; hasDefault: false; enumValues: [string, ...string[]]; baseColumn: never; }, {}, {}>' is not assignable to parameter of type 'Column<ColumnBaseConfig<ColumnDataType, string>, object, object>'.
+      Type 'PgColumn<{ name: "slug"; tableName: "projects"; dataType: "string"; columnType: "PgVarchar"; data: string; driverParam: string; notNull: true; hasDefault: false; enumValues: [string, ...string[]]; baseColumn: never; }, {}, {}>' is missing the following properties from type 'Column<ColumnBaseConfig<ColumnDataType, string>, object, object>': keyAsName, generated, generatedIdentity
+  Overload 2 of 3, '(left: Aliased<string>, right: string | SQLWrapper): SQL<unknown>', gave the following error.
+    Argument of type 'PgColumn<{ name: "slug"; tableName: "projects"; dataType: "string"; columnType: "PgVarchar"; data: string; driverParam: string; notNull: true; hasDefault: false; enumValues: [string, ...string[]]; baseColumn: never; }, {}, {}>' is not assignable to parameter of type 'Aliased<string>'.
+      Type 'PgColumn<{ name: "slug"; tableName: "projects"; dataType: "string"; columnType: "PgVarchar"; data: string; driverParam: string; notNull: true; hasDefault: false; enumValues: [string, ...string[]]; baseColumn: never; }, {}, {}>' is missing the following properties from type 'Aliased<string>': sql, fieldAlias
+  Overload 3 of 3, '(left: SQLWrapper, right: unknown): SQL<unknown>', gave the following error.
+    Argument of type 'PgColumn<{ name: "slug"; tableName: "projects"; dataType: "string"; columnType: "PgVarchar"; data: string; driverParam: string; notNull: true; hasDefault: false; enumValues: [string, ...string[]]; baseColumn: never; }, {}, {}>' is not assignable to parameter of type 'SQLWrapper'.
+      The types returned by 'getSQL()' are incompatible between these types.
+        Type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/packages/db-core/node_modules/drizzle-orm/sql/sql").SQL<unknown>' is not assignable to type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/node_modules/drizzle-orm/sql/sql").SQL<unknown>'.
+          Types have separate declarations of a private property 'shouldInlineParams'.
+src/capability-dispatcher.ts(73,44): error TS2339: Property 'execute' does not exist on type 'typeof ExecutionOS'.
+src/capability-dispatcher.ts(190,9): error TS2322: Type 'SQL<unknown> | undefined' is not assignable to type 'SQL<unknown> | ((fields: { id: PgColumn<{ name: "id"; tableName: "administrators"; dataType: "number"; columnType: "PgSerial"; data: number; driverParam: number; notNull: true; hasDefault: true; enumValues: undefined; baseColumn: never; }, {}, {}>; ... 8 more ...; discordWebhookUrl: PgColumn<...>; }, operators: { .....'.
+  Type 'SQL<unknown>' is not assignable to type 'SQL<unknown> | ((fields: { id: PgColumn<{ name: "id"; tableName: "administrators"; dataType: "number"; columnType: "PgSerial"; data: number; driverParam: number; notNull: true; hasDefault: true; enumValues: undefined; baseColumn: never; }, {}, {}>; ... 8 more ...; discordWebhookUrl: PgColumn<...>; }, operators: { .....'.
+    Type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/node_modules/drizzle-orm/sql/sql").SQL<unknown>' is not assignable to type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/packages/db-core/node_modules/drizzle-orm/sql/sql").SQL<unknown>'.
+      Types have separate declarations of a private property 'shouldInlineParams'.
+src/capability-dispatcher.ts(191,14): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(left: Column<ColumnBaseConfig<ColumnDataType, string>, object, object>, right: unknown): SQL<unknown>', gave the following error.
+    Argument of type 'PgColumn<{ name: "wallet_address"; tableName: "administrators"; dataType: "string"; columnType: "PgVarchar"; data: string; driverParam: string; notNull: true; hasDefault: false; enumValues: [string, ...string[]]; baseColumn: never; }, {}, {}>' is not assignable to parameter of type 'Column<ColumnBaseConfig<ColumnDataType, string>, object, object>'.
+      Type 'PgColumn<{ name: "wallet_address"; tableName: "administrators"; dataType: "string"; columnType: "PgVarchar"; data: string; driverParam: string; notNull: true; hasDefault: false; enumValues: [string, ...string[]]; baseColumn: never; }, {}, {}>' is missing the following properties from type 'Column<ColumnBaseConfig<ColumnDataType, string>, object, object>': keyAsName, generated, generatedIdentity
+  Overload 2 of 3, '(left: Aliased<string>, right: string | SQLWrapper): SQL<unknown>', gave the following error.
+    Argument of type 'PgColumn<{ name: "wallet_address"; tableName: "administrators"; dataType: "string"; columnType: "PgVarchar"; data: string; driverParam: string; notNull: true; hasDefault: false; enumValues: [string, ...string[]]; baseColumn: never; }, {}, {}>' is not assignable to parameter of type 'Aliased<string>'.
+      Type 'PgColumn<{ name: "wallet_address"; tableName: "administrators"; dataType: "string"; columnType: "PgVarchar"; data: string; driverParam: string; notNull: true; hasDefault: false; enumValues: [string, ...string[]]; baseColumn: never; }, {}, {}>' is missing the following properties from type 'Aliased<string>': sql, fieldAlias
+  Overload 3 of 3, '(left: SQLWrapper, right: unknown): SQL<unknown>', gave the following error.
+    Argument of type 'PgColumn<{ name: "wallet_address"; tableName: "administrators"; dataType: "string"; columnType: "PgVarchar"; data: string; driverParam: string; notNull: true; hasDefault: false; enumValues: [string, ...string[]]; baseColumn: never; }, {}, {}>' is not assignable to parameter of type 'SQLWrapper'.
+      The types returned by 'getSQL()' are incompatible between these types.
+        Type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/packages/db-core/node_modules/drizzle-orm/sql/sql").SQL<unknown>' is not assignable to type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/node_modules/drizzle-orm/sql/sql").SQL<unknown>'.
+          Types have separate declarations of a private property 'shouldInlineParams'.
+src/capability-dispatcher.ts(192,14): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(left: Column<ColumnBaseConfig<ColumnDataType, string>, object, object>, right: unknown): SQL<unknown>', gave the following error.
+    Argument of type 'PgColumn<{ name: "alias"; tableName: "administrators"; dataType: "string"; columnType: "PgVarchar"; data: string; driverParam: string; notNull: false; hasDefault: false; enumValues: [string, ...string[]]; baseColumn: never; }, {}, {}>' is not assignable to parameter of type 'Column<ColumnBaseConfig<ColumnDataType, string>, object, object>'.
+      Type 'PgColumn<{ name: "alias"; tableName: "administrators"; dataType: "string"; columnType: "PgVarchar"; data: string; driverParam: string; notNull: false; hasDefault: false; enumValues: [string, ...string[]]; baseColumn: never; }, {}, {}>' is missing the following properties from type 'Column<ColumnBaseConfig<ColumnDataType, string>, object, object>': keyAsName, generated, generatedIdentity
+  Overload 2 of 3, '(left: Aliased<string>, right: string | SQLWrapper): SQL<unknown>', gave the following error.
+    Argument of type 'PgColumn<{ name: "alias"; tableName: "administrators"; dataType: "string"; columnType: "PgVarchar"; data: string; driverParam: string; notNull: false; hasDefault: false; enumValues: [string, ...string[]]; baseColumn: never; }, {}, {}>' is not assignable to parameter of type 'Aliased<string>'.
+      Type 'PgColumn<{ name: "alias"; tableName: "administrators"; dataType: "string"; columnType: "PgVarchar"; data: string; driverParam: string; notNull: false; hasDefault: false; enumValues: [string, ...string[]]; baseColumn: never; }, {}, {}>' is missing the following properties from type 'Aliased<string>': sql, fieldAlias
+  Overload 3 of 3, '(left: SQLWrapper, right: unknown): SQL<unknown>', gave the following error.
+    Argument of type 'PgColumn<{ name: "alias"; tableName: "administrators"; dataType: "string"; columnType: "PgVarchar"; data: string; driverParam: string; notNull: false; hasDefault: false; enumValues: [string, ...string[]]; baseColumn: never; }, {}, {}>' is not assignable to parameter of type 'SQLWrapper'.
+      The types returned by 'getSQL()' are incompatible between these types.
+        Type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/packages/db-core/node_modules/drizzle-orm/sql/sql").SQL<unknown>' is not assignable to type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/node_modules/drizzle-orm/sql/sql").SQL<unknown>'.
+          Types have separate declarations of a private property 'shouldInlineParams'.
+src/channels/__tests__/channel-contracts.test.ts(2,10): error TS2459: Module '"../../proactive/proactive-policy"' declares 'ChannelType' locally, but it is not exported.
+src/channels/__tests__/channel-contracts.test.ts(2,23): error TS2305: Module '"../../proactive/proactive-policy"' has no exported member 'ChannelInboundMessage'.
+src/channels/__tests__/omnichannel-gateway.test.ts(36,7): error TS2345: Argument of type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/packages/hermes-core/src/control-plane/application/context").ControlPlaneContext' is not assignable to parameter of type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/packages/hermes-core/src/knowledge/types").ControlPlaneContext'.
+  Property 'organizationId' is missing in type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/packages/hermes-core/src/control-plane/application/context").ControlPlaneContext' but required in type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/packages/hermes-core/src/knowledge/types").ControlPlaneContext'.
+src/channels/__tests__/omnichannel-gateway.test.ts(51,43): error TS2345: Argument of type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/packages/hermes-core/src/control-plane/application/context").ControlPlaneContext' is not assignable to parameter of type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/packages/hermes-core/src/knowledge/types").ControlPlaneContext'.
+  Property 'organizationId' is missing in type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/packages/hermes-core/src/control-plane/application/context").ControlPlaneContext' but required in type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/packages/hermes-core/src/knowledge/types").ControlPlaneContext'.
+src/channels/__tests__/omnichannel-gateway.test.ts(53,50): error TS2345: Argument of type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/packages/hermes-core/src/control-plane/application/context").ControlPlaneContext' is not assignable to parameter of type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/packages/hermes-core/src/knowledge/types").ControlPlaneContext'.
+  Property 'organizationId' is missing in type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/packages/hermes-core/src/control-plane/application/context").ControlPlaneContext' but required in type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/packages/hermes-core/src/knowledge/types").ControlPlaneContext'.
+src/channels/__tests__/omnichannel-gateway.test.ts(60,9): error TS2345: Argument of type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/packages/hermes-core/src/control-plane/application/context").ControlPlaneContext' is not assignable to parameter of type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/packages/hermes-core/src/knowledge/types").ControlPlaneContext'.
+  Property 'organizationId' is missing in type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/packages/hermes-core/src/control-plane/application/context").ControlPlaneContext' but required in type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/packages/hermes-core/src/knowledge/types").ControlPlaneContext'.
+src/channels/__tests__/omnichannel-gateway.test.ts(64,9): error TS2345: Argument of type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/packages/hermes-core/src/control-plane/application/context").ControlPlaneContext' is not assignable to parameter of type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/packages/hermes-core/src/knowledge/types").ControlPlaneContext'.
+  Property 'organizationId' is missing in type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/packages/hermes-core/src/control-plane/application/context").ControlPlaneContext' but required in type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/packages/hermes-core/src/knowledge/types").ControlPlaneContext'.
+src/channels/adapters/portal-adapter.ts(5,37): error TS2307: Cannot find module '../knowledge/types' or its corresponding type declarations.
+src/channels/publishers/direct-channel-publisher.ts(31,36): error TS2459: Module '"../channel-vault.service"' declares 'ChannelType' locally, but it is not exported.
+src/channels/secret-resolver.ts(90,61): error TS2345: Argument of type 'SQL<unknown>' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { id: PgColumn<{ name: "id"; tableName: "projects"; dataType: "number"; columnType: "PgSerial"; data: number; driverParam: number; notNull: true; hasDefault: true; enumValues: undefined; baseColumn: never; }, {}, {}>; ... 103 more ...; trialStatus: PgColumn<...>; }) => SQL<...> | undefined)...'.
+  Type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/node_modules/drizzle-orm/sql/sql").SQL<unknown>' is not assignable to type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/packages/db-core/node_modules/drizzle-orm/sql/sql").SQL<unknown>'.
+    Types have separate declarations of a private property 'shouldInlineParams'.
+src/channels/secret-resolver.ts(90,64): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(left: Column<ColumnBaseConfig<ColumnDataType, string>, object, object>, right: unknown): SQL<unknown>', gave the following error.
+    Argument of type 'PgColumn<{ name: "slug"; tableName: "projects"; dataType: "string"; columnType: "PgVarchar"; data: string; driverParam: string; notNull: true; hasDefault: false; enumValues: [string, ...string[]]; baseColumn: never; }, {}, {}>' is not assignable to parameter of type 'Column<ColumnBaseConfig<ColumnDataType, string>, object, object>'.
+      Type 'PgColumn<{ name: "slug"; tableName: "projects"; dataType: "string"; columnType: "PgVarchar"; data: string; driverParam: string; notNull: true; hasDefault: false; enumValues: [string, ...string[]]; baseColumn: never; }, {}, {}>' is missing the following properties from type 'Column<ColumnBaseConfig<ColumnDataType, string>, object, object>': keyAsName, generated, generatedIdentity
+  Overload 2 of 3, '(left: Aliased<string>, right: string | SQLWrapper): SQL<unknown>', gave the following error.
+    Argument of type 'PgColumn<{ name: "slug"; tableName: "projects"; dataType: "string"; columnType: "PgVarchar"; data: string; driverParam: string; notNull: true; hasDefault: false; enumValues: [string, ...string[]]; baseColumn: never; }, {}, {}>' is not assignable to parameter of type 'Aliased<string>'.
+      Type 'PgColumn<{ name: "slug"; tableName: "projects"; dataType: "string"; columnType: "PgVarchar"; data: string; driverParam: string; notNull: true; hasDefault: false; enumValues: [string, ...string[]]; baseColumn: never; }, {}, {}>' is missing the following properties from type 'Aliased<string>': sql, fieldAlias
+  Overload 3 of 3, '(left: SQLWrapper, right: unknown): SQL<unknown>', gave the following error.
+    Argument of type 'PgColumn<{ name: "slug"; tableName: "projects"; dataType: "string"; columnType: "PgVarchar"; data: string; driverParam: string; notNull: true; hasDefault: false; enumValues: [string, ...string[]]; baseColumn: never; }, {}, {}>' is not assignable to parameter of type 'SQLWrapper'.
+      The types returned by 'getSQL()' are incompatible between these types.
+        Type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/packages/db-core/node_modules/drizzle-orm/sql/sql").SQL<unknown>' is not assignable to type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/node_modules/drizzle-orm/sql/sql").SQL<unknown>'.
+          Types have separate declarations of a private property 'shouldInlineParams'.
+src/channels/secret-resolver.ts(128,61): error TS2345: Argument of type 'SQL<unknown>' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { id: PgColumn<{ name: "id"; tableName: "projects"; dataType: "number"; columnType: "PgSerial"; data: number; driverParam: number; notNull: true; hasDefault: true; enumValues: undefined; baseColumn: never; }, {}, {}>; ... 103 more ...; trialStatus: PgColumn<...>; }) => SQL<...> | undefined)...'.
+  Type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/node_modules/drizzle-orm/sql/sql").SQL<unknown>' is not assignable to type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/packages/db-core/node_modules/drizzle-orm/sql/sql").SQL<unknown>'.
+    Types have separate declarations of a private property 'shouldInlineParams'.
+src/channels/secret-resolver.ts(128,64): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(left: Column<ColumnBaseConfig<ColumnDataType, string>, object, object>, right: unknown): SQL<unknown>', gave the following error.
+    Argument of type 'PgColumn<{ name: "slug"; tableName: "projects"; dataType: "string"; columnType: "PgVarchar"; data: string; driverParam: string; notNull: true; hasDefault: false; enumValues: [string, ...string[]]; baseColumn: never; }, {}, {}>' is not assignable to parameter of type 'Column<ColumnBaseConfig<ColumnDataType, string>, object, object>'.
+      Type 'PgColumn<{ name: "slug"; tableName: "projects"; dataType: "string"; columnType: "PgVarchar"; data: string; driverParam: string; notNull: true; hasDefault: false; enumValues: [string, ...string[]]; baseColumn: never; }, {}, {}>' is missing the following properties from type 'Column<ColumnBaseConfig<ColumnDataType, string>, object, object>': keyAsName, generated, generatedIdentity
+  Overload 2 of 3, '(left: Aliased<string>, right: string | SQLWrapper): SQL<unknown>', gave the following error.
+    Argument of type 'PgColumn<{ name: "slug"; tableName: "projects"; dataType: "string"; columnType: "PgVarchar"; data: string; driverParam: string; notNull: true; hasDefault: false; enumValues: [string, ...string[]]; baseColumn: never; }, {}, {}>' is not assignable to parameter of type 'Aliased<string>'.
+      Type 'PgColumn<{ name: "slug"; tableName: "projects"; dataType: "string"; columnType: "PgVarchar"; data: string; driverParam: string; notNull: true; hasDefault: false; enumValues: [string, ...string[]]; baseColumn: never; }, {}, {}>' is missing the following properties from type 'Aliased<string>': sql, fieldAlias
+  Overload 3 of 3, '(left: SQLWrapper, right: unknown): SQL<unknown>', gave the following error.
+    Argument of type 'PgColumn<{ name: "slug"; tableName: "projects"; dataType: "string"; columnType: "PgVarchar"; data: string; driverParam: string; notNull: true; hasDefault: false; enumValues: [string, ...string[]]; baseColumn: never; }, {}, {}>' is not assignable to parameter of type 'SQLWrapper'.
+      The types returned by 'getSQL()' are incompatible between these types.
+        Type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/packages/db-core/node_modules/drizzle-orm/sql/sql").SQL<unknown>' is not assignable to type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/node_modules/drizzle-orm/sql/sql").SQL<unknown>'.
+          Types have separate declarations of a private property 'shouldInlineParams'.
+src/channels/tenant-channel.service.ts(20,36): error TS2459: Module '"./channel-vault.service"' declares 'ChannelType' locally, but it is not exported.
+src/composition/control-plane-composition.ts(9,53): error TS2307: Cannot find module '~/lib/pandoras/infrastructure/repositories/postgres-operational-intent-repository' or its corresponding type declarations.
+src/composition/control-plane-composition.ts(10,51): error TS2307: Cannot find module '~/lib/pandoras/infrastructure/repositories/postgres-governance-event-repository' or its corresponding type declarations.
+src/composition/control-plane-composition.ts(11,43): error TS2307: Cannot find module '~/lib/pandoras/infrastructure/repositories/postgres-mission-repository' or its corresponding type declarations.
+src/composition/control-plane-composition.ts(12,45): error TS2307: Cannot find module '~/lib/pandoras/infrastructure/transactions/postgres-approval-transaction' or its corresponding type declarations.
+src/composition/execution-composition.ts(1,36): error TS2307: Cannot find module '../core/domains/execution/capability-registry' or its corresponding type declarations.
+src/composition/execution-composition.ts(8,44): error TS2307: Cannot find module '~/lib/outbox/registry' or its corresponding type declarations.
+src/composition/execution-composition.ts(30,10): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/contracts/capability-contracts.ts(91,52): error TS2694: Namespace '"/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/packages/hermes-core/src/contracts/execution-contracts"' has no exported member 'ExecutionRequest'.
+src/control-plane/application/queries/get-mission-audit-trail.ts(4,20): error TS2307: Cannot find module '~/db' or its corresponding type declarations.
+src/control-plane/application/queries/get-mission-audit-trail.ts(6,41): error TS2307: Cannot find module '~/db/schema' or its corresponding type declarations.
+src/control-plane/application/queries/get-mission-audit-trail.ts(32,43): error TS7006: Parameter 'm' implicitly has an 'any' type.
+src/control-plane/application/queries/get-mission-audit-trail.ts(39,70): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/control-plane/application/queries/get-organization-overview.ts(5,20): error TS2307: Cannot find module '~/db' or its corresponding type declarations.
+src/control-plane/application/queries/get-organization-overview.ts(6,45): error TS2307: Cannot find module '~/db/schema' or its corresponding type declarations.
+src/data-provider.ts(33,53): error TS2307: Cannot find module '@/lib/domain/project-domain-service' or its corresponding type declarations.
+src/engines/commercial/marketing.facade.ts(1,10): error TS2724: '"../../contracts"' has no exported member named 'ExecutionRequest'. Did you mean 'ExecutionResult'?
+src/engines/commercial/marketing.facade.ts(2,40): error TS2307: Cannot find module '@/lib/domain/marketing-domain-service' or its corresponding type declarations.
+src/engines/commercial/marketing.provider.ts(2,10): error TS2724: '"../../contracts"' has no exported member named 'ExecutionRequest'. Did you mean 'ExecutionResult'?
+src/engines/content/media-engine.provider.ts(1,27): error TS2724: '"../../contracts"' has no exported member named 'ExecutionRequest'. Did you mean 'ExecutionResult'?
+src/event-bus.ts(105,14): error TS2345: Argument of type 'SQL<unknown>' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { organizationId: PgColumn<{ name: "organization_id"; tableName: "projects"; dataType: "string"; columnType: "PgUUID"; data: string; driverParam: string; notNull: true; hasDefault: true; enumValues: undefined; baseColumn: never; }, {}, {}>; title: PgColumn<...>; }) => SQL<...> | undefined) ...'.
+  Type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/node_modules/drizzle-orm/sql/sql").SQL<unknown>' is not assignable to type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/packages/db-core/node_modules/drizzle-orm/sql/sql").SQL<unknown>'.
+    Types have separate declarations of a private property 'shouldInlineParams'.
+src/event-bus.ts(105,17): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(left: Column<ColumnBaseConfig<ColumnDataType, string>, object, object>, right: unknown): SQL<unknown>', gave the following error.
+    Argument of type 'PgColumn<{ name: "id"; tableName: "projects"; dataType: "number"; columnType: "PgSerial"; data: number; driverParam: number; notNull: true; hasDefault: true; enumValues: undefined; baseColumn: never; }, {}, {}>' is not assignable to parameter of type 'Column<ColumnBaseConfig<ColumnDataType, string>, object, object>'.
+      Type 'PgColumn<{ name: "id"; tableName: "projects"; dataType: "number"; columnType: "PgSerial"; data: number; driverParam: number; notNull: true; hasDefault: true; enumValues: undefined; baseColumn: never; }, {}, {}>' is missing the following properties from type 'Column<ColumnBaseConfig<ColumnDataType, string>, object, object>': keyAsName, generated, generatedIdentity
+  Overload 2 of 3, '(left: Aliased<number>, right: number | SQLWrapper): SQL<unknown>', gave the following error.
+    Argument of type 'PgColumn<{ name: "id"; tableName: "projects"; dataType: "number"; columnType: "PgSerial"; data: number; driverParam: number; notNull: true; hasDefault: true; enumValues: undefined; baseColumn: never; }, {}, {}>' is not assignable to parameter of type 'Aliased<number>'.
+      Type 'PgColumn<{ name: "id"; tableName: "projects"; dataType: "number"; columnType: "PgSerial"; data: number; driverParam: number; notNull: true; hasDefault: true; enumValues: undefined; baseColumn: never; }, {}, {}>' is missing the following properties from type 'Aliased<number>': sql, fieldAlias
+  Overload 3 of 3, '(left: SQLWrapper, right: unknown): SQL<unknown>', gave the following error.
+    Argument of type 'PgColumn<{ name: "id"; tableName: "projects"; dataType: "number"; columnType: "PgSerial"; data: number; driverParam: number; notNull: true; hasDefault: true; enumValues: undefined; baseColumn: never; }, {}, {}>' is not assignable to parameter of type 'SQLWrapper'.
+      The types returned by 'getSQL()' are incompatible between these types.
+        Type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/packages/db-core/node_modules/drizzle-orm/sql/sql").SQL<unknown>' is not assignable to type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/node_modules/drizzle-orm/sql/sql").SQL<unknown>'.
+          Types have separate declarations of a private property 'shouldInlineParams'.
+src/event-bus.ts(142,14): error TS2345: Argument of type 'SQL<unknown>' is not assignable to parameter of type 'SQL<unknown> | ((aliases: { organizationId: PgColumn<{ name: "organization_id"; tableName: "projects"; dataType: "string"; columnType: "PgUUID"; data: string; driverParam: string; notNull: true; hasDefault: true; enumValues: undefined; baseColumn: never; }, {}, {}>; title: PgColumn<...>; }) => SQL<...> | undefined) ...'.
+  Type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/node_modules/drizzle-orm/sql/sql").SQL<unknown>' is not assignable to type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/packages/db-core/node_modules/drizzle-orm/sql/sql").SQL<unknown>'.
+    Types have separate declarations of a private property 'shouldInlineParams'.
+src/event-bus.ts(142,17): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(left: Column<ColumnBaseConfig<ColumnDataType, string>, object, object>, right: unknown): SQL<unknown>', gave the following error.
+    Argument of type 'PgColumn<{ name: "id"; tableName: "projects"; dataType: "number"; columnType: "PgSerial"; data: number; driverParam: number; notNull: true; hasDefault: true; enumValues: undefined; baseColumn: never; }, {}, {}>' is not assignable to parameter of type 'Column<ColumnBaseConfig<ColumnDataType, string>, object, object>'.
+      Type 'PgColumn<{ name: "id"; tableName: "projects"; dataType: "number"; columnType: "PgSerial"; data: number; driverParam: number; notNull: true; hasDefault: true; enumValues: undefined; baseColumn: never; }, {}, {}>' is missing the following properties from type 'Column<ColumnBaseConfig<ColumnDataType, string>, object, object>': keyAsName, generated, generatedIdentity
+  Overload 2 of 3, '(left: Aliased<number>, right: number | SQLWrapper): SQL<unknown>', gave the following error.
+    Argument of type 'PgColumn<{ name: "id"; tableName: "projects"; dataType: "number"; columnType: "PgSerial"; data: number; driverParam: number; notNull: true; hasDefault: true; enumValues: undefined; baseColumn: never; }, {}, {}>' is not assignable to parameter of type 'Aliased<number>'.
+      Type 'PgColumn<{ name: "id"; tableName: "projects"; dataType: "number"; columnType: "PgSerial"; data: number; driverParam: number; notNull: true; hasDefault: true; enumValues: undefined; baseColumn: never; }, {}, {}>' is missing the following properties from type 'Aliased<number>': sql, fieldAlias
+  Overload 3 of 3, '(left: SQLWrapper, right: unknown): SQL<unknown>', gave the following error.
+    Argument of type 'PgColumn<{ name: "id"; tableName: "projects"; dataType: "number"; columnType: "PgSerial"; data: number; driverParam: number; notNull: true; hasDefault: true; enumValues: undefined; baseColumn: never; }, {}, {}>' is not assignable to parameter of type 'SQLWrapper'.
+      The types returned by 'getSQL()' are incompatible between these types.
+        Type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/packages/db-core/node_modules/drizzle-orm/sql/sql").SQL<unknown>' is not assignable to type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/node_modules/drizzle-orm/sql/sql").SQL<unknown>'.
+          Types have separate declarations of a private property 'shouldInlineParams'.
+src/execution/capabilities/__tests__/crm-update-stage.test.ts(3,20): error TS2307: Cannot find module '~/db' or its corresponding type declarations.
+src/execution/capabilities/create-referral-campaign.ts(2,20): error TS2307: Cannot find module '~/db' or its corresponding type declarations.
+src/execution/capabilities/create-referral-campaign.ts(3,37): error TS2307: Cannot find module '~/db/schema' or its corresponding type declarations.
+src/execution/capabilities/crm-update-stage.ts(2,20): error TS2307: Cannot find module '~/db' or its corresponding type declarations.
+src/execution/capabilities/crm-update-stage.ts(3,42): error TS2307: Cannot find module '~/db/schema' or its corresponding type declarations.
+src/execution/execution-os.ts(6,20): error TS2307: Cannot find module '~/db' or its corresponding type declarations.
+src/execution/execution-os.ts(7,34): error TS2307: Cannot find module '~/db/schema' or its corresponding type declarations.
+src/execution/feedback-loop.ts(3,20): error TS2307: Cannot find module '~/db' or its corresponding type declarations.
+src/execution/feedback-loop.ts(4,31): error TS2307: Cannot find module '~/db/schema' or its corresponding type declarations.
+src/execution/outbox-handlers.ts(1,29): error TS2307: Cannot find module '~/lib/outbox/repository' or its corresponding type declarations.
+src/execution/outbox-handlers.ts(4,20): error TS2307: Cannot find module '~/db' or its corresponding type declarations.
+src/execution/outbox-handlers.ts(31,17): error TS7006: Parameter 'intents' implicitly has an 'any' type.
+src/execution/outbox-handlers.ts(31,28): error TS7031: Binding element 'eq' implicitly has an 'any' type.
+src/execution/outbox-handlers.ts(39,17): error TS7006: Parameter 'intents' implicitly has an 'any' type.
+src/execution/outbox-handlers.ts(39,28): error TS7031: Binding element 'eq' implicitly has an 'any' type.
+src/executive/financial-orchestrator.ts(68,24): error TS2345: Argument of type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/node_modules/drizzle-orm/sql/sql").SQL<unknown> | undefined' is not assignable to parameter of type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/packages/db-core/node_modules/drizzle-orm/sql/sql").SQL<unknown> | undefined'.
+  Type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/node_modules/drizzle-orm/sql/sql").SQL<unknown>' is not assignable to type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/packages/db-core/node_modules/drizzle-orm/sql/sql").SQL<unknown>'.
+    Types have separate declarations of a private property 'shouldInlineParams'.
+src/executive/financial-orchestrator.ts(68,32): error TS2345: Argument of type 'PgColumn<{ name: "nonce"; tableName: "a2a_nonces"; dataType: "string"; columnType: "PgText"; data: string; driverParam: string; notNull: true; hasDefault: false; enumValues: [string, ...string[]]; baseColumn: never; }, {}, {}>' is not assignable to parameter of type 'SQL<unknown> | Column<ColumnBaseConfig<ColumnDataType, string>, object, object> | Aliased<unknown>'.
+  Type 'PgColumn<{ name: "nonce"; tableName: "a2a_nonces"; dataType: "string"; columnType: "PgText"; data: string; driverParam: string; notNull: true; hasDefault: false; enumValues: [string, ...string[]]; baseColumn: never; }, {}, {}>' is missing the following properties from type 'Column<ColumnBaseConfig<ColumnDataType, string>, object, object>': keyAsName, generated, generatedIdentity
+src/executive/financial-orchestrator.ts(68,70): error TS2345: Argument of type 'PgColumn<{ name: "nonce"; tableName: "a2a_nonces"; dataType: "string"; columnType: "PgText"; data: string; driverParam: string; notNull: true; hasDefault: false; enumValues: [string, ...string[]]; baseColumn: never; }, {}, {}>' is not assignable to parameter of type 'SQL<unknown> | Column<ColumnBaseConfig<ColumnDataType, string>, object, object> | Aliased<unknown>'.
+  Type 'PgColumn<{ name: "nonce"; tableName: "a2a_nonces"; dataType: "string"; columnType: "PgText"; data: string; driverParam: string; notNull: true; hasDefault: false; enumValues: [string, ...string[]]; baseColumn: never; }, {}, {}>' is missing the following properties from type 'Column<ColumnBaseConfig<ColumnDataType, string>, object, object>': keyAsName, generated, generatedIdentity
+src/goal-recognizer.ts(21,26): error TS2339: Property 'text' does not exist on type 'ConversationMessage'.
+src/goal-recognizer.ts(23,66): error TS2339: Property 'text' does not exist on type 'ConversationMessage'.
+src/hermes-shell.ts(27,26): error TS2339: Property 'identitySnapshot' does not exist on type 'ConversationMessage'.
+src/hermes-shell.ts(28,29): error TS2339: Property 'identitySnapshot' does not exist on type 'ConversationMessage'.
+src/hermes-shell.ts(31,48): error TS2339: Property 'text' does not exist on type 'ConversationMessage'.
+src/hermes-shell.ts(67,38): error TS2339: Property 'identitySnapshot' does not exist on type 'ConversationMessage'.
+src/hermes-shell.ts(92,9): error TS2353: Object literal may only specify known properties, and 'executionId' does not exist in type 'HermesResponse'.
+src/identity/__tests__/hermes-boss-omnichannel.test.ts(328,37): error TS2307: Cannot find module '@/app/api/hermes/bot/webhook/route' or its corresponding type declarations.
+src/identity/__tests__/hermes-boss-omnichannel.test.ts(394,58): error TS2307: Cannot find module '../executive/intent-classifier' or its corresponding type declarations.
+src/identity/__tests__/hermes-boss-omnichannel.test.ts(406,58): error TS2307: Cannot find module '../executive/intent-classifier' or its corresponding type declarations.
+src/identity/__tests__/hermes-context-enforcement.test.ts(18,15): error TS2305: Module '"@saasfly/auth-sdk"' has no exported member 'TenantContextRecord'.
+src/identity/__tests__/identity-adversarial-gate.test.ts(133,45): error TS2554: Expected 2-3 arguments, but got 1.
+src/identity/__tests__/identity-adversarial-gate.test.ts(479,41): error TS2554: Expected 2-3 arguments, but got 1.
+src/identity/interlocutor-resolver.ts(34,15): error TS2305: Module '"@saasfly/auth-sdk"' has no exported member 'TenantContextRecord'.
+src/index.ts(123,1): error TS2308: Module './addons/context-merger' has already exported a member named 'ConversationContext'. Consider explicitly re-exporting to resolve the ambiguity.
+src/index.ts(123,1): error TS2308: Module './channel-gateway' has already exported a member named 'ChannelContext'. Consider explicitly re-exporting to resolve the ambiguity.
+src/index.ts(123,1): error TS2308: Module './channels/channel-types' has already exported a member named 'ExecutionContext'. Consider explicitly re-exporting to resolve the ambiguity.
+src/infrastructure/external/telegram/telegram-credential-adapter.ts(2,20): error TS2307: Cannot find module '~/db' or its corresponding type declarations.
+src/infrastructure/external/telegram/telegram-credential-adapter.ts(3,26): error TS2307: Cannot find module '~/db/schema' or its corresponding type declarations.
+src/infrastructure/repositories/memory-installed-pack-repository.ts(1,10): error TS2305: Module '"@saasfly/hermes-core"' has no exported member 'InstalledPackRepository'.
+src/infrastructure/repositories/memory-mission-repository.ts(1,10): error TS2305: Module '"@saasfly/hermes-core"' has no exported member 'MissionRepository'.
+src/infrastructure/repositories/postgres-governance-event-repository.ts(3,51): error TS2307: Cannot find module '@saasfly/db/schema' or its corresponding type declarations.
+src/infrastructure/repositories/postgres-governance-event-repository.ts(11,14): error TS2339: Property 'insert' does not exist on type 'Kysely<DB>'.
+src/infrastructure/repositories/postgres-governance-event-repository.ts(27,27): error TS2339: Property 'select' does not exist on type 'Kysely<DB>'.
+src/infrastructure/repositories/postgres-governance-event-repository.ts(35,21): error TS7006: Parameter 'row' implicitly has an 'any' type.
+src/infrastructure/repositories/postgres-governance-event-repository.ts(39,27): error TS2339: Property 'select' does not exist on type 'Kysely<DB>'.
+src/infrastructure/repositories/postgres-governance-event-repository.ts(44,21): error TS7006: Parameter 'row' implicitly has an 'any' type.
+src/infrastructure/repositories/postgres-installed-pack-repository.ts(3,32): error TS2307: Cannot find module '@saasfly/db/schema' or its corresponding type declarations.
+src/infrastructure/repositories/postgres-installed-pack-repository.ts(4,10): error TS2305: Module '"@saasfly/hermes-core"' has no exported member 'InstalledPackRepository'.
+src/infrastructure/repositories/postgres-installed-pack-repository.ts(10,27): error TS2339: Property 'select' does not exist on type 'Kysely<DB>'.
+src/infrastructure/repositories/postgres-installed-pack-repository.ts(15,15): error TS7006: Parameter 'row' implicitly has an 'any' type.
+src/infrastructure/repositories/postgres-installed-pack-repository.ts(16,12): error TS7006: Parameter 'row' implicitly has an 'any' type.
+src/infrastructure/repositories/postgres-installed-pack-repository.ts(28,14): error TS2339: Property 'insert' does not exist on type 'Kysely<DB>'.
+src/infrastructure/repositories/postgres-mission-repository.ts(3,60): error TS2307: Cannot find module '@saasfly/db/schema' or its corresponding type declarations.
+src/infrastructure/repositories/postgres-mission-repository.ts(4,10): error TS2305: Module '"@saasfly/hermes-core"' has no exported member 'MissionRepository'.
+src/infrastructure/repositories/postgres-mission-repository.ts(10,14): error TS2339: Property 'insert' does not exist on type 'Kysely<DB>'.
+src/infrastructure/repositories/postgres-mission-repository.ts(22,16): error TS2339: Property 'insert' does not exist on type 'Kysely<DB>'.
+src/infrastructure/repositories/postgres-mission-repository.ts(37,37): error TS2339: Property 'select' does not exist on type 'Kysely<DB>'.
+src/infrastructure/repositories/postgres-mission-repository.ts(42,50): error TS7006: Parameter 'm' implicitly has an 'any' type.
+src/infrastructure/repositories/postgres-mission-repository.ts(50,34): error TS2339: Property 'select' does not exist on type 'Kysely<DB>'.
+src/infrastructure/repositories/postgres-mission-repository.ts(58,37): error TS2339: Property 'select' does not exist on type 'Kysely<DB>'.
+src/infrastructure/repositories/postgres-mission-repository.ts(78,38): error TS7006: Parameter 'm' implicitly has an 'any' type.
+src/infrastructure/repositories/postgres-mission-repository.ts(91,14): error TS2339: Property 'update' does not exist on type 'Kysely<DB>'.
+src/infrastructure/repositories/postgres-mission-repository.ts(105,14): error TS2339: Property 'update' does not exist on type 'Kysely<DB>'.
+src/infrastructure/repositories/postgres-mission-repository.ts(117,14): error TS2339: Property 'insert' does not exist on type 'Kysely<DB>'.
+src/infrastructure/repositories/postgres-operational-intent-repository.ts(3,36): error TS2307: Cannot find module '@saasfly/db/schema' or its corresponding type declarations.
+src/infrastructure/repositories/postgres-operational-intent-repository.ts(11,14): error TS2339: Property 'insert' does not exist on type 'Kysely<DB>'.
+src/infrastructure/repositories/postgres-operational-intent-repository.ts(31,27): error TS2339: Property 'select' does not exist on type 'Kysely<DB>'.
+src/infrastructure/repositories/postgres-operational-intent-repository.ts(44,27): error TS2339: Property 'select' does not exist on type 'Kysely<DB>'.
+src/infrastructure/repositories/postgres-operational-intent-repository.ts(51,21): error TS7006: Parameter 'row' implicitly has an 'any' type.
+src/infrastructure/repositories/postgres-operational-intent-repository.ts(62,30): error TS2339: Property 'update' does not exist on type 'Kysely<DB>'.
+src/infrastructure/repositories/postgres-operational-intent-repository.ts(80,33): error TS2339: Property 'select' does not exist on type 'Kysely<DB>'.
+src/infrastructure/transactions/postgres-approval-transaction.ts(3,85): error TS2307: Cannot find module '@saasfly/db/schema' or its corresponding type declarations.
+src/infrastructure/transactions/postgres-approval-transaction.ts(22,5): error TS2741: Property 'transitioned' is missing in type 'TransactionBuilder<DB>' but required in type 'TransitionResult'.
+src/infrastructure/transactions/postgres-approval-transaction.ts(22,33): error TS2554: Expected 0 arguments, but got 1.
+src/infrastructure/transactions/postgres-approval-transaction.ts(22,40): error TS7006: Parameter 'tx' implicitly has an 'any' type.
+src/intent-engine.ts(14,26): error TS2339: Property 'text' does not exist on type 'ConversationMessage'.
+src/journey-engine.ts(4,26): error TS2305: Module '"./channel-gateway"' has no exported member 'EventContext'.
+src/journey-engine.ts(4,40): error TS2305: Module '"./channel-gateway"' has no exported member 'ContactContext'.
+src/journey-engine.ts(4,56): error TS2305: Module '"./channel-gateway"' has no exported member 'MemoryContext'.
+src/journey-engine.ts(220,25): error TS2339: Property 'capabilities' does not exist on type 'ChannelContext'.
+src/kernel/boot/boot-sequence.ts(3,10): error TS2724: '"../../registries/binding-registry"' has no exported member named 'bindingRegistry'. Did you mean 'BindingRegistry'?
+src/kernel/execution/execution-api.ts(42,50): error TS2345: Argument of type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/packages/hermes-core/src/contracts/universal").CapabilityBinding' is not assignable to parameter of type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/packages/hermes-core/src/runtimes/binding-repository").CapabilityBinding'.
+  Type 'CapabilityBinding' is missing the following properties from type 'CapabilityBinding': capability, executionMode
+src/kernel/execution/resource-manager.ts(3,10): error TS2724: '"../../registries/binding-registry"' has no exported member named 'bindingRegistry'. Did you mean 'BindingRegistry'?
+src/kernel/execution/resource-manager.ts(13,46): error TS2339: Property 'get' does not exist on type 'CapabilityRegistry'.
+src/kernel/intelligence/decision-journal.ts(1,29): error TS2305: Module '"../../runtimes/binding-repository"' has no exported member 'ExecutionRequest'.
+src/kernel/intelligence/decision-journal.ts(1,47): error TS2305: Module '"../../runtimes/binding-repository"' has no exported member 'ExecutionResult'.
+src/kernel/intelligence/decision-journal.ts(1,64): error TS2305: Module '"../../runtimes/binding-repository"' has no exported member 'ServiceProvider'.
+src/knowledge/ipfs/__tests__/k27-ipfs-durability.test.ts(14,3): error TS2459: Module '"../orchestrator"' declares 'MockIpfsProvider' locally, but it is not exported.
+src/knowledge/ipfs/__tests__/k27-ipfs-durability.test.ts(15,8): error TS2459: Module '"../orchestrator"' declares 'IpfsProvider' locally, but it is not exported.
+src/knowledge/ipfs/__tests__/k27-ipfs-durability.test.ts(16,3): error TS2459: Module '"../orchestrator"' declares 'SovereignStoragePolicyEngine' locally, but it is not exported.
+src/knowledge/ipfs/__tests__/k27-ipfs-durability.test.ts(121,21): error TS7006: Parameter 'data' implicitly has an 'any' type.
+src/knowledge/ipfs/__tests__/k27-ipfs-durability.test.ts(126,23): error TS7006: Parameter 'cid' implicitly has an 'any' type.
+src/knowledge/ipfs/__tests__/k27-ipfs-durability.test.ts(139,21): error TS7006: Parameter 'data' implicitly has an 'any' type.
+src/knowledge/ipfs/__tests__/k27-ipfs-durability.test.ts(144,23): error TS7006: Parameter 'cid' implicitly has an 'any' type.
+src/knowledge/ipfs/__tests__/sovereign-ipfs.test.ts(10,3): error TS2724: '"../mock-provider"' has no exported member named 'KuboRpcIpfsProvider'. Did you mean 'MockIpfsProvider'?
+src/knowledge/ipfs/__tests__/sovereign-ipfs.test.ts(11,3): error TS2305: Module '"../mock-provider"' has no exported member 'PinataIpfsProvider'.
+src/knowledge/ipfs/__tests__/sovereign-ipfs.test.ts(12,3): error TS2305: Module '"../mock-provider"' has no exported member 'SovereignIpfsOrchestrator'.
+src/knowledge/ipfs/__tests__/sovereign-ipfs.test.ts(13,8): error TS2724: '"../mock-provider"' has no exported member named 'IpfsProvider'. Did you mean 'MockIpfsProvider'?
+src/knowledge/ipfs/__tests__/sovereign-ipfs.test.ts(127,21): error TS7006: Parameter 'data' implicitly has an 'any' type.
+src/knowledge/ipfs/__tests__/sovereign-ipfs.test.ts(132,23): error TS7006: Parameter 'cid' implicitly has an 'any' type.
+src/knowledge/ipfs/__tests__/sovereign-ipfs.test.ts(147,21): error TS7006: Parameter 'data' implicitly has an 'any' type.
+src/knowledge/ipfs/__tests__/sovereign-ipfs.test.ts(152,23): error TS7006: Parameter 'cid' implicitly has an 'any' type.
+src/knowledge/ipfs/__tests__/sovereign-ipfs.test.ts(408,23): error TS7006: Parameter 'cid' implicitly has an 'any' type.
+src/knowledge/service.ts(166,23): error TS2693: 'ControlPlaneContext' only refers to a type, but is being used as a value here.
+src/knowledge/types.ts(123,72): error TS2694: Namespace '"/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/packages/hermes-core/src/identity/canonical-identity-graph"' has no exported member 'CanonicalIdentityRecord'.
+src/knowledge/types.ts(128,70): error TS2694: Namespace '"/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/packages/hermes-core/src/identity/canonical-identity-graph"' has no exported member 'CanonicalIdentityRecord'.
+src/memory/learning-loop.ts(173,18): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(builder: (aliases: { id: PgColumn<{ name: "id"; tableName: "marketing_lead_events"; dataType: "string"; columnType: "PgUUID"; data: string; driverParam: string; notNull: true; hasDefault: true; enumValues: undefined; baseColumn: never; }, {}, {}>; ... 4 more ...; createdAt: PgColumn<...>; }) => ValueOrArray<...>): Omit<...>', gave the following error.
+    Argument of type 'SQL<unknown>' is not assignable to parameter of type '(aliases: { id: PgColumn<{ name: "id"; tableName: "marketing_lead_events"; dataType: "string"; columnType: "PgUUID"; data: string; driverParam: string; notNull: true; hasDefault: true; enumValues: undefined; baseColumn: never; }, {}, {}>; ... 4 more ...; createdAt: PgColumn<...>; }) => ValueOrArray<...>'.
+      Type 'SQL<unknown>' provides no match for the signature '(aliases: { id: PgColumn<{ name: "id"; tableName: "marketing_lead_events"; dataType: "string"; columnType: "PgUUID"; data: string; driverParam: string; notNull: true; hasDefault: true; enumValues: undefined; baseColumn: never; }, {}, {}>; ... 4 more ...; createdAt: PgColumn<...>; }): ValueOrArray<...>'.
+  Overload 2 of 2, '(...columns: (SQL<unknown> | PgColumn<ColumnBaseConfig<ColumnDataType, string>, {}, {}> | Aliased<unknown>)[]): Omit<PgSelectBase<"marketing_lead_events", ... 6 more ..., { ...; }>, "where" | "orderBy">', gave the following error.
+    Argument of type 'SQL<unknown>' is not assignable to parameter of type 'SQL<unknown> | PgColumn<ColumnBaseConfig<ColumnDataType, string>, {}, {}> | Aliased<unknown>'.
+      Type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/node_modules/drizzle-orm/sql/sql").SQL<unknown>' is not assignable to type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/packages/db-core/node_modules/drizzle-orm/sql/sql").SQL<unknown>'.
+        Types have separate declarations of a private property 'shouldInlineParams'.
+src/memory/learning-loop.ts(173,23): error TS2345: Argument of type 'PgColumn<{ name: "created_at"; tableName: "marketing_lead_events"; dataType: "date"; columnType: "PgTimestamp"; data: Date; driverParam: string; notNull: true; hasDefault: true; enumValues: undefined; baseColumn: never; }, {}, {}>' is not assignable to parameter of type 'SQLWrapper | AnyColumn'.
+  Type 'PgColumn<{ name: "created_at"; tableName: "marketing_lead_events"; dataType: "date"; columnType: "PgTimestamp"; data: Date; driverParam: string; notNull: true; hasDefault: true; enumValues: undefined; baseColumn: never; }, {}, {}>' is missing the following properties from type 'Column<Required<{ name: string; dataType: ColumnDataType; columnType: string; data: unknown; driverParam: unknown; notNull: boolean; hasDefault: boolean; enumValues: string[] | undefined; tableName: string; isPrimaryKey: boolean; isAutoincrement: boolean; hasRuntimeDefault: boolean; }>, object, object>': keyAsName, generated, generatedIdentity
+src/nexus/collaborators-service.ts(28,10): error TS2305: Module '"@saasfly/shared"' has no exported member 'getNexusAuthContext'.
+src/nexus/legacy/nexus-action-dispatcher.ts(3,172): error TS2307: Cannot find module '@saasfly/db/schema' or its corresponding type declarations.
+src/nexus/legacy/nexus-action-dispatcher.ts(5,10): error TS2305: Module '"@saasfly/shared"' has no exported member 'resolveEffectivePermissions'.
+src/nexus/legacy/nexus-action-dispatcher.ts(5,39): error TS2305: Module '"@saasfly/shared"' has no exported member 'NexusRole'.
+src/nexus/legacy/nexus-action-dispatcher.ts(5,50): error TS2305: Module '"@saasfly/shared"' has no exported member 'NexusPermissions'.
+src/nexus/legacy/nexus-action-dispatcher.ts(6,43): error TS2307: Cannot find module '../../distribution/demand-distribution.service' or its corresponding type declarations.
+src/nexus/legacy/nexus-action-dispatcher.ts(60,26): error TS2554: Expected 0 arguments, but got 1.
+src/nexus/legacy/nexus-action-dispatcher.ts(60,33): error TS7006: Parameter 'tx' implicitly has an 'any' type.
+src/nexus/legacy/nexus-action-dispatcher.ts(80,26): error TS2554: Expected 0 arguments, but got 1.
+src/nexus/legacy/nexus-action-dispatcher.ts(80,33): error TS7006: Parameter 'tx' implicitly has an 'any' type.
+src/nexus/legacy/nexus-action-dispatcher.ts(100,26): error TS2554: Expected 0 arguments, but got 1.
+src/nexus/legacy/nexus-action-dispatcher.ts(100,33): error TS7006: Parameter 'tx' implicitly has an 'any' type.
+src/nexus/legacy/nexus-action-dispatcher.ts(120,26): error TS2554: Expected 0 arguments, but got 1.
+src/nexus/legacy/nexus-action-dispatcher.ts(120,33): error TS7006: Parameter 'tx' implicitly has an 'any' type.
+src/nexus/legacy/nexus-action-dispatcher.ts(141,26): error TS2554: Expected 0 arguments, but got 1.
+src/nexus/legacy/nexus-action-dispatcher.ts(141,33): error TS7006: Parameter 'tx' implicitly has an 'any' type.
+src/nexus/legacy/nexus-action-dispatcher.ts(197,33): error TS2339: Property 'select' does not exist on type 'Kysely<DB>'.
+src/nexus/legacy/nexus-action-dispatcher.ts(217,26): error TS2554: Expected 0 arguments, but got 1.
+src/nexus/legacy/nexus-action-dispatcher.ts(217,33): error TS7006: Parameter 'tx' implicitly has an 'any' type.
+src/nexus/legacy/nexus-action-dispatcher.ts(242,26): error TS2554: Expected 0 arguments, but got 1.
+src/nexus/legacy/nexus-action-dispatcher.ts(242,33): error TS7006: Parameter 'tx' implicitly has an 'any' type.
+src/nexus/legacy/nexus-action-dispatcher.ts(285,14): error TS2339: Property 'insert' does not exist on type 'Kysely<DB>'.
+src/nexus/legacy/nexus-action-dispatcher.ts(311,37): error TS2339: Property 'query' does not exist on type 'Kysely<DB>'.
+src/nexus/legacy/nexus-action-dispatcher.ts(321,34): error TS2339: Property 'query' does not exist on type 'Kysely<DB>'.
+src/nexus/legacy/nexus-action-dispatcher.ts(357,88): error TS2731: Implicit conversion of a 'symbol' to a 'string' will fail at runtime. Consider wrapping this expression in 'String(...)'.
+src/nexus/legacy/nexus-action-dispatcher.ts(364,39): error TS2339: Property 'select' does not exist on type 'Kysely<DB>'.
+src/nexus/legacy/nexus-action-dispatcher.ts(387,32): error TS2339: Property 'update' does not exist on type 'Kysely<DB>'.
+src/nexus/legacy/nexus-action-dispatcher.ts(405,20): error TS2339: Property 'update' does not exist on type 'Kysely<DB>'.
+src/nexus/legacy/nexus-action-dispatcher.ts(411,20): error TS2339: Property 'update' does not exist on type 'Kysely<DB>'.
+src/nexus/legacy/notifications/TelegramDispatcher.ts(2,32): error TS2307: Cannot find module '@saasfly/db/schema' or its corresponding type declarations.
+src/nexus/legacy/notifications/TelegramDispatcher.ts(21,12): error TS2339: Property 'insert' does not exist on type 'Kysely<DB>'.
+src/onboarding/orchestrator.ts(8,31): error TS2305: Module '"../control-plane/application/context"' has no exported member 'KnowledgeDimension'.
+src/onboarding/orchestrator.ts(8,51): error TS2305: Module '"../control-plane/application/context"' has no exported member 'KnowledgeStatus'.
+src/onboarding/orchestrator.ts(39,50): error TS2339: Property 'respond' does not exist on type 'HermesRuntime'.
+src/onboarding/orchestrator.ts(72,48): error TS2339: Property 'respond' does not exist on type 'HermesRuntime'.
+src/overview/service.ts(48,23): error TS2693: 'ControlPlaneContext' only refers to a type, but is being used as a value here.
+src/packs/domain-pack-loader.ts(1,10): error TS2305: Module '"@saasfly/shared"' has no exported member 'DomainPackManifest'.
+src/packs/golden-pack/adapters/example.adapter.ts(8,9): error TS2416: Property 'execute' in type 'ExampleMockAdapter' is not assignable to the same property in base type 'CapabilityAdapter<string, string>'.
+  Type '(input: string, context: import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/packages/hermes-core/src/channels/channel-types").ExecutionContext) => Promise<...>' is not assignable to type '(input: string, context: import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/packages/hermes-core/src/execution/execution-context").ExecutionContext) => Promise<...>'.
+    Types of parameters 'context' and 'context' are incompatible.
+      Type 'ExecutionContext' is missing the following properties from type 'ExecutionContext': organizationId, conversationId, channelBindingId, correlationId, idempotencyKey
+src/packs/golden-pack/adapters/example.adapter.ts(9,64): error TS2339: Property 'identity' does not exist on type 'ExecutionContext'.
+src/packs/golden-pack/adapters/example.adapter.ts(14,74): error TS2345: Argument of type 'ExampleMockAdapter' is not assignable to parameter of type 'CapabilityAdapter<string, string>'.
+  Types of property 'execute' are incompatible.
+    Type '(input: string, context: import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/packages/hermes-core/src/channels/channel-types").ExecutionContext) => Promise<...>' is not assignable to type '(input: string, context: import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/packages/hermes-core/src/execution/execution-context").ExecutionContext) => Promise<...>'.
+      Types of parameters 'context' and 'context' are incompatible.
+        Type 'ExecutionContext' is missing the following properties from type 'ExecutionContext': organizationId, conversationId, channelBindingId, correlationId, idempotencyKey
+src/packs/golden-pack/index.ts(1,10): error TS2305: Module '"@saasfly/hermes-core"' has no exported member 'definePack'.
+src/packs/hermes-internal-domain-pack.ts(1,10): error TS2305: Module '"@saasfly/shared"' has no exported member 'DomainPackManifest'.
+src/packs/real-estate-pack.ts(12,10): error TS2305: Module '"@saasfly/shared"' has no exported member 'DomainPackManifest'.
+src/packs/real-estate-pack.ts(12,30): error TS2305: Module '"@saasfly/shared"' has no exported member 'SoulProfile'.
+src/packs/real-estate-pack.ts(12,43): error TS2305: Module '"@saasfly/shared"' has no exported member 'GovernancePolicy'.
+src/packs/snarai-domain-pack.ts(1,10): error TS2305: Module '"@saasfly/shared"' has no exported member 'DomainPackManifest'.
+src/planner.ts(1,18): error TS2305: Module '"./contracts"' has no exported member 'ExecutionPlan'.
+src/policies/policy-enforcer.ts(1,10): error TS2305: Module '"@saasfly/shared"' has no exported member 'GovernancePolicy'.
+src/policies/policy-engine.ts(1,10): error TS2305: Module '"@saasfly/shared"' has no exported member 'DomainPackManifest'.
+src/policies/policy-engine.ts(41,7): error TS2353: Object literal may only specify known properties, and 'action' does not exist in type 'OperationalIntent'.
+src/providers/abstract-provider.ts(1,24): error TS2724: '"../contracts"' has no exported member named 'ExecutionRequest'. Did you mean 'ExecutionResult'?
+src/providers/cognitive-provider.ts(1,10): error TS2305: Module '"@saasfly/shared"' has no exported member 'DomainPackManifest'.
+src/providers/ollama-provider.ts(18,66): error TS7006: Parameter 'f' implicitly has an 'any' type.
+src/providers/openai-provider.ts(26,66): error TS7006: Parameter 'f' implicitly has an 'any' type.
+src/qa/runner/qa-runner.ts(524,7): error TS2322: Type '"OWNER"' is not assignable to type 'ControlPlaneRole'.
+src/qa/runner/qa-runner.ts(540,7): error TS2741: Property 'organizationId' is missing in type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/packages/hermes-core/src/control-plane/application/context").ControlPlaneContext' but required in type 'import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/packages/hermes-core/src/knowledge/types").ControlPlaneContext'.
+src/runtime/__tests__/hermes-runtime-e2e.test.ts(207,39): error TS2554: Expected 0 arguments, but got 2.
+src/runtime/__tests__/hermes-runtime-e2e.test.ts(210,43): error TS2339: Property 'respond' does not exist on type 'HermesRuntime'.
+src/runtime/__tests__/hermes-runtime-e2e.test.ts(231,7): error TS2739: Type '{ actorId: string; organizationId: string; role: "OPERATOR"; permissions: never[]; }' is missing the following properties from type 'ControlPlaneContext': sessionId, authorizedOrganizations, assertOrganizationAccess, requireOrganizationScope
+src/runtime/__tests__/k26-governed-intelligence.test.ts(630,39): error TS2554: Expected 0 arguments, but got 2.
+src/runtime/__tests__/k26-governed-intelligence.test.ts(632,36): error TS2339: Property 'respond' does not exist on type 'HermesRuntime'.
+src/runtime/__tests__/k26-governed-intelligence.test.ts(925,39): error TS2554: Expected 0 arguments, but got 2.
+src/runtime/__tests__/k26-governed-intelligence.test.ts(927,47): error TS2339: Property 'respond' does not exist on type 'HermesRuntime'.
+src/runtime/__tests__/phase5-5-functional-verification.test.ts(26,10): error TS2305: Module '"@saasfly/shared"' has no exported member 'resolvePortalContext'.
+src/runtime/__tests__/phase7-full-boundary-certification.test.ts(20,36): error TS2307: Cannot find module '@/app/api/v1/hermes/journeys/route' or its corresponding type declarations.
+src/runtime/__tests__/phase7-full-boundary-certification.test.ts(21,54): error TS2307: Cannot find module '@/app/api/v1/hermes/addons/route' or its corresponding type declarations.
+src/runtime/__tests__/phase7-full-boundary-certification.test.ts(22,58): error TS2307: Cannot find module '@/app/api/v1/hermes/policies/route' or its corresponding type declarations.
+src/runtime/__tests__/phase7-full-boundary-certification.test.ts(23,62): error TS2307: Cannot find module '@/app/api/v1/hermes/knowledge/route' or its corresponding type declarations.
+src/runtime/__tests__/phase7-full-boundary-certification.test.ts(24,41): error TS2307: Cannot find module '@/app/api/v1/hermes/conversations/route' or its corresponding type declarations.
+src/runtime/__tests__/phase7-full-boundary-certification.test.ts(25,36): error TS2307: Cannot find module '@/app/api/v1/hermes/overview/route' or its corresponding type declarations.
+src/runtime/__tests__/phase7-full-boundary-certification.test.ts(26,36): error TS2307: Cannot find module '@/app/api/v1/hermes/channels/route' or its corresponding type declarations.
+src/runtime/__tests__/phase7-full-boundary-certification.test.ts(27,36): error TS2307: Cannot find module '@/app/api/v1/hermes/activity/route' or its corresponding type declarations.
+src/runtime/__tests__/phase7-full-boundary-certification.test.ts(28,36): error TS2307: Cannot find module '@/app/api/v1/hermes/settings/route' or its corresponding type declarations.
+src/runtime/__tests__/phase7-full-boundary-certification.test.ts(29,36): error TS2307: Cannot find module '@/app/api/v1/hermes/identity/route' or its corresponding type declarations.
+src/runtime/__tests__/phase7-growth-capability-runtime.test.ts(10,40): error TS2307: Cannot find module '@/app/api/v1/growth/capabilities/route' or its corresponding type declarations.
+src/runtime/__tests__/phase7-growth-capability-runtime.test.ts(11,36): error TS2307: Cannot find module '@/app/api/v1/growth/overview/route' or its corresponding type declarations.
+src/runtime/__tests__/phase7-growth-capability-runtime.test.ts(12,36): error TS2307: Cannot find module '@/app/api/v1/growth/pipeline/route' or its corresponding type declarations.
+src/runtime/__tests__/phase7-growth-capability-runtime.test.ts(13,54): error TS2307: Cannot find module '@/app/api/v1/growth/wallet/route' or its corresponding type declarations.
+src/runtime/__tests__/phase7-growth-capability-runtime.test.ts(14,54): error TS2307: Cannot find module '@/app/api/v1/growth/nft-lab/route' or its corresponding type declarations.
+src/runtime/__tests__/phase7-growth-capability-runtime.test.ts(15,80): error TS2307: Cannot find module '@/app/api/v1/control-plane/intents/route' or its corresponding type declarations.
+src/runtime/__tests__/phase7-growth-capability-runtime.test.ts(16,48): error TS2307: Cannot find module '@/app/api/v1/control-plane/overview/route' or its corresponding type declarations.
+src/runtime/__tests__/phase7-growth-capability-runtime.test.ts(33,46): error TS2339: Property 'getTenantProfile' does not exist on type 'CapabilityRegistry'.
+src/runtime/__tests__/phase7-growth-capability-runtime.test.ts(38,47): error TS7006: Parameter 'c' implicitly has an 'any' type.
+src/runtime/__tests__/phase7-growth-capability-runtime.test.ts(51,50): error TS7006: Parameter 'c' implicitly has an 'any' type.
+src/runtime/__tests__/phase7-growth-capability-runtime.test.ts(60,37): error TS2551: Property 'assertCapability' does not exist on type 'CapabilityRegistry'. Did you mean 'hasCapability'?
+src/runtime/__tests__/phase7-growth-capability-runtime.test.ts(61,37): error TS2551: Property 'assertCapability' does not exist on type 'CapabilityRegistry'. Did you mean 'hasCapability'?
+src/runtime/__tests__/phase7-growth-capability-runtime.test.ts(62,37): error TS2551: Property 'assertCapability' does not exist on type 'CapabilityRegistry'. Did you mean 'hasCapability'?
+src/runtime/__tests__/phase7-growth-capability-runtime.test.ts(65,37): error TS2551: Property 'assertCapability' does not exist on type 'CapabilityRegistry'. Did you mean 'hasCapability'?
+src/runtime/__tests__/phase7-growth-capability-runtime.test.ts(69,46): error TS2339: Property 'getTenantProfile' does not exist on type 'CapabilityRegistry'.
+src/runtime/__tests__/phase7-growth-capability-runtime.test.ts(71,51): error TS7006: Parameter 'c' implicitly has an 'any' type.
+src/runtime/__tests__/phase7-growth-capability-runtime.test.ts(78,47): error TS7006: Parameter 'c' implicitly has an 'any' type.
+src/runtime/__tests__/phase7-growth-capability-runtime.test.ts(84,47): error TS7006: Parameter 'c' implicitly has an 'any' type.
+src/runtime/__tests__/phase7-growth-capability-runtime.test.ts(90,47): error TS7006: Parameter 'c' implicitly has an 'any' type.
+src/runtime/__tests__/phase7-growth-capability-runtime.test.ts(98,26): error TS2339: Property 'getTenantProfile' does not exist on type 'CapabilityRegistry'.
+src/runtime/__tests__/phase7-growth-capability-runtime.test.ts(108,37): error TS2551: Property 'assertCapability' does not exist on type 'CapabilityRegistry'. Did you mean 'hasCapability'?
+src/runtime/__tests__/phase7-journeys-boundary.test.ts(14,28): error TS2307: Cannot find module '@/app/api/v1/hermes/journeys/route' or its corresponding type declarations.
+src/runtime/__tests__/phase7-journeys-boundary.test.ts(18,45): error TS2307: Cannot find module '@saasfly/shared/journeys' or its corresponding type declarations.
+src/runtime/__tests__/phase8-ecosystem-mesh-runtime.test.ts(36,46): error TS2339: Property 'getTenantProfile' does not exist on type 'CapabilityRegistry'.
+src/runtime/__tests__/phase8-ecosystem-mesh-runtime.test.ts(48,26): error TS2551: Property 'assertCapability' does not exist on type 'CapabilityRegistry'. Did you mean 'hasCapability'?
+src/runtime/__tests__/phase8-ecosystem-mesh-runtime.test.ts(53,52): error TS2339: Property 'getTenantProfile' does not exist on type 'CapabilityRegistry'.
+src/runtime/__tests__/phase8-ecosystem-mesh-runtime.test.ts(54,51): error TS2339: Property 'getTenantProfile' does not exist on type 'CapabilityRegistry'.
+src/runtime/__tests__/phase8-ecosystem-mesh-runtime.test.ts(62,46): error TS2339: Property 'getTenantProfile' does not exist on type 'CapabilityRegistry'.
+src/runtime/__tests__/phase8-ecosystem-mesh-runtime.test.ts(102,46): error TS2339: Property 'getTenantProfile' does not exist on type 'CapabilityRegistry'.
+src/runtime/__tests__/phase8-setup-state.test.ts(86,42): error TS7006: Parameter 'm' implicitly has an 'any' type.
+src/runtime/__tests__/phase8-setup-state.test.ts(92,42): error TS7006: Parameter 'm' implicitly has an 'any' type.
+src/runtime/__tests__/phase8-setup-state.test.ts(134,42): error TS7006: Parameter 'm' implicitly has an 'any' type.
+src/runtime/__tests__/phase8-setup-state.test.ts(135,42): error TS7006: Parameter 'm' implicitly has an 'any' type.
+src/runtime/__tests__/phase8-setup-state.test.ts(136,39): error TS7006: Parameter 'm' implicitly has an 'any' type.
+src/runtime/__tests__/phase8-unified-onboarding.test.ts(21,45): error TS2307: Cannot find module '@saasfly/shared/provisioning' or its corresponding type declarations.
+src/runtime/__tests__/phase8-unified-onboarding.test.ts(47,40): error TS7006: Parameter 'p' implicitly has an 'any' type.
+src/runtime/__tests__/phase8-unified-onboarding.test.ts(48,40): error TS7006: Parameter 'p' implicitly has an 'any' type.
+src/runtime/__tests__/phase8-unified-onboarding.test.ts(49,40): error TS7006: Parameter 'p' implicitly has an 'any' type.
+src/runtime/__tests__/phase8-unified-onboarding.test.ts(60,46): error TS2339: Property 'getTenantProfile' does not exist on type 'CapabilityRegistry'.
+src/runtime/__tests__/tenant-format-contract.test.ts(41,11): error TS2820: Type '"ADMIN"' is not assignable to type 'ControlPlaneRole'. Did you mean '"admin"'?
+src/runtime/contracts.ts(266,72): error TS2694: Namespace '"/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/packages/hermes-core/src/identity/canonical-identity-graph"' has no exported member 'CanonicalIdentityRecord'.
+src/runtime/contracts.ts(269,70): error TS2694: Namespace '"/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/packages/hermes-core/src/identity/canonical-identity-graph"' has no exported member 'CanonicalIdentityRecord'.
+src/runtime/hermes-runtime.ts(218,17): error TS2339: Property 'IdentityResolver' does not exist on type 'typeof import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/packages/shared/dist/index")'.
+src/runtime/hermes-runtime.ts(509,23): error TS2339: Property 'sendWhatsAppMessage' does not exist on type 'typeof import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/packages/shared/dist/index")'.
+src/runtime/hermes-runtime.ts(571,87): error TS2739: Type 'ControlPlaneContext' is missing the following properties from type 'ControlPlaneContext': authorizedOrganizations, assertOrganizationAccess, requireOrganizationScope
+src/runtime/hermes-runtime.ts(715,9): error TS2739: Type 'ControlPlaneContext' is missing the following properties from type 'ControlPlaneContext': authorizedOrganizations, assertOrganizationAccess, requireOrganizationScope
+src/runtime/memory/postgres-memory-provider.ts(61,52): error TS2339: Property 'identity' does not exist on type 'ControlPlaneContext'.
+src/runtime/memory/postgres-memory-provider.ts(201,55): error TS2339: Property 'identity' does not exist on type 'ControlPlaneContext'.
+src/runtime/security-audit-logger.ts(287,15): error TS2339: Property 'HermesNotificationDispatcher' does not exist on type 'typeof import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/packages/hermes-core/src/index")'.
+src/scripts/test-oscar-onboarding.ts(7,40): error TS2307: Cannot find module '../../platform/workspace-bootstrap' or its corresponding type declarations.
+src/sdk/define-capability.ts(1,10): error TS2305: Module '"../capabilities/capability-runtime"' has no exported member 'CapabilityDefinition'.
+src/sdk/define-pack.ts(2,10): error TS2305: Module '"../capabilities/capability-runtime"' has no exported member 'CapabilityDefinition'.
+src/skills/__tests__/skill-registry.test.ts(4,3): error TS2305: Module '"../registry"' has no exported member 'registerCanonicalSkills'.
+src/skills/__tests__/skill-registry.test.ts(5,3): error TS2305: Module '"../registry"' has no exported member 'CANONICAL_SKILLS'.
+src/skills/__tests__/skill-registry.test.ts(6,3): error TS2459: Module '"../registry"' declares 'HermesSkillDefinition' locally, but it is not exported.
+src/telegram-runtime/router.ts(460,19): error TS2339: Property 'LinkIntentService' does not exist on type 'typeof import("/Users/Marco/Documents/Company/Crypto/Pandoras/dApps/saaspandoras/saaspandoras/packages/hermes-core/src/identity/canonical-identity-graph")'.
+src/test-soul-simulation.ts(1,37): error TS2307: Cannot find module '../marketing/bot-engine' or its corresponding type declarations.
+src/trial/__tests__/hermes-trial-auth-isolation.test.ts(33,10): error TS2305: Module '"@saasfly/shared"' has no exported member 'resolvePortalContext'.
+src/workflow-resolver.ts(1,10): error TS2305: Module '"./kernel/execution/execution-api"' has no exported member 'WorkflowRegistry'.

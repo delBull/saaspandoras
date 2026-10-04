@@ -1,6 +1,6 @@
-import { db } from '../src/db/index';
-import { eq } from 'drizzle-orm';
-import { nexusCollaborators } from '../src/db/schema';
+import { db } from '@saasfly/db-core';
+import { eq } from "@saasfly/db-core";
+import { nexusCollaborators } from '@saasfly/db-core/schema';
 
 async function main() {
   const telegramUserId = '798431743';

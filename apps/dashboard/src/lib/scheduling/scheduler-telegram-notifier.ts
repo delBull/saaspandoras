@@ -129,7 +129,7 @@ export async function sendSchedulerTelegramAlert(
   // Determine role destination (Strict Canonical Identity, ZERO lax substring matching)
   let isFounderHost = hostRole === 'FOUNDER' || hostUserId === 'marco_founder' || hostUserId === 'usr_platform_admin_default';
   if (!isFounderHost && hostUserId) {
-    const { InterlocutorResolver } = await import('@/lib/hermes/identity/interlocutor-resolver');
+    const { InterlocutorResolver } = await import('@saasfly/hermes-core');
     isFounderHost = InterlocutorResolver.isBossIdentity({
       walletAddress: hostUserId.startsWith('0x') ? hostUserId : undefined,
       email: hostUserId.includes('@') ? hostUserId : undefined,

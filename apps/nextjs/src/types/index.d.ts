@@ -1,5 +1,5 @@
 import type * as Lucide from "lucide-react";
-import type { Customer } from "@saasfly/db";
+import type { Customer } from "@saasfly/db-core";
 
 
 export interface Section {

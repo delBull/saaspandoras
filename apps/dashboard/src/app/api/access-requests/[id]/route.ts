@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { db } from "~/db";
-import { accessRequests } from "~/db/schema";
-import { eq } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { accessRequests } from "@saasfly/db-core";
+import { eq } from "@saasfly/db-core";
 import { sendWaitlistSequenceEmail, sendGenesisWelcomeEmail } from "~/lib/marketing/growth-engine/email-senders";
 
 export const runtime = "nodejs";

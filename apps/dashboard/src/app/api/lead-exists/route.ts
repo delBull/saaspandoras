@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db";
-import { accessRequests, marketingLeads, marketingIdentities } from "@/db/schema";
-import { eq, or } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { accessRequests, marketingLeads, marketingIdentities } from "@saasfly/db-core";
+import { eq, or } from "@saasfly/db-core";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const { withRetry } = await import("@/lib/database");
+    const { withRetry } = await import('@saasfly/db-core');
 
     return await withRetry(async () => {
         // Check accessRequests table (primary lead table)

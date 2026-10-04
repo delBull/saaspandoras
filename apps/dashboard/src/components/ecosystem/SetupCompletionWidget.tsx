@@ -17,7 +17,7 @@ import {
   Zap,
 } from 'lucide-react';
 
-import type { EcosystemSetupSummary } from '@/lib/mesh/setup-progress.service';
+import type { EcosystemSetupSummary } from '@saasfly/shared';
 import { HermesFloatingGuide } from '@/components/guides/HermesFloatingGuide';
 import { getStationsForTenantVertical, TenantVertical } from '@/lib/guides/tenant-vertical-guides.data';
 import type { TenantExperienceContext } from '@/lib/mesh/tenant-experience-context';

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { KnowledgeDashboard } from '@/components/hermes-portal/knowledge/KnowledgeDashboard';
-import type { KnowledgeOverviewView } from '@/lib/dash-contracts/knowledge';
+import type { KnowledgeOverviewView } from '@saasfly/shared';
 import { addKnowledgeAction, approveKnowledgeFact, rejectKnowledgeFact } from './actions';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { FileText, Database } from 'lucide-react';

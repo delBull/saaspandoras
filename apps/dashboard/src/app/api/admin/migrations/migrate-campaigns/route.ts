@@ -1,9 +1,9 @@
 
 import { NextResponse } from "next/server";
-import { db } from "@/db"; // Adjust import
-import { marketingCampaigns, marketingExecutions } from "@/db/schema";
-import { eq } from "drizzle-orm";
-import { getAuth, isAdmin } from "@/lib/auth";
+import { db } from "@saasfly/db-core"; // Adjust import
+import { marketingCampaigns, marketingExecutions } from "@saasfly/db-core";
+import { eq } from "@saasfly/db-core";
+import { getAuth, isAdmin } from "@saasfly/auth-sdk";
 import { headers } from "next/headers";
 
 // Define the campaigns to migrate (Extracted from MarketingEngine hardcoded maps)

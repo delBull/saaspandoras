@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { ProvisioningEngine } from '@/lib/platform/provisioning-engine';
-import { ProductKey, PlanKey } from '@/lib/platform/product-registry';
+import { ProductKey, PlanKey } from '@saasfly/shared';
 import { validateAdminSession } from '@/lib/admin-auth';
 
 export async function POST(request: Request) {

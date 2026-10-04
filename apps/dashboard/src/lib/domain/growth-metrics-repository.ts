@@ -1,6 +1,6 @@
-import { db } from "@/db";
-import { marketingLeads } from "@/db/schema";
-import { eq, sql, and, gte, desc } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { marketingLeads } from "@saasfly/db-core";
+import { eq, sql, and, gte, desc } from "@saasfly/db-core";
 
 export class GrowthMetricsRepository {
   static async getLeadsMetrics(last24h: Date, last7d: Date, last30d: Date) {

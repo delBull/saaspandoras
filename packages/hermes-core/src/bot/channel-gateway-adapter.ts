@@ -1,0 +1,610 @@
+import { getDiscordWebhookPort } from '../ports';
+import { 
+  HermesTenantMembershipService
+} from '../auth/tenant-membership.service';
+import { AuthorizedTenant } from '../auth/hermes-session.types';
+import { collectSystemStatus, buildStatusMessage } from './system-status';
+import { db } from '@saasfly/db-core';
+import { hermesJourneys, hermesJourneyStages, hermesAddonInstallations, projects } from '@saasfly/db-core/schema';
+import { eq, or, asc } from "@saasfly/db-core";
+import { TenantCreditLedgerService } from '../compute/tenant-credit-ledger.service';
+import { GatewayChannelContext, ChannelOutboundPayload } from '../channel-gateway';
+import { CANONICAL_ADDONS, ensureCanonicalAddOnsRegistered } from "../addons/catalog";
+
+export function escapeHtml(text: string): string {
+  if (!text) return '';
+  return String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+export class ChannelGatewayAdapter {
+  private tmaBaseUrl: string;
+  private membershipService: HermesTenantMembershipService;
+
+  constructor(options: { tmaBaseUrl?: string } = {}) {
+    this.tmaBaseUrl = options.tmaBaseUrl || process.env.NEXT_PUBLIC_APP_URL || 'https://dash.pandoras.finance';
+    this.membershipService = new HermesTenantMembershipService();
+  }
+
+
+  private async resolveActiveTenant(userId: string, tenants: AuthorizedTenant[], intentSlug?: string): Promise<AuthorizedTenant | null> {
+    if (tenants.length === 0) return null;
+    let activeTenant: AuthorizedTenant | null = tenants[0] ?? null;
+    
+    const { telegramBindings } = await import('@saasfly/db-core/schema');
+    const binding = await db.query.telegramBindings.findFirst({
+        where: (tb, { eq }) => eq(tb.telegramUserId, userId)
+    });
+    
+    if (binding?.activeOrganizationId) {
+        const matched = tenants.find(t => t.organizationId === binding.activeOrganizationId);
+        if (matched) activeTenant = matched;
+    }
+
+    if (intentSlug) {
+      const cleanSlug = intentSlug.replace(/^org_/, '');
+      const matched = tenants.find(t => t.tenantSlug?.toLowerCase() === cleanSlug.toLowerCase() || t.organizationId.toLowerCase() === cleanSlug.toLowerCase());
+      if (matched) {
+          activeTenant = matched;
+          await db.update(telegramBindings)
+            .set({ activeOrganizationId: activeTenant.organizationId })
+            .where(eq(telegramBindings.telegramUserId, userId));
+      }
+    }
+    return activeTenant;
+  }
+
+  async handleInbound(ctx: GatewayChannelContext): Promise<ChannelOutboundPayload> {
+    const text = ctx.message.trim() || '';
+    const userId = ctx.externalUserId;
+    const conversationId = ctx.externalConversationId;
+    
+    // Command routing based on the message content (which the edge parsed)
+    // Edge will send raw text like "/start org_acme" or callback data like "cmd:status"
+    
+    const isCallback = ctx.metadata?.isCallback === true;
+    
+    if (isCallback) {
+        return this.handleCallbackQuery(ctx, text, userId, conversationId);
+    }
+
+    const parts = text.split(/\s+/);
+    const command = (parts[0] || '').toLowerCase();
+    const arg = parts[1] || '';
+
+    // We can also allow tenant hints from the Edge
+    const intentSlug = arg || ctx.tenantHint;
+
+    if (command === '/start') {
+      return this.executeStartCommand(ctx, userId, intentSlug);
+    }
+    if (command === '/portal' || command === '/tma') {
+      return this.executePortalCommand(ctx, userId, intentSlug);
+    }
+    if (command === '/status') {
+      return this.executeStatusCommand(ctx, userId);
+    }
+    if (command === '/help') {
+      return this.executeHelpCommand(ctx);
+    }
+    if (command === '/switch') {
+      return this.executeSwitchCommand(ctx, userId);
+    }
+    if (command === '/journeys') {
+      return this.executeJourneysCommand(ctx, userId);
+    }
+    if (command === '/addons') {
+      return this.executeAddonsCommand(ctx, userId);
+    }
+    if (command === '/recargar' || command === '/credits' || command === '/topup') {
+      return this.executeTopupCommand(ctx, userId);
+    }
+
+    // Conversational Chat Fallback (Natural Language with Hermes Cognitive Runtime)
+    return this.executeConversationalMessage(ctx, userId, text);
+  }
+
+  private async handleCallbackQuery(ctx: GatewayChannelContext, data: string, userId: string, conversationId: string): Promise<ChannelOutboundPayload> {
+    if (data === 'cmd:status') return this.executeStatusCommand(ctx, userId);
+    if (data === 'cmd:switch') return this.executeSwitchCommand(ctx, userId);
+    if (data === 'cmd:journeys') return this.executeJourneysCommand(ctx, userId);
+    if (data === 'cmd:addons') return this.executeAddonsCommand(ctx, userId);
+
+    if (data.startsWith('switch:')) {
+      const targetOrgId = data.replace('switch:', '');
+      try {
+        const session = await this.membershipService.validateTenantAccess({
+          telegramUserId: userId,
+          targetOrganizationId: targetOrgId,
+          username: ctx.metadata?.username,
+        });
+
+        const { telegramBindings } = await import('@saasfly/db-core/schema');
+        await db.update(telegramBindings)
+          .set({ activeOrganizationId: session.tenant.organizationId })
+          .where(eq(telegramBindings.telegramUserId, userId));
+
+        const tmaUrl = `${this.tmaBaseUrl}/tma?tenant=${encodeURIComponent(session.tenant.tenantSlug || session.tenant.organizationId)}`;
+        const successText = `✅ <b>Workspace Activo Conmutado:</b>\n` +
+          `Organización: <b>${escapeHtml(session.tenant.organizationName)}</b>\n` +
+          `Rol: <code>${escapeHtml(session.role)}</code>\n\n` +
+          `Tu Command Center ahora opera sobre este workspace.`;
+
+        return {
+          channel: ctx.channel,
+          externalConversationId: ctx.externalConversationId,
+          externalUserId: ctx.externalUserId,
+          replyText: successText,
+          actions: [
+              [{ id: 'open_tma', label: '🚀 Abrir Command Center (TMA)', url: tmaUrl }],
+              [
+                { id: 'status', label: '📊 Estado', payload: 'cmd:status' },
+                { id: 'journeys', label: '🎯 Journeys', payload: 'cmd:journeys' },
+                { id: 'addons', label: '🧩 Add-Ons', payload: 'cmd:addons' }
+              ],
+              [{ id: 'switch', label: '🔄 Cambiar Workspace', payload: 'cmd:switch' }]
+          ],
+          metadata: { menuButton: { text: '🚀 Command Center', url: tmaUrl } }
+        };
+      } catch (err: any) {
+        return {
+            channel: ctx.channel,
+            externalConversationId: ctx.externalConversationId,
+            externalUserId: ctx.externalUserId,
+            replyText: `❌ Error al conmutar workspace: ${escapeHtml(err.message)}`
+        };
+      }
+    }
+
+    return {
+        channel: ctx.channel,
+        externalConversationId: ctx.externalConversationId,
+        externalUserId: ctx.externalUserId,
+        replyText: "Operación desconocida."
+    };
+  }
+
+  private async executeHelpCommand(ctx: GatewayChannelContext): Promise<ChannelOutboundPayload> {
+    const helpText = `🤖 <b>Hermes OS Command Center</b>\n\n` +
+      `<b>Comandos de Operación:</b>\n` +
+      `• <code>/start</code> — Menú principal e inicio de sesión en tu Workspace.\n` +
+      `• <code>/portal</code> o <code>/tma</code> — Abrir la Mini App de Hermes OS.\n` +
+      `• <code>/recargar</code> — Recargar créditos de GPU serverless.\n` +
+      `• <code>/status</code> — Diagnóstico de salud (Postgres, IPFS y Bóvedas).\n` +
+      `• <code>/journeys</code> — Embudos de conversión, etapas e hitos en vivo.\n` +
+      `• <code>/addons</code> — Estrategias y Add-Ons cognitivos activos.\n` +
+      `• <code>/switch</code> — Conmutar entre organizaciones autorizadas.\n` +
+      `• <code>/help</code> — Guía de comandos.\n\n` +
+      `💡 <i>Para vincular tu cuenta a un Workspace, ingresa al Dashboard Web con tu wallet autorizada o agrega tu ID externo.</i>`;
+
+    return {
+        channel: ctx.channel,
+        externalConversationId: ctx.externalConversationId,
+        externalUserId: ctx.externalUserId,
+        replyText: helpText
+    };
+  }
+
+  private async executeStartCommand(ctx: GatewayChannelContext, userId: string, intentSlug?: string): Promise<ChannelOutboundPayload> {
+    const tenants = await this.membershipService.getAuthorizedTenants(userId);
+    const username = ctx.metadata?.username || 'Operador';
+
+    if (tenants.length === 0) {
+      const safeUsername = escapeHtml(username);
+      const unauthText = `🏛️ <b>Hermes OS — Command Center</b>\n\n` +
+        `Hola @${safeUsername}. Tu cuenta (ID: <code>${escapeHtml(userId)}</code>) no tiene workspaces vinculados en Hermes OS.\n\n` +
+        `ℹ️ <i>Para vincular tu cuenta, entra al Dashboard web en tu organización y agrega tu ID de comunicación o conecta tu wallet autorizada.</i>`;
+      return {
+          channel: ctx.channel,
+          externalConversationId: ctx.externalConversationId,
+          externalUserId: ctx.externalUserId,
+          replyText: unauthText
+      };
+    }
+
+    let activeTenant = (await this.resolveActiveTenant(userId, tenants, intentSlug))!;
+
+    const tmaUrl = `${this.tmaBaseUrl}/tma?tenant=${encodeURIComponent(activeTenant.tenantSlug || activeTenant.organizationId)}`;
+    const welcomeText = `🏛️ <b>Hermes OS — Command Center</b>\n\n` +
+      `Operador: <b>@${escapeHtml(username)}</b>\n` +
+      `Workspace Activo: <b>${escapeHtml(activeTenant.organizationName)}</b> (Rol: <code>${escapeHtml(activeTenant.role)}</code>)\n\n` +
+      `Selecciona una acción operativa:`;
+
+    const actions: any[][] = [
+      [{ id: 'open_tma', label: '🚀 Abrir Command Center', url: tmaUrl }],
+      [{ id: 'status', label: '📊 Estado del Sistema', payload: 'cmd:status' }]
+    ];
+    if (tenants.length > 1) {
+      actions.push([{ id: 'switch', label: `🔄 Cambiar Workspace (${tenants.length} disponibles)`, payload: 'cmd:switch' }]);
+    }
+
+    return {
+        channel: ctx.channel,
+        externalConversationId: ctx.externalConversationId,
+        externalUserId: ctx.externalUserId,
+        replyText: welcomeText,
+        actions,
+        metadata: { menuButton: { text: '🚀 Command Center', url: tmaUrl } }
+    };
+  }
+
+  private async executePortalCommand(ctx: GatewayChannelContext, userId: string, intentSlug?: string): Promise<ChannelOutboundPayload> {
+    const tenants = await this.membershipService.getAuthorizedTenants(userId);
+    if (tenants.length === 0) {
+        return {
+            channel: ctx.channel,
+            externalConversationId: ctx.externalConversationId,
+            externalUserId: ctx.externalUserId,
+            replyText: `⚠️ No tienes workspaces autorizados en Hermes OS.`
+        };
+    }
+
+    let activeTenant = (await this.resolveActiveTenant(userId, tenants, intentSlug))!;
+    const tmaUrl = `${this.tmaBaseUrl}/tma?tenant=${encodeURIComponent(activeTenant.tenantSlug || activeTenant.organizationId)}`;
+    const text = `📱 <b>Hermes OS Command Center</b>\nWorkspace: <b>${escapeHtml(activeTenant.organizationName)}</b>`;
+    
+    return {
+        channel: ctx.channel,
+        externalConversationId: ctx.externalConversationId,
+        externalUserId: ctx.externalUserId,
+        replyText: text,
+        actions: [[{ id: 'open_tma', label: '⚡ Entrar al Command Center', url: tmaUrl }]],
+        metadata: {
+            menuButton: { text: '🚀 Command Center', url: tmaUrl }
+        }
+    };
+  }
+
+  private async executeStatusCommand(ctx: GatewayChannelContext, userId: string): Promise<ChannelOutboundPayload> {
+    const tenants = await this.membershipService.getAuthorizedTenants(userId);
+    if (tenants.length === 0) {
+        return {
+            channel: ctx.channel,
+            externalConversationId: ctx.externalConversationId,
+            externalUserId: ctx.externalUserId,
+            replyText: `⚠️ No tienes acceso a métricas de estado.`
+        };
+    }
+    const activeTenant = (await this.resolveActiveTenant(userId, tenants))!;
+    const status = await collectSystemStatus(activeTenant.organizationId);
+    const statusText = buildStatusMessage(status, activeTenant.organizationName, tenants.length);
+
+    return {
+        channel: ctx.channel,
+        externalConversationId: ctx.externalConversationId,
+        externalUserId: ctx.externalUserId,
+        replyText: statusText
+    };
+  }
+
+  private async executeSwitchCommand(ctx: GatewayChannelContext, userId: string): Promise<ChannelOutboundPayload> {
+    const tenants = await this.membershipService.getAuthorizedTenants(userId);
+    if (tenants.length === 0) {
+        return {
+            channel: ctx.channel,
+            externalConversationId: ctx.externalConversationId,
+            externalUserId: ctx.externalUserId,
+            replyText: `⚠️ No tienes workspaces para conmutar.`
+        };
+    }
+
+    const actions = tenants.map(t => [
+        { id: `switch_${t.organizationId}`, label: `${t.isOwner ? '👑' : '🏢'} ${t.organizationName} (${t.role})`, payload: `switch:${t.organizationId}` }
+    ]);
+    const text = `🔄 <b>Selecciona el Workspace Activo:</b>\nElige una organización para gestionar su Hermes OS:`;
+
+    return {
+        channel: ctx.channel,
+        externalConversationId: ctx.externalConversationId,
+        externalUserId: ctx.externalUserId,
+        replyText: text,
+        actions
+    };
+  }
+
+  private async executeJourneysCommand(ctx: GatewayChannelContext, userId: string): Promise<ChannelOutboundPayload> {
+    const tenants = await this.membershipService.getAuthorizedTenants(userId);
+    if (tenants.length === 0) {
+      return {
+          channel: ctx.channel,
+          externalConversationId: ctx.externalConversationId,
+          externalUserId: ctx.externalUserId,
+          replyText: `⚠️ No tienes workspaces autorizados en Hermes OS.`
+      };
+    }
+
+    const activeTenant = (await this.resolveActiveTenant(userId, tenants))!;
+    const cleanTenant = (activeTenant.tenantSlug || activeTenant.organizationId).toLowerCase().replace(/^org_/, '');
+    const tmaUrl = `${this.tmaBaseUrl}/tma?tenant=${encodeURIComponent(activeTenant.tenantSlug || activeTenant.organizationId)}`;
+
+    try {
+      const journeys = await db
+        .select()
+        .from(hermesJourneys)
+        .where(or(eq(hermesJourneys.organizationId, activeTenant.organizationId), eq(hermesJourneys.organizationId, cleanTenant)))
+        .orderBy(asc(hermesJourneys.createdAt));
+
+      let msg = `🎯 <b>Journeys & Funnels — ${escapeHtml(activeTenant.organizationName)}</b>\n\n`;
+
+      if (journeys.length === 0) {
+        msg += `<i>No hay journeys configurados para este workspace.</i>\n`;
+      } else {
+        for (const j of journeys) {
+          const stages = await db.select().from(hermesJourneyStages).where(eq(hermesJourneyStages.journeyId, j.id)).orderBy(asc(hermesJourneyStages.orderIndex));
+          const statusEmoji = j.status === 'ACTIVE' ? '🟢' : '⏸️';
+          msg += `${statusEmoji} <b>${escapeHtml(j.name)}</b> (v${j.version || 1})\n`;
+          if (j.description) msg += `   <i>${escapeHtml(j.description)}</i>\n`;
+          msg += `   <b>Etapas (${stages.length}):</b>\n`;
+          for (const s of stages) {
+            msg += `   • <code>${s.orderIndex + 1}.</code> ${escapeHtml(s.name)}\n`;
+          }
+          msg += `\n`;
+        }
+      }
+
+      return {
+          channel: ctx.channel,
+          externalConversationId: ctx.externalConversationId,
+          externalUserId: ctx.externalUserId,
+          replyText: msg,
+          actions: [
+                  [{ id: 'open_tma', label: '📱 Administrar Journeys en TMA', url: tmaUrl }],
+                  [{ id: 'refresh', label: '🔄 Actualizar', payload: 'cmd:journeys' }]
+              ]
+      };
+    } catch (err: any) {
+        return {
+            channel: ctx.channel,
+            externalConversationId: ctx.externalConversationId,
+            externalUserId: ctx.externalUserId,
+            replyText: `❌ Error al consultar journeys.`
+        };
+    }
+  }
+
+  private async executeAddonsCommand(ctx: GatewayChannelContext, userId: string): Promise<ChannelOutboundPayload> {
+    const tenants = await this.membershipService.getAuthorizedTenants(userId);
+    if (tenants.length === 0) {
+        return {
+            channel: ctx.channel,
+            externalConversationId: ctx.externalConversationId,
+            externalUserId: ctx.externalUserId,
+            replyText: `⚠️ No tienes workspaces autorizados en Hermes OS.`
+        };
+    }
+
+    const activeTenant = (await this.resolveActiveTenant(userId, tenants))!;
+    const cleanTenant = (activeTenant.tenantSlug || activeTenant.organizationId).toLowerCase().replace(/^org_/, '');
+    const tmaUrl = `${this.tmaBaseUrl}/tma?tenant=${encodeURIComponent(activeTenant.tenantSlug || activeTenant.organizationId)}`;
+
+    try {
+      await ensureCanonicalAddOnsRegistered();
+      const installations = await db.select().from(hermesAddonInstallations)
+        .where(or(eq(hermesAddonInstallations.organizationId, activeTenant.organizationId), eq(hermesAddonInstallations.organizationId, cleanTenant)));
+
+      const installedSet = new Set(installations.filter(i => i.status === 'ACTIVE').map(i => i.addonId));
+      let msg = `🧩 <b>Add-Ons & Estrategias Cognitivas — ${escapeHtml(activeTenant.organizationName)}</b>\n\n`;
+
+      for (const addon of CANONICAL_ADDONS) {
+        const isActive = installedSet.has(addon.id);
+        const icon = isActive ? '✅' : '⚪';
+        const statusText = isActive ? 'ACTIVO' : 'DISPONIBLE';
+        msg += `${icon} <b>${escapeHtml(addon.name)}</b> [<code>${statusText}</code>]\n`;
+        msg += `   <i>${escapeHtml(addon.description)}</i>\n`;
+        msg += `   Tipo: <code>${addon.type}</code> · v${addon.version}\n\n`;
+      }
+
+      return {
+          channel: ctx.channel,
+          externalConversationId: ctx.externalConversationId,
+          externalUserId: ctx.externalUserId,
+          replyText: msg,
+          actions: [
+                  [{ id: 'open_tma', label: '⚡ Activar / Desactivar en TMA', url: tmaUrl }],
+                  [{ id: 'refresh', label: '🔄 Actualizar', payload: 'cmd:addons' }]
+              ]
+      };
+    } catch (err: any) {
+        return {
+            channel: ctx.channel,
+            externalConversationId: ctx.externalConversationId,
+            externalUserId: ctx.externalUserId,
+            replyText: `❌ Error al consultar addons.`
+        };
+    }
+  }
+
+  private async executeTopupCommand(ctx: GatewayChannelContext, userId: string): Promise<ChannelOutboundPayload> {
+    const tenants = await this.membershipService.getAuthorizedTenants(userId);
+    if (tenants.length === 0) {
+        return {
+            channel: ctx.channel,
+            externalConversationId: ctx.externalConversationId,
+            externalUserId: ctx.externalUserId,
+            replyText: `⚠️ Tu cuenta no tiene organizaciones vinculadas en Hermes OS. Vincula tu cuenta desde el Dashboard web para recargar créditos.`
+        };
+    }
+
+    const activeTenant = (await this.resolveActiveTenant(userId, tenants))!;
+    const cleanTenant = (activeTenant.tenantSlug || activeTenant.organizationId).toLowerCase().replace(/^org_/, '');
+    const credits = await TenantCreditLedgerService.getOrCreateCredits(cleanTenant);
+
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://dash.pandoras.finance';
+    const topupUrl = `${baseUrl}/portal/${cleanTenant}/media?topup=true`;
+
+    const text = `💳 <b>Hermes Billing & Créditos de Cómputo</b>\n` +
+      `🏢 Workspace: <b>${escapeHtml(activeTenant.organizationName)}</b> (@${escapeHtml(cleanTenant)})\n\n` +
+      `<b>Estado de Créditos:</b>\n` +
+      `• Saldo Producción: <code>$${credits.creditBalanceUsd.toFixed(2)} USD</code>\n` +
+      `• Saldo Sandbox (Test): <code>$${credits.sandboxBalanceUsd.toFixed(2)} USD</code>\n` +
+      `• Margen Aplicado: <code>${credits.markupPercentage}%</code>\n\n` +
+      `⚡ <i>Powered by Thirdweb Pay • Acepta Tarjeta (Débito/Crédito) y Cripto (USDC on-chain).\n` +
+      `Mínimo de recarga: $5.00 USD con garantía scale-to-zero serverless.</i>`;
+
+    return {
+        channel: ctx.channel,
+        externalConversationId: ctx.externalConversationId,
+        externalUserId: ctx.externalUserId,
+        replyText: text,
+        actions: [
+                [{ id: 'topup_mini', label: '💳 Recargar en Mini App', url: topupUrl }],
+                [{ id: 'topup_web', label: '🌐 Recargar en Portal Web', url: topupUrl }],
+                [{ id: 'status', label: '📊 Estado del Sistema', payload: 'cmd:status' }]
+            ]
+    };
+  }
+
+  private async executeConversationalMessage(ctx: GatewayChannelContext, userId: string, text: string): Promise<ChannelOutboundPayload> {
+    const lower = text.toLowerCase();
+    if (lower.includes('recargar') || lower.includes('crédito') || lower.includes('credito') || lower.includes('saldo') || lower.includes('topup') || lower.includes('comprar')) {
+      return this.executeTopupCommand(ctx, userId);
+    }
+
+    const { InterlocutorResolver } = await import('../identity/interlocutor-resolver');
+    const interlocutor = await InterlocutorResolver.resolve({
+      channel: ctx.channel as any,
+      externalUserId: userId,
+      telegramId: userId,
+      telegramUsername: ctx.metadata?.username,
+      nameHint: ctx.metadata?.firstName ? `${ctx.metadata.firstName} ${ctx.metadata.lastName || ''}`.trim() : ctx.metadata?.username,
+      tenantSlug: ctx.tenantHint,
+    });
+
+    let tenants = await this.membershipService.getAuthorizedTenants(userId);
+    if (tenants.length === 0 && interlocutor.isBoss) {
+      tenants = [{
+        organizationId: 'pandoras',
+        tenantSlug: 'pandoras',
+        organizationName: "Pandora's Growth OS",
+        role: 'OWNER',
+        permissions: ['*'],
+      } as any];
+    }
+
+    if (tenants.length === 0) {
+      const helpText = `🤖 <b>Hermes OS</b>\n\nHola ${escapeHtml(interlocutor.name)}. Tu cuenta (ID: <code>${escapeHtml(userId)}</code>) no está vinculada a ningún Workspace activo en Hermes OS.\n\nUsa <code>/start</code> para ver opciones o ingresa al Dashboard para vincularla.`;
+      return { channel: ctx.channel, externalConversationId: ctx.externalConversationId, externalUserId: ctx.externalUserId, replyText: helpText };
+    }
+
+    const activeTenant = (await this.resolveActiveTenant(userId, tenants))!;
+    const cleanTenant = (activeTenant.tenantSlug || activeTenant.organizationId).toLowerCase().replace(/^org_/, '');
+    const tmaUrl = `${this.tmaBaseUrl}/tma?tenant=${encodeURIComponent(activeTenant.tenantSlug || activeTenant.organizationId)}`;
+
+    try {
+      let projectRecord = await db.query.projects.findFirst({
+        where: or(eq(projects.slug, cleanTenant), eq(projects.slug, activeTenant.organizationId)),
+      });
+
+      if (!projectRecord) {
+        const numId = parseInt(activeTenant.organizationId, 10);
+        if (!isNaN(numId)) {
+          projectRecord = await db.query.projects.findFirst({ where: eq(projects.id, numId) });
+        }
+      }
+
+      if (projectRecord) {
+        // HITL Check: Verify if the conversation is escalated to a human (Boss is never blocked)
+        const { hermesConversations } = await import('@saasfly/db-core/schema');
+        const activeConversation = await db.query.hermesConversations.findFirst({
+            where: (conv, { eq, and }) => and(
+                eq(conv.organizationId, projectRecord!.slug),
+                eq(conv.conversationId, ctx.externalConversationId)
+            )
+        });
+
+        if (!interlocutor.isBoss && activeConversation?.status === 'PAUSED_HUMAN') {
+            const DiscordWebhookService = getDiscordWebhookPort();
+            const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://dash.pandoras.finance';
+            await DiscordWebhookService.dispatchEscalation({
+                tenantSlug: projectRecord.slug,
+                externalConversationId: ctx.externalConversationId,
+                externalUserId: ctx.externalUserId,
+                channel: ctx.channel,
+                reason: 'USER_REPLY',
+                transcriptSummary: `*El usuario envió un nuevo mensaje mientras esperaba soporte:*\n"${text}"`,
+                dashboardUrl: `${baseUrl}/portal/${projectRecord.slug}/hermes`
+            });
+
+            return {
+                channel: ctx.channel,
+                externalConversationId: ctx.externalConversationId,
+                externalUserId: ctx.externalUserId,
+                replyText: `⏳ Un especialista de ${escapeHtml(activeTenant.organizationName)} está revisando tu caso. Te responderemos a la brevedad.`
+            };
+        }
+
+        const { HermesExecutionEngine } = await import('../kernel/execution/execution-api');
+        const engine = new HermesExecutionEngine();
+        
+        const { IdentityResolver } = await import('./identity-resolver');
+        const identityId = await IdentityResolver.resolveIdentity(ctx.channel, ctx.externalUserId, ctx.metadata);
+        
+        // Native Universal Execution Request
+        const request = {
+            requestId: `req-${Date.now()}-${Math.floor(Math.random()*1000)}`,
+            executionId: `${ctx.channel}-${Date.now()}`,
+            tenantId: String(projectRecord.id),
+            requester: ctx.externalConversationId,
+            channel: ctx.channel,
+            capability: 'communication.route',
+            executionProfile: 'interactive' as const,
+            identity: { userId, identityId },
+            priority: 'normal' as const,
+            payload: {
+                projectId: projectRecord.id,
+                chatId: ctx.externalConversationId,
+                userMessage: text,
+                botToken: process.env.TELEGRAM_BOT_TOKEN || '',
+                raw: ctx
+            }
+        };
+
+        const result = await engine.execute(request);
+        
+        // Render from standard execution artifacts
+        const textArtifact = result.artifacts?.find((a: any) => a.type === 'message');
+        const reply = textArtifact ? textArtifact.content : (result as any).reply || '';
+
+        if (reply && reply.trim()) {
+            return {
+                channel: ctx.channel,
+                externalConversationId: ctx.externalConversationId,
+                externalUserId: ctx.externalUserId,
+                replyText: reply,
+                actions: [
+                        [{ id: 'open_tma', label: '🚀 Abrir Command Center', url: tmaUrl }],
+                        [{ id: 'status', label: '📊 Estado', payload: 'cmd:status' }]
+                    ]
+            };
+        }
+      }
+
+      const fallbackMsg = `🤖 <b>Hermes OS [${escapeHtml(activeTenant.organizationName)}]</b>\n\n` +
+        `Recibí tu consulta: <i>"${escapeHtml(text)}"</i>.\n\n` +
+        `Puedes consultar el estado con <code>/status</code>, gestionar embudos con <code>/journeys</code> o abrir la Mini App para interactuar con tus agentes.`;
+
+      return {
+          channel: ctx.channel,
+          externalConversationId: ctx.externalConversationId,
+          externalUserId: ctx.externalUserId,
+          replyText: fallbackMsg,
+          actions: [
+                  [{ id: 'open_tma', label: '🚀 Abrir Command Center (TMA)', url: tmaUrl }],
+                  [{ id: 'status', label: '📊 Estado del Sistema', payload: 'cmd:status' }],
+                  [{ id: 'journeys', label: '🎯 Journeys', payload: 'cmd:journeys' }]
+              ]
+      };
+    } catch (err: any) {
+        return {
+            channel: ctx.channel,
+            externalConversationId: ctx.externalConversationId,
+            externalUserId: ctx.externalUserId,
+            replyText: `⚠️ Ocurrió un error al procesar tu mensaje con Hermes OS.`
+        };
+    }
+  }
+}

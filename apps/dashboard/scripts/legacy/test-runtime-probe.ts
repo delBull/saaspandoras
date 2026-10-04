@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { db } from '@/db';
 import { projects, hermesAddons, hermesAddonInstallations, hermesAddonAudit } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq } from "@saasfly/db-core";
 import { CognitiveContextBuilder } from '@/lib/pandoras/core/domains/hermes/addons/context-merger';
 import { AddOnGovernanceService } from '@/lib/pandoras/core/domains/hermes/addons/governance';
 import { ControlPlaneContext } from '@/lib/pandoras/core/domains/hermes/knowledge/types';

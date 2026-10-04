@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { db } from "@/db";
-import { transactions, purchases, daoMembers, integrationClients } from "@/db/schema";
+import { db } from "@saasfly/db-core";
+import { transactions, purchases, daoMembers, integrationClients } from "@saasfly/db-core";
 import { sendPaymentNotification } from "@/lib/discord/notifier";
 import { WebhookService } from "@/lib/integrations/webhook-service";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql } from "@saasfly/db-core";
 import crypto from "crypto";
 import { LegalEngine } from "@/lib/legal/engine";
-import { paymentInboxEvents } from "@/db/schema";
+import { paymentInboxEvents } from "@saasfly/db-core";
 
 // Security: Fail-closed signature verification for thirdweb Pay / Engine webhooks.
 // Payloads are signed with HMAC-SHA256 over the raw request body using THIRDWEB_WEBHOOK_SECRET.

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { resend, FROM_EMAIL } from '@/lib/resend';
+import { resend, FROM_EMAIL } from '@saasfly/shared';
 
 export const dynamic = 'force-dynamic';
 

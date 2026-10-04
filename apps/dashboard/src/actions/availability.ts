@@ -1,10 +1,10 @@
 'use server';
 
-import { db } from "@/db";
-import { administrators, schedulingSlots } from "@/db/schema";
-import { eq, and, gte } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { administrators, schedulingSlots } from "@saasfly/db-core";
+import { eq, and, gte } from "@saasfly/db-core";
 import { addDays, format, isSameDay, setHours, setMinutes, startOfDay } from "date-fns";
-import { getAuth, isAdmin } from "@/lib/auth";
+import { getAuth, isAdmin } from "@saasfly/auth-sdk";
 import { headers } from "next/headers";
 
 export interface DayConfig {

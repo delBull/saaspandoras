@@ -1,5 +1,5 @@
 import postgres from "postgres";
-import { drizzle } from "drizzle-orm/postgres-js";
+import { drizzle } from "@saasfly/db-core"postgres-js";
 import * as schema from "../db/schema.js";
 import * as schemaExtended from "../db/schema-extended.js";
 

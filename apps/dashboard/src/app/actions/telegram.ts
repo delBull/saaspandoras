@@ -1,7 +1,7 @@
 'use server'
-import { getAuth } from "@/lib/auth";
+import { getAuth } from "@saasfly/auth-sdk";
 import { headers } from "next/headers";
-import { sql } from "@/lib/database";
+import { sql } from '@saasfly/db-core';
 
 export async function validateTelegramLinkAction(challenge: string): Promise<{ success: boolean; message?: string }> {
     try {

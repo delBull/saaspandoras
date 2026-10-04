@@ -4,20 +4,20 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
-import { projects, marketingLeads } from '@/db/schema';
-import { eq, or, and } from 'drizzle-orm';
-import { validatePortalSession } from '@/lib/platform/portal-auth';
-import { OrganizationSDK } from '@/lib/platform/organization-sdk';
-import { SessionTokenService } from '@/lib/hermes/auth/session-token.service';
-import { checkRateLimit, clientIpFromHeaders } from '@/lib/hermes/auth/rate-limiter';
-import type { GetIdentityResponseDTO, TeamMemberDTO } from '@/lib/dash-contracts/identity';
+import { db } from '@saasfly/db';
+import { projects, marketingLeads } from '@saasfly/db/schema';
+import { eq, or, and } from "@saasfly/db-core";
+import { validatePortalSession } from '@saasfly/shared';
+import { OrganizationSDK } from '@saasfly/shared';
+import { SessionTokenService } from '@saasfly/hermes-core';
+import { checkRateLimit, clientIpFromHeaders } from '@saasfly/hermes-core';
+import type { GetIdentityResponseDTO, TeamMemberDTO } from '@saasfly/shared';
 
 export const dynamic = 'force-dynamic';
 
 const sessionTokenService = new SessionTokenService();
 
-import { isUuid } from '@/lib/utils';
+import { isUuid } from '@saasfly/shared';
 
 function buildProjectMatchCondition(targetSlug: string, orgId?: string) {
   const canonicalTarget = targetSlug?.replace(/^org_/, '').trim();

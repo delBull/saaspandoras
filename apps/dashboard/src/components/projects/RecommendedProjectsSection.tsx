@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { sanitizeUrl } from "@/lib/project-utils";
+import { sanitizeUrl } from "@saasfly/shared";
 
 interface RecommendedProjectsSectionProps {
   currentProjectSlug: string;

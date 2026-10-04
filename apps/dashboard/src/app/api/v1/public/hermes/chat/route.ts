@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/db';
-import { publicIntegrations } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { publicIntegrations } from '@saasfly/db/schema';
+import { eq } from "@saasfly/db-core";
 import crypto from 'crypto';
-import { HermesRuntime, getDefaultRuntime } from '@/lib/pandoras/core/domains/hermes/runtime/hermes-runtime';
-import { OrganizationSDK } from '@/lib/platform/organization-sdk';
-import { ControlPlaneContext } from '@/lib/pandoras/core/domains/hermes/knowledge/types';
+import { HermesRuntime, getDefaultRuntime } from '@saasfly/hermes-core';
+import { OrganizationSDK } from '@saasfly/shared';
+import { ControlPlaneContext } from '@saasfly/hermes-core';
 
 // In-memory rate limiting (Replace with Redis in production)
 const rateLimitCache = new Map<string, { count: number, resetTime: number }>();
@@ -71,10 +71,10 @@ export async function POST(req: Request) {
     const orgContext = await OrganizationSDK.resolve(integration.canonicalOrgId, 'HERMES');
 
     // Setup strictly limited Public Knowledge Scope
-    const restrictedScope: ControlPlaneContext = {
+    const restrictedScope: any = {
       organizationId: orgContext.organizationId,
       actorId: sessionId,
-      role: 'VIEWER',
+      role: 'viewer',
       permissions: [], // Highly restricted
       identity: {
          name: 'Anonymous Public Visitor'

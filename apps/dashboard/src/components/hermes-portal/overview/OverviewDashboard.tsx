@@ -9,7 +9,7 @@
  */
 
 import React from 'react';
-import type { HermesOverviewView, PortalContext } from '@/lib/portal/portal-types';
+import type { HermesOverviewView, PortalContext } from '@saasfly/shared';
 import { SystemCore } from './SystemCore';
 import { StrategicActivityCard } from './StrategicActivityCard';
 import { TelegramOperatorLinkCard } from './TelegramOperatorLinkCard';

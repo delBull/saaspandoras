@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { classifyUserAccess } from "@/lib/access/service";
 import { processGrowthEvent } from "@/lib/marketing/growth-engine/engine-service";
-import { db } from "@/db";
-import { marketingLeads } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { marketingLeads } from "@saasfly/db-core";
+import { eq } from "@saasfly/db-core";
 
 /**
  * POST /api/access/assign

@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/db';
-import { projects } from '@/db/schema';
-import { eq } from 'drizzle-orm';
-import { withSecurity, apiRateLimiter } from '@/lib/security-utils';
-import { HermesExecutionEngine } from '@/lib/hermes/kernel/execution/execution-api';
-import { TelegramAdapter } from '@/lib/hermes/adapters/telegram-adapter';
-import { OrganizationSDK } from '@/lib/platform/organization-sdk';
+import { db } from '@saasfly/db';
+import { projects } from '@saasfly/db/schema';
+import { eq } from "@saasfly/db-core";
+import { withSecurity, apiRateLimiter } from '@saasfly/shared';
+import { HermesExecutionEngine } from '@saasfly/hermes-core';
+import { TelegramAdapter } from '@saasfly/hermes-core';
+import { OrganizationSDK } from '@saasfly/shared';
 
 /**
  * 📡 Pandora's Platform OS v5 — Autonomous Webhook Endpoint powered by ExecutionEngine Kernel
@@ -112,7 +112,7 @@ async function handler(req: Request, props: { params: Promise<{ projectId: strin
     }
 
     // 3. Delegate to the Governed HermesRuntime (Runtime Parity & Tenant Boundary)
-    const { getDefaultRuntime } = await import('@/lib/pandoras/core/domains/hermes/runtime/hermes-runtime');
+    const { getDefaultRuntime } = await import('@saasfly/hermes-core');
     const runtime = getDefaultRuntime();
     const runtimeResponse = await runtime.respond({
       organizationId: projectSlug,

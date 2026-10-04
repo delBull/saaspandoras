@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/db';
-import { daoMembers, projects } from '@/db/schema';
-import { eq, sql, count, sum, desc, and, inArray } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { daoMembers, projects } from '@saasfly/db/schema';
+import { eq, sql, count, sum, desc, and, inArray } from "@saasfly/db-core";
 import { defineChain, getContract, readContract } from "thirdweb";
-import { client } from "@/lib/thirdweb-client";
+import { client } from "@saasfly/shared";
 import { getWalletBalance } from "thirdweb/wallets";
 import { harmonizeProject } from "@/lib/projects/harmonizer";
 

@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
-import { eq, desc, and, sql } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { eq, desc, and, sql } from "@saasfly/db-core";
 import type {
   UserGamificationProfile,
   UserAchievement,
@@ -17,8 +17,8 @@ import {
   type GamificationProfile as DrizzleGamificationProfile,
   type UserAchievement as DrizzleUserAchievement,
   type Reward as DrizzleReward,
-} from '@/db/schema';
-import { ilike } from 'drizzle-orm';
+} from '@saasfly/db/schema';
+import { ilike } from "@saasfly/db-core";
 import { GamificationService } from '@/lib/gamification/service';
 
 export async function GET(
@@ -47,7 +47,7 @@ export async function GET(
     console.debug(`🔍 API: Getting gamification data for wallet ${walletAddress}`);
 
     // 🚀 Hardened with Retry to handle ECONNRESET
-    const { withRetry } = await import("@/lib/database");
+    const { withRetry } = await import('@saasfly/db-core');
 
     return await withRetry(async () => {
       // 🔍 1. Resolve User & Fetch Global Data in Parallel

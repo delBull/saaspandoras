@@ -1,15 +1,15 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { db } from '@/db';
-import { projects, channelIdentityBindings } from '@/db/schema';
-import { eq, and, or, inArray } from 'drizzle-orm';
-import { validatePortalSession } from '@/lib/platform/portal-auth';
+import { db } from '@saasfly/db';
+import { projects, channelIdentityBindings } from '@saasfly/db/schema';
+import { eq, and, or, inArray } from "@saasfly/db-core";
+import { validatePortalSession } from '@saasfly/shared';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const TELEGRAM_NUMERIC_ID = /^\d{3,20}$/;
 
-import { isUuid } from '@/lib/utils';
+import { isUuid } from '@saasfly/shared';
 
 async function resolveTenant(slugOrId: string) {
   const isUuidCheck = isUuid(slugOrId);

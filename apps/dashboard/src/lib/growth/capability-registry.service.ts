@@ -6,15 +6,15 @@
  * granular permissions, governance gates, and fail-closed operational limits.
  */
 
-import { db } from '@/db';
-import { projects, installedProducts, marketingLeads, operationalIntents } from '@/db/schema';
-import { eq, or, and, count } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { projects, installedProducts, marketingLeads, operationalIntents } from '@saasfly/db/schema';
+import { eq, or, and, count } from "@saasfly/db-core";
 import type { 
   GrowthCapabilityKey, 
   GrowthCapabilityDefinition, 
   TenantGrowthProfileDTO,
   GrowthPlanTier
-} from '@/lib/dash-contracts/growth';
+} from '@saasfly/shared';
 import { getTreasuryBalances } from '@/lib/growth/treasury-onchain';
 
 const STANDARD_CAPABILITIES: Record<GrowthCapabilityKey, Omit<GrowthCapabilityDefinition, 'enabled'>> = {
@@ -223,7 +223,7 @@ export class CapabilityRegistryService {
     const nftCap = capabilities.find(c => c.key === 'growth.nft');
     if (nftCap && !nftCap.enabled) {
       try {
-        const { NftLabActivationService } = await import('./nft/nft-lab-activation.service');
+        const { NftLabActivationService } = await import('@saasfly/nexus-deals-sdk');
         const nftActive = await NftLabActivationService.isActive(organizationId);
         if (nftActive) {
           nftCap.enabled = true;

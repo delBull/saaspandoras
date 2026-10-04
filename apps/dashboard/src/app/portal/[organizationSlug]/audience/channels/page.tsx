@@ -1,5 +1,5 @@
 import React from "react";
-import { resolvePortalContext } from "@/lib/portal/resolve-portal-context";
+import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
 import { redirect } from "next/navigation";
 import { TelegramBridgePanel } from "@/components/admin/TelegramBridgePanel";
 import { DiscordManager } from "@/components/admin/DiscordManager";

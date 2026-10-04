@@ -1,10 +1,10 @@
 "use client";
 
 import { useConnectModal, useDisconnect, useActiveAccount, useActiveWallet } from "thirdweb/react";
-import { client } from "@/lib/thirdweb-client";
+import { client } from "@saasfly/shared";
 import { config } from "@/config";
 import { wallets } from "@/lib/wallets";
-import { cn } from "@/lib/utils";
+import { cn } from "@saasfly/shared";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 

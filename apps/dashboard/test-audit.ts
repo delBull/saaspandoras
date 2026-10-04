@@ -1,4 +1,4 @@
-import { PlatformAuditLedgerService } from '@/lib/admin/platform-audit-ledger.service';
+import { PlatformAuditLedgerService } from '@saasfly/hermes-core';
 async function run() {
   try {
     const intentId = 'intent_123';

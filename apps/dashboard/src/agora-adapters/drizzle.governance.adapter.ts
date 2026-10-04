@@ -1,6 +1,6 @@
-import { db } from "@/db";
-import { protocolConfigQueues, protocolConfigs, actionLogs } from "@/db/schema";
-import { eq, and, lte } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { protocolConfigQueues, protocolConfigs, actionLogs } from "@saasfly/db-core";
+import { eq, and, lte } from "@saasfly/db-core";
 import type { IGovernanceStorageAdapter, PendingConfigUpdate } from "@pandoras/agora-engine";
 import crypto from "crypto";
 

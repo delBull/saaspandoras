@@ -8,10 +8,10 @@ import {
   canUserEditDeal,
   isUserCreatorOfDeal,
   resolveRoomCreator,
-} from "@/lib/nexus-deals/repo";
-import { db } from "@/db";
-import { nexusCollaborators } from "@/db/schema";
-import { eq, and, ne } from "drizzle-orm";
+} from "@saasfly/nexus-deals-sdk";
+import { db } from "@saasfly/db-core";
+import { nexusCollaborators } from "@saasfly/db-core";
+import { eq, and, ne } from "@saasfly/db-core";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

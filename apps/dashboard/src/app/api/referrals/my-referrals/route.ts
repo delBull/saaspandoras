@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { db } from "~/db";
-import { userReferrals } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { userReferrals } from "@saasfly/db-core";
+import { eq } from "@saasfly/db-core";
 
 // Endpoint GET para obtener referidos de un referrer
 // /api/referrals/my-referrals?wallet=<wallet_address>

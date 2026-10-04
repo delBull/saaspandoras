@@ -15,7 +15,7 @@ import {
   Handshake, 
   TerminalSquare
 } from "lucide-react";
-import type { NexusAuthContext } from "@/lib/nexus/nexus-rbac";
+import type { NexusAuthContext } from "@saasfly/shared";
 import type { TaskItem } from "../taskTypes";
 
 interface NexusWorkspaceProps {

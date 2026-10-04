@@ -7,8 +7,8 @@ import type {
   GetAddonsResponseDTO, 
   AddonStatusDTO, 
   ToggleAddonResponseDTO 
-} from '@/lib/dash-contracts/addons';
-import type { DashApiError } from '@/lib/dash-contracts/journeys';
+} from '@saasfly/shared';
+import type { DashApiError } from '@saasfly/shared';
 import { resolveApiBaseUrl, getServerAuthHeaders } from './utils';
 
 export class DashApiAddonsClient {

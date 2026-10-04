@@ -1,6 +1,6 @@
-import { db } from "@/db";
-import { platformAssets } from "@/db/schema";
-import { eq, desc, and } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { platformAssets } from "@saasfly/db-core";
+import { eq, desc, and } from "@saasfly/db-core";
 import { ProjectEventDTO } from "./dto";
 
 export class EventRepository {

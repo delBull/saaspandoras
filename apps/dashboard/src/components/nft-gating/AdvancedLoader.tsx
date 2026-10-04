@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shadows_Into_Light } from "next/font/google";
-import { cn } from "@/lib/utils";
+import { cn } from "@saasfly/shared";
 
 const shadowsIntoLight = Shadows_Into_Light({
   subsets: ["latin"],

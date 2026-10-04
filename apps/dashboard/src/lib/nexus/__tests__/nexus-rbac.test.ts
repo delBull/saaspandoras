@@ -8,7 +8,7 @@ import {
   resolveEffectivePermissions,
   checkNexusPermission,
   type NexusAuthContext,
-} from '../nexus-rbac';
+} from '@saasfly/shared';
 
 vi.mock('@/db', () => ({
   db: {
@@ -110,7 +110,7 @@ describe('🛡️ Nexus RBAC Domain Engine', () => {
   });
 
   it('RBAC-08: getNexusAuthContext extracts token from cookie header safely', async () => {
-    const { getNexusAuthContext } = await import('../nexus-rbac');
+    const { getNexusAuthContext } = await import('@saasfly/shared');
     const customHeaders = new Headers({
       cookie: 'pandoras_nexus_token=non_existent_mock_token_123',
     });

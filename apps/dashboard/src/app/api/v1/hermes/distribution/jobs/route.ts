@@ -13,11 +13,11 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveDemandSession } from '@/app/api/v1/hermes/demand/route';
-import { CapabilityGrantService } from '@/lib/pandoras/core/domains/hermes/a2a/capability-grant-service';
-import { distributionOrchestratorService } from '@/lib/hermes/channels/distribution/distribution-orchestrator.service';
-import { db } from '@/db';
-import { distributionJobs } from '@/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { CapabilityGrantService } from '@saasfly/hermes-core';
+import { distributionOrchestratorService } from '@saasfly/hermes-core';
+import { db } from '@saasfly/db';
+import { distributionJobs } from '@saasfly/db/schema';
+import { eq, desc } from "@saasfly/db-core";
 
 export const dynamic = 'force-dynamic';
 

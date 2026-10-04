@@ -1,7 +1,7 @@
 // @ts-ignore
 import { describe, it, expect, beforeEach, afterEach, vi } from 'bun:test';
 import { WhatsAppDispatcher } from '../dispatcher';
-import { getDefaultRuntime } from '@/lib/pandoras/core/domains/hermes/runtime/hermes-runtime';
+import { getDefaultRuntime } from '@saasfly/hermes-core';
 
 describe('🏛️ Suite D: Conversational 4-Path Routing & Control Plane Invariant', () => {
   const masterPhone = '685462974640240';

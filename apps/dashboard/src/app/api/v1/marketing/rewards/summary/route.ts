@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
-import { db } from '@/db';
-import { marketingRewardLogs, users } from '@/db/schema';
-import { eq, sql } from "drizzle-orm";
-import { getAuth } from '@/lib/auth';
+import { db } from '@saasfly/db';
+import { marketingRewardLogs, users } from '@saasfly/db/schema';
+import { eq, sql } from "@saasfly/db-core";
+import { getAuth } from '@saasfly/auth-sdk';
 
 export const dynamic = 'force-dynamic';
 

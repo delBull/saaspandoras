@@ -11,7 +11,7 @@ import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth, AuthStatus, User } from "@/components/auth/AuthProvider";
 import { useAdmin } from "@/hooks/useAdmin";
-import { client } from "@/lib/thirdweb-client";
+import { client } from "@saasfly/shared";
 import { wallets } from "@/lib/wallets";
 import { config } from "@/config";
 

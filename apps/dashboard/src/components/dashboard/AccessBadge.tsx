@@ -2,7 +2,7 @@
 
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Zap, ShieldCheck } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@saasfly/shared";
 
 /**
  * 🏷️ Access Badge Component

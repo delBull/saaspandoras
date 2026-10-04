@@ -3,7 +3,7 @@ import { verifySignature } from "thirdweb/auth";
 import { client } from "../lib/thirdweb-client.js";
 import { db } from "../lib/db.js";
 import { authChallenges, users, sessions, accountRecoveryTokens, securityEvents } from "../db/schema.js";
-import { eq, and, gt, isNull } from "drizzle-orm";
+import { eq, and, gt, isNull } from "@saasfly/db-core";
 import jwt from "jsonwebtoken";
 import { config } from "../config.js";
 import crypto from "crypto";

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { BrainCircuit, Compass, Boxes, Activity } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import type { NexusAuthContext } from "@/lib/nexus/nexus-rbac";
+import type { NexusAuthContext } from "@saasfly/shared";
 import { HermesFloatingGuide } from "@/components/guides/HermesFloatingGuide";
 import type { EcosystemTourRole } from "@/lib/guides/ecosystem-guides.data";
 import TasksPanel from "@/components/nexus/TasksPanel";

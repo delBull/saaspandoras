@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/db';
-import { protocolConfigQueues } from '@/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { protocolConfigQueues } from '@saasfly/db/schema';
+import { eq, desc } from "@saasfly/db-core";
 
 export async function GET(request: Request) {
     try {

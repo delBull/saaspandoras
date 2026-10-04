@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/db';
-import { daoMembers, users } from '@/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { daoMembers, users } from '@saasfly/db/schema';
+import { eq, desc } from "@saasfly/db-core";
 
 export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);

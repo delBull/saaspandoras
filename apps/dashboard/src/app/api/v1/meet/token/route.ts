@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db";
-import { meetings } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { meetings } from "@saasfly/db-core";
+import { eq, and } from "@saasfly/db-core";
 import jwt from "jsonwebtoken";
 
 const JITSI_APP_ID = process.env.JITSI_APP_ID;

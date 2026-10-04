@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
-import { getAuth, isSuperAdmin } from "@/lib/auth";
+import { getAuth, isSuperAdmin } from "@saasfly/auth-sdk";
 import { OperationsPanel } from "@/components/admin/OperationsPanel";
 import { UnauthorizedAccess } from "@/components/admin/UnauthorizedAccess";
 import Link from "next/link";

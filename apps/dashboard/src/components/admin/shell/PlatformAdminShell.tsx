@@ -38,7 +38,7 @@ import {
 } from 'lucide-react';
 import { PlatformInspectorProvider } from '../inspector/PlatformInspectorContext';
 import { PlatformInspectorDrawer } from '../inspector/PlatformInspectorDrawer';
-import { PlatformActor, PlatformRole } from '@/lib/dash-contracts/admin';
+import { PlatformActor, PlatformRole } from '@saasfly/shared';
 import { openHQPortalAction } from '@/app/admin/actions/open-hq-portal';
 
 interface PlatformAdminShellProps {

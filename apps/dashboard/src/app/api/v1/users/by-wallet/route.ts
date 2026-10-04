@@ -1,6 +1,6 @@
-import { db } from "~/db";
-import { users } from "~/db/schema";
-import { eq } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { users } from "@saasfly/db-core";
+import { eq } from "@saasfly/db-core";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {

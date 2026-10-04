@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { notifyNewsletterSubscription } from '@/lib/discord';
-import { db } from '@/db';
-import { newsletterSubscribers } from '@/db/schema';
-import { sql } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { newsletterSubscribers } from '@saasfly/db/schema';
+import { sql } from "@saasfly/db-core";
 
 
 // Configure Resend - SECURE ENVIRONMENT VARIABLES

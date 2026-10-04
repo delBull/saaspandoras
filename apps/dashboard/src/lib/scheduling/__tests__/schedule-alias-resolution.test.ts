@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { resolveUserByAlias } from '@/actions/scheduling';
-import { db } from '@/db';
+import { db } from '@saasfly/db';
 
 describe('📅 Scheduling Alias Resolution & Multi-Tenant Support', () => {
   it('resolves static platform aliases like "pandoras" to the platform team', async () => {

@@ -1,0 +1,117 @@
+/**
+ * 🔐 Wallet → Tenant Membership Verification
+ * src/lib/hermes/auth/wallet-tenant-membership.ts
+ *
+ * Fail-closed validation for the Web Wallet authentication branch used by
+ * the Growth OS / Control Plane API boundaries. Resolves whether a
+ * connected wallet is authorized for a given tenant (organization).
+ *
+ * Authority rules mirror HermesTenantMembershipService:
+ *   - OWNER    → projects.applicantWalletAddress === wallet
+ *   - OPERATOR → dao_members.wallet === wallet (for the tenant's project)
+ *
+ * Returns `false` whenever the wallet cannot be proven authorized (fail-closed),
+ * so callers can return 401/403 without leaking tenant existence.
+ */
+
+import { db } from '@saasfly/db-core';
+import { projects, daoMembers } from '@saasfly/db-core/schema';
+import { eq, or, and } from "@saasfly/db-core";
+
+export async function isWalletAuthorizedForTenant(
+  wallet: string,
+  tenant: string
+): Promise<boolean> {
+  if (!wallet || !tenant) return false;
+
+  const cleanSlug = tenant.replace(/^org_/, '').trim().toLowerCase();
+  const normalizedWallet = wallet.toLowerCase();
+
+  if (!cleanSlug) return false;
+
+  let project: { id: number; applicantWalletAddress: string | null } | undefined;
+  try {
+    project = await db
+      .select({
+        id: projects.id,
+        applicantWalletAddress: projects.applicantWalletAddress,
+      })
+      .from(projects)
+      .where(
+        or(
+          eq(projects.slug, cleanSlug),
+          eq(projects.slug, tenant.replace(/^org_/, ''))
+        )
+      )
+      .limit(1)
+      .then(rows => rows[0]);
+  } catch (err: any) {
+    console.error('[WalletTenantMembership] Project lookup error:', err?.message || err);
+    return false;
+  }
+
+  if (!project) return false;
+
+  // OWNER authority: wallet is the applicant/owner of the project
+  if (project.applicantWalletAddress?.toLowerCase() === normalizedWallet) {
+    return true;
+  }
+
+  // OPERATOR authority: wallet is a DAO member of the project
+  try {
+    const member = await db
+      .select({ projectId: daoMembers.projectId })
+      .from(daoMembers)
+      .where(
+        and(
+          eq(daoMembers.projectId, project.id),
+          eq(daoMembers.wallet, normalizedWallet)
+        )
+      )
+      .limit(1);
+    if (member[0] && member[0].projectId === project.id) {
+      return true;
+    }
+  } catch (err: any) {
+    console.error('[WalletTenantMembership] DAO member lookup error:', err?.message || err);
+    return false;
+  }
+
+  return false;
+}
+
+export async function getTenantsForWallet(wallet: string): Promise<{slug: string, organizationId: string}[]> {
+  if (!wallet) return [];
+  const normalizedWallet = wallet.toLowerCase();
+  
+  const results: {slug: string, organizationId: string}[] = [];
+  try {
+    const ownedProjects = await db
+      .select({ slug: projects.slug, organizationId: projects.organizationId })
+      .from(projects)
+      .where(eq(projects.applicantWalletAddress, normalizedWallet));
+      
+    for (const p of ownedProjects) {
+      if (p.slug && p.organizationId) {
+        results.push({ slug: p.slug, organizationId: p.organizationId });
+      }
+    }
+    
+    // Also add projects where the user is a DAO member
+    const memberProjects = await db
+      .select({ slug: projects.slug, organizationId: projects.organizationId })
+      .from(daoMembers)
+      .innerJoin(projects, eq(daoMembers.projectId, projects.id))
+      .where(eq(daoMembers.wallet, normalizedWallet));
+      
+    for (const p of memberProjects) {
+      if (p.slug && p.organizationId && !results.some(r => r.organizationId === p.organizationId)) {
+        results.push({ slug: p.slug, organizationId: p.organizationId });
+      }
+    }
+  } catch (err) {
+    console.error('[WalletTenantMembership] Error looking up tenants for wallet:', err);
+  }
+  
+  return results;
+}

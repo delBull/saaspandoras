@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/db';
-import { gamificationEvents } from '@/db/schema';
-import { and, eq, gte, count } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { gamificationEvents } from '@saasfly/db/schema';
+import { and, eq, gte, count } from "@saasfly/db-core";
 
 /**
  * GET /api/dao/recent-activity?projectId=X&minutes=10

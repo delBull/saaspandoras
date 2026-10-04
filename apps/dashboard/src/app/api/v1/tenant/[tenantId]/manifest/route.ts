@@ -10,10 +10,10 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { RuntimeManifestFactory, type TenantRuntimeManifest } from '@pandoras/runtime-sdk';
-import { db } from '@/db';
-import { projects } from '@/db/schema';
-import { eq } from 'drizzle-orm';
-import { resolveMasterPhoneNumberId } from '@/lib/whatsapp/config';
+import { db } from '@saasfly/db';
+import { projects } from '@saasfly/db/schema';
+import { eq } from "@saasfly/db-core";
+import { resolveMasterPhoneNumberId } from '@saasfly/shared';
 
 export const dynamic = 'force-dynamic';
 

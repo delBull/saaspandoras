@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { SessionTokenService } from '@/lib/hermes/auth';
-import { collectSystemStatus } from '@/lib/hermes/bot/system-status';
-import { checkRateLimit, clientIpFromHeaders } from '@/lib/hermes/auth/rate-limiter';
+import { SessionTokenService } from '@saasfly/hermes-core';
+import { collectSystemStatus } from '@saasfly/hermes-core';
+import { checkRateLimit, clientIpFromHeaders } from '@saasfly/hermes-core';
 
 const tokenService = new SessionTokenService();
 

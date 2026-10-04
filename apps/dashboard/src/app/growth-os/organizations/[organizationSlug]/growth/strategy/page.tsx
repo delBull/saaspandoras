@@ -1,7 +1,7 @@
 import React from 'react';
 import { notFound, redirect } from 'next/navigation';
 import { tryResolvePortalContext } from '@/lib/portal/resolve-portal-context';
-import { StrategyDomainService } from '@/lib/hermes/strategy.service';
+import { StrategyDomainService } from '@saasfly/hermes-core';
 import { GlassCard } from '@/components/ui/glass-card';
 import { Compass, BookOpen, AlertCircle } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';

@@ -4,20 +4,20 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
-import { operationalIntents, operationalApprovals } from '@/db/schema';
-import { eq, desc, or } from 'drizzle-orm';
-import { getAuth } from '@/lib/auth';
-import { checkRateLimit, clientIpFromHeaders } from '@/lib/hermes/auth/rate-limiter';
-import { validatePortalSession } from '@/lib/platform/portal-auth';
-import { OrganizationSDK } from '@/lib/platform/organization-sdk';
-import { SessionTokenService } from '@/lib/hermes/auth/session-token.service';
-import { isWalletAuthorizedForTenant } from '@/lib/hermes/auth/wallet-tenant-membership';
+import { db } from '@saasfly/db';
+import { operationalIntents, operationalApprovals } from '@saasfly/db/schema';
+import { eq, desc, or } from "@saasfly/db-core";
+import { getAuth } from '@saasfly/auth-sdk';
+import { checkRateLimit, clientIpFromHeaders } from '@saasfly/hermes-core';
+import { validatePortalSession } from '@saasfly/shared';
+import { OrganizationSDK } from '@saasfly/shared';
+import { SessionTokenService } from '@saasfly/hermes-core';
+import { isWalletAuthorizedForTenant } from '@saasfly/hermes-core';
 import { capabilityRegistry } from '@/lib/growth/capability-registry.service';
 import type { 
   OperationalIntentDTO, 
   GetPendingIntentsResponseDTO 
-} from '@/lib/dash-contracts/control-plane';
+} from '@saasfly/shared';
 
 export const dynamic = 'force-dynamic';
 
@@ -255,7 +255,7 @@ export async function POST(req: NextRequest) {
       if (intentRow.intentType === 'growth.nft.collection.v1') {
         setImmediate(async () => {
           try {
-            const { executeNftCollectionDeploy } = await import('@/lib/growth/nft/nft-deploy-executor');
+            const { executeNftCollectionDeploy } = await import('@saasfly/nexus-deals-sdk');
             await executeNftCollectionDeploy(intentId, intentRow.organizationId);
           } catch (execErr: any) {
             console.error(`[IntentsAPI] NFT deploy executor failed for intent ${intentId}:`, execErr?.message);
@@ -271,7 +271,7 @@ export async function POST(req: NextRequest) {
       if (intentRow.intentType === 'growth.nft.mint.v1') {
         setImmediate(async () => {
           try {
-            const { resolveIssuanceIdFromIntent, executeNftMint } = await import('@/lib/growth/nft/nft-mint-executor');
+            const { resolveIssuanceIdFromIntent, executeNftMint } = await import('@saasfly/nexus-deals-sdk');
             const issuanceId = await resolveIssuanceIdFromIntent(intentId);
             if (!issuanceId) {
               console.error(`[IntentsAPI] NFT mint executor: cannot resolve issuanceId from intent ${intentId}`);
@@ -292,7 +292,7 @@ export async function POST(req: NextRequest) {
       if (intentRow.intentType === 'growth.nft.revoke.v1') {
         setImmediate(async () => {
           try {
-            const { executeNftRevoke } = await import('@/lib/growth/nft/nft-revoke-executor');
+            const { executeNftRevoke } = await import('@saasfly/nexus-deals-sdk');
             await executeNftRevoke(intentId, intentRow.organizationId);
           } catch (execErr: any) {
             console.error(`[IntentsAPI] NFT revoke executor failed for intent ${intentId}:`, execErr?.message);

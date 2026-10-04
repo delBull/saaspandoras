@@ -9,17 +9,17 @@
  * 4. Triggers automatic human handoff on low confidence (< 70) or explicit requests.
  */
 
-import { db } from '@/db';
-import { projects, whatsappMessages, nexusCollaborators } from '@/db/schema';
-import { eq } from 'drizzle-orm';
-import { HumanHandoffProtocol } from '@/lib/hermes/human-handoff';
-import { InteractionRouter } from '@/lib/hermes/interaction-router';
-import { sendWhatsAppMessage } from './utils/client';
-import { resolveMasterPhoneNumberId } from './config';
-import { buildCanonicalWhatsAppConversationId, maskPhoneNumber } from './utils/conversation-id';
-import { getDefaultRuntime } from '@/lib/pandoras/core/domains/hermes/runtime/hermes-runtime';
+import { db } from '@saasfly/db';
+import { projects, whatsappMessages, nexusCollaborators } from '@saasfly/db/schema';
+import { eq } from "@saasfly/db-core";
+import { HumanHandoffProtocol } from '@saasfly/hermes-core';
+import { InteractionRouter } from '@saasfly/hermes-core';
+import { sendWhatsAppMessage } from '@saasfly/shared';
+import { resolveMasterPhoneNumberId } from '@saasfly/shared';
+import { buildCanonicalWhatsAppConversationId, maskPhoneNumber } from '@saasfly/shared';
+import { getDefaultRuntime } from '@saasfly/hermes-core';
 import { formatWhatsAppText } from './utils/formatter';
-import { CommercialCloserService } from '@/lib/hermes/revenue-closer';
+import { CommercialCloserService } from '@saasfly/hermes-core';
 
 export interface WhatsAppIncomingMessage {
   from: string;
@@ -207,7 +207,7 @@ export class WhatsAppDispatcher {
     let resolvedInterlocutor: any = null;
 
     try {
-      const { InterlocutorResolver } = await import('@/lib/hermes/identity/interlocutor-resolver');
+      const { InterlocutorResolver } = await import('@saasfly/hermes-core');
       resolvedInterlocutor = await InterlocutorResolver.resolve({
         channel: 'whatsapp',
         phone: cleanPhone,
@@ -343,7 +343,7 @@ export class WhatsAppDispatcher {
         // 0.8 Enrich Interlocutor with Authoritative Tenant Context (F6 Capa 4)
         if (!resolvedInterlocutor?.tenantContext && tenant?.slug) {
           try {
-            const { TenantContextResolver } = await import('@/lib/identity/tenant-context-resolver');
+            const { TenantContextResolver } = await import('@saasfly/hermes-core');
             const resolvedTc = await TenantContextResolver.resolveTenantContext(
               resolvedInterlocutor?.canonicalIdentity || resolvedActorId,
               tenant.slug

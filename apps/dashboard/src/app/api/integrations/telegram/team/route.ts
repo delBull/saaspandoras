@@ -22,7 +22,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import {
   NexusTeamTransport,
   type TelegramUpdate,
-} from '@/lib/nexus/telegram-team-transport';
+} from '@saasfly/hermes-core';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -32,9 +32,9 @@ function getTransport(): NexusTeamTransport {
   return new NexusTeamTransport();
 }
 
-import { db } from '@/db';
-import { nexusCollaborators, nexusTelegramInvites } from '@/db/schema';
-import { eq, or, isNull } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { nexusCollaborators, nexusTelegramInvites } from '@saasfly/db/schema';
+import { eq, or, isNull } from "@saasfly/db-core";
 import crypto from 'crypto';
 
 /**
@@ -177,7 +177,7 @@ async function handleStartCommand(
   await transport.setChatMenuButton(chatId);
 }
 
-import { NexusActionDispatcher } from '@/lib/nexus/nexus-action-dispatcher';
+import { NexusActionDispatcher } from '@saasfly/hermes-core';
 
 /**
  * Handle callback_query updates.

@@ -28,7 +28,7 @@ import {
   HermesTraceStep,
   HERMES_PORTAL_MODULES,
   SimulatedScenario,
-} from '@/lib/hermes/simulator-types';
+} from '@saasfly/hermes-core';
 import { SalesDemoBuilderDrawer } from '@/components/hermes/SalesDemoBuilderDrawer';
 import { PortalPreview } from '@/components/hermes-simulator/PortalPreview';
 

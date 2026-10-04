@@ -6,9 +6,9 @@ import { Handshake, Lock, Mail, Check, FileSignature, Loader2, Wallet, ShieldChe
 import { useActiveAccount, useActiveWallet, ConnectButton, darkTheme, useDisconnect } from "thirdweb/react";
 import { inAppWallet } from "thirdweb/wallets/in-app";
 import { createWallet } from "thirdweb/wallets";
-import { client } from "@/lib/thirdweb-client";
-import { buildSignMessage } from "@/lib/nexus-deals/signing";
-import { buildCombinedSignMessage, buildNdaSignMessage } from "@/lib/nexus-deals/nda-content";
+import { client } from "@saasfly/shared";
+import { buildSignMessage } from "@saasfly/nexus-deals-sdk";
+import { buildCombinedSignMessage, buildNdaSignMessage } from "@saasfly/nexus-deals-sdk";
 import { NDAModal } from "@/components/modals/NDAModal";
 import { DealAttachments } from "./DealAttachments";
 import { DealComments } from "./DealComments";

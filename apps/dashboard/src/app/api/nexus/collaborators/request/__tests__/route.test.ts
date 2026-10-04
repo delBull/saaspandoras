@@ -8,7 +8,7 @@ let createOrUpdateCalls: any[] = [];
 let notifyProvisioningCalls: any[] = [];
 let sendMagicLinkCalls: any[] = [];
 
-vi.mock('@/lib/nexus/collaborators-service', () => ({
+vi.mock('@saasfly/hermes-core', () => ({
   getCollaboratorByEmail: vi.fn(async (email: string) => mockExistingCollaborator),
   isNexusAdminEmail: vi.fn((email: string) => mockIsNexusAdminEmail),
   requireNexusAdmin: vi.fn(async (req: any) => mockRequireNexusAdmin),

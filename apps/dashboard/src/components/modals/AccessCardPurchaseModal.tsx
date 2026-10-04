@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Ticket, ShieldCheck, ArrowRight } from 'lucide-react';
 import { useActiveAccount, useSendTransaction, useReadContract } from "thirdweb/react";
 import { prepareContractCall, ContractOptions, getContract, defineChain, waitForReceipt } from "thirdweb";
-import { client } from "@/lib/thirdweb-client";
+import { client } from "@saasfly/shared";
 import { toast } from "sonner";
 interface AccessCardPurchaseModalProps {
     isOpen: boolean;

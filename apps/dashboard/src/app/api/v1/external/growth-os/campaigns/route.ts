@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateExternalKey } from "@/lib/api-auth/validate-external-key";
-import { db } from "@/db";
-import { campaigns, campaignStats, demandDrafts, projects } from "@/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { campaigns, campaignStats, demandDrafts, projects } from "@saasfly/db-core";
+import { eq, desc } from "@saasfly/db-core";
 
 export const dynamic = "force-dynamic";
 

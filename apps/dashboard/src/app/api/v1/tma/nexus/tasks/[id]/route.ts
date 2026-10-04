@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/db';
-import { eq, and } from 'drizzle-orm';
-import { nexusTasks, auditLogs } from '@/db/schema';
-import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
+import { db } from '@saasfly/db';
+import { eq, and } from "@saasfly/db-core";
+import { nexusTasks, auditLogs } from '@saasfly/db/schema';
+import { getNexusAuthContext } from '@saasfly/shared';
 
 /**
  * PATCH /api/v1/tma/nexus/tasks/[id]

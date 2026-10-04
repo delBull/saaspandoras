@@ -4,7 +4,7 @@ import { useActiveAccount } from "thirdweb/react";
 import { getContract, readContract } from "thirdweb";
 import { defineChain } from "thirdweb/chains";
 import { config } from "@/config";
-import { client } from "@/lib/thirdweb-client";
+import { client } from "@saasfly/shared";
 
 interface Asset {
     type: 'access' | 'artifact' | 'utility';

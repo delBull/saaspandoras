@@ -46,7 +46,7 @@ import type {
   CampaignPerformanceMetrics,
   StrategicInsight,
   ContentPiece,
-} from '@/lib/hermes/demand/demand-distribution.service';
+} from '@saasfly/hermes-core';
 import { CampaignReviewDrawer } from './CampaignReviewDrawer';
 import { DistributionChannelsDrawer } from './DistributionChannelsDrawer';
 

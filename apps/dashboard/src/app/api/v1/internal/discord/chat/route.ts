@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { HermesRuntime, getDefaultRuntime } from '@/lib/pandoras/core/domains/hermes/runtime/hermes-runtime';
-import { ActorIdentityBindingService } from '@/lib/pandoras/core/domains/hermes/runtime/prompt-hygiene-contract';
+import { HermesRuntime, getDefaultRuntime } from '@saasfly/hermes-core';
+import { ActorIdentityBindingService } from '@saasfly/hermes-core';
 
 export async function POST(req: Request) {
   try {

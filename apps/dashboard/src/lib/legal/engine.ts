@@ -1,7 +1,7 @@
 
-import { db } from "@/db";
-import { purchases, projects } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { purchases, projects } from "@saasfly/db-core";
+import { eq } from "@saasfly/db-core";
 import { SNARAI_AGREEMENT_TEMPLATE } from "./snarai-agreement-template";
 import * as cryptoNode from "crypto";
 

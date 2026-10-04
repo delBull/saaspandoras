@@ -6,8 +6,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { AcademyStore } from '@/lib/pandoras/core/domains/academy/candidates/candidate-store';
-import { verifyAdminRequest } from '@/lib/pandoras/core/domains/academy/security/admin-auth';
+import { AcademyStore } from '@saasfly/academy-sdk';
+import { verifyAdminRequest } from '@saasfly/academy-sdk';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Unauthorized: Admin privileges or valid unlock token required.' }, { status: 401 });
     }
 
-    const { getNexusAuthContext, checkNexusPermission } = require('@/lib/nexus/nexus-rbac');
+    const { getNexusAuthContext, checkNexusPermission } = require('@saasfly/shared');
     const authCtx = await getNexusAuthContext(req.headers);
     const hasEcosystem = checkNexusPermission(authCtx, 'ecosystem');
 
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { action, name, email, phone, targetRole, notes, candidateId } = body;
 
-    const { getNexusAuthContext, checkNexusPermission } = require('@/lib/nexus/nexus-rbac');
+    const { getNexusAuthContext, checkNexusPermission } = require('@saasfly/shared');
     const authCtx = await getNexusAuthContext(req.headers);
     const hasEcosystem = checkNexusPermission(authCtx, 'ecosystem');
     const orgScope = (authCtx.canonicalOrgId || '').toUpperCase();

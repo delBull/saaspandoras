@@ -1,10 +1,10 @@
 'use server';
 
-import { db } from "@/db";
-import { paymentLinks, clients, transactions, purchases, privatePaymentLinks } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { paymentLinks, clients, transactions, purchases, privatePaymentLinks } from "@saasfly/db-core";
+import { eq } from "@saasfly/db-core";
 import { processPaymentSuccess } from "./clients";
-import { getNexusAuthContext } from "@/lib/nexus/nexus-rbac";
+import { getNexusAuthContext } from '@saasfly/shared';
 import { headers } from "next/headers";
 
 export async function createPaymentLink(data: {
@@ -199,7 +199,7 @@ export async function updateTransactionStatus(transactionId: string, status: 'co
             if (nextStatus === 'completed') {
                 try {
                     const meta = (hermesLink.metadata as Record<string, any>) || {};
-                    const { paymentOrchestrator } = await import('@/lib/pandoras/core/domains/hermes/payments/core/orchestrator');
+                    const { paymentOrchestrator } = await import('@saasfly/hermes-core');
                     const event: any = {
                         eventId: `admin_settle_${hermesLink.id}_${Date.now()}`,
                         vertical: meta.vertical || 'GROWTH_OS',

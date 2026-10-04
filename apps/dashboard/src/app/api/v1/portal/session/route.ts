@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { validatePortalSession } from '@/lib/platform/portal-auth';
-import { OrganizationSDK } from '@/lib/platform/organization-sdk';
-import { CognitiveContextBuilder } from '@/lib/pandoras/core/domains/hermes/addons/context-merger';
+import { validatePortalSession } from '@saasfly/shared';
+import { OrganizationSDK } from '@saasfly/shared';
+import { CognitiveContextBuilder } from '@saasfly/hermes-core';
 
 export async function GET(request: Request) {
   try {
@@ -25,14 +25,14 @@ export async function GET(request: Request) {
       
       if (!wallet) {
         try {
-          const { getAuth } = await import('@/lib/auth');
+          const { getAuth } = await import('@saasfly/auth-sdk');
           const auth = await getAuth(reqHeaders);
           if (auth?.session?.address) wallet = auth.session.address;
         } catch {}
       }
 
       if (wallet) {
-        const { getTenantsForWallet } = await import('@/lib/hermes/auth/wallet-tenant-membership');
+        const { getTenantsForWallet } = await import('@saasfly/hermes-core');
         const tenants = await getTenantsForWallet(wallet);
         const firstTenant = tenants[0];
         if (firstTenant) {

@@ -26,7 +26,7 @@ import { Button } from "@/components/ui/button";
 import { TypewriterText } from "@/components/ui/typewriter-text";
 import { AnimatedGradientText } from "@/components/ui/animated-gradient-text";
 import { StaggerText } from "@/components/ui/stagger-text";
-import { cn } from "@/lib/utils";
+import { cn } from "@saasfly/shared";
 import { useGoogleAnalytics, trackEvent, trackPageView } from "@/lib/analytics";
 import { LeadCaptureModal } from "@/components/marketing/LeadCaptureModal";
 

@@ -7,8 +7,8 @@ import type {
   GetConversationMessagesResponseDTO, 
   ConversationMessageDTO, 
   ManualTakeoverResponseDTO 
-} from '@/lib/dash-contracts/conversations';
-import type { DashApiError } from '@/lib/dash-contracts/journeys';
+} from '@saasfly/shared';
+import type { DashApiError } from '@saasfly/shared';
 import { resolveApiBaseUrl, getServerAuthHeaders } from './utils';
 
 export class DashApiConversationsClient {

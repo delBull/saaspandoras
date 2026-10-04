@@ -6,11 +6,11 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { setupProgressService } from '@/lib/mesh/setup-progress.service';
-import { getAuth, isAdmin } from '@/lib/auth';
-import { db } from '@/db';
-import { projects } from '@/db/schema';
-import { eq, sql } from 'drizzle-orm';
+import { setupProgressService } from '@saasfly/shared';
+import { getAuth, isAdmin } from '@saasfly/auth-sdk';
+import { db } from '@saasfly/db';
+import { projects } from '@saasfly/db/schema';
+import { eq, sql } from "@saasfly/db-core";
 
 export const dynamic = 'force-dynamic';
 

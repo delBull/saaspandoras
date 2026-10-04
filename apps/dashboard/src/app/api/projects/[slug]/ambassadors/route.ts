@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/db';
-import { ambassadors, projects } from '@/db/schema';
-import { eq, desc, and } from 'drizzle-orm';
-import { resolveProjectSlug } from '@/lib/project-utils';
+import { db } from '@saasfly/db';
+import { ambassadors, projects } from '@saasfly/db/schema';
+import { eq, desc, and } from "@saasfly/db-core";
+import { resolveProjectSlug } from '@saasfly/shared';
 
 export async function GET(req: Request, { params }: { params: Promise<{ slug: string }> }) {
     try {

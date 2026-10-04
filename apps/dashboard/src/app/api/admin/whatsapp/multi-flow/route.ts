@@ -1,8 +1,8 @@
-import { sql } from '@/lib/database';
+import { sql } from '@saasfly/db-core';
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { getSimpleFlowStats } from '@/lib/whatsapp/core/simpleRouter';
-import { getAuth, isAdmin } from '@/lib/auth';
+import { getAuth, isAdmin } from '@saasfly/auth-sdk';
 
 // PATCH endpoint para actualizar status de leads
 export async function PATCH(request: Request) {
@@ -103,10 +103,10 @@ export async function GET(request: Request) {
       JOIN whatsapp_users u ON s.user_id = u.id
       WHERE s.is_active = true OR (s.updated_at > now() - interval '30 days')
       ORDER BY s.updated_at DESC
-    ` as any[];
+    ` as any;
 
     // Transformar datos al formato esperado por el admin
-    const leads = sessionsQuery.map(session => ({
+    const leads = sessionsQuery.map((session: any) => ({
       id: session.id,
       user_phone: session.user_phone,
       flow_type: session.flow_type,
@@ -124,38 +124,38 @@ export async function GET(request: Request) {
     // Calcular estadísticas simplificadas basadas en el nuevo sistema
     const simplifiedStats = {
       total: leads.length,
-      active: leads.filter(l => l.status === 'active').length,
+      active: leads.filter((l: any) => l.status === 'active').length,
 
       // Estadísticas por flujo independiente
       eight_q: {
-        total: flowStats.find(s => s.flow_type === 'eight_q')?.total_sessions || 0,
-        pending: leads.filter(l => l.flow_type === 'eight_q' && l.status === 'pending').length,
-        approved: leads.filter(l => l.flow_type === 'eight_q' && l.status === 'approved').length,
-        completed: leads.filter(l => l.flow_type === 'eight_q' && l.status === 'completed').length,
+        total: flowStats.find((s: any) => s.flow_type === 'eight_q')?.total_sessions || 0,
+        pending: leads.filter((l: any) => l.flow_type === 'eight_q' && l.status === 'pending').length,
+        approved: leads.filter((l: any) => l.flow_type === 'eight_q' && l.status === 'approved').length,
+        completed: leads.filter((l: any) => l.flow_type === 'eight_q' && l.status === 'completed').length,
       },
 
       utility: {
-        total: flowStats.find(s => s.flow_type === 'utility')?.total_sessions || 0,
-        pending: leads.filter(l => l.flow_type === 'utility' && l.status === 'pending').length,
-        approved: leads.filter(l => l.flow_type === 'utility' && l.status === 'approved').length,
+        total: flowStats.find((s: any) => s.flow_type === 'utility')?.total_sessions || 0,
+        pending: leads.filter((l: any) => l.flow_type === 'utility' && l.status === 'pending').length,
+        approved: leads.filter((l: any) => l.flow_type === 'utility' && l.status === 'approved').length,
       },
 
       high_ticket: {
-        total: flowStats.find(s => s.flow_type === 'high_ticket')?.total_sessions || 0,
-        contacted: leads.filter(l => l.flow_type === 'high_ticket' && ['approved', 'completed'].includes(l.status)).length,
-        scheduled: leads.filter(l => l.flow_type === 'high_ticket' && l.status === 'completed').length,
+        total: flowStats.find((s: any) => s.flow_type === 'high_ticket')?.total_sessions || 0,
+        contacted: leads.filter((l: any) => l.flow_type === 'high_ticket' && ['approved', 'completed'].includes(l.status)).length,
+        scheduled: leads.filter((l: any) => l.flow_type === 'high_ticket' && l.status === 'completed').length,
       },
 
       support: {
-        total: flowStats.find(s => s.flow_type === 'support')?.total_sessions || 0,
-        escalated: leads.filter(l => l.flow_type === 'support' && l.status === 'pending').length,
-        resolved: leads.filter(l => l.flow_type === 'support' && ['approved', 'completed'].includes(l.status)).length,
+        total: flowStats.find((s: any) => s.flow_type === 'support')?.total_sessions || 0,
+        escalated: leads.filter((l: any) => l.flow_type === 'support' && l.status === 'pending').length,
+        resolved: leads.filter((l: any) => l.flow_type === 'support' && ['approved', 'completed'].includes(l.status)).length,
       },
 
       human: {
-        total: flowStats.find(s => s.flow_type === 'human')?.total_sessions || 0,
-        active: leads.filter(l => l.flow_type === 'human' && l.status === 'pending').length,
-        resolved: leads.filter(l => l.flow_type === 'human' && ['approved', 'completed'].includes(l.status)).length,
+        total: flowStats.find((s: any) => s.flow_type === 'human')?.total_sessions || 0,
+        active: leads.filter((l: any) => l.flow_type === 'human' && l.status === 'pending').length,
+        resolved: leads.filter((l: any) => l.flow_type === 'human' && ['approved', 'completed'].includes(l.status)).length,
       },
 
       protocol_application: {

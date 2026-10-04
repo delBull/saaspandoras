@@ -13,10 +13,10 @@ import {
   canUserAccessDeal,
   canUserEditDeal,
   isUserCreatorOfDeal,
-} from "@/lib/nexus-deals/repo";
-import { DealKind } from "@/lib/nexus-deals/types";
-import { sendDealRoomAlert } from "@/lib/nexus-deals/discord";
-import { sendDealCancelledEmail } from "@/lib/nexus-deals/email";
+} from "@saasfly/nexus-deals-sdk";
+import { DealKind } from "@saasfly/nexus-deals-sdk";
+import { sendDealRoomAlert } from "@saasfly/nexus-deals-sdk";
+import { sendDealCancelledEmail } from "@saasfly/nexus-deals-sdk";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

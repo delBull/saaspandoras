@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { HermesIntelligenceEngine } from '@/lib/hermes/intelligence-engine';
-import { db } from '@/db';
-import { projects, marketingLeads } from '@/db/schema';
-import { count } from 'drizzle-orm';
+import { HermesIntelligenceEngine } from '@saasfly/hermes-core';
+import { db } from '@saasfly/db';
+import { projects, marketingLeads } from '@saasfly/db/schema';
+import { count } from "@saasfly/db-core";
 export const dynamic = 'force-dynamic';
 
 /**

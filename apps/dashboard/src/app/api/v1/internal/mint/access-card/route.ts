@@ -1,6 +1,6 @@
-import { db } from "@/db";
-import { projects, users } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { projects, users } from "@saasfly/db-core";
+import { eq } from "@saasfly/db-core";
 import { NextResponse } from "next/server";
 
 /**

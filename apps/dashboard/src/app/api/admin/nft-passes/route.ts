@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { db } from "~/db";
-import { getAuth, isAdmin } from "@/lib/auth";
+import { db } from "@saasfly/db-core";
+import { getAuth, isAdmin } from "@saasfly/auth-sdk";
 import { headers } from "next/headers";
-import { sql } from "drizzle-orm";
+import { sql } from "@saasfly/db-core";
 
 export const runtime = "nodejs";
 

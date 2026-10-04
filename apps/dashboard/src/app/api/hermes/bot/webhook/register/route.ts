@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireNexusAdmin } from '@/lib/nexus/collaborators-service';
+import { requireNexusAdmin } from '@saasfly/hermes-core';
 
 /**
  * 🔗 POST /api/hermes/bot/webhook/register

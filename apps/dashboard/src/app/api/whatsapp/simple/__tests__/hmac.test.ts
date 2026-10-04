@@ -2,7 +2,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
 import { createHmac } from 'crypto';
 import { verifyMetaSignature } from '../route';
-import { buildCanonicalWhatsAppConversationId, maskPhoneNumber } from '@/lib/whatsapp/utils/conversation-id';
+import { buildCanonicalWhatsAppConversationId, maskPhoneNumber } from '@saasfly/shared';
 
 describe('🛡️ Suite A: Meta WhatsApp HMAC & Identity Security', () => {
   const secret = 'super_secret_pandoras_webhook_key_2026';

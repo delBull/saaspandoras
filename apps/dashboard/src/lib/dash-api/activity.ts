@@ -3,8 +3,8 @@
  * src/lib/dash-api/activity.ts
  */
 
-import type { GetActivityResponseDTO } from '@/lib/dash-contracts/activity';
-import type { DashApiError } from '@/lib/dash-contracts/journeys';
+import type { GetActivityResponseDTO } from '@saasfly/shared';
+import type { DashApiError } from '@saasfly/shared';
 import { resolveApiBaseUrl, getServerAuthHeaders } from './utils';
 
 export class DashApiActivityClient {

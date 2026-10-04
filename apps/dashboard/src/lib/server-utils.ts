@@ -1,6 +1,6 @@
-import { db } from '@/db';
-import { userReferrals, users, projects, userAchievements, achievements } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { userReferrals, users, projects, userAchievements, achievements } from '@saasfly/db/schema';
+import { eq } from "@saasfly/db-core";
 
 /**
  * Update referral progress for a user

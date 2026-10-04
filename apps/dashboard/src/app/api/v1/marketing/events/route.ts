@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
         );
     }
 
-    const { withRetry } = await import("@/lib/database");
+    const { withRetry } = await import('@saasfly/db-core');
 
     return await withRetry(async () => {
         const result = await TelemetryDomainService.processEvent(

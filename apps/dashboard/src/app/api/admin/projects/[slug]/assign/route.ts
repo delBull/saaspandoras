@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
-import { projects, administrators } from '@/db/schema';
-import { eq } from 'drizzle-orm';
-import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
+import { db } from '@saasfly/db';
+import { projects, administrators } from '@saasfly/db/schema';
+import { eq } from "@saasfly/db-core";
+import { getNexusAuthContext } from '@saasfly/shared';
 
 export const dynamic = 'force-dynamic';
 

@@ -1,14 +1,14 @@
-import { db } from "@/db";
+import { db } from "@saasfly/db-core";
 import { 
   campaigns, 
   demandDrafts, 
   demandEvents, 
   campaignStats, 
   projects 
-} from "@/db/schema";
-import { eq, desc, sql, and } from "drizzle-orm";
-import { PortalTenantContext } from "@/lib/portal/portal-types";
-import { assertPortalPermission } from "@/lib/portal/permissions";
+} from "@saasfly/db-core";
+import { eq, desc, sql, and } from "@saasfly/db-core";
+import { PortalTenantContext } from "@saasfly/shared";
+import { assertPortalPermission } from "@saasfly/shared";
 
 export class CampaignDomainService {
   constructor(private context: PortalTenantContext) {

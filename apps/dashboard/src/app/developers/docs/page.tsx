@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { BookOpen, Code2, Globe, Zap, ArrowLeft, Terminal, Key } from 'lucide-react';
 import Link from 'next/link';
-import { getDashboardDomain } from '@/lib/utils';
+import { getDashboardDomain } from '@saasfly/shared';
 
 export default function DocsPage() {
   const [activeSection, setActiveSection] = useState('auth');

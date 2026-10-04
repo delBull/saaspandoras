@@ -1,16 +1,16 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/db';
-import { purchases, projects, users, daoMembers, ambassadors, ambassadorClients, ambassadorCommissions, marketingLeads, marketingLeadEvents, partnerReputationEvents } from '@/db/schema';
-import { eq, and, sql } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { purchases, projects, users, daoMembers, ambassadors, ambassadorClients, ambassadorCommissions, marketingLeads, marketingLeadEvents, partnerReputationEvents } from '@saasfly/db/schema';
+import { eq, and, sql } from "@saasfly/db-core";
 import crypto from 'crypto';
-import { getAuth } from '@/lib/auth';
+import { getAuth } from '@saasfly/auth-sdk';
 import { headers } from 'next/headers';
 import { TelemetryService } from '@/lib/security/telemetry';
-import { withSecurity, apiRateLimiter } from '@/lib/security-utils';
+import { withSecurity, apiRateLimiter } from '@saasfly/shared';
 import { verifySignature } from 'thirdweb/auth';
-import { client } from '@/lib/thirdweb-client';
-import { SovereignIpfsOrchestrator } from '@/lib/pandoras/core/domains/hermes/knowledge/ipfs/orchestrator';
-import { SovereignIpfsAlerting } from '@/lib/pandoras/core/domains/hermes/knowledge/ipfs/ipfs-alerting';
+import { client } from '@saasfly/shared';
+import { SovereignIpfsOrchestrator } from '@saasfly/hermes-core';
+import { SovereignIpfsAlerting } from '@saasfly/hermes-core';
 import { sendPurchaseEmail } from '@/lib/email/purchase-mailer';
 
 async function handler(
@@ -221,7 +221,7 @@ async function handler(
                         // 2. Hermes Referral Logic
                         if (ambassador && ambassador.projectId) {
                             const { sendReferralPaid } = await import('@/lib/email/hermes-mailer');
-                            const { HermesOperationalAlerts } = await import('@/lib/pandoras/core/domains/hermes/alerts');
+                            const { HermesOperationalAlerts } = await import('@saasfly/hermes-core');
                             
                             await SubscriptionEngine.grantFreeDays(ambassador.projectId, refRewardDays);
                             

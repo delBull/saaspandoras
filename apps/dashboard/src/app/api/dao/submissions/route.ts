@@ -1,10 +1,10 @@
 
 import { NextResponse } from 'next/server';
-import { db } from '@/db';
-import { daoActivitySubmissions, daoActivities } from '@/db/schema';
-import { eq, and, inArray } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { daoActivitySubmissions, daoActivities } from '@saasfly/db/schema';
+import { eq, and, inArray } from "@saasfly/db-core";
 import { headers } from 'next/headers';
-import { getAuth, isAdmin } from '@/lib/auth';
+import { getAuth, isAdmin } from '@saasfly/auth-sdk';
 
 export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);

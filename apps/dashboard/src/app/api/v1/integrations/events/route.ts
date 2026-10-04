@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db";
-import { platformEvents } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { platformEvents } from "@saasfly/db-core";
+import { eq } from "@saasfly/db-core";
 import { IntegrationKeyService } from "@/lib/integrations/auth";
 import { platformEventSchema } from "@/lib/integrations/events-schema";
 import { IdentityService } from "@/lib/integrations/identity";
 import { JourneyTriggerService } from "@/lib/journeys/journey-trigger";
-import { HermesCognitiveLayer } from "@/lib/hermes/hermes-cognitive";
+import { HermesCognitiveLayer } from "@saasfly/hermes-core";
 import { ExecutionOS } from "@/lib/execution/execution-os";
 import { OutboxProcessor } from "@/lib/execution/outbox-processor";
 export async function POST(req: NextRequest) {
@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
 
         if (decisionRequest) {
           const intent = await HermesCognitiveLayer.decide(decisionRequest);
-          await ExecutionOS.execute(intent);
+          await ExecutionOS.execute(intent as any);
           
           // Force outbox processor to run immediately for Phase 4 certification
           await OutboxProcessor.processPending();

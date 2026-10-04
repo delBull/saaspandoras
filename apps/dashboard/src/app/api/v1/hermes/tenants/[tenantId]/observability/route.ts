@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
-import { hermesConversations, hermesEscalations } from '@/db/schema';
-import { and, eq, gte, sql } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { hermesConversations, hermesEscalations } from '@saasfly/db/schema';
+import { and, eq, gte, sql } from "@saasfly/db-core";
 import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
 
 export const dynamic = 'force-dynamic';

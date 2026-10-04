@@ -1,6 +1,6 @@
-import { db } from "@/db";
-import { agoraListings, artifacts, pandoraInventories } from "@/db/schema";
-import { eq, and, inArray } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { agoraListings, artifacts, pandoraInventories } from "@saasfly/db-core";
+import { eq, and, inArray } from "@saasfly/db-core";
 import type { IListingStorageAdapter } from "@pandoras/agora-engine";
 
 export class DrizzleListingStorageAdapter implements IListingStorageAdapter {

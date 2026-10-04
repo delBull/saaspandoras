@@ -25,16 +25,16 @@ import { SimpleTooltip } from "../ui/simple-tooltip";
 import { toast } from "sonner";
 import { usePathname, useRouter } from 'next/navigation';
 import type { ProjectData } from "@/app/()/projects/types";
-import { sanitizeUrl } from "@/lib/project-utils";
+import { sanitizeUrl } from "@saasfly/shared";
 import AccessCardPurchaseModal from "../modals/AccessCardPurchaseModal";
 import ArtifactPurchaseModal from "../modals/ArtifactPurchaseModal"; // Unified Modal
 import PerksModal from "../modals/PerksModal";
 import type { UtilityPhase } from '@/types/deployment';
 import { useActiveAccount, useReadContract, TransactionButton, useWalletBalance } from "thirdweb/react";
 import { getContract, defineChain, prepareContractCall } from "thirdweb";
-import { client } from "@/lib/thirdweb-client";
+import { client } from "@saasfly/shared";
 import { balanceOf } from "thirdweb/extensions/erc721";
-import { calculatePhaseStatus, getProjectPhasesWithStats } from "@/lib/phase-utils";
+import { calculatePhaseStatus, getProjectPhasesWithStats } from "@saasfly/shared";
 
 interface ProjectSidebarProps {
   project: ProjectData;

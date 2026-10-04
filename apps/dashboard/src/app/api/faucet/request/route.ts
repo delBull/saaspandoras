@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/db';
-import { actionLogs } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { actionLogs } from '@saasfly/db/schema';
+import { eq, and } from "@saasfly/db-core";
 import { prepareTransaction, sendTransaction, waitForReceipt } from 'thirdweb';
 import { privateKeyToAccount } from 'thirdweb/wallets';
-import { client } from '@/lib/thirdweb-client';
+import { client } from '@saasfly/shared';
 import { config } from '@/config';
 import crypto from 'crypto';
 

@@ -2,7 +2,7 @@
 
 import { useReadContract } from "thirdweb/react";
 import { getContract } from "thirdweb";
-import { client } from "@/lib/thirdweb-client";
+import { client } from "@saasfly/shared";
 import { config } from "@/config";
 import { Loader2, Check, X } from "lucide-react";
 

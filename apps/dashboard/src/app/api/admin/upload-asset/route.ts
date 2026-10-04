@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { getAuth } from "@/lib/auth";
+import { getAuth } from "@saasfly/auth-sdk";
 import { headers } from "next/headers";
-import { SUPER_ADMIN_WALLET } from "@/lib/constants";
+import { SUPER_ADMIN_WALLET } from "@saasfly/auth-sdk";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
-import { client } from "@/lib/thirdweb-client";
+import { client } from "@saasfly/shared";
 import { upload } from "thirdweb/storage";
 
 // Force Node.js runtime for file system access

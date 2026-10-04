@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { sql as drizzleSql } from "drizzle-orm";
-import { db } from "~/db";
+import { sql as drizzleSql } from "@saasfly/db-core";
+import { db } from "@saasfly/db-core";
 import { validateAdminSession } from "@/lib/admin-auth";
 import { logger } from "@/lib/logger";
-import { getSuperAdminWallet } from "@/lib/constants";
+import { getSuperAdminWallet } from "@saasfly/auth-sdk";
 import { normalizePlatformRole } from "@/lib/roles";
 import type { UserData } from "@/types/admin";
 

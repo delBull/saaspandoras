@@ -4,22 +4,22 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
-import { projects, integrationClients } from '@/db/schema';
-import { eq, or, and, desc } from 'drizzle-orm';
-import { validatePortalSession } from '@/lib/platform/portal-auth';
-import { OrganizationSDK } from '@/lib/platform/organization-sdk';
-import { SessionTokenService } from '@/lib/hermes/auth/session-token.service';
-import { checkRateLimit, clientIpFromHeaders } from '@/lib/hermes/auth/rate-limiter';
-import { resolveCanonicalAuthSession } from '@/lib/hermes/auth/canonical-resolver';
-import type { GetSettingsResponseDTO, ApiKeyItemDTO, TenantSettingsDataDTO } from '@/lib/dash-contracts/settings';
+import { db } from '@saasfly/db';
+import { projects, integrationClients } from '@saasfly/db/schema';
+import { eq, or, and, desc } from "@saasfly/db-core";
+import { validatePortalSession } from '@saasfly/shared';
+import { OrganizationSDK } from '@saasfly/shared';
+import { SessionTokenService } from '@saasfly/hermes-core';
+import { checkRateLimit, clientIpFromHeaders } from '@saasfly/hermes-core';
+import { resolveCanonicalAuthSession } from '@saasfly/hermes-core';
+import type { GetSettingsResponseDTO, ApiKeyItemDTO, TenantSettingsDataDTO } from '@saasfly/shared';
 import crypto from 'crypto';
 
 export const dynamic = 'force-dynamic';
 
 const sessionTokenService = new SessionTokenService();
 
-import { isUuid } from '@/lib/utils';
+import { isUuid } from '@saasfly/shared';
 function buildProjectMatchCondition(targetSlug: string, orgId?: string) {
   const canonicalTarget = targetSlug?.replace(/^org_/, '').trim();
   const canonicalOrgId = orgId?.replace(/^org_/, '').trim();
@@ -147,7 +147,7 @@ export async function PUT(req: NextRequest) {
         return NextResponse.json({ code: 'INVALID_TOKEN', message: 'The provided Telegram bot token is invalid or inactive.' }, { status: 400 });
       }
 
-      const { KnowledgeEnvelopeVault } = await import('@/lib/pandoras/core/domains/hermes/knowledge/envelope-vault');
+      const { KnowledgeEnvelopeVault } = await import('@saasfly/hermes-core');
       const vault = new KnowledgeEnvelopeVault();
       const encrypted = await vault.encryptArtifact(body.telegramBotToken, {
         tenantId: project.organizationId,
@@ -229,7 +229,7 @@ export async function POST(req: NextRequest) {
         createdAt: integrationClients.createdAt,
       });
 
-    const { SecurityAuditLogger } = await import('@/lib/pandoras/core/domains/hermes/runtime/security-audit-logger');
+    const { SecurityAuditLogger } = await import('@saasfly/hermes-core');
     await SecurityAuditLogger.logEvent({
       organizationId: auth.canonicalOrgId,
       eventType: 'CREDENTIAL_ISSUED',
@@ -298,7 +298,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ code: 'NOT_FOUND', message: 'Key not found' }, { status: 404 });
     }
 
-    const { SecurityAuditLogger } = await import('@/lib/pandoras/core/domains/hermes/runtime/security-audit-logger');
+    const { SecurityAuditLogger } = await import('@saasfly/hermes-core');
     await SecurityAuditLogger.logEvent({
       organizationId: auth.canonicalOrgId,
       eventType: 'CREDENTIAL_REVOKED',

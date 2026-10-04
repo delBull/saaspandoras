@@ -11,9 +11,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { TenantProvisioner } from '@/lib/pandoras/core/domains/hermes/tenants/tenant-provisioner';
-import { TenantGateway } from '@/lib/pandoras/core/domains/hermes/tenants/tenant-gateway';
-import { TenantIntelligenceProvisionInput } from '@/lib/pandoras/core/domains/hermes/tenants/contracts';
+import { TenantProvisioner } from '@saasfly/hermes-core';
+import { TenantGateway } from '@saasfly/hermes-core';
+import { TenantIntelligenceProvisionInput } from '@saasfly/hermes-core';
 
 export async function POST(req: NextRequest) {
   try {

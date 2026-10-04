@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/db';
-import { gamificationEvents, daoMembers } from '@/db/schema';
-import { sql } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { gamificationEvents, daoMembers } from '@saasfly/db/schema';
+import { sql } from "@saasfly/db-core";
 
 export async function POST(req: Request) {
     try {

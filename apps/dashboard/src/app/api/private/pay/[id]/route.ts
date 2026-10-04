@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db";
-import { privatePaymentLinks } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { privatePaymentLinks } from "@saasfly/db-core";
+import { eq } from "@saasfly/db-core";
 
 export const runtime = "nodejs";
 

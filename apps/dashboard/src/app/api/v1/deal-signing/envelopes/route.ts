@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { EnvelopeService } from '@/lib/deal-signing/envelope-service';
-import { db } from '@/db';
-import { dealEnvelopes } from '@/db/schema';
-import { eq, and, desc } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { dealEnvelopes } from '@saasfly/db/schema';
+import { eq, and, desc } from "@saasfly/db-core";
 
 export const dynamic = 'force-dynamic';
 

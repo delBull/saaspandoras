@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { HermesReconciliationSweeperService } from '@/lib/hermes/reconciliation/hermes-reconciliation-sweeper.service';
+import { HermesReconciliationSweeperService } from '@saasfly/hermes-core';
 
 /**
  * 🧹 HERMES AUTONOMOUS RECONCILIATION SWEEPER ENDPOINT (FASE 6)

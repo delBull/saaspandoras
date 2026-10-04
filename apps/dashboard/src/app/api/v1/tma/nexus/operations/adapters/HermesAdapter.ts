@@ -1,8 +1,8 @@
-import { db } from '@/db';
-import { eq, and, gt, like, or, isNull } from 'drizzle-orm';
-import { nexusActionRequests } from '@/db/schema';
+import { db } from '@saasfly/db';
+import { eq, and, gt, like, or, isNull } from "@saasfly/db-core";
+import { nexusActionRequests } from '@saasfly/db/schema';
 import { DomainAdapter, NexusOperation } from './DomainAdapter';
-import { NexusAuthContext, checkNexusPermission } from '@/lib/nexus/nexus-rbac';
+import { NexusAuthContext, checkNexusPermission } from '@saasfly/shared';
 
 export class HermesAdapter implements DomainAdapter {
   async getOperations(authCtx: NexusAuthContext): Promise<NexusOperation[]> {

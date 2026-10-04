@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getNexusAuthContext } from "@/lib/nexus/nexus-rbac";
+import { getNexusAuthContext } from "@saasfly/shared";
 import SettingsClient from "./SettingsClient";
 
 export const dynamic = "force-dynamic";

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 //
-import { db } from "~/db";
+import { db } from "@saasfly/db-core";
 
 
 
@@ -14,14 +14,14 @@ export const runtime = "nodejs";
 export const maxDuration = 30;
 // Next.js App Router: increase body size limit for this route
 export const dynamic = 'force-dynamic';
-import { projects as projectsSchema } from "@/db/schema";
+import { projects as projectsSchema } from "@saasfly/db-core";
 import { projectApiSchema } from "@/lib/project-schema-api";
-import { getAuth } from "@/lib/auth";
+import { getAuth } from "@saasfly/auth-sdk";
 import { headers } from "next/headers";
-import { getNexusAuthContext } from "@/lib/nexus/nexus-rbac";
-import { eq, and } from "drizzle-orm";
+import { getNexusAuthContext } from '@saasfly/shared';
+import { eq, and } from "@saasfly/db-core";
 import slugify from "slugify";
-import { sanitizeLogData, validateRequestBody } from "@/lib/security-utils";
+import { sanitizeLogData, validateRequestBody } from "@saasfly/shared";
 import { IntegrationKeyService } from "@/lib/integrations/auth";
 
 interface RouteParams {

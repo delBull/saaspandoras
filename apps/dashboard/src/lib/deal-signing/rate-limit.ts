@@ -1,4 +1,4 @@
-import { getRedis } from '@/lib/redis';
+import { getRedis } from '@saasfly/shared';
 
 const memoryStore = new Map<string, { count: number; resetTime: number }>();
 

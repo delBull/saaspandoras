@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 // import { db } from '@/db';
 // import { projects } from '@/db/schema';
-// import { eq } from 'drizzle-orm';
+// import { eq } from "@saasfly/db-core";
 
 export const dynamic = 'force-dynamic';
 

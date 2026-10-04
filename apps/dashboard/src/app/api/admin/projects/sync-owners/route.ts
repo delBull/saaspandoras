@@ -1,15 +1,15 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { db } from "~/db";
-// import { drizzle } from "drizzle-orm/postgres-js";
+import { db } from "@saasfly/db-core";
+// import { drizzle } from "@saasfly/db-core"postgres-js";
 // import postgres from "postgres";
 
 // Database connection will be validated at runtime
 
 // const client = postgres(connectionString);
 // const db = drizzle(client, { schema: { projects: projectsSchema } });
-import { projects } from "@/db/schema"; // Importa tu esquema
-import { isAdmin, getAuth } from "@/lib/auth";
-import { sql, and, or, isNotNull, ne, isNull, eq } from "drizzle-orm";
+import { projects } from "@saasfly/db-core"; // Importa tu esquema
+import { isAdmin, getAuth } from "@saasfly/auth-sdk";
+import { sql, and, or, isNotNull, ne, isNull, eq } from "@saasfly/db-core";
 
 // ⚠️ EXPLICITAMENTE USAR Node.js RUNTIME para APIs que usan PostgreSQL
 export const runtime = "nodejs";

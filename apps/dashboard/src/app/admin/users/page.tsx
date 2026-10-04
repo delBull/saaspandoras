@@ -1,12 +1,12 @@
 import React from 'react';
-import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
+import { getNexusAuthContext } from '@saasfly/shared';
 import { PlatformAdminShell } from '@/components/admin/shell/PlatformAdminShell';
 import { UsersTable } from '@/components/admin/UsersTable';
 import { AdminAccessGate } from '../AdminAccessGate';
-import { PlatformActor, PlatformRole } from '@/lib/dash-contracts/admin';
-import { db } from '@/db';
-import { users, hermesCognitiveProfiles, marketingIdentities, channelIdentityBindings, hermesSecurityEvents } from '@/db/schema';
-import { desc, inArray, eq, sql } from 'drizzle-orm';
+import { PlatformActor, PlatformRole } from '@saasfly/shared';
+import { db } from '@saasfly/db-core';
+import { users, hermesCognitiveProfiles, marketingIdentities, channelIdentityBindings, hermesSecurityEvents } from '@saasfly/db-core';
+import { desc, inArray, eq, sql } from "@saasfly/db-core";
 import type { UserData, UserRole } from '@/types/admin';
 import { Fingerprint, ShieldAlert, Link2, Wallet, Users as UsersIcon } from 'lucide-react';
 

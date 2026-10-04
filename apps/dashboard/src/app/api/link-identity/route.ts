@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db";
-import { accessRequests, marketingLeads, marketingIdentities } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { accessRequests, marketingLeads, marketingIdentities } from "@saasfly/db-core";
+import { eq, and } from "@saasfly/db-core";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

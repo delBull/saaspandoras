@@ -23,7 +23,7 @@ import {
 import { useActiveAccount, ConnectButton, useWalletBalance } from 'thirdweb/react';
 import { wallets } from '@/lib/wallets';
 import { base, sepolia, baseSepolia } from 'thirdweb/chains';
-import { client } from '@/lib/thirdweb-client';
+import { client } from '@saasfly/shared';
 import { SUPPORTED_NETWORKS } from '@/config/networks';
 import { getContract } from "thirdweb";
 import { useReadContract } from "thirdweb/react";

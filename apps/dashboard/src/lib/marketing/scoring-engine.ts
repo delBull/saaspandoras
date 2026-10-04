@@ -1,6 +1,6 @@
-import { db } from "@/db";
-import { marketingLeads, marketingLeadEvents, marketingAttributionTouches } from "@/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { marketingLeads, marketingLeadEvents, marketingAttributionTouches } from "@saasfly/db-core";
+import { eq, sql } from "@saasfly/db-core";
 
 export class ScoringEngine {
   /**
@@ -10,7 +10,7 @@ export class ScoringEngine {
   static async updateScore(leadId: string, eventType: string): Promise<number> {
     try {
       // Import dynamically to avoid circular dependencies
-      const { HermesLearningLoop } = await import("@/lib/hermes/memory/learning-loop");
+      const { HermesLearningLoop } = await import("@saasfly/hermes-core");
       
       // We pass the leadId. Since it's a web event, Hermes will fetch the recent web events
       // and update the cognitive profile without needing chat context.

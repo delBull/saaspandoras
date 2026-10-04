@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Database, Key, Shield, Layers, ChevronRight, Hash, Eye, EyeOff, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
-import type { KnowledgeOverviewView } from '@/lib/dash-contracts/knowledge';
+import type { KnowledgeOverviewView } from '@saasfly/shared';
 
 export function KnowledgeAdvancedPanel({ overview }: { overview: KnowledgeOverviewView }) {
   const [isOpen, setIsOpen] = useState(false);

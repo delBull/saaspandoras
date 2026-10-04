@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/db';
-import { ambassadors, projects } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { ambassadors, projects } from '@saasfly/db/schema';
+import { eq, and } from "@saasfly/db-core";
 import { sendAmbassadorAlert } from '@/lib/discord/alert-notifier';
 import { sendAmbassadorWelcomeEmail } from '@/lib/email/ambassador-mailer';
-import { withSecurity, apiRateLimiter } from '@/lib/security-utils';
+import { withSecurity, apiRateLimiter } from '@saasfly/shared';
 
 // In-memory PIN attempt tracking per email (resets on server restart)
 const pinAttempts = new Map<string, { count: number; lastAttempt: number }>();

@@ -2,7 +2,7 @@
 
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import type { ShortlinkEvent } from "@/db/schema";
+import type { ShortlinkEvent } from "@saasfly/db-core";
 
 interface ShortlinkTableProps {
   data: ShortlinkEvent[];

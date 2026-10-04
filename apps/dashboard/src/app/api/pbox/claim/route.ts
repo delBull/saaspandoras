@@ -1,10 +1,10 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
-import { gamificationProfiles, pboxClaims, securityEvents, users } from '@/db/schema';
-import { eq, and, sql } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { gamificationProfiles, pboxClaims, securityEvents, users } from '@saasfly/db/schema';
+import { eq, and, sql } from "@saasfly/db-core";
 import jwt from 'jsonwebtoken';
 import { ethers } from 'ethers';
-import { withSecurity, apiRateLimiter } from '@/lib/security-utils';
+import { withSecurity, apiRateLimiter } from '@saasfly/shared';
 
 // Import ABI and config
 import PBOXTokenArtifact from '../../../../../../../packages/protocol-deployer/artifacts/contracts/core/PBOXToken.sol/PBOXToken.json';

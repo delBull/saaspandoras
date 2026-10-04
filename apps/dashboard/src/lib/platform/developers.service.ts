@@ -1,8 +1,8 @@
-import { db } from "@/db";
-import { integrationClients, projects } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
-import { PortalTenantContext } from "@/lib/portal/portal-types";
-import { assertPortalPermission } from "@/lib/portal/permissions";
+import { db } from "@saasfly/db-core";
+import { integrationClients, projects } from "@saasfly/db-core";
+import { eq, and } from "@saasfly/db-core";
+import { PortalTenantContext } from "@saasfly/shared";
+import { assertPortalPermission } from "@saasfly/shared";
 import crypto from "crypto";
 
 export class DeveloperDomainService {

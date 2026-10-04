@@ -7,12 +7,12 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
-import { hermesTenantCredits, hermesComputeUsageEvents, hermesRunpodEndpoints } from '@/db/schema';
-import { eq, desc } from 'drizzle-orm';
-import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
-import { PlatformCapabilityRegistryService } from '@/lib/admin/platform-capability-registry.service';
-import { PlatformActor, PlatformRole } from '@/lib/dash-contracts/admin';
+import { db } from '@saasfly/db';
+import { hermesTenantCredits, hermesComputeUsageEvents, hermesRunpodEndpoints } from '@saasfly/db/schema';
+import { eq, desc } from "@saasfly/db-core";
+import { getNexusAuthContext } from '@saasfly/shared';
+import { PlatformCapabilityRegistryService } from '@saasfly/shared';
+import { PlatformActor, PlatformRole } from '@saasfly/shared';
 
 export async function PATCH(req: NextRequest) {
   try {

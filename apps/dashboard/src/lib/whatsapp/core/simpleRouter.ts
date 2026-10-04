@@ -4,16 +4,16 @@
 // Un número = Un flujo = Una sola conversación
 // =====================================================
 
-import { sql } from "@/lib/database";
-import type { WhatsAppUser, WhatsAppSession } from "@/db/schema";
+import { sql } from 'drizzle-orm';
+import type { WhatsAppUser, WhatsAppSession } from "@saasfly/db-core";
 import { notifyHumanAgent } from "@/lib/notifications";
-import { db } from "~/db";
-import { whatsappUsers, whatsappSessions, whatsappMessages } from "@/db/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { whatsappUsers, whatsappSessions, whatsappMessages } from "@saasfly/db-core";
+import { eq, and, desc } from "@saasfly/db-core";
 import { notifySupportRequest } from "@/lib/discord"; // Dynamic or direct import
-import { sendWhatsAppMessage, sendInteractiveMessage } from "../utils/client";
+import { sendWhatsAppMessage, sendInteractiveMessage } from "@saasfly/shared";
 import { syncLeadAsClient } from "@/actions/leads";
-import { maskPhoneNumber } from "../utils/conversation-id";
+import { maskPhoneNumber } from "@saasfly/shared";
 
 /**
  * INTERFACES SIMPLIFICADAS
@@ -550,14 +550,14 @@ async function handleProtocolApplicationFlow(message: string, step = 0, phone?: 
 
 // Verificar si un usuario ya tiene un flujo asignado
 async function getExistingFlow(phone: string): Promise<FlowType | null> {
-  const [row] = await sql`
+  const [row] = (await db.execute(sql`
     SELECT s.flow_type 
     FROM whatsapp_sessions s
     JOIN whatsapp_users u ON s.user_id = u.id
     WHERE u.phone = ${phone} 
       AND s.is_active = true
     LIMIT 1
-  ` as any[];
+  `)) as any[];
 
   return row?.flow_type || null;
 }
@@ -565,39 +565,39 @@ async function getExistingFlow(phone: string): Promise<FlowType | null> {
 // Asignar flujo por primera vez
 async function assignFlow(phone: string, flowType: FlowType, name?: string, projectId?: number | null): Promise<void> {
   // Crear usuario
-  await sql`
+  (await db.execute(sql`
     INSERT INTO whatsapp_users (id, phone, name, priority_level)
     VALUES (gen_random_uuid()::text, ${phone}, ${name || null}, 'normal')
     ON CONFLICT (phone)
     DO NOTHING
-  `;
+  `)) as any;
 
   // Obtener user_id
-  const [user] = await sql`
+  const [user] = (await db.execute(sql`
     SELECT id FROM whatsapp_users WHERE phone = ${phone}
-  ` as any[];
+  `)) as any[];
 
   if (user) {
     // Crear sesión activa para este flujo
-    await sql`
+    (await db.execute(sql`
       INSERT INTO whatsapp_sessions (id, user_id, flow_type, state, current_step, is_active)
       VALUES (gen_random_uuid()::text, ${user.id}, ${flowType}, ${JSON.stringify({ projectId: projectId || null })}::jsonb, 0, true)
       ON CONFLICT (user_id, flow_type)
       DO UPDATE SET is_active = true, updated_at = now()
-    `;
+    `)) as any;
   }
 }
 
 // Obtener estado actual del flujo
 async function getCurrentFlowState(phone: string): Promise<{ flowType: FlowType; step: number; state: any } | null> {
-  const [row] = await sql`
+  const [row] = (await db.execute(sql`
     SELECT s.flow_type, s.current_step, s.state
     FROM whatsapp_sessions s
     JOIN whatsapp_users u ON s.user_id = u.id
     WHERE u.phone = ${phone} 
       AND s.is_active = true
     LIMIT 1
-  ` as any[];
+  `)) as any[];
 
   return row ? { 
     flowType: row.flow_type as FlowType, 
@@ -608,14 +608,14 @@ async function getCurrentFlowState(phone: string): Promise<{ flowType: FlowType;
 
 // Actualizar paso del flujo
 async function updateFlowStep(phone: string, step: number): Promise<void> {
-  await sql`
+  (await db.execute(sql`
     UPDATE whatsapp_sessions s
     SET current_step = ${step}, updated_at = now()
     FROM whatsapp_users u
     WHERE s.user_id = u.id 
       AND u.phone = ${phone}
       AND s.is_active = true
-  `;
+  `)) as any;
 }
 
 /**
@@ -687,8 +687,8 @@ let isIncomingWamidEnsured = false;
 async function ensureIncomingWamidColumn() {
   if (isIncomingWamidEnsured) return;
   try {
-    await sql`ALTER TABLE whatsapp_messages ADD COLUMN IF NOT EXISTS incoming_wamid TEXT;`;
-    await sql`CREATE INDEX IF NOT EXISTS idx_whatsapp_messages_incoming_wamid ON whatsapp_messages (incoming_wamid);`;
+    (await db.execute(sql`ALTER TABLE whatsapp_messages ADD COLUMN IF NOT EXISTS incoming_wamid TEXT;`)) as any;
+    (await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_whatsapp_messages_incoming_wamid ON whatsapp_messages (incoming_wamid);`)) as any;
     isIncomingWamidEnsured = true;
   } catch (err) {
     console.warn('[SIMPLE-ROUTER] ensureIncomingWamidColumn warning:', err);
@@ -698,35 +698,35 @@ async function ensureIncomingWamidColumn() {
 async function logWhatsAppMessage(phone: string, direction: 'incoming' | 'outgoing', body: string, messageId?: string) {
   try {
     if (messageId) {
-      await sql`
+      (await db.execute(sql`
         INSERT INTO whatsapp_messages (id, session_id, direction, body, message_type, incoming_wamid, timestamp)
         SELECT gen_random_uuid(), s.id, ${direction}, ${body}, 'text', ${messageId}, now()
         FROM whatsapp_sessions s
         JOIN whatsapp_users u ON s.user_id = u.id
         WHERE u.phone = ${phone} AND s.is_active = true
         LIMIT 1
-      `;
+      `)) as any;
     } else {
-      await sql`
+      (await db.execute(sql`
         INSERT INTO whatsapp_messages (id, session_id, direction, body, message_type, timestamp)
         SELECT gen_random_uuid(), s.id, ${direction}, ${body}, 'text', now()
         FROM whatsapp_sessions s
         JOIN whatsapp_users u ON s.user_id = u.id
         WHERE u.phone = ${phone} AND s.is_active = true
         LIMIT 1
-      `;
+      `)) as any;
     }
   } catch (err) {
     // Non-blocking fallback
     try {
-      await sql`
+      (await db.execute(sql`
         INSERT INTO whatsapp_messages (id, session_id, direction, body, message_type, timestamp)
         SELECT gen_random_uuid(), s.id, ${direction}, ${body}, 'text', now()
         FROM whatsapp_sessions s
         JOIN whatsapp_users u ON s.user_id = u.id
         WHERE u.phone = ${phone} AND s.is_active = true
         LIMIT 1
-      `;
+      `)) as any;
     } catch (fallbackErr) {
       console.warn('[SIMPLE-ROUTER] Message logging failed (non-blocking):', fallbackErr);
     }
@@ -785,11 +785,11 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
     if (!payload?.alreadyClaimed) {
       try {
         await ensureIncomingWamidColumn();
-        const [existingMessage] = await sql`
+        const [existingMessage] = (await db.execute(sql`
           SELECT 1 FROM whatsapp_messages 
           WHERE incoming_wamid = ${messageId}
           LIMIT 1
-        ` as any[];
+        `)) as any[];
 
         if (existingMessage) {
           console.log(`⚡ [SIMPLE-ROUTER] Mensaje duplicado ${messageId} ignorado`);
@@ -904,21 +904,21 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
         console.log(`🔄 [FLOW-SWITCH] Usuario ${maskPhoneNumber(phone)} cambiando de ${existingFlow} a ${newFlow}`);
 
         // 1. Desactivar sesión actual evitando colisiones
-        await sql`
+        (await db.execute(sql`
           UPDATE whatsapp_sessions 
           SET is_active = false, updated_at = now()
           WHERE user_id = (SELECT id FROM whatsapp_users WHERE phone = ${phone})
             AND is_active = true
-        `;
+        `)) as any;
 
         // 2. Activar/Crear sesión del nuevo flujo
-        await sql`
+        (await db.execute(sql`
           INSERT INTO whatsapp_sessions (id, user_id, flow_type, state, current_step, is_active)
           SELECT gen_random_uuid()::text, id, ${newFlow}, '{}'::jsonb, 0, true
           FROM whatsapp_users WHERE phone = ${phone}
           ON CONFLICT (user_id, flow_type)
           DO UPDATE SET is_active = true, current_step = 0, state = '{}'::jsonb, updated_at = now()
-        `;
+        `)) as any;
 
         // Handle the message with the new flow
         switch (newFlow) {
@@ -932,7 +932,7 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
             result = await handleCreatorFlow(messageText, 0, phone);
             if (result.action === 'redirect_utility_suggestion') {
               // Auto-switch to utility
-              await sql`UPDATE whatsapp_sessions SET flow_type = 'utility', current_step = 0 WHERE user_id = (SELECT id FROM whatsapp_users WHERE phone = ${phone}) AND is_active = true`;
+              (await db.execute(sql`UPDATE whatsapp_sessions SET flow_type = 'utility', current_step = 0 WHERE user_id = (SELECT id FROM whatsapp_users WHERE phone = ${phone}) AND is_active = true`)) as any;
               // Immediately start Utility step 0
               result = await handleUtilityFlow("start_from_creator", 0, phone);
               result.response = `🔄 **Redirigiendo al Filtro Técnico...**\n\n${result.response}`;
@@ -948,7 +948,7 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
             // Let's map 'start' to 'creator' in detection logic below.
             // If someone is stuck in 8q, we can switch them to creator.
             result = await handleCreatorFlow(messageText, 0, phone); // Treat as new creator flow entry
-            await sql`UPDATE whatsapp_sessions SET flow_type = 'creator', current_step = 0 WHERE user_id = (SELECT id FROM whatsapp_users WHERE phone = ${phone}) AND is_active = true`;
+            (await db.execute(sql`UPDATE whatsapp_sessions SET flow_type = 'creator', current_step = 0 WHERE user_id = (SELECT id FROM whatsapp_users WHERE phone = ${phone}) AND is_active = true`)) as any;
             break;
           case 'support':
             result = handleSupportFlow(messageText);
@@ -1143,7 +1143,7 @@ export async function routeSimpleMessage(payload: any): Promise<FlowResult> {
 // Obtener estadísticas simples por flujo
 export async function getSimpleFlowStats() {
   try {
-    const stats = await sql`
+    const stats = (await db.execute(sql`
       SELECT 
         flow_type,
         COUNT(*) as total_sessions,
@@ -1151,7 +1151,7 @@ export async function getSimpleFlowStats() {
       FROM whatsapp_sessions
       GROUP BY flow_type
       ORDER BY total_sessions DESC
-    ` as any[];
+    `)) as any[];
 
     return stats;
   } catch (error) {

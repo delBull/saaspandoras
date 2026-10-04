@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import { getAuth } from '@/lib/auth';
+import { getAuth } from '@saasfly/auth-sdk';
 import { seedMarketingCampaigns } from '@/lib/marketing/seed-campaigns';
 
 export async function POST(req: NextRequest) {

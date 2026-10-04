@@ -1,6 +1,6 @@
-import { db } from "@/db";
-import { webhookEvents, integrationClients } from "@/db/schema";
-import { eq, and, lte, asc } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { webhookEvents, integrationClients } from "@saasfly/db-core";
+import { eq, and, lte, asc } from "@saasfly/db-core";
 import { sendWebhook, type PandoraWebhookEvent } from "@pandoras/core-webhooks";
 
 const MAX_RETRIES = 5;

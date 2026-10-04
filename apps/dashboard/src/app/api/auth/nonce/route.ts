@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { db } from "@/db";
-import { authChallenges } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { authChallenges } from "@saasfly/db-core";
+import { eq } from "@saasfly/db-core";
 import crypto from "crypto";
-import { withRetry } from "@/lib/database";
+import { withRetry } from '@saasfly/db-core';
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

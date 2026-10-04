@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
-import { nexusCollaborators, nexusDealRooms, projects } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { nexusCollaborators, nexusDealRooms, projects } from '@saasfly/db/schema';
+import { eq, and } from "@saasfly/db-core";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ projectId: string }> }) {
   try {
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ pro
     const adminExternalId = admin.whatsappPhone || admin.discordUserId || ''; // mock using discordId as TG ID for now
     
     // 3. Dispatch the outbound push message via Hermes Engine / Edge
-    const { HermesExecutionEngine } = await import('@/lib/hermes/kernel/execution/execution-api');
+    const { HermesExecutionEngine } = await import('@saasfly/hermes-core');
     const engine = new HermesExecutionEngine();
     
     // We send an "internal" message to Hermes instructing it to message the admin

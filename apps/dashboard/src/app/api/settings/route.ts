@@ -1,8 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { db } from "@/db";
-import { platformSettings } from "@/db/schema";
-import { eq } from "drizzle-orm";
-import { getAuth, isAdmin } from "@/lib/auth";
+import { db } from "@saasfly/db-core";
+import { platformSettings } from "@saasfly/db-core";
+import { eq } from "@saasfly/db-core";
+import { getAuth, isAdmin } from "@saasfly/auth-sdk";
 import { headers } from "next/headers";
 
 // Force dynamic for Next.js

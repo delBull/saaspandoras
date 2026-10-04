@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/db';
-import { knowledgeChunks } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { knowledgeChunks } from '@saasfly/db/schema';
+import { eq, and } from "@saasfly/db-core";
 import { requireInternalAuth } from '@/lib/security/internal-auth';
-import { TenantIpfsVaultService } from '@/lib/pandoras/core/domains/hermes/knowledge/ipfs-vault';
-import { HermesIdentitySigner } from '@/lib/pandoras/core/domains/hermes/identity/identity-signer';
-import type { KnowledgeClassificationTier } from '@/lib/pandoras/core/domains/hermes/runtime/contracts';
+import { TenantIpfsVaultService } from '@saasfly/hermes-core';
+import { HermesIdentitySigner } from '@saasfly/hermes-core';
+import type { KnowledgeClassificationTier } from '@saasfly/hermes-core';
 
 /**
  * POST /api/v1/internal/tenants/knowledge

@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db";
-import { projects as projectsSchema } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { projects as projectsSchema } from "@saasfly/db-core";
+import { eq } from "@saasfly/db-core";
 import { IntegrationKeyService } from "@/lib/integrations/auth";
 import { readContract } from "thirdweb";
 import { defineChain } from "thirdweb/chains";
-import { client as twClient } from "@/lib/thirdweb-client";
+import { client as twClient } from "@saasfly/shared";
 import { getContract } from "thirdweb";
 import { ProgressionEngine, Tier } from "@/lib/protocol-engine/progression";
 

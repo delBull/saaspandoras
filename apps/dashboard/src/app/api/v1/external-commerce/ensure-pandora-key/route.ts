@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import { getContract, readContract, prepareContractCall, sendTransaction } from "thirdweb";
 import { privateKeyToAccount } from "thirdweb/wallets";
-import { client } from "@/lib/thirdweb-client";
+import { client } from "@saasfly/shared";
 import { config } from "@/config";
 import { PANDORAS_KEY_ABI } from "@/lib/pandoras-key-abi";
-import { db } from "@/db";
-import { users } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { users } from "@saasfly/db-core";
+import { eq } from "@saasfly/db-core";
 
 /**
  * POST /api/v1/external-commerce/ensure-pandora-key

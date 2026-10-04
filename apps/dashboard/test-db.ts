@@ -1,7 +1,7 @@
 import { config } from "dotenv";
 config({ path: ".env.staging" });
-import { db } from "./src/db";
-import { sql } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { sql } from "@saasfly/db-core";
 
 async function main() {
   try {

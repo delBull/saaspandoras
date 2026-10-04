@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { Scheduler } from '@/lib/hermes/kernel/scheduler/scheduler';
-import { ExecutionResult } from '@/lib/hermes/contracts/universal';
-import { DecisionJournal } from '@/lib/hermes/kernel/intelligence/decision-journal';
+import { Scheduler } from '@saasfly/hermes-core';
+import { ExecutionResult } from '@saasfly/hermes-core';
+import { DecisionJournal } from '@saasfly/hermes-core';
 
 export async function POST(
   req: NextRequest,
@@ -56,12 +56,12 @@ export async function POST(
     console.log(`[Hermes OS] Valid callback received for job ${executionId} from provider ${providerId}`);
 
     // Update job state
-    await Scheduler.updateState(executionId, 'Completed', result as ExecutionResult);
+    await Scheduler.updateState(executionId, 'Completed', result as any);
 
     // In a real scenario, here we would route the result back to the user via the original channel (e.g. Telegram)
     // or trigger the next step in the workflow. For now, it's marked as Completed in the Scheduler.
     // DecisionJournal log for callback completion (Sprint 9 extension)
-    await DecisionJournal.logDecision(job.request as any, undefined, { id: providerId } as any, result as ExecutionResult);
+    await DecisionJournal.logDecision(job.request as any, undefined, { id: providerId } as any, result as any);
 
     return NextResponse.json({ success: true });
 

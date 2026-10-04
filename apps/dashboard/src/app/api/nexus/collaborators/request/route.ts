@@ -10,12 +10,12 @@ import {
   requireNexusAdmin,
   isNexusAdminEmail,
   getCollaboratorByEmail,
-} from '@/lib/nexus/collaborators-service';
+} from '@saasfly/hermes-core';
 import { notifyProvisioningRequest } from '@/lib/nexus/provisioning';
 
-import { db } from '@/db';
-import { marketingLeads } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { marketingLeads } from '@saasfly/db/schema';
+import { eq } from "@saasfly/db-core";
 
 function getCorsHeaders(req: NextRequest) {
   const origin = req.headers.get('origin') || '*';

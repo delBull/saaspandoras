@@ -1,9 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
-import { getAuth } from "@/lib/auth";
-import { db } from "@/db";
-import { users, achievements, userAchievements, gamificationProfiles, userPoints } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { getAuth } from "@saasfly/auth-sdk";
+import { db } from "@saasfly/db-core";
+import { users, achievements, userAchievements, gamificationProfiles, userPoints } from "@saasfly/db-core";
+import { eq, and } from "@saasfly/db-core";
 
 export async function POST(req: NextRequest) {
     try {

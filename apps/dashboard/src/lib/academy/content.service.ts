@@ -1,8 +1,8 @@
-import { db } from "@/db";
-import { courses } from "@/db/schema";
-import { eq } from "drizzle-orm";
-import { PortalTenantContext } from "@/lib/portal/portal-types";
-import { assertPortalPermission } from "@/lib/portal/permissions";
+import { db } from "@saasfly/db-core";
+import { courses } from "@saasfly/db-core";
+import { eq } from "@saasfly/db-core";
+import { PortalTenantContext } from "@saasfly/shared";
+import { assertPortalPermission } from "@saasfly/shared";
 
 export class ContentDomainService {
   constructor(private context: PortalTenantContext) {

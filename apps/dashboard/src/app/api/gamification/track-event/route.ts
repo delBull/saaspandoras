@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getAuth } from '@/lib/auth';
+import { getAuth } from '@saasfly/auth-sdk';
 import { headers } from 'next/headers';
 import { EventType } from '@pandoras/gamification';
 import { GamificationService } from '@/lib/gamification/service';

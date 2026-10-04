@@ -1,7 +1,7 @@
 // @ts-ignore
 import { describe, it, expect, beforeEach } from 'bun:test';
 import { WhatsAppDispatcher } from '../dispatcher';
-import { PlatformCapabilityRegistryService, PlatformActor } from '@/lib/admin/platform-capability-registry.service';
+import { PlatformCapabilityRegistryService, PlatformActor } from '@saasfly/shared';
 
 describe('🚪 Suite C: WhatsApp Dispatcher Boundary & Phone Registry', () => {
   const masterPhone = '109876543210';

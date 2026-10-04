@@ -7,7 +7,7 @@
  * Solo puede citar y proponer un `offerId` formal de este catálogo.
  */
 
-import type { ProductKey, PlanKey } from '@/lib/platform/product-registry';
+import type { ProductKey, PlanKey } from '@saasfly/shared';
 
 export type FulfillmentType = 'saas_provision' | 'sow_protocol' | 'deal_room' | 'custom_ops';
 

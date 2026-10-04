@@ -8,8 +8,8 @@ import type {
   AddKnowledgeSourceRequestDTO, 
   AddKnowledgeSourceResponseDTO,
   UpdateKnowledgeFactStatusResponseDTO 
-} from '@/lib/dash-contracts/knowledge';
-import type { DashApiError } from '@/lib/dash-contracts/journeys';
+} from '@saasfly/shared';
+import type { DashApiError } from '@saasfly/shared';
 import { resolveApiBaseUrl, getServerAuthHeaders } from './utils';
 
 export class DashApiKnowledgeClient {

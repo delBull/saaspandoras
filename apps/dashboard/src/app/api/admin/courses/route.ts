@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
-import { db } from "~/db";
-import { courses, courseEnrollments } from "~/db/schema";
-import { eq, desc, sql } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { courses, courseEnrollments } from "@saasfly/db-core";
+import { eq, desc, sql } from "@saasfly/db-core";
 import { validateAdminSession } from "@/lib/admin-auth";
 import { logger } from "@/lib/logger";
 

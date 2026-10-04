@@ -4,7 +4,7 @@ import { writeFile, mkdir } from 'fs/promises';
 import { existsSync } from 'fs';
 import { join, resolve, extname } from 'path';
 import crypto from 'crypto';
-import { getAuth, isAdmin } from '@/lib/auth';
+import { getAuth, isAdmin } from '@saasfly/auth-sdk';
 
 export async function POST(req: NextRequest) {
   try {

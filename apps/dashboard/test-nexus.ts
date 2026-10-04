@@ -1,4 +1,4 @@
-import { NexusAuthorizationService } from './src/lib/pandoras/core/domains/nexus/nexus-authorization';
+import { NexusAuthorizationService } from '@saasfly/hermes-core';
 
 // Simulate a test runner
 async function runTests() {

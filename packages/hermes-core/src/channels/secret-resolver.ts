@@ -1,0 +1,146 @@
+// @ts-ignore
+import { resolveMasterPhoneNumberId } from '@saasfly/shared';
+
+export interface SecretResolver {
+  resolve(credentialsRef: string): Promise<string>;
+}
+
+export class EnvironmentSecretResolver implements SecretResolver {
+  private customSecrets = new Map<string, string>();
+
+  constructor(initialSecrets?: Record<string, string>) {
+    if (initialSecrets) {
+      Object.entries(initialSecrets).forEach(([k, v]) => this.customSecrets.set(k, v));
+    }
+  }
+
+  setSecret(ref: string, secretValue: string): void {
+    this.customSecrets.set(ref, secretValue);
+  }
+
+  async resolve(credentialsRef: string): Promise<string> {
+    if (!credentialsRef || typeof credentialsRef !== 'string') {
+      throw new Error('Invalid credentialsRef provided to SecretResolver');
+    }
+
+    // 1. Check custom in-memory secrets store
+    if (this.customSecrets.has(credentialsRef)) {
+      return this.customSecrets.get(credentialsRef)!;
+    }
+
+    // 2. Resolve env var prefix: "env:TELEGRAM_BOT_TOKEN" or direct ENV key
+    const envKey = credentialsRef.startsWith('env:')
+      ? credentialsRef.substring(4)
+      : credentialsRef;
+
+    const envValue = process.env[envKey];
+    if (envValue) {
+      return envValue;
+    }
+
+    // 3. Fallback placeholder for dev/staging when ref format is vault:telegram:<bindingId>
+    if (credentialsRef.startsWith('vault:telegram:')) {
+      const orgId = credentialsRef.substring('vault:telegram:'.length).toUpperCase();
+      const tenantToken = process.env[`TELEGRAM_${orgId}_BOT_TOKEN`] || process.env[`${orgId}_TELEGRAM_BOT_TOKEN`];
+      if (tenantToken) {
+        return tenantToken;
+      }
+      
+      const devToken = process.env.HERMES_TELEGRAM_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN;
+      if (devToken) {
+        return devToken;
+      }
+    }
+
+    if (credentialsRef.startsWith('vault:channel:')) {
+      const orgId = credentialsRef.substring('vault:channel:'.length).toUpperCase();
+      const tenantToken = process.env[`META_WHATSAPP_TOKEN_${orgId}`] || process.env[`${orgId}_WHATSAPP_TOKEN`];
+      const tenantPhoneId = process.env[`META_PHONE_NUMBER_ID_${orgId}`] || process.env[`${orgId}_WHATSAPP_PHONE_NUMBER`];
+      if (tenantToken && tenantPhoneId) {
+        return `${tenantToken}|${tenantPhoneId}`;
+      }
+      
+      const devToken = process.env.HERMES_WHATSAPP_TOKEN || process.env.META_WHATSAPP_TOKEN;
+      const devPhoneId = resolveMasterPhoneNumberId();
+      if (devToken && devPhoneId) {
+        return `${devToken}|${devPhoneId}`;
+      }
+    }
+
+    throw new Error(`SecretResolver failed to resolve secret for reference: '${credentialsRef}'`);
+  }
+}
+
+export class DatabaseSecretResolver implements SecretResolver {
+  private fallbackResolver = new EnvironmentSecretResolver();
+
+  async resolve(credentialsRef: string): Promise<string> {
+    if (!credentialsRef || typeof credentialsRef !== 'string') {
+      throw new Error('Invalid credentialsRef provided to SecretResolver');
+    }
+
+    if (credentialsRef.startsWith('vault:telegram:')) {
+      const organizationId = credentialsRef.substring('vault:telegram:'.length);
+      
+      try {
+        const { db } = await import('@saasfly/db-core');
+        const { projects } = await import('@saasfly/db-core/schema');
+        const { eq } = await import('@saasfly/db-core');
+        
+        const rows = await db.select().from(projects).where(eq(projects.slug, organizationId)).limit(1);
+        const project = rows[0];
+        
+        if (project) {
+          const config = project.tenantRuntimeConfig as any;
+          if (config?.secrets?.telegramBotToken) {
+            const tokenData = config.secrets.telegramBotToken;
+            if (typeof tokenData === 'object' && tokenData.encryptedPayload) {
+              const { KnowledgeEnvelopeVault } = await import('@saasfly/hermes-core');
+              const vault = new KnowledgeEnvelopeVault();
+              try {
+                return await vault.decryptArtifact(tokenData, {
+                  tenantId: project.organizationId,
+                  artifactId: 'telegram-bot-token',
+                  version: 1,
+                  classification: 'SECRET'
+                });
+              } catch (e) {
+                console.error('[DatabaseSecretResolver] Decryption failed for telegramBotToken', e);
+                throw new Error('Decryption failed');
+              }
+            }
+            return tokenData;
+          }
+        }
+      } catch (err) {
+        console.warn(`[DatabaseSecretResolver] DB lookup failed for ${credentialsRef}`, err);
+      }
+    }
+
+    if (credentialsRef.startsWith('vault:channel:')) {
+      const organizationId = credentialsRef.substring('vault:channel:'.length);
+      
+      try {
+        const { db } = await import('@saasfly/db-core');
+        const { projects } = await import('@saasfly/db-core/schema');
+        const { eq } = await import('@saasfly/db-core');
+        
+        const rows = await db.select().from(projects).where(eq(projects.slug, organizationId)).limit(1);
+        const project = rows[0];
+        
+        if (project) {
+          const config = project.tenantRuntimeConfig as any;
+          if (config?.secrets?.whatsappToken && config?.secrets?.whatsappPhoneId) {
+            // WhatsAppAdapter expects token|phoneNumberId
+            return `${config.secrets.whatsappToken}|${config.secrets.whatsappPhoneId}`;
+          }
+        }
+      } catch (err) {
+        console.warn(`[DatabaseSecretResolver] DB lookup failed for ${credentialsRef}`, err);
+      }
+    }
+
+    // Fallback to environment for global bots (like injected S'Narai dev tokens)
+    return this.fallbackResolver.resolve(credentialsRef);
+  }
+}

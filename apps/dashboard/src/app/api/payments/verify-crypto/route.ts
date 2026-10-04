@@ -2,9 +2,9 @@
 import { NextResponse } from 'next/server';
 import { createPublicClient, http, parseUnits, decodeEventLog, type Hash, type Address, type Chain } from 'viem';
 import { base, sepolia } from 'viem/chains';
-import { db } from "@/db";
-import { paymentLinks, transactions } from "@/db/schema";
-import { eq } from 'drizzle-orm';
+import { db } from "@saasfly/db-core";
+import { paymentLinks, transactions } from "@saasfly/db-core";
+import { eq } from "@saasfly/db-core";
 import { updatePaymentStatus } from "@/actions/clients";
 import { sendPaymentNotification } from "@/lib/discord/notifier";
 

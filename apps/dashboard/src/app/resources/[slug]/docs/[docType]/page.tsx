@@ -2,9 +2,9 @@ import { notFound } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import Link from 'next/link';
 import { ArrowLeftIcon } from 'lucide-react';
-import { db } from '@/db';
-import { projects } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { db } from '@saasfly/db-core';
+import { projects } from '@saasfly/db-core';
+import { eq } from "@saasfly/db-core";
 import PrintButton from './PrintButton';
 import type { Components } from 'react-markdown';
 

@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { db } from "~/db";
+import { db } from "@saasfly/db-core";
 
 // ✨ ENDPOINT SIMPLIFICADO PARA ADMIN - MINIMAL VALIDATIONS
 export const runtime = "nodejs";
-import { projects as projectsSchema } from "@/db/schema";
-import { getAuth, isAdmin } from "@/lib/auth";
+import { projects as projectsSchema } from "@saasfly/db-core";
+import { getAuth, isAdmin } from "@saasfly/auth-sdk";
 import { headers } from "next/headers";
 import slugify from "slugify";
 

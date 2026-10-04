@@ -1,7 +1,7 @@
-import { drizzle } from 'drizzle-orm/postgres-js';
+import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from 'postgres';
-import * as schema from '../src/db/schema';
-import { eq, sql } from 'drizzle-orm';
+import * as schema from '@saasfly/db-core/schema';
+import { eq, sql } from "@saasfly/db-core";
 import dotenv from 'dotenv';
 import path from 'path';
 

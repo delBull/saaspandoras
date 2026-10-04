@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { db } from '@/db';
-import { nexusPresence, nexusCollaborators } from '@/db/schema';
-import { eq, desc } from 'drizzle-orm';
-import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
+import { db } from '@saasfly/db';
+import { nexusPresence, nexusCollaborators } from '@saasfly/db/schema';
+import { eq, desc } from "@saasfly/db-core";
+import { getNexusAuthContext } from '@saasfly/shared';
 
 const PRESENCE_VALID_STATUSES = ['ONLINE', 'OFFLINE', 'DO_NOT_DISTURB', 'IN_MEETING'];
 const PRESENCE_VALID_CHANNELS = ['NEXUS_CHAT', 'TELEGRAM', 'WHATSAPP', 'EMAIL'];

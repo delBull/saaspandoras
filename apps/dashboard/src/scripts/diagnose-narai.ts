@@ -1,7 +1,7 @@
 
-import { db } from "../db";
-import { projects, purchases, daoMembers } from "../db/schema";
-import { eq, and } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { projects, purchases, daoMembers } from "@saasfly/db-core/schema";
+import { eq, and } from "@saasfly/db-core";
 
 async function diagnose() {
     const slug = "narai";

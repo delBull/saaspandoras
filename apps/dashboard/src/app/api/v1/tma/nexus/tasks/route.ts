@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/db';
-import { eq, and, or, isNull, desc } from 'drizzle-orm';
-import { nexusTasks, nexusCollaborators } from '@/db/schema';
-import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
+import { db } from '@saasfly/db';
+import { eq, and, or, isNull, desc } from "@saasfly/db-core";
+import { nexusTasks, nexusCollaborators } from '@saasfly/db/schema';
+import { getNexusAuthContext } from '@saasfly/shared';
 
 /**
  * GET /api/v1/tma/nexus/tasks

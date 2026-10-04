@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { validateAdminSession } from '@/lib/admin-auth';
-import { SovereignStorageRepairEngine } from '@/lib/pandoras/core/domains/hermes/knowledge/ipfs/storage-repair';
+import { SovereignStorageRepairEngine } from '@saasfly/hermes-core';
 
 export const runtime = 'nodejs';
 

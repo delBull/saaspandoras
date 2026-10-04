@@ -2,8 +2,8 @@
 
 import { revalidatePath } from 'next/cache';
 import { DashApi } from '@/lib/dash-api';
-import type { MaskedChannelsConfigDTO } from '@/lib/dash-contracts/channels';
-import { isValidDiscordWebhookUrl } from '@/lib/hermes/human-handoff';
+import type { MaskedChannelsConfigDTO } from '@saasfly/shared';
+import { isValidDiscordWebhookUrl } from '@saasfly/hermes-core';
 
 export type MaskedChannelsConfig = MaskedChannelsConfigDTO;
 

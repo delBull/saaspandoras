@@ -17,9 +17,9 @@
  */
 import type { NextRequest } from 'next/server';
 import { GamificationService } from '@pandoras/gamification/core/gamification-service';
-import { db } from '@/db';
-import { telegramBindings } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { telegramBindings } from '@saasfly/db/schema';
+import { eq } from "@saasfly/db-core";
 import { emitGamificationWebhook } from '@/lib/webhooks/emit';
 import { getBridgeFlags } from '@/lib/alerts/flags';
 

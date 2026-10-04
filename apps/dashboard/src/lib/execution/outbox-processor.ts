@@ -1,6 +1,6 @@
-import { db } from "@/db";
-import { channelOutbox, platformEvents } from "@/db/schema";
-import { eq, inArray } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { channelOutbox, platformEvents } from "@saasfly/db-core";
+import { eq, inArray } from "@saasfly/db-core";
 import { TelegramAdapter, WhatsAppAdapter, EmailAdapter, ChannelSendRequest } from "../channels/adapters";
 
 export class OutboxProcessor {

@@ -13,11 +13,11 @@ import {
     BookOpenIcon
 } from "lucide-react";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@saasfly/shared";
 import Link from "next/link";
 import { TransactionButton, useActiveAccount, useReadContract } from "thirdweb/react";
 import { prepareContractCall, getContract, defineChain } from "thirdweb";
-import { client } from "@/lib/thirdweb-client";
+import { client } from "@saasfly/shared";
 import { toast } from "sonner";
 
 interface DAOSidebarProps {

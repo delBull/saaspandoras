@@ -1,10 +1,10 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { WebhookProcessor } from "@/lib/integrations/webhook-processor";
-import { getAuth, isAdmin } from "@/lib/auth";
-import { db } from "@/db";
-import { webhookEvents } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { getAuth, isAdmin } from "@saasfly/auth-sdk";
+import { db } from "@saasfly/db-core";
+import { webhookEvents } from "@saasfly/db-core";
+import { eq } from "@saasfly/db-core";
 
 export async function POST(req: NextRequest, segmentData: { params: Promise<{ eventId: string }> }) {
     try {

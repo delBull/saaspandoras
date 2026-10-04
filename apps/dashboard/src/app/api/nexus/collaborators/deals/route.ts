@@ -3,10 +3,10 @@
  * Returns all Deal Rooms linked to a collaborator by email (as signer or counterparty)
  */
 import { NextRequest, NextResponse } from 'next/server';
-import { requireNexusAdmin } from '@/lib/nexus/collaborators-service';
-import { db } from '@/db';
-import { nexusDealRooms, nexusDealSigners } from '@/db/schema';
-import { eq, or, ilike, inArray } from 'drizzle-orm';
+import { requireNexusAdmin } from '@saasfly/hermes-core';
+import { db } from '@saasfly/db';
+import { nexusDealRooms, nexusDealSigners } from '@saasfly/db/schema';
+import { eq, or, ilike, inArray } from "@saasfly/db-core";
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

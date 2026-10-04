@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/db';
-import { gamificationEvents, daoMembers, projects } from '@/db/schema';
-import { eq, sql, and } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { gamificationEvents, daoMembers, projects } from '@saasfly/db/schema';
+import { eq, sql, and } from "@saasfly/db-core";
 import { defineChain } from "thirdweb";
 import { getWalletBalance } from "thirdweb/wallets";
-import { client } from "@/lib/thirdweb-client";
+import { client } from "@saasfly/shared";
 
 export async function POST(req: Request) {
     try {

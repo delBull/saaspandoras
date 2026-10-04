@@ -19,7 +19,7 @@ import { CognitiveContextAdapter } from '../../src/lib/pandoras/core/domains/her
 import { ControlPlaneContext } from '../../src/lib/pandoras/core/domains/hermes/knowledge/types';
 import { db } from '../../src/db';
 import { hermesKnowledge } from '../../src/db/schema';
-import { and, eq } from 'drizzle-orm';
+import { and, eq } from "@saasfly/db-core";
 
 // ─── Test harness ─────────────────────────────────────────────────────────────
 

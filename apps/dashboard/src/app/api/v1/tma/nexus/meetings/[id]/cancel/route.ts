@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
+import { getNexusAuthContext } from '@saasfly/shared';
 import { CancelMeetingHandler } from '@/lib/nexus/meeting-domain';
 
 export async function POST(

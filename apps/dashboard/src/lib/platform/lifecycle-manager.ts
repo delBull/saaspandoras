@@ -6,11 +6,11 @@
  * Trial -> Starter -> Growth -> Enterprise -> Suspended -> Churned.
  */
 
-import { db } from '@/db';
-import { installedProducts, projects } from '@/db/schema';
-import { eq, and, sql } from 'drizzle-orm';
-import { PlanKey } from './product-registry';
-import { HermesTrialTimelineService } from '@/lib/hermes/trial/hermes-trial-timeline.service';
+import { db } from '@saasfly/db';
+import { installedProducts, projects } from '@saasfly/db/schema';
+import { eq, and, sql } from "@saasfly/db-core";
+import { PlanKey } from '@saasfly/shared';
+import { HermesTrialTimelineService } from '@saasfly/hermes-core';
 
 export class OrganizationLifecycleManager {
   static async updateStatus(opts: {

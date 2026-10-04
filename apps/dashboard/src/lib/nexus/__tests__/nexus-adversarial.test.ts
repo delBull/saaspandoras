@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { NexusAuthorizationService } from '../../pandoras/core/domains/nexus/nexus-authorization';
+import { NexusAuthorizationService } from '@saasfly/hermes-core';
 import { POST as hermesInitPost } from '../../../app/api/v1/nexus/hermes/contextual/init/route';
 import { POST as depositApprovePost } from '../../../app/api/v1/nexus/finance/deposits/[id]/approve/route';
-import * as nexusRbac from '../../nexus/nexus-rbac';
-import { db } from '@/db';
+import * as nexusRbac from '@saasfly/shared';
+import { db } from '@saasfly/db-core';
 
 vi.mock('@/db', () => ({
   db: {

@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { getRoomByPublicId } from "@/lib/nexus-deals/repo";
-import { verifyDealToken } from "@/lib/nexus-deals/tokens";
-import { db } from "@/db";
-import { nexusDealComments } from "@/db/schema";
-import { sendDealRoomCommentAlert } from "@/lib/nexus-deals/discord";
-import { eq, desc, and } from "drizzle-orm";
+import { getRoomByPublicId } from "@saasfly/nexus-deals-sdk";
+import { verifyDealToken } from "@saasfly/nexus-deals-sdk";
+import { db } from "@saasfly/db-core";
+import { nexusDealComments } from "@saasfly/db-core";
+import { sendDealRoomCommentAlert } from "@saasfly/nexus-deals-sdk";
+import { eq, desc, and } from "@saasfly/db-core";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

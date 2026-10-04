@@ -1,6 +1,6 @@
-import { db } from "@/db";
-import { marketingIdentities, platformEvents } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { marketingIdentities, platformEvents } from "@saasfly/db-core";
+import { eq } from "@saasfly/db-core";
 
 export interface CognitiveDecisionRequest {
   eventId: string;

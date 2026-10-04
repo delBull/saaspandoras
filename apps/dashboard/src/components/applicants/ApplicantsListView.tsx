@@ -2,7 +2,7 @@
 
 import React from "react";
 import { TrendingUp, Calendar, DollarSign } from "lucide-react";
-import { sanitizeUrl } from "@/lib/project-utils";
+import { sanitizeUrl } from "@saasfly/shared";
 import Image from "next/image";
 import type { Project } from "../../hooks/applicants/useApplicantsData";
 

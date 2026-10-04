@@ -12,7 +12,7 @@
  */
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import { getAuth, isAdmin } from '@/lib/auth';
+import { getAuth, isAdmin } from '@saasfly/auth-sdk';
 import { runAlertEvaluator } from '@/lib/alerts/evaluator';
 
 export const dynamic = 'force-dynamic';

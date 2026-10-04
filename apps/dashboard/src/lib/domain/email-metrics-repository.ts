@@ -1,5 +1,5 @@
-import { db } from '@/db';
-import { emailMetrics } from '@/db/schema';
+import { db } from '@saasfly/db';
+import { emailMetrics } from '@saasfly/db/schema';
 
 export class EmailMetricsRepository {
   static async upsertDelivery(emailId: string, type: string, recipient: string, subject: string, metadata: any) {

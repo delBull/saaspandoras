@@ -1,6 +1,6 @@
-import { db } from "@/db";
-import { eventRegistrations } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { eventRegistrations } from "@saasfly/db-core";
+import { eq, and } from "@saasfly/db-core";
 
 export class EventRegistrationRepository {
   /**

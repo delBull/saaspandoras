@@ -1,20 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
-import { hermesAddonInstallations, hermesAddonAudit } from '@/db/schema';
-import { eq, or, and } from 'drizzle-orm';
-import { validatePortalSession } from '@/lib/platform/portal-auth';
-import { OrganizationSDK } from '@/lib/platform/organization-sdk';
-import { SessionTokenService } from '@/lib/hermes/auth/session-token.service';
-import { checkRateLimit, clientIpFromHeaders } from '@/lib/hermes/auth/rate-limiter';
-import { CANONICAL_ADDONS, activateTenantAddOn, ensureCanonicalAddOnsRegistered } from '@/lib/pandoras/core/domains/hermes/addons/catalog';
+import { db } from '@saasfly/db';
+import { hermesAddonInstallations, hermesAddonAudit } from '@saasfly/db/schema';
+import { eq, or, and } from "@saasfly/db-core";
+import { validatePortalSession } from '@saasfly/shared';
+import { OrganizationSDK } from '@saasfly/shared';
+import { SessionTokenService } from '@saasfly/hermes-core';
+import { checkRateLimit, clientIpFromHeaders } from '@saasfly/hermes-core';
+import { CANONICAL_ADDONS, activateTenantAddOn, ensureCanonicalAddOnsRegistered } from '@saasfly/hermes-core';
 import { v4 as uuidv4 } from 'uuid';
 import type { 
   GetAddonsResponseDTO, 
   AddonStatusDTO, 
   ToggleAddonRequestDTO, 
   ToggleAddonResponseDTO 
-} from '@/lib/dash-contracts/addons';
-import type { DashApiError } from '@/lib/dash-contracts/journeys';
+} from '@saasfly/shared';
+import type { DashApiError } from '@saasfly/shared';
 
 export const dynamic = 'force-dynamic';
 

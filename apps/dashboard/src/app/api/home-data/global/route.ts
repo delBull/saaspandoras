@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { db } from "~/db";
-import { sql, eq, and, inArray } from "drizzle-orm";
-import { projects } from "~/db/schema";
+import { db } from "@saasfly/db-core";
+import { sql, eq, and, inArray } from "@saasfly/db-core";
+import { projects } from "@saasfly/db-core";
 import type { DeploymentConfig } from "~/types/deployment";
 
 // 🛡️ Edge caching enabled for 120s

@@ -10,10 +10,10 @@
  * Uso: bun run apps/dashboard/scripts/seal-contact-doctrines.ts
  */
 import 'dotenv/config';
-import { db } from '../src/db';
-import { marketingLeads } from '../src/db/schema';
-import { sql as drizzleSql } from 'drizzle-orm';
-import { sealContactDoctrine, getContactDoctrineSeal } from '../src/lib/hermes/identity/contact-doctrine';
+import { db } from '@saasfly/db-core';
+import { marketingLeads } from '@saasfly/db-core/schema';
+import { sql as drizzleSql } from "@saasfly/db-core";
+import { sealContactDoctrine, getContactDoctrineSeal } from '@saasfly/hermes-core';
 
 async function main() {
   console.log('🔐 [ContactDoctrineBackfill] Iniciando sellado soberano de doctrinas de contacto...');

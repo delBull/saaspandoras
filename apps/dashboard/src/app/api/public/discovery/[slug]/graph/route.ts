@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { resolveDiscoveryManifest } from '@/lib/hermes/discovery/discovery-router';
+import { resolveDiscoveryManifest } from '@saasfly/hermes-core';
 
 // GET /api/public/discovery/[slug]/graph
 // Returns the full Entity Graph — consumed by Hermes, Media Co, Sofía, Analytics

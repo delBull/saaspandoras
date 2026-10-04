@@ -1,9 +1,9 @@
-import { db } from '@/db';
-import { marketingLeadEvents, marketingLeads, marketingIdentities, projects } from '@/db/schema';
-import { eq, and, gt, sql, or, ilike } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { marketingLeadEvents, marketingLeads, marketingIdentities, projects } from '@saasfly/db/schema';
+import { eq, and, gt, sql, or, ilike } from "@saasfly/db-core";
 import { createHash } from 'crypto';
 import { IdentityService } from '@/lib/marketing/identity-service';
-import { resolveProjectSlug } from '@/lib/project-utils';
+import { resolveProjectSlug } from '@saasfly/shared';
 
 export class TelemetryDomainService {
     /**

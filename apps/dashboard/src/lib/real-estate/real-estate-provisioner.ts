@@ -11,9 +11,9 @@
  * 5. Ensuring seamless backward compatibility with S'Narai as the reference tenant.
  */
 
-import { db } from '@/db';
-import { projects, hermesClaimContracts } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { projects, hermesClaimContracts } from '@saasfly/db/schema';
+import { eq } from "@saasfly/db-core";
 import { 
   createRealEstateDomainPack, 
   RealEstateTenantConfig, 
@@ -21,20 +21,20 @@ import {
   RealEstateUnitDefinition,
   RealEstateDoctrineEngine,
   RealEstateObjectionCategory
-} from '@/lib/hermes/packs/real-estate-pack';
+} from '@saasfly/hermes-core';
 import { 
   REAL_ESTATE_EXPERIENCE_TEMPLATES, 
   RealEstateExperienceTemplateKey, 
   RealEstateExperienceTemplateDefinition 
 } from './experience-templates';
-import { TenantProvisioner } from '@/lib/pandoras/core/domains/hermes/tenants/tenant-provisioner';
+import { TenantProvisioner } from '@saasfly/hermes-core';
 import { 
   TenantIntelligenceProvisionInput, 
   TenantClaimInput, 
   TenantProvisionResult 
-} from '@/lib/pandoras/core/domains/hermes/tenants/contracts';
-import { HermesIdentitySigner } from '@/lib/pandoras/core/domains/hermes/identity/identity-signer';
-import { SNARAI_SOUL, HermesSoulRegistry } from '@/lib/hermes/soul/snarai-soul';
+} from '@saasfly/hermes-core';
+import { HermesIdentitySigner } from '@saasfly/hermes-core';
+import { SNARAI_SOUL, HermesSoulRegistry } from '@saasfly/hermes-core';
 
 export interface ProvisionRealEstateTenantInput {
   tenantSlug: string;

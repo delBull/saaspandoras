@@ -4,8 +4,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { AcademyStore } from '@/lib/pandoras/core/domains/academy/candidates/candidate-store';
-import { SIMULATOR_SCENARIOS } from '@/lib/pandoras/core/domains/academy/rewards/unlocked-perks';
+import { AcademyStore } from '@saasfly/academy-sdk';
+import { SIMULATOR_SCENARIOS } from '@saasfly/academy-sdk';
 
 export const dynamic = 'force-dynamic';
 

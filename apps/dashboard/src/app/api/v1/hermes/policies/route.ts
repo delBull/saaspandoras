@@ -1,18 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
-import { hermesKnowledge } from '@/db/schema';
-import { eq, or, and, desc } from 'drizzle-orm';
-import { validatePortalSession } from '@/lib/platform/portal-auth';
-import { OrganizationSDK } from '@/lib/platform/organization-sdk';
-import { SessionTokenService } from '@/lib/hermes/auth/session-token.service';
-import { checkRateLimit, clientIpFromHeaders } from '@/lib/hermes/auth/rate-limiter';
+import { db } from '@saasfly/db';
+import { hermesKnowledge } from '@saasfly/db/schema';
+import { eq, or, and, desc } from "@saasfly/db-core";
+import { validatePortalSession } from '@saasfly/shared';
+import { OrganizationSDK } from '@saasfly/shared';
+import { SessionTokenService } from '@saasfly/hermes-core';
+import { checkRateLimit, clientIpFromHeaders } from '@saasfly/hermes-core';
 import crypto from 'crypto';
 import type { 
   GetPoliciesResponseDTO, 
   PolicyDTO, 
   SavePolicyRequestDTO, 
   SavePolicyResponseDTO 
-} from '@/lib/dash-contracts/policies';
+} from '@saasfly/shared';
 
 export const dynamic = 'force-dynamic';
 

@@ -1,9 +1,9 @@
 'use server';
 
-import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
-import { db } from '@/db';
-import { marketingLeads } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { getNexusAuthContext } from '@saasfly/shared';
+import { db } from '@saasfly/db';
+import { marketingLeads } from '@saasfly/db/schema';
+import { eq } from "@saasfly/db-core";
 
 /**
  * Calls Hermes AI to analyze a B2B lead and return:

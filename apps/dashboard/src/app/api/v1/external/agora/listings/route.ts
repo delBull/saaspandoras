@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateExternalKey } from "@/lib/api-auth/validate-external-key";
-import { db } from "@/db";
-import { agoraListings, protocolNavs, pandoraBuybackPools, projects } from "@/db/schema";
-import { eq, and, sql, desc, inArray } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { agoraListings, protocolNavs, pandoraBuybackPools, projects } from "@saasfly/db-core";
+import { eq, and, sql, desc, inArray } from "@saasfly/db-core";
 
 export const dynamic = "force-dynamic";
 

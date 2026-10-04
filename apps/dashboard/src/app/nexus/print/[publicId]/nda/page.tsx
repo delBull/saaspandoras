@@ -1,10 +1,10 @@
 import { notFound } from "next/navigation";
-import { getRoomByPublicId } from "@/lib/nexus-deals/repo";
-import { getAuth, isAdmin } from "@/lib/auth";
-import { db } from "@/db";
-import { nexusNdaAcceptances } from "@/db/schema";
-import { eq, inArray, and } from "drizzle-orm";
-import { NDA_FULL_TEXT, NDA_TITLE, getNdaConfig } from "@/lib/nexus-deals/nda-content";
+import { getRoomByPublicId } from "@saasfly/nexus-deals-sdk";
+import { getAuth, isAdmin } from "@saasfly/auth-sdk";
+import { db } from "@saasfly/db-core";
+import { nexusNdaAcceptances } from "@saasfly/db-core";
+import { eq, inArray, and } from "@saasfly/db-core";
+import { NDA_FULL_TEXT, NDA_TITLE, getNdaConfig } from "@saasfly/nexus-deals-sdk";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +26,7 @@ export default async function PrintNdaPage({
   }
   
   if (!authorized && typeof unlock === "string" && unlock) {
-    const { verifyUnlockToken } = await import("@/lib/nexus-deals/tokens");
+    const { verifyUnlockToken } = await import("@saasfly/nexus-deals-sdk");
     authorized = await verifyUnlockToken(unlock);
   }
   

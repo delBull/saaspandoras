@@ -9,8 +9,8 @@
  *   bun run migrate-v1-to-v2.ts --slug abc  # single protocol
  */
 
-import { db } from '../src/db';
-import { sql } from 'drizzle-orm';
+import { db } from '@saasfly/db-core';
+import { sql } from "@saasfly/db-core";
 import { randomUUID } from 'crypto';
 import type { ArtifactType } from '../src/app/()/projects/types';
 

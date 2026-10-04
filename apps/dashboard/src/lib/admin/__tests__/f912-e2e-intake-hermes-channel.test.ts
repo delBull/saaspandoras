@@ -18,7 +18,7 @@ mock.module('@/lib/integrations/signalwire-service', () => ({
 }));
 
 let currentLedgerHash = '0000000000000000000000000000000000000000000000000000000000000000';
-mock.module('@/lib/admin/platform-audit-ledger.service', () => ({
+mock.module('@saasfly/shared', () => ({
   PlatformAuditLedgerService: {
     recordEntry: (entry: any) => {
       const prevHash = currentLedgerHash;
@@ -113,8 +113,8 @@ global.fetch = async (url: any, options: any) => {
 };
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { HermesOutboundDispatcher } from '@/lib/hermes/agents/HermesOutboundDispatcher';
-import { WhatsAppProviderResolver, MetaWhatsAppProvider, SignalWireSMSProvider } from '@/lib/channels/whatsapp/whatsapp-provider';
+import { HermesOutboundDispatcher } from '@saasfly/hermes-core';
+import { WhatsAppProviderResolver, MetaWhatsAppProvider, SignalWireSMSProvider } from '@saasfly/shared';
 
 describe('🏛️ F9.12 End-to-End Proof: Hermes Universal Intake → Knowledge → Kernel → Channel Adapter → Audit', () => {
   beforeEach(() => {

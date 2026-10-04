@@ -1,7 +1,7 @@
-import { db } from "@/db";
-import { channelIdentityBindings } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
-import { resolveMasterPhoneNumberId } from "@/lib/whatsapp/config";
+import { db } from "@saasfly/db-core";
+import { channelIdentityBindings } from "@saasfly/db-core";
+import { eq, and } from "@saasfly/db-core";
+import { resolveMasterPhoneNumberId } from '@saasfly/shared';
 
 export interface ChannelSendRequest {
   identityId: string;

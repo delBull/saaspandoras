@@ -1,8 +1,8 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import * as schema from "../src/db/schema";
-import { eq, inArray, sql } from "drizzle-orm";
-import { outboxEvents } from "../src/db/schema";
+import * as schema from '@saasfly/db-core/schema';
+import { eq, inArray, sql } from "@saasfly/db-core";
+import { outboxEvents } from '@saasfly/db-core/schema';
 
 // Ensure DATABASE_URL is set
 if (!process.env.DATABASE_URL) {

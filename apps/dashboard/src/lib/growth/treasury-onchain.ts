@@ -16,7 +16,7 @@
  * address so the UI reflects the on-chain account.
  */
 
-import { client } from '@/lib/thirdweb-client';
+import { client } from '@saasfly/shared';
 import { defineChain } from 'thirdweb';
 import { getWalletBalance } from 'thirdweb/wallets';
 import { getUsdcAddress } from '@/lib/treasury/usdc-contract';

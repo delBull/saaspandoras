@@ -20,7 +20,7 @@ export default async function ManageProjectPage({ params }: { params: Promise<{ 
     let hasGrowthOs = false;
     let activeModules: string[] = [];
     try {
-        const { setupProgressService } = await import('@/lib/mesh/setup-progress.service');
+        const { setupProgressService } = await import('@saasfly/shared');
         const setupSummary = await setupProgressService.getEcosystemSetupState(slug);
         if (setupSummary && setupSummary.modules) {
           activeModules = setupSummary.modules.map((m: any) => m.productKey);

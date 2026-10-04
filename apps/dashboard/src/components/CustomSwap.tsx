@@ -16,7 +16,7 @@ import {
   useSendTransaction,
   useConnectModal
 } from "thirdweb/react";
-import { client } from "@/lib/thirdweb-client";
+import { client } from "@saasfly/shared";
 import { parseUnits, formatUnits } from "viem";
 import { defineChain } from "thirdweb/chains";
 import { useMarketRate } from '@/hooks/useMarketRate';

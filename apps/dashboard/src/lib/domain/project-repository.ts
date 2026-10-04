@@ -1,6 +1,6 @@
-import { db } from "@/db";
-import { projects } from "@/db/schema";
-import { eq, ilike } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { projects } from "@saasfly/db-core";
+import { eq, ilike } from "@saasfly/db-core";
 
 export class ProjectRepository {
   static async findById(id: number) {

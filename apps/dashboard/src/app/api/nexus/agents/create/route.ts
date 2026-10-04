@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireNexusAdmin } from '@/lib/nexus/collaborators-service';
-import { createAgent } from '@/lib/nexus/agents-service';
+import { requireNexusAdmin } from '@saasfly/hermes-core';
+import { createAgent } from '@saasfly/hermes-core';
 
 function getCorsHeaders(req: NextRequest) {
   const origin = req.headers.get('origin') || '*';

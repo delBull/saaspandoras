@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { NexusReadAdapter } from '@/lib/pandoras/core/domains/hermes/knowledge/nexus-read-adapter';
-import { NexusAuthorizationService } from '@/lib/pandoras/core/domains/nexus/nexus-authorization';
+import { NexusReadAdapter } from '@saasfly/hermes-core';
+import { NexusAuthorizationService } from '@saasfly/hermes-core';
 
 export async function GET(req: Request) {
   try {

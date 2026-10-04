@@ -27,7 +27,7 @@ import { toast } from 'sonner';
 import { useActiveAccount } from 'thirdweb/react';
 import { getContract, prepareContractCall, sendTransaction, waitForReceipt } from 'thirdweb';
 import { defineChain } from 'thirdweb/chains';
-import { client } from '@/lib/thirdweb-client';
+import { client } from '@saasfly/shared';
 import DaoWizard from '@/components/admin/DaoWizard';
 import { AmbassadorForm } from '@/components/ambassadors/AmbassadorForm';
 import { LegalTab } from '@/components/projects/LegalTab';
@@ -35,7 +35,7 @@ import { EventsTab } from '@/components/shared/tabs/EventsTab';
 import { ResourceHubTab } from '@/app/()/profile/projects/[slug]/manage/tabs/ResourceHubTab';
 import { KnowledgeCenterTab } from '@/components/shared/tabs/KnowledgeCenterTab';
 import type { Project } from '@/types/admin';
-import { getProjectStatusConfig } from '@/lib/project-status';
+import { getProjectStatusConfig } from '@saasfly/shared';
 
 interface MissionControlProps {
     projects: Project[];

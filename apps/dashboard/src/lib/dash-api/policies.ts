@@ -7,8 +7,8 @@ import type {
   GetPoliciesResponseDTO, 
   PolicyDTO, 
   SavePolicyResponseDTO 
-} from '@/lib/dash-contracts/policies';
-import type { DashApiError } from '@/lib/dash-contracts/journeys';
+} from '@saasfly/shared';
+import type { DashApiError } from '@saasfly/shared';
 import { resolveApiBaseUrl, getServerAuthHeaders } from './utils';
 
 export class DashApiPoliciesClient {

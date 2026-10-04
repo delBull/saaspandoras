@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
-import { db } from '@/db';
-import { projects } from '@/db/schema';
-import { eq } from 'drizzle-orm';
-import { getAuth } from '@/lib/auth';
+import { db } from '@saasfly/db';
+import { projects } from '@saasfly/db/schema';
+import { eq } from "@saasfly/db-core";
+import { getAuth } from '@saasfly/auth-sdk';
 import { EventRepository } from '@/lib/domain/event-repository';
 
 type RouteParams = { params: Promise<{ projectId: string, eventId: string }> };

@@ -32,8 +32,8 @@ import {
   Loader2,
 } from 'lucide-react';
 import { usePlatformInspector } from '../inspector/PlatformInspectorContext';
-import { RwaDealSummaryDTO, RwaPipelineStage } from '@/lib/dash-contracts/admin';
-import { PlatformActor } from '@/lib/dash-contracts/admin';
+import { RwaDealSummaryDTO, RwaPipelineStage } from '@saasfly/shared';
+import { PlatformActor } from '@saasfly/shared';
 
 interface AdminRwaViewProps {
   deals: RwaDealSummaryDTO[];

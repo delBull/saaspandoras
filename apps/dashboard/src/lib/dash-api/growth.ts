@@ -14,7 +14,7 @@ import type {
   UpdateTenantWalletRequestDTO,
   GetGrowthAnalyticsResponseDTO,
   GetAutomationsResponseDTO
-} from '../dash-contracts/growth';
+} from '@saasfly/shared';
 
 export class DashApiGrowth {
   private readonly baseUrl: string;

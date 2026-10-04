@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { useActiveAccount, ConnectButton, darkTheme } from 'thirdweb/react';
 import { inAppWallet, createWallet } from 'thirdweb/wallets';
-import { client } from '@/lib/thirdweb-client';
+import { client } from '@saasfly/shared';
 import { DocumentEnvelope, SignerParticipant } from '@/lib/deal-signing/types';
 import { EIP712Builder } from '@/lib/deal-signing/eip712-builder';
 

@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
-import { db } from '@/db';
-import { eq, and, gt, inArray } from 'drizzle-orm';
-import { marketingLeads, projectCollaborators, projects } from '@/db/schema';
+import { getNexusAuthContext } from '@saasfly/shared';
+import { db } from '@saasfly/db';
+import { eq, and, gt, inArray } from "@saasfly/db-core";
+import { marketingLeads, projectCollaborators, projects } from '@saasfly/db/schema';
 
 export async function GET(req: Request) {
   try {

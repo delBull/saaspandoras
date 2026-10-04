@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireNexusAdmin } from '@/lib/nexus/collaborators-service';
-import { db } from '@/db';
-import { nexusCollaborators } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { requireNexusAdmin } from '@saasfly/hermes-core';
+import { db } from '@saasfly/db';
+import { nexusCollaborators } from '@saasfly/db/schema';
+import { eq } from "@saasfly/db-core";
 
 function getCorsHeaders(req: NextRequest) {
   const origin = req.headers.get('origin') || '*';

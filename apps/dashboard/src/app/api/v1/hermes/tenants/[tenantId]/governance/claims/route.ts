@@ -7,8 +7,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { TenantGovernanceService } from '@/lib/pandoras/core/domains/hermes/tenants/governance-service';
-import { TenantGateway } from '@/lib/pandoras/core/domains/hermes/tenants/tenant-gateway';
+import { TenantGovernanceService } from '@saasfly/hermes-core';
+import { TenantGateway } from '@saasfly/hermes-core';
 
 export async function GET(
   req: NextRequest,

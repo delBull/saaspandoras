@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/db';
-import { hermesJobs, hermesJournal } from '@/db/schema';
-import { eq, sql } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { hermesJobs, hermesJournal } from '@saasfly/db/schema';
+import { eq, sql } from "@saasfly/db-core";
 
 export async function GET(request: Request, context: { params: Promise<{ tenantId: string }> }) {
     const { tenantId } = await context.params;

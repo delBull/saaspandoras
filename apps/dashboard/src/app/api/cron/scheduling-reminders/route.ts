@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
-import { schedulingBookings, schedulingSlots, clients, projects } from '@/db/schema';
-import { eq, and, gte, lte, or, sql } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { schedulingBookings, schedulingSlots, clients, projects } from '@saasfly/db/schema';
+import { eq, and, gte, lte, or, sql } from "@saasfly/db-core";
 import { sendBookingReminderEmail } from '@/lib/email/scheduler-mailer';
 import { SignalWireService } from '@/lib/integrations/signalwire-service';
 

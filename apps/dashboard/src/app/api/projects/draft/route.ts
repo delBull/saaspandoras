@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { db } from "~/db";
-import { sql } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { sql } from "@saasfly/db-core";
 
 // ⚠️ EXPLICITAMENTE USAR Node.js RUNTIME para APIs que usan PostgreSQL
 export const runtime = "nodejs";
-import { projects as projectsSchema } from "@/db/schema";
+import { projects as projectsSchema } from "@saasfly/db-core";
 import { projectApiSchema } from "@/lib/project-schema-api";
-import { getAuth } from "@/lib/auth";
+import { getAuth } from "@saasfly/auth-sdk";
 import { headers, cookies } from "next/headers";
 import slugify from "slugify";
 

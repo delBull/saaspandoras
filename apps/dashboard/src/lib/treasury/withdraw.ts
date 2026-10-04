@@ -1,6 +1,6 @@
-import { db } from "~/db";
-import { userBalances, withdrawals, projects } from "~/db/schema";
-import { eq, sql, and, desc, or } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { userBalances, withdrawals, projects } from "@saasfly/db-core";
+import { eq, sql, and, desc, or } from "@saasfly/db-core";
 import {
   createPublicClient,
   http,

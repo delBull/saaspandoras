@@ -10,15 +10,15 @@
  * `capabilities` tells the bot what actions are available — the bot
  * should NEVER infer this logic itself.
  */
-import { db } from '@/db';
-import { sql, eq } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { sql, eq } from "@saasfly/db-core";
 import type { NextRequest } from 'next/server';
 import type { ProtocolTelegramCapabilities } from '@pandoras/gamification/types/bridge';
 import { readContract } from "thirdweb";
 import { defineChain } from "thirdweb/chains";
-import { client } from "@/lib/thirdweb-client";
+import { client } from "@saasfly/shared";
 import { getContract } from "thirdweb";
-import { telegramBindings } from '@/db/schema';
+import { telegramBindings } from '@saasfly/db/schema';
 
 export async function GET(
     req: NextRequest,

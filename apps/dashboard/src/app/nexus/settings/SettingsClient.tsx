@@ -19,7 +19,7 @@ import {
   EyeOff,
   X,
 } from "lucide-react";
-import type { NexusRole } from "@/lib/nexus/nexus-rbac";
+import type { NexusRole } from "@saasfly/shared";
 import { CognitiveAgentsManager } from "./CognitiveAgentsManager";
 import { NexusHermesTerminal } from "./NexusHermesTerminal";
 import { ConfigureAgendaButton } from "@/components/scheduler/ConfigureAgendaButton";

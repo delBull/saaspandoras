@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/db';
-import { portalOnboardingState } from '@/db/schema';
-import { eq, or } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { portalOnboardingState } from '@saasfly/db/schema';
+import { eq, or } from "@saasfly/db-core";
 import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
 
 export async function POST(request: Request) {

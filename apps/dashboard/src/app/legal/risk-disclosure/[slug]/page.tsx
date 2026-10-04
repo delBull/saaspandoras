@@ -1,9 +1,9 @@
 import React from 'react';
 import { ShieldAlert, FileWarning, Globe, CheckCircle2, Building, Scale, ArrowLeft } from 'lucide-react';
 import { PrintButton } from '@/components/legal/PrintButton';
-import { db } from '@/db';
-import { projects } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { db } from '@saasfly/db-core';
+import { projects } from '@saasfly/db-core';
+import { eq } from "@saasfly/db-core";
 
 export default async function RiskDisclosurePage({ 
   params, 

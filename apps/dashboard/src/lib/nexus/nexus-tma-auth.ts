@@ -21,10 +21,10 @@
  */
 
 import { createHmac } from 'crypto';
-import { db } from '@/db';
-import { nexusCollaborators } from '@/db/schema';
-import { eq } from 'drizzle-orm';
-import { resolveEffectivePermissions, type NexusRole } from '@/lib/nexus/nexus-rbac';
+import { db } from '@saasfly/db';
+import { nexusCollaborators } from '@saasfly/db/schema';
+import { eq } from "@saasfly/db-core";
+import { resolveEffectivePermissions, type NexusRole } from '@saasfly/shared';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

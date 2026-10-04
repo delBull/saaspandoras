@@ -1,10 +1,10 @@
 import { Metadata } from "next";
 import jwt from "jsonwebtoken";
-import { db } from "@/db";
-import { meetings } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { meetings } from "@saasfly/db-core";
+import { eq } from "@saasfly/db-core";
 import { SovereignMeetClient } from "@/components/meet/SovereignMeetClient";
-import { getNexusAuthContext } from "@/lib/nexus/nexus-rbac";
+import { getNexusAuthContext } from "@saasfly/shared";
 
 export const metadata: Metadata = {
     title: "Sovereign Meet | Pandora's",

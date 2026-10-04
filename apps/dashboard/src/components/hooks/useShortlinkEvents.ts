@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { ShortlinkEvent } from "@/db/schema";
+import type { ShortlinkEvent } from "@saasfly/db-core";
 
 export function useShortlinkEvents(slug = "w", refreshInterval = 300000) { // 5 mins
   const [events, setEvents] = useState<ShortlinkEvent[]>([]);

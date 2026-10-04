@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/db';
-import { ambassadors, partnerCertifications, partnerReputationEvents } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { ambassadors, partnerCertifications, partnerReputationEvents } from '@saasfly/db/schema';
+import { eq } from "@saasfly/db-core";
 import { IntegrationKeyService } from '@/lib/integrations/auth';
 
 export const dynamic = 'force-dynamic';

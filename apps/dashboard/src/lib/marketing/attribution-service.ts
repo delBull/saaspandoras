@@ -1,6 +1,6 @@
-import { db } from "@/db";
-import { marketingLeads, projects, marketingLeadAttributions } from "@/db/schema";
-import { eq, and, sql } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { marketingLeads, projects, marketingLeadAttributions } from "@saasfly/db-core";
+import { eq, and, sql } from "@saasfly/db-core";
 
 export interface AttributionScore {
   score: number;

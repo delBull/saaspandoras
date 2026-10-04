@@ -1,0 +1,8 @@
+{
+  "root": true,
+  "extends": [
+    "@saasfly/eslint-config/base",
+    "@saasfly/eslint-config/nextjs",
+    "@saasfly/eslint-config/react"
+  ]
+}

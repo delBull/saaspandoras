@@ -1,9 +1,9 @@
 import { notFound } from "next/navigation";
-import { db } from "~/db";
-import { projects as projectsSchema } from "~/db/schema";
-import { eq } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { projects as projectsSchema } from "@saasfly/db-core";
+import { eq } from "@saasfly/db-core";
 import { MultiStepForm } from "./multi-step-form";
-import { getNexusAuthContext } from "@/lib/nexus/nexus-rbac";
+import { getNexusAuthContext } from "@saasfly/shared";
 import { AdminAccessGate } from "../../../AdminAccessGate";
 
 interface ProjectPageProps {

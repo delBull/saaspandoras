@@ -3,9 +3,9 @@ import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { ConsumerHomePage } from '@/components/consumer-home/ConsumerHomePage';
 import { tryResolvePortalContext, getTenantOnboardingStage } from '@/lib/portal/resolve-portal-context';
-import { db } from '@/db';
-import { projects, daoMembers } from '@/db/schema';
-import { eq, ilike } from 'drizzle-orm';
+import { db } from '@saasfly/db-core';
+import { projects, daoMembers } from '@saasfly/db-core';
+import { eq, ilike } from "@saasfly/db-core";
 
 export const dynamic = 'force-dynamic';
 
@@ -64,10 +64,10 @@ export default async function RootDashboardPage({ searchParams }: PageProps) {
     // Check if user has an active portal session cookie (Hermes/Magic Link user)
     const portalSession = cookieStore.get('pandoras_portal_session')?.value;
     if (portalSession) {
-      const { validatePortalSession } = await import('@/lib/platform/portal-auth');
+      const { validatePortalSession } = await import('@saasfly/shared');
       const session = await validatePortalSession(portalSession);
       if (session?.projectId) {
-        const { OrganizationSDK } = await import('@/lib/platform/organization-sdk');
+        const { OrganizationSDK } = await import('@saasfly/shared');
         const org = await OrganizationSDK.resolve(session.projectId, session.product as any).catch(() => null);
         if (org?.slug) {
           portalSessionSlug = org.slug;
@@ -77,7 +77,7 @@ export default async function RootDashboardPage({ searchParams }: PageProps) {
   } catch (err) { }
 
   // 2. Fetch auth state
-  const { getAuth, isAdmin } = await import('@/lib/auth');
+  const { getAuth, isAdmin } = await import('@saasfly/auth-sdk');
   const authResult = await getAuth(headerList).catch(() => ({ session: null }));
 
   const callerWallet =

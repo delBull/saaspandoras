@@ -13,7 +13,7 @@ import type {
   WhatsAppProviderResponse,
   WhatsAppInboundMessage,
 } from './types.js';
-import { WHATSAPP, validateWhatsAppConfig } from '../config.js';
+import { WHATSAPP, validateWhatsAppConfig } from '@saasfly/shared';
 
 export class MetaWhatsAppProvider implements IWhatsAppProvider {
   readonly providerId = 'meta';

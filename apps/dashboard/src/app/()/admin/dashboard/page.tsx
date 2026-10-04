@@ -13,7 +13,7 @@ import { useAdmin } from "@/hooks/useAdmin";
 import { useProjectActions } from "@/hooks/useProjectActions";
 import { useFeaturedProjects } from "@/hooks/useFeaturedProjects";
 import type { ProjectStatus, Project, AdminData, UserData } from "@/types/admin";
-import { getProjectStatusConfig } from "@/lib/project-status";
+import { getProjectStatusConfig } from "@saasfly/shared";
 import { ProjectApplicationButton } from "@/components/ProjectApplicationButton";
 import { ProjectTableView } from "@/components/ProjectTableView";
 import { ProjectCardsView } from "@/components/ProjectCardsView";

@@ -1,0 +1,328 @@
+/**
+ * 🏛️ PANDORAS A2A PROTOCOL v1.1 — CAPABILITY GRANT SERVICE
+ * apps/dashboard/src/lib/@/a2a/capability-grant-service.ts
+ *
+ * Manages tenant-scoped capability authorizations and entitlements.
+ * Provides fail-closed evaluation for Media Co and Cognitive OS services.
+ */
+
+import { db } from "@saasfly/db-core";
+import { hermesCapabilityGrants, hermesMediaRequests, hermesArtifacts } from "@saasfly/db-core";
+import { eq, and, desc } from "@saasfly/db-core";
+import { CapabilityGrant, SovereignArtifactManifest } from './contracts';
+import { AgentRegistry } from './agent-registry';
+
+export const SUPPORTED_MEDIA_CAPABILITIES = [
+  { id: 'demand.view', label: '👁️ Demand Console Access', defaultEnabled: true },
+  { id: 'demand.plan', label: '📋 Campaign Planning & Strategy', defaultEnabled: true },
+  { id: 'demand.approve', label: '✅ Campaign Approval', defaultEnabled: true },
+  { id: 'demand.distribute', label: '🚀 Multi-Channel Distribution', defaultEnabled: true },
+  { id: 'media.publish.channel:telegram', label: '✈️ Publish to Telegram', defaultEnabled: true },
+  { id: 'media.publish.channel:x', label: '🐦 Publish to X (Twitter)', defaultEnabled: true },
+  { id: 'media.publish.channel:newsletter', label: '📰 Publish to Newsletter', defaultEnabled: true },
+  { id: 'media.image.create', label: '📸 Image Creation (Pixel)', defaultEnabled: true },
+  { id: 'media.video.create', label: '🎥 Video & Reels (Pixel)', defaultEnabled: false },
+  { id: 'media.copy.create', label: '✍️ Copy & Editorial (Minerva)', defaultEnabled: true },
+  { id: 'media.newsletter.create', label: '📰 Newsletters (Atlas)', defaultEnabled: true },
+  { id: 'media.podcast.create', label: '🎙️ Podcasts (Media Co)', defaultEnabled: false },
+  { id: 'research.report.create', label: '🔍 Research & Intelligence (Minerva)', defaultEnabled: true },
+] as const;
+
+export class CapabilityGrantService {
+  /**
+   * Baseline capabilities authorized for verified Growth OS tenants (e.g. S'Narai, Pandoras)
+   */
+  private static readonly TENANT_BASELINE_CAPABILITIES = new Set<string>([
+    'demand.view',
+    'demand.plan',
+    'demand.approve',
+    'demand.distribute',
+    'media.publish.channel:telegram',
+    'media.publish.channel:x',
+    'media.publish.channel:newsletter',
+    'media.image.create',
+    'media.copy.create',
+    'media.newsletter.create',
+    'research.report.create',
+  ]);
+
+  /**
+   * Checks if a tenant has an ACTIVE capability grant.
+   */
+  public static async isCapabilityGranted(tenantId: string, capability: string): Promise<boolean> {
+    const normalizedTenant = tenantId.toLowerCase().trim();
+    
+    // First check memory registry (instant / test fallback)
+    if (AgentRegistry.hasCapability('hermes', capability, normalizedTenant)) {
+      return true;
+    }
+
+    try {
+      if (db) {
+        const rows = await db
+          .select()
+          .from(hermesCapabilityGrants)
+          .where(
+            and(
+              eq(hermesCapabilityGrants.tenantId, normalizedTenant),
+              eq(hermesCapabilityGrants.capability, capability)
+            )
+          )
+          .limit(1);
+
+        if (rows.length > 0 && rows[0]) {
+          const grant = rows[0];
+          if (grant.status !== 'ACTIVE') {
+            return false;
+          }
+          if (grant.expiresAt && Date.now() > new Date(grant.expiresAt).getTime()) {
+            return false;
+          }
+          return true;
+        }
+      }
+    } catch (err) {
+      console.warn('[CapabilityGrantService] DB check error, checking verified baseline:', err);
+    }
+
+    // Default bootstrap grant for verified Growth OS organizations and active trials
+    if (
+      normalizedTenant === 'snarai' ||
+      normalizedTenant === 'pandoras' ||
+      normalizedTenant === 'default' ||
+      normalizedTenant.startsWith('exp-')
+    ) {
+      return this.TENANT_BASELINE_CAPABILITIES.has(capability);
+    }
+
+    return false;
+  }
+
+  /**
+   * Lists all grants for a specific tenant.
+   */
+  public static async listGrantsForTenant(tenantId: string): Promise<Array<{
+    capability: string;
+    label: string;
+    enabled: boolean;
+    status: string;
+    grantId?: string;
+  }>> {
+    const normalizedTenant = tenantId.toLowerCase();
+    let dbGrants: Record<string, string> = {};
+
+    try {
+      if (db) {
+        const rows = await db
+          .select()
+          .from(hermesCapabilityGrants)
+          .where(eq(hermesCapabilityGrants.tenantId, normalizedTenant));
+
+        for (const row of rows) {
+          dbGrants[row.capability] = row.status;
+        }
+      }
+    } catch (err) {
+      console.warn('[CapabilityGrantService] Error reading DB grants:', err);
+    }
+
+    return SUPPORTED_MEDIA_CAPABILITIES.map(cap => {
+      const status = dbGrants[cap.id] || (cap.defaultEnabled && (normalizedTenant === 'snarai' || normalizedTenant === 'pandoras') ? 'ACTIVE' : 'SUSPENDED');
+      return {
+        capability: cap.id,
+        label: cap.label,
+        enabled: status === 'ACTIVE',
+        status,
+      };
+    });
+  }
+
+  /**
+   * Sets (enables or suspends) a capability grant for a tenant.
+   *
+   * `authorizedBy` is REQUIRED and must be an authenticated actor identity
+   * (resolved server-side from the admin session — never from a client-supplied
+   * body field). The audit trail records this actor verbatim.
+   */
+  public static async setGrant(
+    tenantId: string,
+    capability: string,
+    enabled: boolean,
+    authorizedBy: string
+  ): Promise<CapabilityGrant> {
+    if (!authorizedBy || typeof authorizedBy !== 'string' || authorizedBy.trim() === '') {
+      throw new Error('[CapabilityGrantService] setGrant requires an authenticated actor identity (authorizedBy).');
+    }
+
+    const normalizedTenant = tenantId.toLowerCase();
+    const grantId = `grant_${normalizedTenant}_${capability.replace(/\./g, '_')}`;
+    const status = enabled ? 'ACTIVE' : 'SUSPENDED';
+    const now = new Date();
+
+    const grant: CapabilityGrant = {
+      grantId,
+      issuer: 'hermes',
+      grantee: 'sofia',
+      capability,
+      scope: { tenantIds: [normalizedTenant] },
+      permissions: { execute: true, create: true },
+      authorizedBy,
+      createdAt: now.toISOString(),
+    };
+
+    // Register or revoke in memory AgentRegistry
+    if (enabled) {
+      AgentRegistry.registerCapabilityGrant(grant);
+    } else {
+      AgentRegistry.revokeCapabilityGrant(grantId);
+    }
+
+    // Persist to Postgres DB
+    try {
+      if (db) {
+        await db
+          .insert(hermesCapabilityGrants)
+          .values({
+            id: grantId,
+            grantId,
+            tenantId: normalizedTenant,
+            issuerAgentId: 'hermes',
+            granteeAgentId: 'sofia',
+            capability,
+            status,
+            constraintsJson: { maxPerDay: null, allowedArtifactTypes: ['image', 'video', 'copy', 'newsletter', 'podcast'] },
+            issuedAt: now,
+            createdBy: authorizedBy,
+            updatedBy: authorizedBy,
+            createdAt: now,
+            updatedAt: now,
+          })
+          .onConflictDoUpdate({
+            target: hermesCapabilityGrants.grantId,
+            set: {
+              status,
+              updatedBy: authorizedBy,
+              updatedAt: now,
+              revokedAt: enabled ? null : now,
+            },
+          });
+      }
+    } catch (err) {
+      console.error('[CapabilityGrantService] Error persisting grant:', err);
+    }
+
+    // Log tamper-evident audit event
+    try {
+      const { SecurityAuditLogger } = await import('../runtime/security-audit-logger');
+      await SecurityAuditLogger.logEvent({
+        organizationId: normalizedTenant,
+        actorId: `admin:${authorizedBy}`,
+        eventType: 'CREDENTIAL_ISSUED',
+        severity: 'INFO',
+        policyDecision: 'ALLOW',
+        correlationId: grantId,
+        metadata: {
+          event: 'capability.grant.changed',
+          tenantId: normalizedTenant,
+          capability,
+          grantId,
+          status,
+          authorizedBy,
+        },
+      });
+    } catch (err) {
+      console.warn('[CapabilityGrantService] Audit log error:', err);
+    }
+
+    // 4. Emit outbound A2A grant event to Media Co (opt-in) so the provider learns
+    //    which tenant authorized which capability. Fire-and-forget + fail-safe: a
+    //    dispatch error never breaks the grant lifecycle. Gated behind
+    //    A2A_OUTBOUND_EVENTS_ENABLED=true to avoid network noise in tests/sync flows.
+    if (process.env.A2A_OUTBOUND_EVENTS_ENABLED === 'true') {
+      try {
+        const { A2AOutboundDispatcher } = await import('./a2a-outbound-dispatcher');
+        A2AOutboundDispatcher.dispatch(
+          enabled ? 'capability.accepted' : 'capability.rejected',
+          {
+            grantId,
+            tenantId: normalizedTenant,
+            providerId: 'pandoras-media-co',
+            granteeAgentId: 'sofia',
+            capability,
+            status,
+            scope: `${capability.split('.')[0]}.*`,
+            authorizedBy,
+            changedAt: now.toISOString(),
+          },
+          { tenantId: normalizedTenant, correlationId: grantId }
+        ).catch(err => console.warn('[CapabilityGrantService] Grant event dispatch warning:', err));
+      } catch (err) {
+        console.warn('[CapabilityGrantService] Grant event emission error:', err);
+      }
+    }
+
+    return grant;
+  }
+
+  /**
+   * Records an artifact created by Media Co in the Sovereign Artifact Registry.
+   */
+  public static async registerArtifact(
+    tenantId: string,
+    manifest: SovereignArtifactManifest
+  ): Promise<void> {
+    const normalizedTenant = tenantId.toLowerCase();
+    try {
+      if (db) {
+        await db
+          .insert(hermesArtifacts)
+          .values({
+            id: `art_rec_${manifest.artifactId}`,
+            artifactId: manifest.artifactId,
+            tenantId: normalizedTenant,
+            sourceAgent: manifest.owner || 'sofia',
+            producer: manifest.createdBy || 'pixel',
+            artifactType: manifest.kind || 'image',
+            title: (manifest.metadata?.title as string) || `Media Asset for ${normalizedTenant}`,
+            cid: manifest.cid,
+            ipfsUri: manifest.ipfsUri || `ipfs://${manifest.cid}`,
+            sha256: manifest.sha256,
+            mimeType: manifest.mimeType || 'image/png',
+            sizeBytes: manifest.sizeBytes,
+            provenanceJson: manifest.provenance,
+            metadataJson: manifest.metadata || {},
+            createdAt: new Date(),
+          })
+          .onConflictDoUpdate({
+            target: [hermesArtifacts.tenantId, hermesArtifacts.cid],
+            set: {
+              title: (manifest.metadata?.title as string) || undefined,
+              metadataJson: manifest.metadata || {},
+            },
+          });
+      }
+    } catch (err) {
+      console.error('[CapabilityGrantService] Error registering artifact:', err);
+    }
+  }
+
+  /**
+   * Lists verified IPFS artifacts for a tenant.
+   */
+  public static async listArtifactsForTenant(tenantId: string): Promise<any[]> {
+    const normalizedTenant = tenantId.toLowerCase();
+    try {
+      if (db) {
+        return await db
+          .select()
+          .from(hermesArtifacts)
+          .where(eq(hermesArtifacts.tenantId, normalizedTenant))
+          .orderBy(desc(hermesArtifacts.createdAt))
+          .limit(50);
+      }
+    } catch (err) {
+      console.warn('[CapabilityGrantService] Error listing artifacts:', err);
+    }
+    return [];
+  }
+}

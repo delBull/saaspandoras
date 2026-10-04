@@ -1,4 +1,4 @@
-import { db } from '../src/db';
+import { db } from '@saasfly/db-core';
 import {
   users,
   purchases,
@@ -10,8 +10,8 @@ import {
   userReferrals,
   verifiedIdentities,
   marketingLeads,
-} from '../src/db/schema';
-import { eq } from 'drizzle-orm';
+} from '@saasfly/db-core/schema';
+import { eq } from "@saasfly/db-core";
 
 /**
  * Deduplicate Users by Email.

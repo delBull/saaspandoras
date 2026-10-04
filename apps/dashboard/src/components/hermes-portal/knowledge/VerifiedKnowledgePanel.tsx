@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ShieldCheck, AlertCircle, Check, X, FileCode, Tag, Hash, Lock, ChevronDown, ChevronUp } from 'lucide-react';
-import type { KnowledgeFactView } from '@/lib/dash-contracts/knowledge';
+import type { KnowledgeFactView } from '@saasfly/shared';
 
 interface VerifiedKnowledgePanelProps {
   facts?: KnowledgeFactView[];

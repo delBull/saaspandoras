@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
-import { db } from '@/db';
-import { eq, and, like } from 'drizzle-orm';
-import { nexusActionRequests } from '@/db/schema';
+import { getNexusAuthContext } from '@saasfly/shared';
+import { db } from '@saasfly/db';
+import { eq, and, like } from "@saasfly/db-core";
+import { nexusActionRequests } from '@saasfly/db/schema';
 
 export async function GET(req: Request) {
   try {

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Bridge } from "thirdweb";
-import { client } from "@/lib/thirdweb-client";
+import { client } from "@saasfly/shared";
 import { defineChain } from "thirdweb/chains";
 import { toast } from "sonner";
 import Image from 'next/image';

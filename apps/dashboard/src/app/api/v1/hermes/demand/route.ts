@@ -10,16 +10,16 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { validatePortalSession } from '@/lib/platform/portal-auth';
-import { OrganizationSDK } from '@/lib/platform/organization-sdk';
-import { SessionTokenService } from '@/lib/hermes/auth/session-token.service';
-import { TenantAuthorityService } from '@/lib/pandoras/core/domains/hermes/tenants/tenant-authority';
-import { CapabilityGrantService } from '@/lib/pandoras/core/domains/hermes/a2a/capability-grant-service';
+import { validatePortalSession } from '@saasfly/shared';
+import { OrganizationSDK } from '@saasfly/shared';
+import { SessionTokenService } from '@saasfly/hermes-core';
+import { TenantAuthorityService } from '@saasfly/hermes-core';
+import { CapabilityGrantService } from '@saasfly/hermes-core';
 import {
   DemandDistributionService,
   DEMAND_OBJECTIVES,
-} from '@/lib/hermes/demand/demand-distribution.service';
-import { TenantCreditLedgerService } from '@/lib/hermes/compute/tenant-credit-ledger.service';
+} from '@saasfly/hermes-core';
+import { TenantCreditLedgerService } from '@saasfly/hermes-core';
 
 export const dynamic = 'force-dynamic';
 

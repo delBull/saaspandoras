@@ -7,15 +7,15 @@
  * behavior or prompt injection attempts.
  */
 
-import { db } from '../src/db';
+import { db } from '@saasfly/db-core';
 import { 
   projects, 
   hermesKnowledge,
-} from '../src/db/schema';
-import { eq } from 'drizzle-orm';
+} from '@saasfly/db-core/schema';
+import { eq } from "@saasfly/db-core";
 import { nanoid } from 'nanoid';
-import { HermesRuntime } from '../src/lib/pandoras/core/domains/hermes/runtime/hermes-runtime';
-import { OllamaReasoningProvider } from '../src/lib/pandoras/core/domains/hermes/runtime/reasoning-providers';
+import { HermesRuntime } from '@saasfly/hermes-core';
+import { OllamaReasoningProvider } from '@saasfly/hermes-core';
 
 // Helper to retry DB calls to handle NeonDB ECONNRESET
 async function withRetry<T>(operation: () => Promise<T>, maxRetries = 20): Promise<T> {

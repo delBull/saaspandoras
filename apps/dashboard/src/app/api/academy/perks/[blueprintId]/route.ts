@@ -4,9 +4,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { AcademyStore } from '@/lib/pandoras/core/domains/academy/candidates/candidate-store';
-import { UNLOCKED_BLUEPRINTS } from '@/lib/pandoras/core/domains/academy/rewards/unlocked-perks';
-import { getServerBlueprintContent } from '@/lib/pandoras/core/domains/academy/rewards/server-blueprints';
+import { AcademyStore } from '@saasfly/academy-sdk';
+import { UNLOCKED_BLUEPRINTS } from '@saasfly/academy-sdk';
+import { getServerBlueprintContent } from '@saasfly/academy-sdk';
 
 export const dynamic = 'force-dynamic';
 

@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { getCanonicalAuth } from "@/lib/auth";
-import { db } from "@/db";
-import { daoMembers, projects, userBalances } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { getCanonicalAuth } from "@saasfly/auth-sdk";
+import { db } from "@saasfly/db-core";
+import { daoMembers, projects, userBalances } from "@saasfly/db-core";
+import { eq } from "@saasfly/db-core";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

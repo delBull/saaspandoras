@@ -1,5 +1,5 @@
 import React from 'react';
-import type { KnowledgeOverviewView } from '@/lib/dash-contracts/knowledge';
+import type { KnowledgeOverviewView } from '@saasfly/shared';
 
 export function KnowledgeMetrics({ overview }: { overview: KnowledgeOverviewView }) {
   // KnowledgeHealth resolution

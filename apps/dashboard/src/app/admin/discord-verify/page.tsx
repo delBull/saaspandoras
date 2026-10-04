@@ -3,7 +3,7 @@
 import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { ConnectButton, useActiveAccount } from "thirdweb/react";
-import { client } from "@/lib/thirdweb-client";
+import { client } from "@saasfly/shared";
 import { wallets } from "@/lib/wallets";
 import { Loader2, CheckCircle2, AlertTriangle, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";

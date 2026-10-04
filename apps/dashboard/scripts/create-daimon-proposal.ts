@@ -1,5 +1,5 @@
-import { db } from '@/db';
-import { nexusDealRooms, nexusDealSigners, nexusDealSections } from '@/db/schema';
+import { db } from '@saasfly/db';
+import { nexusDealRooms, nexusDealSigners, nexusDealSections } from '@saasfly/db/schema';
 import { randomUUID } from 'crypto';
 
 async function main() {

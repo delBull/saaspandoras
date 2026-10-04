@@ -1,5 +1,5 @@
-import type { calculateProjectCompletion } from "@/lib/project-utils";
-import type { CanonicalProjectStatus } from "@/lib/project-status";
+import type { calculateProjectCompletion } from "@saasfly/shared";
+import type { CanonicalProjectStatus } from "@saasfly/shared";
 
 export type ProjectStatus = CanonicalProjectStatus;
 

@@ -28,7 +28,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { usePlatformInspector } from '../inspector/PlatformInspectorContext';
-import { PlatformB2bLeadDTO, PlatformB2bLeadStage, B2bPipelineMetricsDTO } from '@/lib/dash-contracts/admin';
+import { PlatformB2bLeadDTO, PlatformB2bLeadStage, B2bPipelineMetricsDTO } from '@saasfly/shared';
 import { analyzeCrmLeadAction } from '@/app/admin/actions/analyze-lead';
 import { toast } from 'sonner';
 

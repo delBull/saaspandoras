@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
-import { marketingLeads } from '@/db/schema';
-import { and, eq } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { marketingLeads } from '@saasfly/db/schema';
+import { and, eq } from "@saasfly/db-core";
 import { z } from 'zod';
 import { IntegrationKeyService } from '@/lib/integrations/auth';
 import crypto from 'crypto';
-import { PlatformAuditLedgerService } from '@/lib/admin/platform-audit-ledger.service';
-import { HermesWhatsAppOrchestrator } from '@/lib/hermes/agents/HermesWhatsAppOrchestrator';
+import { PlatformAuditLedgerService } from '@saasfly/hermes-core';
+import { HermesWhatsAppOrchestrator } from '@saasfly/hermes-core';
 
 const IntakeSchema = z.object({
   apiKey: z.string().min(10, 'Invalid API Key length'),

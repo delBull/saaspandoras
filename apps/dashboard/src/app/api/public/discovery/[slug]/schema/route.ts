@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { resolveDiscoveryManifest } from '@/lib/hermes/discovery/discovery-router';
-import { SchemaRenderer } from '@/lib/hermes/discovery/renderers/schema-renderer';
+import { resolveDiscoveryManifest } from '@saasfly/hermes-core';
+import { SchemaRenderer } from '@saasfly/hermes-core';
 
 // GET /api/public/discovery/[slug]/schema
 // Returns JSON-LD schemas for the tenant (Organization, Product, FAQPage)

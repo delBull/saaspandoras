@@ -1,12 +1,12 @@
 'use server';
 
-import { db } from '@/db';
-import { projects } from '@/db/schema';
-import { eq } from 'drizzle-orm';
-import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
-import { PlatformAuditLedgerService } from '@/lib/admin/platform-audit-ledger.service';
-import { PlatformCapabilityRegistryService } from '@/lib/admin/platform-capability-registry.service';
-import { PlatformActor, PlatformRole } from '@/lib/dash-contracts/admin';
+import { db } from '@saasfly/db';
+import { projects } from '@saasfly/db/schema';
+import { eq } from "@saasfly/db-core";
+import { getNexusAuthContext } from '@saasfly/shared';
+import { PlatformAuditLedgerService } from '@saasfly/hermes-core';
+import { PlatformCapabilityRegistryService } from '@saasfly/shared';
+import { PlatformActor, PlatformRole } from '@saasfly/shared';
 
 export interface WhitelabelConfig {
   domain: string;

@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/db';
-import { hermesKnowledge, hermesGovernanceAudit, projects, portalOnboardingState } from '@/db/schema';
-import { eq, and, or, inArray } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { hermesKnowledge, hermesGovernanceAudit, projects, portalOnboardingState } from '@saasfly/db/schema';
+import { eq, and, or, inArray } from "@saasfly/db-core";
 import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
-import { PortalAuthorizationError } from '@/lib/portal/portal-types';
-import { TenantProvisioner } from '@/lib/pandoras/core/domains/hermes/tenants/tenant-provisioner';
-import { TenantAuthorityService } from '@/lib/pandoras/core/domains/hermes/tenants/tenant-authority';
-import type { TenantKnowledgePackInput, TenantClaimInput } from '@/lib/pandoras/core/domains/hermes/tenants/contracts';
+import { PortalAuthorizationError } from '@saasfly/shared';
+import { TenantProvisioner } from '@saasfly/hermes-core';
+import { TenantAuthorityService } from '@saasfly/hermes-core';
+import type { TenantKnowledgePackInput, TenantClaimInput } from '@saasfly/hermes-core';
 
 export async function POST(request: Request) {
   try {

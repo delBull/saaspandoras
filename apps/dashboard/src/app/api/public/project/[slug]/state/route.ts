@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { harmonizeProject } from "@/lib/projects/harmonizer";
-import { db } from "@/db";
+import { db } from "@saasfly/db-core";
 import { SimulationDataProvider } from "@/lib/simulation/simulation-provider";
 import { 
   projects as projectsSchema, 
@@ -17,17 +17,17 @@ import {
   projectBriefings,
   partnerReputationEvents,
   projectDocuments
-} from "@/db/schema";
-import { resolveProjectSlug } from "@/lib/project-utils";
-import { eq, sql, and, desc, inArray, ilike } from "drizzle-orm";
+} from "@saasfly/db-core";
+import { resolveProjectSlug } from "@saasfly/shared";
+import { eq, sql, and, desc, inArray, ilike } from "@saasfly/db-core";
 import { IntegrationKeyService } from "@/lib/integrations/auth";
 import { ProjectDomainService } from "@/lib/domain/project-domain-service";
 import { readContract } from "thirdweb";
 import { defineChain } from "thirdweb/chains";
-import { client as twClient } from "@/lib/thirdweb-client";
+import { client as twClient } from "@saasfly/shared";
 import { getContract } from "thirdweb";
 import { ProgressionEngine, Tier } from "@/lib/protocol-engine/progression";
-import { getProjectPhasesWithStats } from "@/lib/phase-utils";
+import { getProjectPhasesWithStats } from "@saasfly/shared";
 import { InventoryService } from "@/lib/inventory/effective-supply";
 import { headers } from "next/headers";
 import { getWalletBalance } from "thirdweb/wallets";
@@ -262,7 +262,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     let gestorStatus = "none";
     if (wallet && wallet.startsWith("0x")) {
       try {
-        const { resolveCanonicalIdentity, resolveTenantContext } = await import('@/lib/identity');
+        const { resolveCanonicalIdentity, resolveTenantContext } = await import('@saasfly/hermes-core');
         const canonicalIdentity = await resolveCanonicalIdentity({
           type: 'wallet',
           value: wallet,

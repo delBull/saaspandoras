@@ -1,8 +1,8 @@
 
 import { NextResponse } from 'next/server';
-import { db } from '@/db';
-import { daoActivitySubmissions, daoActivities } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { daoActivitySubmissions, daoActivities } from '@saasfly/db/schema';
+import { eq } from "@saasfly/db-core";
 
 export async function POST(req: Request) {
     try {

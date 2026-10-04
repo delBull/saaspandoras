@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
-import { db } from "@/db";
-import { telegramBindings, users, sessions, securityEvents } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { telegramBindings, users, sessions, securityEvents } from "@saasfly/db-core";
+import { eq } from "@saasfly/db-core";
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
-import { reconstructPEM } from "@/lib/auth";
+import { reconstructPEM } from "@saasfly/auth-sdk";
 
 export const runtime = "nodejs";
 

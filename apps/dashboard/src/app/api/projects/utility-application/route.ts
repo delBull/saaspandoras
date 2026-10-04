@@ -1,15 +1,15 @@
 import { NextResponse, after } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { db } from '@/db';
-import { projects, marketingLeads, marketingIdentities } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
-import { withRetry } from '@/lib/database';
+import { db } from '@saasfly/db';
+import { projects, marketingLeads, marketingIdentities } from '@saasfly/db/schema';
+import { eq, and } from "@saasfly/db-core";
+import { withRetry } from '@saasfly/db-core';
 import crypto from 'crypto';
 import { processGrowthEvent } from '@/lib/marketing/growth-engine/engine-service';
 import { headers } from 'next/headers';
-import { getAuth } from '@/lib/auth';
+import { getAuth } from '@saasfly/auth-sdk';
 import { WebhookService } from '@/lib/integrations/webhook-service';
-import { integrationClients } from '@/db/schema';
+import { integrationClients } from '@saasfly/db/schema';
 
 // ⚠️ EXPLICITAMENTE USAR Node.js RUNTIME para APIs que usan PostgreSQL
 export const runtime = "nodejs";

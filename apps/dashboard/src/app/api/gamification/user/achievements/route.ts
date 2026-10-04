@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
-import { getAuth } from '@/lib/auth';
+import { getAuth } from '@saasfly/auth-sdk';
 import { getUserGamificationAchievements } from '@/lib/gamification/service';
 
 export async function GET() {

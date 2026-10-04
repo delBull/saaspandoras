@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import type { PortalOrganization } from '@/lib/portal/portal-types';
+import type { PortalOrganization } from '@saasfly/shared';
 import { Shield } from 'lucide-react';
 
 interface EcosystemFooterProps {

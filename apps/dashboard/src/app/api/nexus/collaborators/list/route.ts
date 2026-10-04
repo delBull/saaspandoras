@@ -4,7 +4,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { listCollaborators, requireNexusAdmin } from '@/lib/nexus/collaborators-service';
+import { listCollaborators } from '@saasfly/hermes-core';
+import { getNexusAuthContext } from '@saasfly/shared';
 
 function getCorsHeaders(req: NextRequest) {
   const origin = req.headers.get('origin') || '*';
@@ -23,10 +24,15 @@ export async function OPTIONS(req: NextRequest) {
 export async function GET(req: NextRequest) {
   const cors = getCorsHeaders(req);
   try {
-    if (!(await requireNexusAdmin(req))) {
+    const auth = await getNexusAuthContext(req.headers);
+    if (!auth.isAuthenticated || (!auth.permissions['nexus.manage'] && !auth.permissions['users.manage'])) {
       return NextResponse.json({ error: 'Admin authentication required' }, { status: 403, headers: cors });
     }
-    const collaborators = await listCollaborators();
+    
+    // Fallback to 'pandoras' if canonicalOrgId is not resolved for some reason, but log it.
+    const orgId = auth.canonicalOrgId || 'pandoras';
+    
+    const collaborators = await listCollaborators(orgId);
     return NextResponse.json({ ok: true, collaborators }, { headers: cors });
   } catch (error: any) {
     console.error('[Nexus Collaborators List] Error:', error);

@@ -1,7 +1,7 @@
 import { requireEnvUrl } from '@/lib/env-utils';
 import { db } from '~/db';
-import { sql, eq } from 'drizzle-orm';
-import { users as usersSchema } from '@/db/schema';
+import { sql, eq } from "@saasfly/db-core";
+import { users as usersSchema } from '@saasfly/db/schema';
 import { IdentityService } from '@/lib/marketing/identity-service';
 import { RewardEngine } from '@/lib/marketing/reward-engine';
 

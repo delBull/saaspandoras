@@ -1,5 +1,5 @@
-import { db } from '@/db';
-import { sql } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { sql } from "@saasfly/db-core";
 
 /**
  * Shared runtime flags for Telegram Bridge.

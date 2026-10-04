@@ -1,6 +1,6 @@
-import { db } from '@/db';
-import { governanceProposals, governanceVotes } from '@/db/schema';
-import { eq, and, sql } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { governanceProposals, governanceVotes } from '@saasfly/db/schema';
+import { eq, and, sql } from "@saasfly/db-core";
 import { ethers } from 'ethers';
 
 const GOVERNOR_ABI = [

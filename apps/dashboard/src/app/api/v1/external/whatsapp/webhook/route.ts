@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { DefaultOmnichannelGateway } from '@/lib/pandoras/core/domains/channels/omnichannel-gateway';
-import { DefaultCognitiveChannelDispatcher } from '@/lib/pandoras/core/domains/channels/channel-dispatcher';
-import { DuplicateMessageError, InvalidChannelPayloadError } from '@/lib/pandoras/core/domains/channels/channel-errors';
+import { DefaultOmnichannelGateway } from '@saasfly/hermes-core';
+import { DefaultCognitiveChannelDispatcher } from '@saasfly/hermes-core';
+import { DuplicateMessageError, InvalidChannelPayloadError } from '@saasfly/hermes-core';
 import { verifyMetaSignature } from '@/app/api/whatsapp/simple/route';
 
 const omnichannelGateway = new DefaultOmnichannelGateway();

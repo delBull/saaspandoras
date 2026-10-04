@@ -1,10 +1,10 @@
 import React from 'react';
-import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
+import { getNexusAuthContext } from '@saasfly/shared';
 import { MarketingDashboard } from '@/components/admin/marketing/MarketingDashboard';
 import { AdminAccessGate } from '../AdminAccessGate';
-import { db } from '@/db';
-import { projects, marketingLeads } from '@/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { db } from '@saasfly/db-core';
+import { projects, marketingLeads } from '@saasfly/db-core';
+import { eq, desc } from "@saasfly/db-core";
 
 export const dynamic = 'force-dynamic';
 

@@ -1,6 +1,6 @@
 {
   "extends": "@saasfly/typescript-config/base.json",
-  "compilerOptions": {
+  "compilerOptions": { "moduleResolution": "bundler",
     "tsBuildInfoFile": ".next/tsconfig.tsbuildinfo",
     "types": [
       "next",
@@ -24,15 +24,21 @@
       "@pandoras/gamification/*": [
         "../../packages/gamification/src/*"
       ],
-      "@saasfly/ui": [
+      "@saasfly/shared": ["../../packages/shared/src/index.ts"], "@saasfly/hermes-core": ["../../packages/hermes-core/src/index.ts"], "@saasfly/auth-sdk": ["../../packages/auth-sdk/src/index.ts"], "@saasfly/ui": [
         "../../packages/ui/src"
       ],
       "@saasfly/ui/*": [
         "../../packages/ui/src/*"
       ],
-      "@saasfly/db": [
-        "../../packages/db/index.ts"
-      ],
+      "@saasfly/db-core": ["../../packages/db-core/src/index.ts"],
+      "@saasfly/db/schema": ["../../packages/db-core/src/index.ts"],
+      "@saasfly/db": ["../../packages/db-core/src/index.ts"],
+      "@/db": ["../../packages/db-core/src/index.ts"],
+      "@/db/schema": ["../../packages/db-core/src/index.ts"],
+      "~/db": ["../../packages/db-core/src/index.ts"],
+      "~/db/schema": ["../../packages/db-core/src/index.ts"],
+      "drizzle-orm": ["../../packages/db-core/node_modules/drizzle-orm"],
+      "drizzle-orm/*": ["../../packages/db-core/node_modules/drizzle-orm/*"],
       "@saasfly/api": [
         "../../packages/api/src"
       ],

@@ -9,13 +9,13 @@
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
-import { db } from '../src/db';
-import { hermesKnowledgeRegistry, hermesKnowledge, hermesSecurityEvents } from '../src/db/schema';
-import { TenantIpfsVaultService, type EncryptedKnowledgeArtifact } from '../src/lib/pandoras/core/domains/hermes/knowledge/ipfs-vault';
-import { HermesIdentitySigner } from '../src/lib/pandoras/core/domains/hermes/identity/identity-signer';
-import { KnowledgeRegistryManifestBuilder, type KnowledgeRegistryItem } from '../src/lib/pandoras/core/domains/hermes/knowledge/registry-manifest';
-import { ShadowVerificationEngine } from '../src/lib/pandoras/core/domains/hermes/knowledge/shadow-verifier';
-import type { KnowledgeClassificationTier } from '../src/lib/pandoras/core/domains/hermes/runtime/contracts';
+import { db } from '@saasfly/db-core';
+import { hermesKnowledgeRegistry, hermesKnowledge, hermesSecurityEvents } from '@saasfly/db-core/schema';
+import { TenantIpfsVaultService, type EncryptedKnowledgeArtifact } from '@saasfly/hermes-core';
+import { HermesIdentitySigner } from '@saasfly/hermes-core';
+import { KnowledgeRegistryManifestBuilder, type KnowledgeRegistryItem } from '@saasfly/hermes-core';
+import { ShadowVerificationEngine } from '@saasfly/hermes-core';
+import type { KnowledgeClassificationTier } from '@saasfly/hermes-core';
 
 interface DocumentMigrationSpec {
   tenantId: string;

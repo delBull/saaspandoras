@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/db';
-import { installedProducts } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { installedProducts } from '@saasfly/db/schema';
+import { eq, and } from "@saasfly/db-core";
 
 export async function GET(request: Request, context: { params: Promise<{ tenantId: string }> }) {
     const { tenantId } = await context.params;

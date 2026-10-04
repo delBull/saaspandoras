@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/db';
-import { ambassadors, projects } from '@/db/schema';
-import { eq } from 'drizzle-orm';
-import { resolveProjectSlug } from '@/lib/project-utils';
+import { db } from '@saasfly/db';
+import { ambassadors, projects } from '@saasfly/db/schema';
+import { eq } from "@saasfly/db-core";
+import { resolveProjectSlug } from '@saasfly/shared';
 import { sendAmbassadorWelcomeEmail } from '@/lib/email/ambassador-mailer';
-import { getAuth } from '@/lib/auth';
+import { getAuth } from '@saasfly/auth-sdk';
 import { headers } from 'next/headers';
 
 export async function POST(req: Request, { params }: { params: Promise<{ slug: string, ambassadorId: string }> }) {

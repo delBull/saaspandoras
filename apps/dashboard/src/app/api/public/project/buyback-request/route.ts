@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/db';
-import { projects as projectsSchema, buybackRequests } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { projects as projectsSchema, buybackRequests } from '@saasfly/db/schema';
+import { eq } from "@saasfly/db-core";
 import crypto from 'crypto';
 
 const corsHeaders = {

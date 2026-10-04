@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { checkRateLimit, clientIpFromHeaders } from '@/lib/hermes/auth/rate-limiter';
-import { resolveCanonicalAuthSession } from '@/lib/hermes/auth/canonical-resolver';
+import { checkRateLimit, clientIpFromHeaders } from '@saasfly/hermes-core';
+import { resolveCanonicalAuthSession } from '@saasfly/hermes-core';
 import { notifyUpgradeIntent } from '@/lib/discord';
-import { db } from '@/db';
-import { projects, administrators } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { projects, administrators } from '@saasfly/db/schema';
+import { eq } from "@saasfly/db-core";
 
 export const dynamic = 'force-dynamic';
 

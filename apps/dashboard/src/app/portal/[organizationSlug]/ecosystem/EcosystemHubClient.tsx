@@ -37,8 +37,8 @@ import {
   ArrowRight,
   Sliders,
 } from 'lucide-react';
-import type { TenantGrowthProfileDTO, GrowthOverviewDTO } from '@/lib/dash-contracts/growth';
-import type { EcosystemSetupSummary } from '@/lib/mesh/setup-progress.service';
+import type { TenantGrowthProfileDTO, GrowthOverviewDTO } from '@saasfly/shared';
+import type { EcosystemSetupSummary } from '@saasfly/shared';
 import { SetupDrawer } from '@/components/mesh/SetupDrawer';
 
 interface EcosystemHubClientProps {

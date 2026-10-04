@@ -1,9 +1,9 @@
 'use server';
 
-import { db } from "@/db";
-import { marketingLeads, marketingLeadEvents, daoMembers } from "@/db/schema";
-import { eq, and, sql } from "drizzle-orm";
-import { getAuth, isAdmin } from "@/lib/auth";
+import { db } from "@saasfly/db-core";
+import { marketingLeads, marketingLeadEvents, daoMembers } from "@saasfly/db-core";
+import { eq, and, sql } from "@saasfly/db-core";
+import { getAuth, isAdmin } from "@saasfly/auth-sdk";
 
 export async function completeMeetingOutcome(
   leadId: string,

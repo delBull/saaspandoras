@@ -1,6 +1,6 @@
-import { db } from '@/db';
-import { projects, integrationClients } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { projects, integrationClients } from '@saasfly/db/schema';
+import { eq } from "@saasfly/db-core";
 import { IdentityPack, DEFAULT_IDENTITY_PACK } from '@pandoras/identity-sdk';
 import { CapabilityId, CapabilityEngine, SubscriptionTier } from '@pandoras/capability-sdk';
 import crypto from 'crypto';

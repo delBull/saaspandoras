@@ -1,8 +1,8 @@
 import 'dotenv/config';
-import { db } from '../src/db/index.js';
-import { nexusDeepLinks } from '../src/db/schema.js';
-import { createDeepLinkReference } from '../src/lib/nexus/notifications/TelegramDispatcher.js';
-import { eq } from 'drizzle-orm';
+import { db } from '@saasfly/db-core';
+import { nexusDeepLinks } from '@saasfly/db-core/schema';
+import { createDeepLinkReference } from '@saasfly/hermes-core';
+import { eq } from "@saasfly/db-core";
 import crypto from 'crypto';
 
 async function runTests() {

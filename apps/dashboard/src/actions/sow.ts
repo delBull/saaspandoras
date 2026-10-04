@@ -1,8 +1,8 @@
 "use server";
 
-import { db } from "@/db";
-import { sowTemplates } from "@/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { sowTemplates } from "@saasfly/db-core";
+import { eq, desc } from "@saasfly/db-core";
 import { revalidatePath } from "next/cache";
 
 export async function getSOWTemplates(tier?: string) {

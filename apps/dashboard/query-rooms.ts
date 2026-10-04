@@ -1,5 +1,5 @@
-import { db } from './src/db';
-import { sql } from 'drizzle-orm';
+import { db } from '@saasfly/db-core';
+import { sql } from "@saasfly/db-core";
 
 async function run() {
   const info = await db.execute(sql`

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { client } from "@/lib/thirdweb-client";
+import { client } from "@saasfly/shared";
 import { defineChain, getContract } from "thirdweb";
 import { TransactionButton, ConnectButton, useActiveAccount } from "thirdweb/react";
 import {

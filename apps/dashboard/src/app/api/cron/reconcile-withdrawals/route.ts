@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { db } from "~/db";
-import { withdrawals, userBalances, daoRewards } from "~/db/schema";
-import { eq, and, lt, sql, isNotNull } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { withdrawals, userBalances, daoRewards } from "@saasfly/db-core";
+import { eq, and, lt, sql, isNotNull } from "@saasfly/db-core";
 import { createPublicClient, http } from "viem";
 import { sepolia, base } from "viem/chains";
 

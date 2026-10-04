@@ -8,10 +8,10 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getDefaultRuntime } from '@/lib/pandoras/core/domains/hermes/runtime/hermes-runtime';
-import { TenantAuthorityService } from '@/lib/pandoras/core/domains/hermes/tenants/tenant-authority';
-import { CognitiveContextBuilder } from '@/lib/pandoras/core/domains/hermes/addons/context-merger';
-import { ToolAuthorizationRequest } from '@/lib/pandoras/core/domains/hermes/runtime/contracts';
+import { getDefaultRuntime } from '@saasfly/hermes-core';
+import { TenantAuthorityService } from '@saasfly/hermes-core';
+import { CognitiveContextBuilder } from '@saasfly/hermes-core';
+import { ToolAuthorizationRequest } from '@saasfly/hermes-core';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;

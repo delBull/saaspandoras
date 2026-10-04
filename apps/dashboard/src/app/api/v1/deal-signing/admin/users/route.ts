@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
-import { dealEnvelopes } from '@/db/schema';
-import { desc } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { dealEnvelopes } from '@saasfly/db/schema';
+import { desc } from "@saasfly/db-core";
 import { SovereignAuthService } from '@/lib/deal-signing/auth';
 
 export const dynamic = 'force-dynamic';

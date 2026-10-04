@@ -7,8 +7,8 @@
  * - Tracks firstSeenAt + timesFired24h for trend memory
  * - Passes complete BridgeMetricsSnapshot v2 to rules
  */
-import { db } from '@/db';
-import { sql } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { sql } from "@saasfly/db-core";
 import { ALERT_RULES } from './rules';
 import { sendDiscordAlert } from './notifier';
 import type { BridgeMetricsSnapshot, AlertState, FiredAlert } from './types';

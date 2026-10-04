@@ -1,12 +1,12 @@
 import React from 'react';
 import { ShieldCheck, ArrowLeft, CheckCircle2, Clock, Globe, Lock, Calendar, Hash, FileText } from 'lucide-react';
 import { CertificateActions } from '@/components/legal/CertificateActions';
-import { db } from '@/db';
-import { purchases as purchasesSchema, projects as projectsSchema } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { db } from '@saasfly/db-core';
+import { purchases as purchasesSchema, projects as projectsSchema } from '@saasfly/db-core';
+import { eq } from "@saasfly/db-core";
 import { getContract, readContract } from 'thirdweb';
 import { defineChain } from 'thirdweb/chains';
-import { client as twClient } from '@/lib/thirdweb-client';
+import { client as twClient } from '@saasfly/shared';
 
 export default async function CertificatePage({ 
   params, 

@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/db';
-import { daoTreasurySnapshots, projects } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { daoTreasurySnapshots, projects } from '@saasfly/db/schema';
+import { eq } from "@saasfly/db-core";
 import { defineChain } from "thirdweb";
-import { client } from "@/lib/thirdweb-client";
+import { client } from "@saasfly/shared";
 import { getWalletBalance } from "thirdweb/wallets";
 
 export async function POST(req: Request) {

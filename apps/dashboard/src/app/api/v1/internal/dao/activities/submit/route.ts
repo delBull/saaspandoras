@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/db';
-import { daoActivitySubmissions, daoActivities } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { daoActivitySubmissions, daoActivities } from '@saasfly/db/schema';
+import { eq, and } from "@saasfly/db-core";
 
 const EDGE_KEY = process.env.PANDORA_CORE_KEY ?? '';
 

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import type { KnowledgeOverviewView, KnowledgeSourceView } from '@/lib/dash-contracts/knowledge';
+import type { KnowledgeOverviewView, KnowledgeSourceView } from '@saasfly/shared';
 
 import { KnowledgeHeader } from './KnowledgeHeader';
 import { KnowledgeMetrics } from './KnowledgeMetrics';

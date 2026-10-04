@@ -1,7 +1,7 @@
-import { db } from "@/db";
-import { marketingCampaigns } from "@/db/schema";
+import { db } from "@saasfly/db-core";
+import { marketingCampaigns } from "@saasfly/db-core";
 import { APPLY_PROTOCOL_CAMPAIGNS } from "./seeds";
-import { eq } from "drizzle-orm";
+import { eq } from "@saasfly/db-core";
 
 /**
  * Seeds the marketing_campaigns table with ApplyProtocol strategies

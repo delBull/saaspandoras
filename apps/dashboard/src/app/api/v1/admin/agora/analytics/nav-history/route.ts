@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/db';
-import { protocolNavs } from '@/db/schema';
-import { eq, desc, and, gte } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { protocolNavs } from '@saasfly/db/schema';
+import { eq, desc, and, gte } from "@saasfly/db-core";
 
 /**
  * GET /api/v1/admin/agora/analytics/nav-history

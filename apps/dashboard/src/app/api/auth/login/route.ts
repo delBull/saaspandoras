@@ -1,10 +1,10 @@
 
 import { NextResponse } from "next/server";
 import { verifySignature } from "thirdweb/auth";
-import { client } from "@/lib/thirdweb-client";
-import { db } from "@/db";
-import { authChallenges, users, sessions, securityEvents } from "@/db/schema";
-import { eq, and, gt, sql } from "drizzle-orm";
+import { client } from "@saasfly/shared";
+import { db } from "@saasfly/db-core";
+import { authChallenges, users, sessions, securityEvents } from "@saasfly/db-core";
+import { eq, and, gt, sql } from "@saasfly/db-core";
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
 import { getContract, readContract } from "thirdweb";
@@ -168,7 +168,7 @@ export async function POST(request: Request) {
         }
 
         // 🛡️ RBAC / Admin & Whitelist Bypass Guard
-        const { isAdmin } = await import("@/lib/auth");
+        const { isAdmin } = await import("@saasfly/auth-sdk");
         const userIsAdmin = await isAdmin(address).catch(() => false);
         if (userIsAdmin) {
             hasAccess = true;
@@ -178,8 +178,8 @@ export async function POST(request: Request) {
         console.log("🔐 [LOGIN] Gate Check:", hasAccess ? "GRANTED" : "DENIED");
 
         // 7. Upsert User & Session (Hardened with Retry to handle ECONNRESET)
-        const { reconstructPEM } = await import("@/lib/auth");
-        const { withRetry } = await import("@/lib/database");
+        const { reconstructPEM } = await import("@saasfly/auth-sdk");
+        const { withRetry } = await import('@saasfly/db-core');
         console.log("🛠️ [LOGIN] Generating session IDs...");
         const sid = crypto.randomUUID();
         const ip = request.headers.get("x-forwarded-for") || "unknown";

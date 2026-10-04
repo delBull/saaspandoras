@@ -3,7 +3,7 @@
 import { Toaster, toast } from "sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ThirdwebProvider, AutoConnect } from "thirdweb/react";
-import { client } from "@/lib/thirdweb-client";
+import { client } from "@saasfly/shared";
 import { wallets } from "@/lib/wallets";
 import { config } from "@/config";
 import { GamificationProvider } from "@pandoras/gamification";

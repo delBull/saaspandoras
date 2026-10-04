@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/db';
-import { users } from '@/db/schema';
-import { eq, ilike, or } from 'drizzle-orm';
-import { getCanonicalAuth } from '@/lib/auth';
+import { db } from '@saasfly/db';
+import { users } from '@saasfly/db/schema';
+import { eq, ilike, or } from "@saasfly/db-core";
+import { getCanonicalAuth } from '@saasfly/auth-sdk';
 
 export async function POST(
   req: Request,

@@ -1,7 +1,7 @@
-import { db } from '@/db';
-import { eq, and } from 'drizzle-orm';
-import { meetings, nexusAuditEvents } from '@/db/schema';
-import { NexusAuthContext } from '@/lib/nexus/nexus-rbac';
+import { db } from '@saasfly/db';
+import { eq, and } from "@saasfly/db-core";
+import { meetings, nexusAuditEvents } from '@saasfly/db/schema';
+import { NexusAuthContext } from '@saasfly/shared';
 
 export class MeetingPolicy {
   static canCancel(meeting: any, authCtx: NexusAuthContext): boolean {

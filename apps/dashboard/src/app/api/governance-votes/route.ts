@@ -1,8 +1,8 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { db } from "@/db";
-import { governanceVotes } from "@/db/schema";
-import { eq, and, sql } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { governanceVotes } from "@saasfly/db-core";
+import { eq, and, sql } from "@saasfly/db-core";
 
 export function POST(req: NextRequest) {
     // Legacy endpoint: now handled by GovernanceIndexerService

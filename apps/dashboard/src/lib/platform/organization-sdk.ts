@@ -10,9 +10,9 @@
  *    The SDK never mutates projects data.
  */
 
-import { db } from '@/db';
-import { projects, installedProducts } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { projects, installedProducts } from '@saasfly/db/schema';
+import { eq, and } from "@saasfly/db-core";
 import {
   PRODUCT_REGISTRY,
   ProductKey,
@@ -20,7 +20,7 @@ import {
   getVisibleModules,
   getDefaultCapabilities,
   getDefaultConnectors,
-} from './product-registry';
+} from '@saasfly/shared';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 

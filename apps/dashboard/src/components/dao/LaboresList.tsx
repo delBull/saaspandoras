@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import { useActiveAccount, useReadContract } from "thirdweb/react";
 import { getContract, defineChain } from "thirdweb";
-import { client } from "@/lib/thirdweb-client";
+import { client } from "@saasfly/shared";
 import { toast } from "sonner";
 import { Loader2, PlayCircle, CheckCircle, Clock } from "lucide-react";
 import { ethers } from "ethers";

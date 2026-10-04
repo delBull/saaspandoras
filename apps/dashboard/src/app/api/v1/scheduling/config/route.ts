@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireNexusAdmin } from '@/lib/nexus/collaborators-service';
-import { getAuth, isAdmin } from '@/lib/auth';
+import { requireNexusAdmin } from '@saasfly/hermes-core';
+import { getAuth, isAdmin } from '@saasfly/auth-sdk';
 import { SovereignCalendarEngine, SovereignCalendarConfig } from '@/lib/scheduling/sovereign-calendar-engine';
 
 export const dynamic = 'force-dynamic';

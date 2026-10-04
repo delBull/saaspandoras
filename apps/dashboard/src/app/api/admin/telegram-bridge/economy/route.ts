@@ -6,10 +6,10 @@
  */
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import { getAuth, isAdmin } from '@/lib/auth';
-import { db } from '@/db';
-import { platformSettings } from '@/db/schema';
-import { inArray } from 'drizzle-orm';
+import { getAuth, isAdmin } from '@saasfly/auth-sdk';
+import { db } from '@saasfly/db';
+import { platformSettings } from '@saasfly/db/schema';
+import { inArray } from "@saasfly/db-core";
 
 export const dynamic = 'force-dynamic';
 

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/db';
-import { marketingLeads } from '@/db/schema';
-import { sql, count } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { marketingLeads } from '@saasfly/db/schema';
+import { sql, count } from "@saasfly/db-core";
 
 const TOTAL_SLOTS = 50;
 const INITIAL_SEED = 6; // Pre-seed so counter never shows 0 from the start

@@ -14,8 +14,8 @@
 // ──────────────────────────────────────────────────────────────────────────────
 
 import { NextResponse } from 'next/server';
-import { db } from '@/db';
-import { sql } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { sql } from "@saasfly/db-core";
 
 export const dynamic = 'force-dynamic';
 

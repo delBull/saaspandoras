@@ -1,6 +1,6 @@
-import { db } from '@/db';
-import { dealEnvelopes } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { dealEnvelopes } from '@saasfly/db/schema';
+import { eq } from "@saasfly/db-core";
 import { privateKeyToAccount } from 'viem/accounts';
 import { createWalletClient, http, publicActions } from 'viem';
 import { base, baseSepolia, polygon } from 'viem/chains';

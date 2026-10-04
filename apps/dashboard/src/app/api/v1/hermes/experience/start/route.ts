@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { HermesExperienceProvisionerService } from '@/lib/hermes/trial/hermes-experience-provisioner.service';
-import { TrialTier } from '@/lib/hermes/trial/hermes-trial-policy.service';
-import { consumePortalToken } from '@/lib/platform/portal-auth';
+import { HermesExperienceProvisionerService } from '@saasfly/hermes-core';
+import { TrialTier } from '@saasfly/hermes-core';
+import { consumePortalToken } from '@saasfly/shared';
 
 export const dynamic = 'force-dynamic';
 

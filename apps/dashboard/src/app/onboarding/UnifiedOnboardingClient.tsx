@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useActiveAccount } from 'thirdweb/react';
-import type { OnboardingProductKey, ProvisioningRequestDTO } from '@/lib/dash-contracts/provisioning';
+import type { OnboardingProductKey, ProvisioningRequestDTO } from '@saasfly/shared';
 
 interface ProductOption {
   key: OnboardingProductKey;

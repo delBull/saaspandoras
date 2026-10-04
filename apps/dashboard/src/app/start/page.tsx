@@ -28,7 +28,7 @@ import { StaggerText } from "@/components/ui/stagger-text";
 import { MorphingText } from "@/components/ui/morphing-text";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { cn } from "@saasfly/shared";
 
 function StartPageContent() {
   const [email, setEmail] = useState("");

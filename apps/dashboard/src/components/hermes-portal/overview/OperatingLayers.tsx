@@ -9,7 +9,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import type { HermesSystemStatus } from '@/lib/portal/portal-types';
+import type { HermesSystemStatus } from '@saasfly/shared';
 import { 
   Fingerprint, 
   BookOpen, 

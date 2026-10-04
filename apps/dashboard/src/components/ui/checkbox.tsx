@@ -3,7 +3,7 @@
 import * as React from "react"
 import { Check } from "lucide-react"
 
-import { cn } from "@/lib/utils"
+import { cn } from "@saasfly/shared"
 
 const Checkbox = React.forwardRef<
     HTMLButtonElement,

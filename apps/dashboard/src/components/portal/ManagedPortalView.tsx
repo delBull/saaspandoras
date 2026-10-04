@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { TransactionButton, useActiveAccount } from "thirdweb/react";
 import { prepareContractCall, getContract, defineChain } from "thirdweb";
-import { client } from "@/lib/thirdweb-client";
+import { client } from "@saasfly/shared";
 import { toast } from "sonner";
 
 interface ProjectState {

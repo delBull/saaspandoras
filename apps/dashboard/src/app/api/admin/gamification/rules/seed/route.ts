@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { getAuth, isAdmin } from '@/lib/auth';
-import { db } from '@/db';
-import { gamificationRules } from '@/db/schema';
+import { getAuth, isAdmin } from '@saasfly/auth-sdk';
+import { db } from '@saasfly/db';
+import { gamificationRules } from '@saasfly/db/schema';
 
 export const dynamic = 'force-dynamic';
 

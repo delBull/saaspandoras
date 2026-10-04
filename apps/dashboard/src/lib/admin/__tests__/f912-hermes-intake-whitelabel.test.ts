@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { PlatformCapabilityRegistryService } from '../platform-capability-registry.service';
-import { PlatformActor } from '@/lib/dash-contracts/admin';
+import { PlatformCapabilityRegistryService } from '@saasfly/shared';
+import { PlatformActor } from '@saasfly/shared';
 import { HQProvisioningHandoffService } from '../hq-provisioning-handoff.service';
 
 describe('🛡️ F9.12 HQ Commercial Plane Certification', () => {

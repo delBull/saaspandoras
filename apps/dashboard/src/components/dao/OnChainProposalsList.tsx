@@ -3,7 +3,7 @@
 
 import { useReadContract, useActiveAccount, TransactionButton, useContractEvents } from "thirdweb/react";
 import { getContract, defineChain, prepareContractCall, prepareEvent } from "thirdweb";
-import { client } from "@/lib/thirdweb-client"; // Verify correct path
+import { client } from "@saasfly/shared"; // Verify correct path
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { CheckCircleIcon, XCircleIcon, ClockIcon, PlayCircleIcon } from "lucide-react";

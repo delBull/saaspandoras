@@ -10,11 +10,11 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveDemandSession } from '../route';
-import { CapabilityGrantService } from '@/lib/pandoras/core/domains/hermes/a2a/capability-grant-service';
+import { CapabilityGrantService } from '@saasfly/hermes-core';
 import {
   DemandDistributionService,
   DemandObjective,
-} from '@/lib/hermes/demand/demand-distribution.service';
+} from '@saasfly/hermes-core';
 
 export const dynamic = 'force-dynamic';
 

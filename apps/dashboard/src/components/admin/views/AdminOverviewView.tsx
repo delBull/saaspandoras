@@ -23,7 +23,7 @@ import {
   Server
 } from 'lucide-react';
 import { usePlatformInspector } from '../inspector/PlatformInspectorContext';
-import { PlatformGlobalKpis, InfrastructureHealth } from '@/lib/dash-contracts/admin';
+import { PlatformGlobalKpis, InfrastructureHealth } from '@saasfly/shared';
 
 interface AdminOverviewViewProps {
   kpis: PlatformGlobalKpis;

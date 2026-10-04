@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { createPublicClient, http, parseAbi } from "viem";
 import { sepolia, base } from "viem/chains";
-import { db } from "~/db";
-import { projects } from "~/db/schema";
-import { eq } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { projects } from "@saasfly/db-core";
+import { eq } from "@saasfly/db-core";
 
 const CONTROLLER_ABI = parseAbi([
   "function owner() view returns (address)",

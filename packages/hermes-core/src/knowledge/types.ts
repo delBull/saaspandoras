@@ -1,0 +1,180 @@
+export type KnowledgeDimension = 
+  | 'identity'
+  | 'project'
+  | 'product'
+  | 'market'
+  | 'founder'
+  | 'business_model'
+  | 'traction'
+  | 'evidence'
+  | 'offer'
+  | 'governance';
+
+export type KnowledgeConfidence = 'HIGH' | 'MEDIUM' | 'LOW';
+
+export interface KnowledgeCandidate {
+  id: string;
+  organizationId: string;
+  dimension: KnowledgeDimension;
+  claim: {
+    key: string;
+    content: string;
+    rawInput?: string;
+    structuredValue?: unknown;
+  };
+  provenance: {
+    source: KnowledgeSource;
+    sourceReference: string;
+    conversationId?: string;
+    messageId?: string;
+    confidence: KnowledgeConfidence;
+    extractedAt: Date;
+  };
+  governance: {
+    requiresHumanApproval: boolean;
+    visibility: KnowledgeVisibility;
+    authority: KnowledgeAuthority;
+    autoApproveReason?: string;
+  };
+}
+
+export type KnowledgeStatus = 
+  | 'DISCOVERED'
+  | 'PENDING_REVIEW'
+  | 'REJECTED'
+  | 'ACTIVE'
+  | 'SUPERSEDED';
+
+export type KnowledgeVisibility = 'PUBLIC' | 'INTERNAL' | 'RESTRICTED' | 'PRIVATE';
+export type KnowledgeAuthority = 'CANONICAL' | 'TENANT_PROVIDED' | 'DISCOVERED' | 'SYSTEM';
+export type KnowledgeSource = 'ONBOARDING_CONVERSATION' | 'OWNER_INPUT' | 'ADMIN_INPUT' | 'DOCUMENT' | 'IMPORTED' | 'SYSTEM';
+
+export interface KnowledgeContent {
+  key: string;
+  content: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface KnowledgeScope {
+  organizationId: string;
+  dimension: KnowledgeDimension;
+}
+
+export interface KnowledgeGovernance {
+  visibility: KnowledgeVisibility;
+  authority: KnowledgeAuthority;
+  source: KnowledgeSource;
+  sourceReference?: string; // e.g. documentId, conversationId
+}
+
+export interface KnowledgeLifecycle {
+  status: KnowledgeStatus;
+  version: number;
+  supersedesId?: string;
+  createdAt: Date;
+  updatedAt: Date;
+  effectiveAt?: Date;
+}
+
+export interface KnowledgeAudit {
+  discoveredBy?: string; // actorId
+  reviewedBy?: string;   // actorId
+  rejectionReason?: string;
+}
+
+export interface GovernedKnowledgeItem {
+  id: string;
+  scope: KnowledgeScope;
+  content: KnowledgeContent;
+  governance: KnowledgeGovernance;
+  lifecycle: KnowledgeLifecycle;
+  audit: KnowledgeAudit;
+}
+
+// -------------------------------------
+// Governance Commands Context & Roles
+// -------------------------------------
+export type ControlPlaneRole = 'OWNER' | 'ADMIN' | 'OPERATOR' | 'VIEWER' | 'SYSTEM';
+
+export interface ControlPlaneContext {
+  channel?: string;
+  actorId: string;
+  organizationId: string;
+  role: ControlPlaneRole;
+  permissions: string[];
+  sessionId?: string;
+  identity?: {
+    identityId?: string;
+    userId?: string;
+    name?: string;
+    isBoss?: boolean;
+    title?: string;
+    executivePrivilege?: boolean;
+    welcomeDirective?: string;
+  };
+  interlocutor?: {
+    name?: string;
+    role?: string;
+    actorId?: string;
+    isBoss?: boolean;
+    title?: string;
+    executivePrivilege?: boolean;
+    welcomeDirective?: string;
+    canonicalIdentity?: import('../identity/canonical-identity-graph').CanonicalIdentityRecord;
+    tenantContext?: import('../identity/tenant-context-resolver').TenantContextRecord;
+    tenantSlug?: string;
+    [key: string]: any;
+  };
+  canonicalIdentity?: import('../identity/canonical-identity-graph').CanonicalIdentityRecord;
+  tenantContext?: import('../identity/tenant-context-resolver').TenantContextRecord;
+  surfaceContext?: {
+    surface: string;
+    section?: string;
+    route?: string;
+    projectId?: string;
+    resourceId?: string;
+    mode: 'GUIDE' | 'ANALYZE' | 'PROPOSE' | 'EXECUTE';
+    capabilities: import('../capabilities/types').CapabilityResolution[];
+    objective?: {
+      value: string;
+      source: 'USER_EXPLICIT' | 'PERSISTED' | 'DB_STATE' | 'LLM_INFERENCE' | 'UNKNOWN';
+      confidence: number;
+    };
+    journeyState?: {
+      currentState: string;
+      requiredState: string;
+      missingSteps: string[];
+      nextBestStep: string;
+    };
+  };
+  onboardingState?: import('../memory/types').TenantOperationalState;
+}
+
+// -------------------------------------
+// Audit Trail Event Model
+// -------------------------------------
+export type AuditEventAction = 
+  | 'CREATE'
+  | 'DISCOVER'
+  | 'SUBMIT_FOR_REVIEW'
+  | 'APPROVE'
+  | 'REJECT'
+  | 'SUPERSEDE'
+  | 'VISIBILITY_CHANGE'
+  | 'AUTHORITY_CHANGE';
+
+export interface KnowledgeMutationEvent {
+  eventId: string;
+  organizationId: string;
+  knowledgeId: string;
+  version: number;
+  action: AuditEventAction;
+  actorId: string;
+  actorType: 'USER' | 'SYSTEM' | 'AGENT';
+  timestamp: Date;
+  previousStatus?: KnowledgeStatus;
+  newStatus: KnowledgeStatus;
+  reason?: string;
+  correlationId?: string;
+  metadata?: Record<string, unknown>;
+}

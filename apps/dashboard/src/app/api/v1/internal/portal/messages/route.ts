@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
 import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
-import { db } from '@/db';
-import { hermesConversationMessages, portalOnboardingState, projects } from '@/db/schema';
-import { eq, and, or, asc } from 'drizzle-orm';
-import { OnboardingStage } from '@/lib/pandoras/core/domains/hermes/onboarding-workflow';
-import { DefaultOmnichannelGateway } from '@/lib/pandoras/core/domains/channels/omnichannel-gateway';
-import { ControlPlaneContext } from '@/lib/pandoras/core/domains/control-plane/application/context';
-import { HermesOnboardingOrchestrator } from '@/lib/pandoras/core/domains/hermes/onboarding/orchestrator';
-import { RuntimeMessage } from '@/lib/pandoras/core/domains/hermes/runtime/contracts';
+import { db } from '@saasfly/db';
+import { hermesConversationMessages, portalOnboardingState, projects } from '@saasfly/db/schema';
+import { eq, and, or, asc } from "@saasfly/db-core";
+import { OnboardingStage } from '@saasfly/hermes-core';
+import { DefaultOmnichannelGateway } from '@saasfly/hermes-core';
+import { ControlPlaneContext } from '@saasfly/hermes-core';
+import { HermesOnboardingOrchestrator } from '@saasfly/hermes-core';
+import { RuntimeMessage } from '@saasfly/hermes-core';
 
 const omnichannelGateway = new DefaultOmnichannelGateway();
 
@@ -371,7 +371,7 @@ export async function POST(request: Request) {
     const tenantId = context.organization.slug;
     const orgName = context.organization.name || organizationSlug;
 
-    const cpCtx = new ControlPlaneContext(
+    const cpCtx: any = new ControlPlaneContext(
       context.tenant.sessionId,
       context.tenant.actorId,
       context.tenant.role as any,
@@ -417,7 +417,7 @@ export async function POST(request: Request) {
         role: context.tenant.role as any,
         permissions: context.tenant.permissions as any,
         sessionId: context.tenant.sessionId,
-      }
+      } as any
     );
 
     const hermesMsg: PortalChatMessage = {

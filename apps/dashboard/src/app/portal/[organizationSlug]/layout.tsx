@@ -14,7 +14,7 @@
 
 import { redirect } from 'next/navigation';
 import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
-import { PortalAuthorizationError } from '@/lib/portal/portal-types';
+import { PortalAuthorizationError } from '@saasfly/shared';
 import { PortalShell } from '@/components/hermes-portal/PortalShell';
 import { TourEngine } from '@/components/onboarding/TourEngine';
 
@@ -44,7 +44,7 @@ export default async function PortalLayout({ children, params }: PortalLayoutPro
 
   let activeModules: string[] = [];
   try {
-    const { setupProgressService } = await import('@/lib/mesh/setup-progress.service');
+    const { setupProgressService } = await import('@saasfly/shared');
     const setupSummary = await setupProgressService.getEcosystemSetupState(organizationSlug);
     if (setupSummary && setupSummary.modules) {
       activeModules = setupSummary.modules.map((m: any) => m.productKey);

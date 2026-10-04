@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { db } from "@/db";
-import { projects } from "@/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { projects } from "@saasfly/db-core";
+import { eq, sql } from "@saasfly/db-core";
 
 /**
  * POST /api/v1/internal/agora/participate

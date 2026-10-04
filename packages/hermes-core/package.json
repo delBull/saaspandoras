@@ -1,0 +1,21 @@
+{
+  "name": "@saasfly/hermes-core",
+  "version": "1.0.0",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "license": "MIT",
+  "scripts": {
+    "lint": "eslint \"src/**/*.ts*\"",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@saasfly/db-core": "workspace:*",
+    "@saasfly/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@saasfly/eslint-config": "workspace:*",
+    "@saasfly/typescript-config": "workspace:*",
+    "ts-morph": "^28.0.0",
+    "typescript": "^5.3.3"
+  }
+}

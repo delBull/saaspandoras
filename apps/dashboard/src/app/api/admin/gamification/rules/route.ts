@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { getAuth, isAdmin } from '@/lib/auth';
-import { db } from '@/db';
-import { gamificationRules } from '@/db/schema';
-import { eq, sql } from 'drizzle-orm';
+import { getAuth, isAdmin } from '@saasfly/auth-sdk';
+import { db } from '@saasfly/db';
+import { gamificationRules } from '@saasfly/db/schema';
+import { eq, sql } from "@saasfly/db-core";
 
 export const dynamic = 'force-dynamic';
 

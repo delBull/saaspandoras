@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
+import { getNexusAuthContext } from '@saasfly/shared';
 import { TreasuryAdapter, GrowthAdapter, HermesAdapter, NexusOperation } from '../adapters';
 
 export async function GET(req: Request) {

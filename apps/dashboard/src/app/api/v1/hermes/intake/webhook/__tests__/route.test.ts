@@ -15,7 +15,7 @@ mock.module('@/lib/integrations/auth', () => ({
   },
 }));
 
-mock.module('@/lib/admin/platform-audit-ledger.service', () => ({
+mock.module('@saasfly/shared', () => ({
   PlatformAuditLedgerService: {
     recordEntry: async (entry: any) => {
       recordEntryCalls.push(entry);

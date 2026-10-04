@@ -6,8 +6,8 @@
  * This is the entry-point payload that drives Phase 5 dynamic UI.
  */
 import { NextResponse } from 'next/server';
-import { db } from '@/db';
-import { eq, and, count, or } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { eq, and, count, or } from "@saasfly/db-core";
 import {
   nexusActionRequests,
   hermesEscalations,
@@ -15,8 +15,8 @@ import {
   projectCollaborators,
   projects,
   nexusTasks,
-} from '@/db/schema';
-import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
+} from '@saasfly/db/schema';
+import { getNexusAuthContext } from '@saasfly/shared';
 
 export async function GET(req: Request) {
   try {

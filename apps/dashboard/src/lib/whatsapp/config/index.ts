@@ -8,7 +8,7 @@ export {
 } from './landingConfig';
 
 // WhatsApp Cloud API configuration
-import { resolveMasterPhoneNumberId } from '../config';
+import { resolveMasterPhoneNumberId } from '@saasfly/shared';
 
 export const WHATSAPP = {
   API_URL: process.env.WHATSAPP_API_URL || 'https://graph.facebook.com/v18.0',

@@ -8,7 +8,7 @@ import { Loader2, ShieldCheck, Send, BarChart2, CheckCircle2, AlertTriangle, Wal
 import { FaWhatsapp } from "react-icons/fa";
 import { useActiveAccount, useReadContract, useSendTransaction } from "thirdweb/react";
 import { getContract, prepareContractCall, readContract } from "thirdweb";
-import { client } from "@/lib/thirdweb-client";
+import { client } from "@saasfly/shared";
 import { config } from "@/config";
 import { PANDORAS_KEY_ABI } from "@/lib/pandoras-key-abi";
 import { CreateNFTPassModal } from "./CreateNFTPassModal";

@@ -1,7 +1,7 @@
 import crypto from 'crypto';
-import { db } from '@/db';
-import { integrationClients, integrationPermissionEnum } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { integrationClients, integrationPermissionEnum } from '@saasfly/db/schema';
+import { eq } from "@saasfly/db-core";
 
 /**
  * Service to handle Integration Key Logic

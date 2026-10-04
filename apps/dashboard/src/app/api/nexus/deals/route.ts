@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { validateDealRoomAccess } from "@/lib/admin-auth";
-import { listRoomsForUser, createRoom } from "@/lib/nexus-deals/repo";
-import { DealKind } from "@/lib/nexus-deals/types";
-import { sendDealRoomAlert } from "@/lib/nexus-deals/discord";
+import { listRoomsForUser, createRoom } from "@saasfly/nexus-deals-sdk";
+import { DealKind } from "@saasfly/nexus-deals-sdk";
+import { sendDealRoomAlert } from "@saasfly/nexus-deals-sdk";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

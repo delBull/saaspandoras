@@ -1,6 +1,6 @@
 import { getContract } from "thirdweb";
 import { base } from "thirdweb/chains";
-import { client } from "@/lib/thirdweb-client";
+import { client } from "@saasfly/shared";
 
 export const POOL_PANDORAS_ADDRESS = "0x4122d7a6f11286b881f8332d8c27debcc922b2fa";
 

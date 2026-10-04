@@ -35,7 +35,7 @@ export class EventRegistry {
 export const registry = new EventRegistry();
 
 // ── NFT Lab handlers (multi-tenant NFT deployer + issuance confirmation) ──
-import { executeNftCollectionDeploy } from '@/lib/growth/nft/nft-deploy-executor';
+import { executeNftCollectionDeploy as executeNftCollectionDeployShared } from '@saasfly/nexus-deals-sdk';
 
 // Deploy was requested post-governance; idempotently deploy the contract.
 // Only processes 'GOVERNANCE_PENDING' collections with an approved intent.
@@ -48,7 +48,7 @@ registry.register('nft_collection', 'collection.deploy', async (event) => {
   }
   // The aggregateId is the collection row; the executor seeks the governance
   // intent already APPROVED for this collection. Scope: canonical org.
-  const { executeNftCollectionDeploy } = await import('@/lib/growth/nft/nft-deploy-executor');
+  const { executeNftCollectionDeploy } = await import('@saasfly/nexus-deals-sdk');
   await executeNftCollectionDeploy(String(event.aggregateId), orgId);
 });
 
@@ -126,7 +126,7 @@ registry.register('purchase', 'purchase.completed', async (event) => {
 
   // 2. Issue token via NftCapability (handles policy + governance decision)
   try {
-    const { NftCapability } = await import('@/lib/growth/nft/nft-capability');
+    const { NftCapability } = await import('@saasfly/nexus-deals-sdk');
     const result = await NftCapability.issueToken({
       tenantId: orgId,
       projectId: Number(projectId),

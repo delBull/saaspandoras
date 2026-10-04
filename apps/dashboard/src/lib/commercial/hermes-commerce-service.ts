@@ -9,8 +9,8 @@
  * Hermes Intent / Simulator CTA -> syncLeadAsClient -> requireCommercialOffer -> paymentLinks (Draft) -> Discord Alert
  */
 
-import { db } from '@/db';
-import { paymentLinks, clients } from '@/db/schema';
+import { db } from '@saasfly/db';
+import { paymentLinks, clients } from '@saasfly/db/schema';
 import { syncLeadAsClient } from '@/actions/leads';
 import {
   requireCommercialOffer,

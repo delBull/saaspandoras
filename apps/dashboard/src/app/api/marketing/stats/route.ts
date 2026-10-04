@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { db } from "@/db";
-import { accessRequests } from "@/db/schema";
-import { sql, gt } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { accessRequests } from "@saasfly/db-core";
+import { sql, gt } from "@saasfly/db-core";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

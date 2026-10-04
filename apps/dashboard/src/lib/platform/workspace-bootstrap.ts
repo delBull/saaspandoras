@@ -1,6 +1,6 @@
-import { db } from '@/db';
-import { projects, installedProducts, portalOnboardingState } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { projects, installedProducts, portalOnboardingState } from '@saasfly/db/schema';
+import { eq, and } from "@saasfly/db-core";
 import { generatePortalToken } from './portal-auth';
 
 export interface BootstrapResult {

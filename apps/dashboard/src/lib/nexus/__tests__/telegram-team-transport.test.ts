@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { NexusTeamTransport } from '../telegram-team-transport';
+import { NexusTeamTransport } from '@saasfly/hermes-core';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 

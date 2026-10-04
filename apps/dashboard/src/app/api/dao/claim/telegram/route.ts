@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { db } from "~/db";
-import { users, daoMembers, projects, userBalances } from "~/db/schema";
-import { eq, and } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { users, daoMembers, projects, userBalances } from "@saasfly/db-core";
+import { eq, and } from "@saasfly/db-core";
 import { validateTelegramInitData } from "~/lib/telegram";
 import {
   lockWithdrawal,

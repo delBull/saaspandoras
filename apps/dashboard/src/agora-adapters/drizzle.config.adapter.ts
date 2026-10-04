@@ -1,6 +1,6 @@
-import { db } from "@/db";
-import { protocolConfigs } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { protocolConfigs } from "@saasfly/db-core";
+import { eq } from "@saasfly/db-core";
 import type { IProtocolConfigAdapter, IProtocolConfig } from "@pandoras/agora-engine";
 
 export class DrizzleProtocolConfigAdapter implements IProtocolConfigAdapter {

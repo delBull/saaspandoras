@@ -6,7 +6,7 @@ import { useActiveAccount, TransactionButton } from "thirdweb/react";
 import { prepareTransaction, toWei, defineChain } from "thirdweb";
 import { toast } from "sonner";
 import { Loader2, RefreshCwIcon, CheckCircle2Icon, WalletIcon, ArrowRightIcon } from "lucide-react";
-import { client } from "@/lib/thirdweb-client";
+import { client } from "@saasfly/shared";
 
 interface AdminPayoutsProps {
     projectId: number;

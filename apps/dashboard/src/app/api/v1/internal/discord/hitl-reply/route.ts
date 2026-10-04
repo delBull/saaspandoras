@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
-import { hermesConversations, hermesConversationMessages, projects, nexusCollaborators, projectCollaborators } from '@/db/schema';
-import { eq, desc, and } from 'drizzle-orm';
-import { sendWhatsAppMessage } from '@/lib/whatsapp/utils/client';
+import { db } from '@saasfly/db';
+import { hermesConversations, hermesConversationMessages, projects, nexusCollaborators, projectCollaborators } from '@saasfly/db/schema';
+import { eq, desc, and } from "@saasfly/db-core";
+import { sendWhatsAppMessage } from '@saasfly/shared';
 import { v4 as uuidv4 } from 'uuid';
 
 export async function POST(req: NextRequest) {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { NexusAuthorizationService } from '@/lib/pandoras/core/domains/nexus/nexus-authorization';
+import { NexusAuthorizationService } from '@saasfly/hermes-core';
 
 export async function POST(request: NextRequest) {
   try {

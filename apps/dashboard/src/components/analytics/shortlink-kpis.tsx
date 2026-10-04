@@ -1,7 +1,7 @@
 "use client";
 
 import { differenceInDays } from "date-fns";
-import type { ShortlinkEvent } from "@/db/schema";
+import type { ShortlinkEvent } from "@saasfly/db-core";
 
 interface ShortlinkKPIsProps {
   events: ShortlinkEvent[];

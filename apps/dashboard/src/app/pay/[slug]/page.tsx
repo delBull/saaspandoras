@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
-import { db } from "@/db";
-import { paymentLinks, clients } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { paymentLinks, clients } from "@saasfly/db-core";
+import { eq } from "@saasfly/db-core";
 import { PaymentCheckout } from "@/components/payments/PaymentCheckout";
 
 // Add metadata later

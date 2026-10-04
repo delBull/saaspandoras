@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/db';
-import { nexusActionRequests, nexusAuditEvents } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
-import { NexusAuthorizationService } from '@/lib/pandoras/core/domains/nexus/nexus-authorization';
+import { db } from '@saasfly/db';
+import { nexusActionRequests, nexusAuditEvents } from '@saasfly/db/schema';
+import { eq, and } from "@saasfly/db-core";
+import { NexusAuthorizationService } from '@saasfly/hermes-core';
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { getAuth } from "@/lib/auth";
+import { getAuth } from "@saasfly/auth-sdk";
 import { headers } from "next/headers";
-import { sql } from "@/lib/database";
+import { sql, db } from '@saasfly/db-core';
 import { normalizePlatformRole } from "@/lib/roles";
 
 export const runtime = "nodejs";
@@ -40,14 +40,14 @@ export async function GET(_request: Request) {
     }
 
     // Check if user exists in database
-    const users = await sql`
+    const users = await db.execute(sql`
       SELECT "id", "name", "email", "image", "walletAddress", "role",
              "connectionCount", "lastConnectionAt", "createdAt",
              "kycLevel", "kycCompleted", "kycData",
              "access_cohort" as "accessCohort", "benefits_tier" as "benefitsTier"
       FROM "users"
       WHERE LOWER("walletAddress") = LOWER(${walletAddress})
-    `;
+    `);
 
     const user = users[0];
 
@@ -60,10 +60,10 @@ export async function GET(_request: Request) {
     }
 
     // Check if user is admin
-    const adminResults = await sql`
+    const adminResults = await db.execute(sql`
       SELECT COUNT(*) as count FROM "administrators"
       WHERE LOWER("wallet_address") = LOWER(${walletAddress})
-    `;
+    `);
     const isAdmin = Number(adminResults[0]?.count || 0) > 0;
     const isSuperAdmin = walletAddress.toLowerCase() === '0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9';
 
@@ -74,10 +74,10 @@ export async function GET(_request: Request) {
       role = normalizePlatformRole(user.role);
     } else {
       // Check if user has projects
-      const projects = await sql`
+      const projects = await db.execute(sql`
         SELECT COUNT(*) as count FROM "projects"
         WHERE LOWER("applicant_wallet_address") = LOWER(${walletAddress})
-      `;
+      `);
       if (Number(projects[0]?.count || 0) > 0) {
         role = "applicant";
       }

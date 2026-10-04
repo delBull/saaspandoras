@@ -17,8 +17,8 @@
 
 import { cookies, headers } from 'next/headers';
 import { randomUUID } from 'crypto';
-import { getAuth, isAdmin } from '@/lib/auth';
-import { OrganizationSDK } from '@/lib/platform/organization-sdk';
+import { getAuth, isAdmin } from '@saasfly/auth-sdk';
+import { OrganizationSDK } from '@saasfly/shared';
 
 const PORTAL_SESSION_COOKIE = 'pandoras_portal_session';
 const HQ_ORG_SLUG = 'pandoras';

@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useActiveAccount, useSendTransaction } from 'thirdweb/react';
 import type { ethereum } from 'thirdweb/chains';
 
-import { client } from '@/lib/thirdweb-client';
+import { client } from '@saasfly/shared';
 import { WalletQRDisplay } from './PandorasQRCode';
 
 function SendCryptoForm({ selectedChain, account }: { selectedChain: typeof ethereum; account: { address: string } }) {

@@ -1,7 +1,7 @@
 import { provisionFullAccess } from '@/lib/admin/full-access-provision.service';
-import { db } from '@/db';
-import { projects } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { projects } from '@saasfly/db/schema';
+import { eq } from "@saasfly/db-core";
 
 async function run() {
   try {

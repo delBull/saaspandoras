@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import { tryResolvePortalContext } from '@/lib/portal/resolve-portal-context';
 import { OverviewDashboard } from '@/components/hermes-portal/overview/OverviewDashboard';
 import { DashApi } from '@/lib/dash-api';
-import type { HermesOverviewView } from '@/lib/portal/portal-types';
+import type { HermesOverviewView } from '@saasfly/shared';
 
 export default async function PortalOverviewSubPage({ params }: { params: Promise<{ organizationSlug: string }> }) {
   const { organizationSlug } = await params;

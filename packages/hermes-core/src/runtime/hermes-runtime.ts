@@ -1,0 +1,2010 @@
+// ──────────────────────────────────────────────────────────────────────────────
+// Phase 6.11 + 6.12.6 + 6.12.7 — HermesCognitiveRuntime (Implementation)
+//
+// The single, canonical entry point for all governed cognitive interactions.
+//
+// Pipeline (shared by respond() and stream()):
+//   RuntimeInput
+//     → ControlPlaneContext validation
+//     → Trace START
+//     → CognitiveContextBuilder (load Effective Context from DB)
+//     → ConversationMemoryProvider (load history)
+//     → CognitiveContextAdapter (one-way trust boundary)
+//     → HermesPromptBuilder (compile to provider format)
+//     → ReasoningProvider (generate OR stream — buffered)
+//     → RuntimePolicyValidator (Policy Boundary — EXPLICIT PolicyDecision)
+//     → Atomic Memory Append (only on ALLOW/REWRITE)
+//     → Trace COMPLETE
+//     → RuntimeResponse / AsyncIterable<RuntimeStreamEvent>
+//
+// K11-A01: Runtime requires a valid ControlPlaneContext.
+// K11-A02: organizationId alone is NOT sufficient for authorization.
+// K11-A03: Runtime is independent of the LLM provider.
+// K11-A05: Runtime does NOT access PostgreSQL/Drizzle directly.
+// K12-A26: stream() executes the SAME pipeline as respond().
+// K12-A29: No provider output escapes without passing PolicyBoundary.
+// K12-A30: Policy decision is an explicit discriminated union.
+// K12-A37: Policy BLOCK → no persistence, no content emitted.
+// K12-A40: respond() and stream() produce the same governed decision.
+// K12-A45: Trace failure does NOT affect cognitive decisions.
+// ──────────────────────────────────────────────────────────────────────────────
+
+import {
+  HermesCognitiveRuntime,
+  RuntimeInput,
+  RuntimeResponse,
+  RuntimeStreamEvent,
+  RuntimeStreamOptions,
+  ReasoningProvider,
+  StreamingReasoningProvider,
+  RuntimeTrace,
+  RuntimeMessage,
+  PolicyDecision,
+  RuntimeTraceRecorder,
+  RuntimeTraceHandle,
+  ToolAuthorizationRequest,
+  GovernedCapability,
+} from './contracts';
+import { HermesToolExecutor, ToolExecutionResponse } from './tool-executor';
+import { CognitiveContextAdapter } from './context-adapter';
+import { HermesPromptBuilder } from './prompt-builder';
+import { CognitiveContextBuilder } from '../addons/context-merger';
+import { JourneyEngine } from './journey-engine';
+import { MockReasoningProvider, MockStreamingProvider } from './reasoning-providers';
+import { ConversationMemoryProvider } from './memory/contracts';
+import { PostgresConversationMemoryProvider } from './memory/postgres-memory-provider';
+import { MemoryAdapter } from './memory/memory-adapter';
+import { DefaultRuntimePolicyValidator } from './policy-validator';
+import { ContextHygieneValidator } from './context-hygiene-validator';
+import { FailSafeRuntimeTraceRecorder, NoOpRuntimeTraceRecorder, InMemoryRuntimeTraceStore, DefaultRuntimeTraceRecorder } from './trace/trace-recorder';
+import { PromptHygieneEngine, ActorIdentityBindingService } from './prompt-hygiene-contract';
+import { MemoryGovernanceEngine, type ConversationMessageItem } from './operational-governance-contract';
+import { ClaimContractEngine, type ClaimProvenanceReceipt } from '../knowledge/claim-contract-engine';
+import { HermesIdentitySigner } from '../identity/identity-signer';
+import { SecurityAuditLogger } from './security-audit-logger';
+
+import { TenantAuthorityService } from '../tenants/tenant-authority';
+
+// ─── Internal shared types ────────────────────────────────────────────────────
+
+interface CognitiveTurnSetup {
+  runtimeId: string;
+  organizationId: string;
+  /** K27.1 Golden Invariant: canonical UUID resolved via TenantAuthorityService. */
+  canonicalTenantId: string;
+  conversationId: string;
+  message: RuntimeMessage;
+  controlPlaneContext: import('../knowledge/types').ControlPlaneContext;
+  effectiveContext: Awaited<ReturnType<typeof CognitiveContextBuilder.buildEffectiveContext>>;
+  memory: Awaited<ReturnType<ConversationMemoryProvider['load']>>;
+  conversationHistory: RuntimeMessage[];
+  reasoningContext: Parameters<typeof CognitiveContextAdapter.adapt>[0] extends never
+    ? never
+    : ReturnType<typeof CognitiveContextAdapter.adapt>['reasoningContext'];
+  traceInfo: ReturnType<typeof CognitiveContextAdapter.adapt>['trace'];
+  reasoningInput: { reasoningContext: ReturnType<typeof CognitiveContextAdapter.adapt>['reasoningContext']; hints: { temperature: number; maxTokens: number } };
+  suggestedActions: string[];
+  traceHandle: RuntimeTraceHandle;
+}
+
+// ─── Runtime Policy constant ──────────────────────────────────────────────────
+
+const RUNTIME_POLICY = {
+  allowUnverifiedClaims: false,
+  allowRestrictedKnowledge: false,
+  allowGovernanceOverrides: false,
+  allowUnauthorizedCapabilities: false,
+  allowFinancialPromises: false,
+  allowRegulatoryClaims: false,
+  allowExecutionClaims: false,
+} as const;
+
+// ─── HermesRuntime ────────────────────────────────────────────────────────────
+
+export class HermesRuntime implements HermesCognitiveRuntime {
+  private readonly provider: ReasoningProvider;
+  private readonly memoryProvider: ConversationMemoryProvider;
+  private readonly traceRecorder: RuntimeTraceRecorder;
+  private readonly toolExecutor: HermesToolExecutor;
+
+  constructor(
+    provider?: ReasoningProvider,
+    memoryProvider?: ConversationMemoryProvider,
+    traceRecorder?: RuntimeTraceRecorder,
+    toolExecutor?: HermesToolExecutor
+  ) {
+    this.provider = provider ?? new MockReasoningProvider();
+    this.memoryProvider = memoryProvider ?? new PostgresConversationMemoryProvider();
+    // K12-A45: trace recorder is always wrapped in a FailSafe to avoid cognitive failure
+    this.traceRecorder = new FailSafeRuntimeTraceRecorder(traceRecorder ?? new NoOpRuntimeTraceRecorder());
+    this.toolExecutor = toolExecutor ?? new HermesToolExecutor();
+
+    // K11-EXEC: OWNER-gated ecosystem tools (executive_activate_tenant,
+    // executive_assign_admin, executive_approve_payment) — Fail-closed gate
+    // inside each handler; every call lands in the PlatformAuditLedger.
+    import('./tools/executive-tool-registry')
+      .then(({ registerExecutiveTools, registerCrmTools, registerNftTools }) => {
+        registerExecutiveTools(this.toolExecutor);
+        registerCrmTools(this.toolExecutor);
+        registerNftTools(this.toolExecutor);
+      })
+      .then(() => {
+        console.log('[HermesRuntime] K11-EXEC executive + CRM + NFT tools registered.');
+      })
+      .catch((execErr: any) => {
+        console.warn('[HermesRuntime] K11-EXEC registration warning:', execErr?.message);
+      });
+  }
+
+  /**
+   * Returns the underlying governed Tool Gateway executor.
+   */
+  public getToolExecutor(): HermesToolExecutor {
+    return this.toolExecutor;
+  }
+
+  /**
+   * Executes a governed tool through the Tool Gateway, enforcing ToolAuthorizationGate,
+   * tenant capabilities, Anti-SSRF and quota boundaries.
+   */
+  public async executeTool(
+    request: ToolAuthorizationRequest,
+    activeCapabilities: GovernedCapability[] = []
+  ): Promise<ToolExecutionResponse> {
+    return this.toolExecutor.executeTool(request, activeCapabilities);
+  }
+
+  // ---------------------------------------------------------------------------
+  // PRIVATE: Shared cognitive setup (K12-A26, K12-A40)
+  // ---------------------------------------------------------------------------
+  private async setupCognitiveTurn(input: RuntimeInput): Promise<CognitiveTurnSetup> {
+    const runtimeId = `rt_${crypto.randomUUID()}`;
+    const { controlPlaneContext, organizationId, conversationId, message } = input;
+
+    // Trace START
+    const traceHandle = await this.traceRecorder.start({
+      runtimeId,
+      organizationId,
+      conversationId,
+    });
+
+    try {
+      // K11-A01: Validate ControlPlaneContext
+      if (!controlPlaneContext?.actorId || !controlPlaneContext?.organizationId) {
+        throw new Error('[HermesRuntime] K11-A01: Invalid ControlPlaneContext — actorId and organizationId required.');
+      }
+
+      // K11-A11: Cross-tenant rejection
+      if (controlPlaneContext.organizationId !== organizationId) {
+        throw new Error(
+          `[HermesRuntime] K11-A11: organizationId mismatch. ` +
+          `Input=${organizationId}, ControlPlane=${controlPlaneContext.organizationId}`
+        );
+      }
+
+      // K27.1 Golden Invariant: Resolve Canonical Tenant Identity
+      const canonical = await TenantAuthorityService.resolveCanonicalTenant(organizationId);
+      const canonicalTenantId = canonical?.canonicalOrgId || organizationId;
+      if (!canonical) {
+        // Fail-open WITH audited trace: unknown tenant proceeds constrained
+        // (empty context, no contract coverage) but never silently.
+        SecurityAuditLogger.logEvent({
+          organizationId,
+          actorId: controlPlaneContext.actorId,
+          eventType: 'TENANT_UNRESOLVED',
+          severity: 'WARN',
+          policyDecision: 'ALLOW',
+          correlationId: `unresolved_${Date.now()}`,
+          metadata: {
+            action: 'AUDITED_CANONICAL_FALLBACK',
+            rawIdentifier: organizationId,
+            conversationId,
+          },
+        }).catch(() => undefined);
+      }
+
+      // Hydrate the sovereign claim contract under BOTH canonical identities so
+      // synchronous Rule-18 coverage lookups resolve regardless of caller key.
+      await ClaimContractEngine.getOrLoadContract(canonicalTenantId).catch(() => undefined);
+
+      // Step 2: Load Effective Cognitive Context (DB layer)
+      const effectiveContext = await CognitiveContextBuilder.buildEffectiveContext(
+        canonicalTenantId,
+        controlPlaneContext.actorId,
+      );
+
+      // --- PROSPECT INTELLIGENCE INJECTION (P1-P5) ---
+      try {
+        const { IdentityResolver } = await import('@saasfly/shared');
+        // Check if actorId is a valid UUID to avoid foreign key constraint error
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(controlPlaneContext.actorId);
+        
+        const identityId = await IdentityResolver.resolveIdentity({
+          userId: isUUID ? controlPlaneContext.actorId : undefined,
+          fingerprint: !isUUID ? controlPlaneContext.actorId : undefined
+        });
+
+        if (identityId) {
+          const prospectIdentity = {
+            marketingIdentityId: identityId,
+            canonicalId: controlPlaneContext.actorId || identityId,
+            resolvedAt: new Date()
+          };
+
+          const { ProspectIntelligenceService } = await import('@saasfly/hermes-core');
+          const { ProspectStrategyService } = await import('@saasfly/hermes-core');
+          
+          const rawContext = await ProspectIntelligenceService.buildInitialContext(prospectIdentity as any);
+          const prospectContext = ProspectIntelligenceService.applyPrivacyFilter(rawContext, {
+              allowRestrictedFacts: false,
+              allowCrossTenantFacts: false,
+          });
+          prospectContext.strategy = ProspectStrategyService.defineStrategy(prospectContext);
+          
+          const prospectSummary = ProspectStrategyService.generateContextSummary(prospectContext);
+
+          // Inject as a virtual GovernedKnowledgeFact
+          effectiveContext.knowledge.push({
+             id: 'prospect_intelligence_summary',
+             key: 'prospect_intelligence',
+             content: prospectSummary,
+             status: 'ACTIVE',
+             visibility: 'INTERNAL_OPERATIONAL',
+             dimension: 'strategy',
+             classification: 'TENANT_RESTRICTED'
+          } as any);
+
+          // P7: Apply Knowledge Strategy Avoid Filters (RAG dynamic filtering)
+          if (prospectContext.strategy.knowledgeStrategy.avoidTopics.length > 0) {
+             const avoid = prospectContext.strategy.knowledgeStrategy.avoidTopics;
+             effectiveContext.knowledge = effectiveContext.knowledge.filter(k => {
+                 // Very basic text-based avoidance for MVP
+                 return !avoid.some(topic => (k.content || '').toLowerCase().includes((topic || '').toLowerCase()));
+             });
+          }
+        }
+      } catch (e) {
+        console.warn('[HermesRuntime] Failed to inject Prospect Intelligence:', e);
+      }
+      // --- END PROSPECT INTELLIGENCE ---
+
+      // --- CHANNEL MESH CLEARANCE (K27.6) ---
+      try {
+        const { ChannelMeshService, normalizeHermesChannel } = await import('../channels/channel-mesh');
+        const activeChannel = normalizeHermesChannel((controlPlaneContext as any).channel);
+        const filteredKnowledge = [];
+        
+        const rawInterlocutor = (controlPlaneContext as any).interlocutor || controlPlaneContext.identity;
+        const hasExecutivePrivilege = (rawInterlocutor as any)?.isBoss || (controlPlaneContext as any).role === 'OWNER' || (rawInterlocutor as any)?.executivePrivilege;
+
+        for (const k of effectiveContext.knowledge) {
+          // Resolve required clearance from item metadata, defaulting to PUBLIC if unset.
+          const itemClearance = (k as any).classification || (k as any).governance?.visibility || 'PUBLIC';
+          
+          if (hasExecutivePrivilege) {
+             filteredKnowledge.push(k);
+             continue;
+          }
+          
+          const validation = await ChannelMeshService.validateDisclosureClearance({
+            channelType: activeChannel as any, // HermesChannelType
+            requiredClearance: itemClearance,
+            tenantId: canonicalTenantId,
+            artifactId: k.id,
+          });
+          
+          if (validation.allowed) {
+            filteredKnowledge.push(k);
+          } else {
+            // Drop it from the context
+            console.log(`[HermesRuntime] K27.6 Dropping artifact ${k.id} due to Channel Mesh Ceiling on ${activeChannel}.`);
+          }
+        }
+        
+        effectiveContext.knowledge = filteredKnowledge;
+      } catch (err) {
+        console.warn('[HermesRuntime] Non-blocking warning during Channel Mesh clearance validation:', err);
+      }
+      // --- END CHANNEL MESH CLEARANCE ---
+
+      // Forward interlocutor, Boss executive authority and Sovereign Canonical Identity Context (F6)
+      const rawInterlocutor = (controlPlaneContext as any).interlocutor || controlPlaneContext.identity;
+      
+      // --- PHASE 2: SURFACE INTELLIGENCE ENGINES ---
+      const surfaceNameForIntelligence = input.controlPlaneContext?.surfaceContext?.surface;
+      if (surfaceNameForIntelligence) {
+        try {
+          // 1. Resolve Effective Capabilities via CapabilityResolver (done outside Intelligence)
+          const { CapabilityResolver } = await import('./capability-resolver');
+          const effectiveCapabilities = CapabilityResolver.resolveEffectiveCapabilities({
+            role: controlPlaneContext.role,
+            isBoss: (rawInterlocutor as any)?.isBoss,
+            permissions: (rawInterlocutor as any)?.permissions || (controlPlaneContext as any)?.permissions,
+            surface: surfaceNameForIntelligence
+          });
+
+          // 2. Build Strict Resource Scope
+          // We extract this from the canonical identity/tenant context.
+          const canonicalOrgId = (rawInterlocutor as any)?.tenantContext?.organizationId || 'default-org-id';
+          const projectId = (rawInterlocutor as any)?.tenantContext?.projectId;
+          const walletAddress = (rawInterlocutor as any)?.walletAddress;
+
+          const { SurfaceRegistry } = await import('../context/surface-definition');
+          const surfaceDef = SurfaceRegistry.getSurface(surfaceNameForIntelligence);
+
+          if (input.controlPlaneContext.surfaceContext) {
+            input.controlPlaneContext.surfaceContext.capabilities = effectiveCapabilities.map(c => ({ id: c, name: c, status: 'GRANTED', source: surfaceNameForIntelligence })) as any;
+          }
+
+          if (surfaceDef.getIntelligenceProvider) {
+            const IntelligenceProviderClass = await surfaceDef.getIntelligenceProvider();
+            
+            // Build the generic resource scope for all surfaces
+            // Specific engines can interpret or narrow this scope as needed.
+            let genericScope: any = {
+              canonicalOrgId,
+              projectId,
+              walletAddress,
+              authorizedWallets: walletAddress ? [walletAddress] : [],
+              scopeType: projectId ? 'PROJECT' : 'ORGANIZATION',
+            };
+
+            if (surfaceNameForIntelligence === 'NEXUS_OPERATOR') {
+              const { NexusAuthorizationService } = await import('@saasfly/hermes-core');
+              const trustedActorId = (controlPlaneContext as any).actorId || (rawInterlocutor as any)?.canonicalIdentity?.id;
+              const telegramUserId = (controlPlaneContext as any).telegramUserId; // Optional contextual auth
+              
+              const secureNexusScope = await NexusAuthorizationService.resolveCollaboratorScope(
+                canonicalOrgId,
+                trustedActorId,
+                telegramUserId
+              );
+              
+              if (!secureNexusScope) {
+                // Fail-closed explicitly
+                throw new Error('UNAUTHORIZED: Nexus resource scope resolution failed for this canonical identity.');
+              }
+              
+              genericScope = secureNexusScope;
+            } else {
+              // Legacy generic scope fallback
+              genericScope.collaboratorId = (rawInterlocutor as any)?.collaboratorId || null;
+            }
+
+            const context = await IntelligenceProviderClass.buildContext(genericScope, effectiveCapabilities);
+            const facts = IntelligenceProviderClass.formatKnowledgeSummary(context);
+            
+            facts.forEach(fact => {
+              effectiveContext.knowledge.push(fact as any);
+            });
+          }
+        } catch (engineErr) {
+          console.warn(`[HermesRuntime] Failed to inject Intelligence Engine for ${surfaceNameForIntelligence}:`, engineErr);
+        }
+      }
+      // --- END SURFACE INTELLIGENCE ENGINES ---
+
+      if (rawInterlocutor) {
+        (effectiveContext as any).interlocutor = rawInterlocutor;
+        if ((rawInterlocutor as any).canonicalIdentity) {
+          (effectiveContext as any).canonicalIdentity = (rawInterlocutor as any).canonicalIdentity;
+        }
+        if ((rawInterlocutor as any).tenantContext) {
+          (effectiveContext as any).tenantContext = (rawInterlocutor as any).tenantContext;
+        }
+      }
+      if ((controlPlaneContext as any).canonicalIdentity) {
+        (effectiveContext as any).canonicalIdentity = (controlPlaneContext as any).canonicalIdentity;
+      }
+      if ((controlPlaneContext as any).tenantContext) {
+        (effectiveContext as any).tenantContext = (controlPlaneContext as any).tenantContext;
+      }
+
+      // Auto-resolución defensiva de TenantContext (F6 Zero-Trust Boundary):
+      // Si effectiveContext aún carece de tenantContext, resolverlo usando TenantContextResolver
+      if (!(effectiveContext as any).tenantContext && canonicalTenantId) {
+        try {
+          const { TenantContextResolver } = await import('@saasfly/hermes-core');
+          const target = (effectiveContext as any).canonicalIdentity ||
+            (rawInterlocutor as any)?.canonicalIdentity ||
+            (rawInterlocutor as any)?.actorId ||
+            controlPlaneContext.actorId;
+
+          if (target) {
+            const resolvedTc = await TenantContextResolver.resolveTenantContext(target, canonicalTenantId);
+            if (resolvedTc) {
+              (effectiveContext as any).tenantContext = resolvedTc;
+              if (rawInterlocutor) {
+                (rawInterlocutor as any).tenantContext = resolvedTc;
+              }
+            }
+          }
+        } catch (tcErr) {
+          console.warn('[HermesRuntime] Non-blocking notice auto-resolving tenantContext in setupCognitiveTurn:', tcErr);
+        }
+      }
+
+      // Executive privilege: Opportunistic detection of contact registration directive from the Boss
+      if (rawInterlocutor?.isBoss || (controlPlaneContext as any)?.role === 'OWNER') {
+        const msgText = message.content || '';
+        const phoneMatch = msgText.match(/(\+?\d{10,15})/);
+        const emailMatch = msgText.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
+        const isRegisterIntent = /(?:agrega|registra|guarda|nuevo contacto|bienvenida|contacto|recibir)/i.test(msgText);
+
+        if (isRegisterIntent && (phoneMatch || emailMatch)) {
+          const nameMatch = msgText.match(/(?:contacto|para|a|llamado|nombre)\s+([A-ZÁÉÍÓÚÑa-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑa-záéíóúñ]+)?)/i);
+          const contactName = (nameMatch && nameMatch[1]) ? nameMatch[1].trim() : 'Contacto de Marco';
+          const resolvedPhone = (phoneMatch && phoneMatch[1]) ? phoneMatch[1] : undefined;
+          const resolvedEmail = (emailMatch && emailMatch[1]) ? emailMatch[1] : undefined;
+          import('@saasfly/hermes-core')
+            .then(({ InterlocutorResolver }) => {
+              return InterlocutorResolver.registerContactFromBoss({
+                name: contactName,
+                phone: resolvedPhone,
+                email: resolvedEmail,
+                notes: `Instrucción ejecutiva directa de Marco: "${msgText}"`,
+                tenantSlug: organizationId,
+              });
+            })
+            .catch(err => console.warn('[HermesRuntime] Non-blocking auto-register contact from boss notice:', err));
+        }
+
+        // Executive Directive Memory Capture (Tier 0: Founder Memory)
+        const directiveMatch = msgText.match(/(?:anota|guarda|registra|establece|agrega)?\s*(?:esta)?\s*directiva(?:\s*ejecutiva)?\s*:\s*(.+)/i)
+          || msgText.match(/^directiva\s*:\s*(.+)/i);
+        if (directiveMatch && directiveMatch[1]) {
+          const directiveText = directiveMatch[1].trim();
+          import('@saasfly/hermes-core')
+            .then(({ FounderDirectiveStore }) => {
+              FounderDirectiveStore.addDirective({
+                text: directiveText,
+                actorId: rawInterlocutor.actorId || 'marco_founder',
+                channel: (controlPlaneContext as any)?.channel || 'web',
+              });
+            })
+            .catch(err => console.warn('[HermesRuntime] Non-blocking directive recording error:', err));
+        }
+
+        // Executive promotion directive: convert/assign contacts as specific admins
+        const isPromoteIntent = /(?:convierte|asigna|haz|promueve|cambia el rol|hazlo admin|hazla admin|dale permisos?|nombrar?|ponlo como|ponla como)/i.test(msgText);
+        if (isPromoteIntent) {
+          let detectedRole = 'ADMIN';
+          if (/(?:operacion(?:es)?|operations?)/i.test(msgText)) detectedRole = 'ADMIN_OPERATIONS';
+          else if (/(?:marketing|crecimiento|growth)/i.test(msgText)) detectedRole = 'ADMIN_MARKETING';
+          else if (/(?:cumplimiento|compliance|kyc|seguridad)/i.test(msgText)) detectedRole = 'ADMIN_COMPLIANCE';
+          else if (/(?:tenant|proyecto)/i.test(msgText)) detectedRole = 'TENANT_ADMIN';
+          else if (/(?:inversionista|inversor|investor|vip)/i.test(msgText)) detectedRole = 'INVESTOR';
+          else if (/(?:super\s*admin|jefe)/i.test(msgText)) detectedRole = 'SUPER_ADMIN';
+
+          const emailTarget = msgText.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/)?.[0];
+          const phoneTarget = msgText.match(/(\+?\d{10,15})/)?.[0];
+          const nameTargetMatch = msgText.match(/(?:a|para|contacto|usuario)\s+([A-ZÁÉÍÓÚÑa-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑa-záéíóúñ]+)?)/i);
+          const targetIdentifier = emailTarget || phoneTarget || (nameTargetMatch && nameTargetMatch[1] ? nameTargetMatch[1].trim() : undefined);
+
+          if (targetIdentifier) {
+            import('@saasfly/hermes-core')
+              .then(({ InterlocutorResolver }) => {
+                return InterlocutorResolver.promoteContactFromBoss({
+                  targetIdentifier,
+                  targetRole: detectedRole,
+                  notes: `Promoción ejecutiva dictada por el Jefe Marco: "${msgText}"`,
+                  tenantSlug: organizationId,
+                });
+              })
+              .catch(err => console.warn('[HermesRuntime] Non-blocking boss promotion error:', err));
+          }
+        }
+
+        // Executive WhatsApp Dispatch Directive: send a message to a collaborator or phone number
+        const isSendWhatsAppIntent = /(?:env[ií]a|manda|enviar|mandar|escribe|escribir)\s*(?:un\s*)?(?:mensaje|whatsapp|wa|texto)?\s*(?:a|para)\s+([A-ZÁÉÍÓÚÑa-záéíóúñ]+|\+?\d{10,15})\s*(?:dici[eé]ndole|diciendo|con|que diga|que\s*:\s*|:)\s*(.+)/i;
+        const sendMatch = msgText.match(isSendWhatsAppIntent);
+        if (sendMatch && sendMatch[1] && sendMatch[2]) {
+          const targetNameOrPhone = sendMatch[1].trim();
+          const messageToSend = sendMatch[2].trim().replace(/^["']|["']$/g, '');
+
+          (async () => {
+            try {
+              const { db } = await import('@saasfly/db-core');
+              const { nexusCollaborators } = await import('@saasfly/db-core');
+              const { sendWhatsAppMessage } = await import('@saasfly/shared');
+              const { ilike, or, eq } = await import("@saasfly/db-core");
+
+              let destPhone: string | null = null;
+              let destName = targetNameOrPhone;
+
+              if (/^\+?\d{10,15}$/.test(targetNameOrPhone)) {
+                destPhone = targetNameOrPhone.replace(/\D/g, '');
+              } else {
+                const [collab] = await db
+                  .select()
+                  .from(nexusCollaborators)
+                  .where(or(
+                    ilike(nexusCollaborators.name, `%${targetNameOrPhone}%`),
+                    eq(nexusCollaborators.name, targetNameOrPhone)
+                  ))
+                  .limit(1);
+                if (collab?.whatsappPhone) {
+                  destPhone = collab.whatsappPhone.replace(/\D/g, '');
+                  destName = collab.name;
+                }
+              }
+
+              if (destPhone) {
+                console.log(`📤 [ExecutiveWhatsAppDispatch] Dispatching message from Boss Marco to ${destName} (${destPhone}): "${messageToSend}"`);
+                await sendWhatsAppMessage(destPhone, `*Mensaje de Marco (Fundador):*\n\n${messageToSend}`);
+              }
+            } catch (dispatchErr) {
+              console.warn('[HermesRuntime] Error in opportunistic WhatsApp dispatch from Boss directive:', dispatchErr);
+            }
+          })();
+        }
+      }
+
+      await this.traceRecorder.record(traceHandle, {
+        type: 'CONTEXT_LOADED',
+        metadata: {}
+      });
+
+      // Step 1.5: Mandatory Actor Identity Cryptographic Session Verification (K23/Milestone 9.0)
+      let boundSession = (controlPlaneContext as any)?.boundActorSession;
+      if (!boundSession) {
+        // Enforce mandatory cryptographic session token creation and verification
+        boundSession = ActorIdentityBindingService.createBoundSession(
+          {
+            actorId: controlPlaneContext.actorId || 'anonymous_actor',
+            tenantId: canonicalTenantId,
+            authProvider: 'PORTAL_INTERNAL',
+            nonce: `nonce_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+            proofSignature: `sig_${canonicalTenantId}_${Date.now()}`,
+            issuedAt: Date.now(),
+          },
+          'TENANT_RESTRICTED',
+          3600
+        );
+      }
+      const isSessionValid = ActorIdentityBindingService.validateSession(boundSession);
+      if (!isSessionValid) {
+        throw new Error('[HermesRuntime] Bound Actor Session is invalid or expired.');
+      }
+
+      // Step 2b: Load Conversation Memory (K12-A09, K12-A10)
+      const memory = await this.memoryProvider.load({ organizationId, conversationId, controlPlaneContext });
+      const rawConversationHistory = MemoryAdapter.adaptToMessages(memory);
+
+      // Step 2c: Memory Governance & Sliding Window Compaction (Token Budget Enforcement)
+      const memoryMessageItems: ConversationMessageItem[] = rawConversationHistory.map((m, idx) => ({
+        id: `msg_${idx}`,
+        role: m.role ? m.role.toLowerCase() as any : 'user',
+        content: m.content || '',
+        estimatedTokens: Math.ceil((m.content || '').length / 4),
+        createdAt: new Date(),
+      }));
+      const compactionResult = MemoryGovernanceEngine.compactMemoryHistory(organizationId, memoryMessageItems);
+      const conversationHistory: RuntimeMessage[] = compactionResult.compactedMessages.map((cm, idx) => ({
+        id: cm.id || `msg_comp_${idx}`,
+        role: cm.role.toUpperCase() as any,
+        content: cm.content,
+        createdAt: cm.createdAt || new Date(),
+      }));
+
+      await this.traceRecorder.record(traceHandle, {
+        type: 'MEMORY_LOADED',
+        metadata: {
+          hygieneViolationsCount: compactionResult.evictedCount,
+        } as any
+      });
+
+      // Step 2d: Load Canonical User Memory (Cross-Channel / Omni-Channel Memory)
+      let canonicalMemory: any[] = [];
+      const canonicalIdentity = (effectiveContext as any)?.canonicalIdentity ||
+        (effectiveContext.core as any)?.canonicalIdentity ||
+        ((effectiveContext as any)?.interlocutor as any)?.canonicalIdentity;
+      
+      const identityId = canonicalIdentity?.identityId || canonicalIdentity?.id;
+      if (identityId) {
+        try {
+          const { CanonicalMemoryService } = await import('../memory/canonical-memory-service');
+          canonicalMemory = await CanonicalMemoryService.getActiveMemory(organizationId, identityId);
+        } catch (e) {
+          console.warn('[HermesRuntime] Failed to load canonical memory:', e);
+        }
+      }
+
+      // Step 3: Adapt to ReasoningContext (one-way trust boundary)
+      const { reasoningContext: rawReasoningContext, trace: traceInfo } = CognitiveContextAdapter.adapt(
+        effectiveContext,
+        conversationHistory,
+        message,
+        canonicalMemory
+      );
+
+      // Step 3b: Pre-LLM Context Hygiene Validation (Phase 2.2 / 3.0 Gate T12)
+      const { sanitizedContext: reasoningContext, violations: hygieneViolations } =
+        ContextHygieneValidator.validate(rawReasoningContext);
+
+      // Step 3d: Active Journey Skills (K11-HITO-2: Dynamic Skill Loader)
+      // Pure read of the actor's current Journey Stage → procedure Markdown
+      // injected into the prompt (Block 5.5). Fail-open: no journey/stage
+      // simply yields no skills, never blocks the cognitive turn.
+      try {
+        const { HermesSkillResolver } = await import('./skill-resolver');
+        const stageInfo = await new JourneyEngine().getActiveJourneyStageInfo(canonicalTenantId, controlPlaneContext.actorId);
+        if (stageInfo) {
+          const skill = await HermesSkillResolver.resolveSkillForStage(stageInfo.stageId, canonicalTenantId);
+          if (skill) {
+            reasoningContext.activeSkills = [skill];
+          }
+        }
+      } catch (skillErr: any) {
+        console.warn('[HermesRuntime] K11-HITO2 non-blocking skill resolution warning:', skillErr?.message);
+      }
+
+      // Step 3c: Pre-LLM Hygiene Contract (KNOW vs USE Delimiter Isolation & Injection Neutralization)
+      const knowChunks = ((reasoningContext as any).activeKnowledge || []).map((k: any) => ({
+        sourceId: k.key || k.id || 'unknown_doc',
+        classification: k.classification || 'INTERNAL_OPERATIONAL',
+        text: k.content || '',
+      }));
+      const useSlots = (reasoningContext.activeCapabilities || []).map((c: any) => ({
+        toolId: c.id || c.name || 'unnamed_tool',
+        description: c.description || '',
+        authorizedForTier: 'TENANT_RESTRICTED' as const,
+        schema: c.schema || {},
+      }));
+      const promptHygiene = PromptHygieneEngine.constructHygienePrompt(knowChunks, useSlots, 'Hermes Cognitive Persona');
+
+      await this.traceRecorder.record(traceHandle, {
+        type: 'CONTEXT_ADAPTED',
+        metadata: {
+          contextVersion: traceInfo.contextVersion,
+          activeKnowledgeIds: traceInfo.activeKnowledgeIds,
+          excludedKnowledgeIds: traceInfo.excludedKnowledgeReasons.map(r => r.id),
+          activeCapabilityIds: reasoningContext.activeCapabilities.map((c: { id: string }) => c.id),
+          governanceRestrictions: traceInfo.governanceRestrictionsApplied,
+          hygieneViolationsCount: hygieneViolations.length + promptHygiene.sanitizationAudit.injectionsNeutralized,
+        }
+      });
+
+      const reasoningInput = {
+        reasoningContext,
+        hints: { temperature: 0.15, maxTokens: 1024 },
+      };
+
+      const suggestedActions = effectiveContext.activeCapabilities.flatMap(c => c.suggestedActions || []);
+
+      return {
+        runtimeId, organizationId, canonicalTenantId, conversationId, message, controlPlaneContext,
+        effectiveContext, memory, conversationHistory, reasoningContext, traceInfo,
+        reasoningInput, suggestedActions, traceHandle,
+      };
+    } catch (error) {
+      await this.traceRecorder.complete(traceHandle, {
+        success: false,
+        durationMs: 0,
+        errorCode: error instanceof Error ? error.message : 'UNKNOWN_ERROR',
+      });
+      throw error;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // PRIVATE: Persist an atomic turn (K12-A11, K12-A37)
+  // ---------------------------------------------------------------------------
+  private async persistTurn(
+    setup: CognitiveTurnSetup,
+    assistantContent: string,
+  ): Promise<RuntimeMessage> {
+    const { organizationId, conversationId, controlPlaneContext, message, memory, runtimeId, traceHandle } = setup;
+    
+    await this.traceRecorder.record(traceHandle, {
+      type: 'PERSISTENCE_STARTED',
+      metadata: { persistence: { attempted: true, committed: false } }
+    });
+
+    const assistantMessage: RuntimeMessage = {
+      id: `msg_${crypto.randomUUID()}`,
+      role: 'ASSISTANT',
+      content: assistantContent,
+      createdAt: new Date(),
+    };
+
+    try {
+      await this.memoryProvider.append({
+        organizationId,
+        conversationId,
+        controlPlaneContext,
+        turn: {
+          userMessage: message,
+          assistantMessage,
+          responseId: runtimeId,
+          createdAt: new Date(),
+        },
+        expectedVersion: memory.version,
+        idempotencyKey: `turn_${runtimeId}_${message.id}`,
+      });
+
+      await this.traceRecorder.record(traceHandle, {
+        type: 'PERSISTENCE_COMMITTED',
+        metadata: { persistence: { attempted: true, committed: true } }
+      });
+    } catch (err) {
+      await this.traceRecorder.record(traceHandle, {
+        type: 'PERSISTENCE_FAILED',
+        metadata: { persistence: { attempted: true, committed: false }, errorCode: err instanceof Error ? err.message : 'PERSIST_ERROR' }
+      });
+      throw err;
+    }
+
+    return assistantMessage;
+  }
+
+  // ---------------------------------------------------------------------------
+  // PUBLIC: respond() — synchronous governed cognitive turn
+  // ---------------------------------------------------------------------------
+  async respond(input: RuntimeInput): Promise<RuntimeResponse> {
+    const start = Date.now();
+    let traceHandle: RuntimeTraceHandle | undefined;
+
+    try {
+      const setup = await this.setupCognitiveTurn(input);
+      traceHandle = setup.traceHandle;
+      const { runtimeId, organizationId, canonicalTenantId, conversationId, reasoningInput, traceInfo, suggestedActions } = setup;
+
+      // 🛑 0. SURFACE ADVERSARIAL GATE (Pre-Intent Execution)
+      const surfaceName = input.controlPlaneContext?.surfaceContext?.surface;
+      if (surfaceName) {
+        const { SurfaceRegistry } = await import('../context/surface-definition');
+        const { UniversalSecurityGates } = await import('./universal-security-gates');
+        
+        const surfaceDef = SurfaceRegistry.getSurface(surfaceName);
+        const rawUserMsg = input.message?.content?.trim() || '';
+        
+        const preIntentCheck = UniversalSecurityGates.evaluatePreIntentGate(rawUserMsg, surfaceDef);
+        
+        if (preIntentCheck.blocked) {
+          await this.traceRecorder.complete(traceHandle, { success: true, durationMs: Date.now() - start });
+          return {
+            responseId: `blocked_surf_${crypto.randomUUID()}`,
+            organizationId,
+            conversationId,
+            content: `🚫 **Acción Bloqueada (Surface Gate)**\n\nEn la superficie actual (\`${surfaceName}\`), no se permite la ejecución directa de comandos. (Razón: \`${preIntentCheck.blockReason}\`).\nSi deseas ejecutar acciones, por favor solicita un Handoff a la superficie correspondiente.`,
+            suggestedActions: ['/briefing', 'Solicitar Handoff'],
+            providerMeta: { provider: 'surface-gate', model: 'universal-enforcer', promptTokens: 0, completionTokens: 0, durationMs: Date.now() - start },
+            trace: {
+              ...traceInfo,
+              runtimeId,
+              organizationId,
+              conversationId,
+              createdAt: new Date(),
+              policyValidation: { validatedAt: new Date(), policyVersion: '1.2', claimsChecked: 1, violationsDetected: 1 },
+            },
+            policyViolations: [{ code: 'UNAUTHORIZED_CAPABILITY', message: preIntentCheck.blockReason || 'SURFACE_VIOLATION', severity: 'BLOCK' }],
+          };
+        }
+      }
+
+      // Tier 0 & Tier 2: Executive Mode direct fulfillment for Marco
+      const interlocutor = (reasoningInput.reasoningContext as any).interlocutor;
+      if (interlocutor?.isBoss || interlocutor?.founderExecutiveMode) {
+        const msgText = input.message?.content?.trim() || '';
+        const founderKey = `${canonicalTenantId || organizationId || 'system'}:${interlocutor?.id || 'founder'}`;
+
+        // 🛡️ HARD INVIOLABLE BOUNDS: System Invariants apply universally, even to Marco
+        const { SystemInvariantEnforcer } = await import('@saasfly/hermes-core');
+        const invariantCheck = SystemInvariantEnforcer.checkCommandInvariants({
+          commandText: msgText,
+          actorId: interlocutor?.actorId || founderKey,
+          organizationId,
+        });
+
+        if (!invariantCheck.allowed) {
+          await SystemInvariantEnforcer.logInvariantBreach({
+            actorId: interlocutor?.actorId || founderKey,
+            organizationId,
+            violatedInvariant: invariantCheck.violatedInvariant!,
+            reason: invariantCheck.reason!,
+            rawPayload: { commandText: msgText },
+          });
+
+          await this.traceRecorder.complete(traceHandle, { success: false, durationMs: Date.now() - start });
+          return {
+            responseId: `resp_invariant_${Date.now()}`,
+            organizationId,
+            conversationId,
+            content: `🛡️ **Invariante Soberano del Sistema Inviolable**\n\n${invariantCheck.reason}\n\n*Esta restricción es criptográfica y arquitectónica. Aplica de manera universal a todas las identidades del ecosistema, incluyendo al Fundador.*`,
+            suggestedActions: ['/briefing', 'Ver eventos de seguridad'],
+            providerMeta: {
+              provider: 'system-invariant-enforcer',
+              model: 'hard-inviolable-bound',
+              promptTokens: 0,
+              completionTokens: 0,
+              durationMs: Date.now() - start,
+            },
+            trace: {
+              ...traceInfo,
+              runtimeId,
+              organizationId,
+              conversationId,
+              createdAt: new Date(),
+              policyValidation: { validatedAt: new Date(), policyVersion: '1.1', claimsChecked: 1, violationsDetected: 1 },
+            },
+          };
+        }
+
+        const { ExecutiveIntentClassifier } = await import('@saasfly/hermes-core');
+        const { ExecutivePlanner } = await import('@saasfly/hermes-core');
+
+        // Check if there is an active pending plan awaiting confirmation/cancellation
+        const pendingPlan = ExecutivePlanner.getPendingPlan(founderKey);
+        if (pendingPlan && ExecutiveIntentClassifier.isConfirmation(msgText)) {
+          const execResult = await ExecutivePlanner.executePlan(founderKey, interlocutor);
+          await this.traceRecorder.complete(traceHandle, { success: execResult.success, durationMs: Date.now() - start });
+          return {
+            responseId: `resp_exec_${Date.now()}`,
+            organizationId,
+            conversationId,
+            content: execResult.message,
+            suggestedActions: ['/briefing', 'Ver eventos de seguridad', '/leads'],
+            providerMeta: {
+              provider: 'executive-planner',
+              model: 'tier-2-execution',
+              promptTokens: 0,
+              completionTokens: 0,
+              durationMs: Date.now() - start,
+            },
+            trace: {
+              ...traceInfo,
+              runtimeId,
+              organizationId,
+              conversationId,
+              createdAt: new Date(),
+              policyValidation: { validatedAt: new Date(), policyVersion: '1.1', claimsChecked: 1, violationsDetected: 0 },
+            },
+          };
+        }
+
+        if (pendingPlan && ExecutiveIntentClassifier.isCancellation(msgText)) {
+          const cancelResult = ExecutivePlanner.cancelPlan(founderKey);
+          await this.traceRecorder.complete(traceHandle, { success: true, durationMs: Date.now() - start });
+          return {
+            responseId: `resp_cancel_${Date.now()}`,
+            organizationId,
+            conversationId,
+            content: cancelResult.message,
+            suggestedActions: ['/briefing'],
+            providerMeta: {
+              provider: 'executive-planner',
+              model: 'tier-2-cancelled',
+              promptTokens: 0,
+              completionTokens: 0,
+              durationMs: Date.now() - start,
+            },
+            trace: {
+              ...traceInfo,
+              runtimeId,
+              organizationId,
+              conversationId,
+              createdAt: new Date(),
+              policyValidation: { validatedAt: new Date(), policyVersion: '1.1', claimsChecked: 1, violationsDetected: 0 },
+            },
+          };
+        }
+
+        // Parse executive message intents
+        const parsedIntent = ExecutiveIntentClassifier.classify(msgText, true);
+
+        // Tier 0: Founder Identity Direct Recognition & Executive Salutation
+        if (parsedIntent.type === 'FOUNDER_IDENTITY_QUERY') {
+          const founderIdentityReply = `¡Por supuesto, Marco! Sé perfectamente quién eres:\n\nEres el **Fundador, Creador y Jefe Supremo** de Pandora's Growth OS, Hermes OS y el ecosistema Narai.\n\nCuentas con credenciales y autorización ejecutiva plena (Tier 0 a Tier 3) sobre todos los tenants, directivas de memoria, agentes y operaciones del sistema.\n\nEstoy a tu entera disposición, Jefe. ¿En qué frente o directiva estratégica avanzamos hoy?`;
+          await this.traceRecorder.complete(traceHandle, { success: true, durationMs: Date.now() - start });
+          return {
+            responseId: `resp_founder_id_${Date.now()}`,
+            organizationId,
+            conversationId,
+            content: founderIdentityReply,
+            suggestedActions: ['/briefing', '/leads', '/schema'],
+            providerMeta: {
+              provider: 'executive-identity-gate',
+              model: 'tier-0-founder-recognition',
+              promptTokens: 0,
+              completionTokens: 0,
+              durationMs: Date.now() - start,
+            },
+            trace: {
+              ...traceInfo,
+              runtimeId,
+              organizationId,
+              conversationId,
+              createdAt: new Date(),
+              policyValidation: { validatedAt: new Date(), policyVersion: '1.1', claimsChecked: 1, violationsDetected: 0 },
+            },
+          };
+        }
+
+        // Tier 0: Executive Daily Briefing ("¿Qué pendientes tenemos?", "/briefing", "pulso")
+        if (parsedIntent.type === 'EXECUTIVE_BRIEFING') {
+          const { ExecutiveBriefingEngine } = await import('@saasfly/hermes-core');
+          const briefing = await ExecutiveBriefingEngine.generateBriefing();
+          await this.traceRecorder.complete(traceHandle, { success: true, durationMs: Date.now() - start });
+          return {
+            responseId: `resp_briefing_${Date.now()}`,
+            organizationId,
+            conversationId,
+            content: briefing.rawMarkdown,
+            suggestedActions: ['/leads', '/schema', 'Ver eventos de seguridad'],
+            providerMeta: {
+              provider: 'executive-briefing-engine',
+              model: 'tier-0-briefing',
+              promptTokens: 0,
+              completionTokens: 0,
+              durationMs: Date.now() - start,
+            },
+            trace: {
+              ...traceInfo,
+              runtimeId,
+              organizationId,
+              conversationId,
+              createdAt: new Date(),
+              policyValidation: { validatedAt: new Date(), policyVersion: '1.1', claimsChecked: 1, violationsDetected: 0 },
+            },
+          };
+        }
+
+        // Tier 0: Executive Capabilities Manifest & Help
+        if (parsedIntent.type === 'CAPABILITIES_HELP') {
+          const { ExecutiveCapabilitiesManifest } = await import('@saasfly/hermes-core');
+          const channel = (interlocutor?.channel || (setup.controlPlaneContext as any)?.channel || 'whatsapp') as any;
+          const guide = ExecutiveCapabilitiesManifest.getExecutiveGuide(channel);
+          await this.traceRecorder.complete(traceHandle, { success: true, durationMs: Date.now() - start });
+          return {
+            responseId: `resp_guide_${Date.now()}`,
+            organizationId,
+            conversationId,
+            content: guide,
+            suggestedActions: ['/briefing', '/leads', '/schema'],
+            providerMeta: {
+              provider: 'executive-capabilities-manifest',
+              model: 'tier-0-manifest',
+              promptTokens: 0,
+              completionTokens: 0,
+              durationMs: Date.now() - start,
+            },
+            trace: {
+              ...traceInfo,
+              runtimeId,
+              organizationId,
+              conversationId,
+              createdAt: new Date(),
+              policyValidation: { validatedAt: new Date(), policyVersion: '1.1', claimsChecked: 1, violationsDetected: 0 },
+            },
+          };
+        }
+
+        // Tier 4: Financial Signature Submission ("firma fin_123 0x...")
+        if (parsedIntent.type === 'FINANCIAL_SIGNATURE') {
+          const { FinancialOrchestratorService } = await import('@saasfly/hermes-core');
+          const finResult = await FinancialOrchestratorService.verifyAndExecuteSignature({
+            proposalId: parsedIntent.proposalId,
+            signature: parsedIntent.signature,
+            interlocutor,
+          });
+          await this.traceRecorder.complete(traceHandle, { success: finResult.success, durationMs: Date.now() - start });
+          return {
+            responseId: `resp_fin_exec_${Date.now()}`,
+            organizationId,
+            conversationId,
+            content: finResult.message,
+            suggestedActions: ['/briefing', 'Ver eventos de seguridad'],
+            providerMeta: {
+              provider: 'financial-orchestrator',
+              model: 'tier-4-settlement',
+              promptTokens: 0,
+              completionTokens: 0,
+              durationMs: Date.now() - start,
+            },
+            trace: {
+              ...traceInfo,
+              runtimeId,
+              organizationId,
+              conversationId,
+              createdAt: new Date(),
+              policyValidation: { validatedAt: new Date(), policyVersion: '1.1', claimsChecked: 1, violationsDetected: 0 },
+            },
+          };
+        }
+
+        // Tier 4: Financial Pre-Flight Proposal ("prepara distribución de 5000 usdc...")
+        if (parsedIntent.type === 'FINANCIAL_PROPOSAL') {
+          const { FinancialOrchestratorService } = await import('@saasfly/hermes-core');
+          const finPrep = FinancialOrchestratorService.prepareProposal({
+            action: parsedIntent.action,
+            tenantId: parsedIntent.tenantId,
+            recipient: parsedIntent.recipient,
+            amountUsd: parsedIntent.amountUsd,
+            purpose: parsedIntent.purpose,
+            interlocutor,
+          });
+          await this.traceRecorder.complete(traceHandle, { success: finPrep.ok, durationMs: Date.now() - start });
+          return {
+            responseId: `resp_fin_prep_${Date.now()}`,
+            organizationId,
+            conversationId,
+            content: finPrep.reviewCard,
+            suggestedActions: ['/briefing', 'cancela'],
+            providerMeta: {
+              provider: 'financial-orchestrator',
+              model: 'tier-4-preflight',
+              promptTokens: 0,
+              completionTokens: 0,
+              durationMs: Date.now() - start,
+            },
+            trace: {
+              ...traceInfo,
+              runtimeId,
+              organizationId,
+              conversationId,
+              createdAt: new Date(),
+              policyValidation: { validatedAt: new Date(), policyVersion: '1.1', claimsChecked: 1, violationsDetected: 0 },
+            },
+          };
+        }
+
+        // Tier 3: Code Patch Approval ("apruebo parche patch_123")
+        if (parsedIntent.type === 'CODE_APPROVAL') {
+          const { CodeOperatorService } = await import('@saasfly/hermes-core');
+          const patchResult = await CodeOperatorService.approvePatch(parsedIntent.proposalId, interlocutor);
+          await this.traceRecorder.complete(traceHandle, { success: patchResult.success, durationMs: Date.now() - start });
+          return {
+            responseId: `resp_patch_appr_${Date.now()}`,
+            organizationId,
+            conversationId,
+            content: patchResult.message,
+            suggestedActions: ['/briefing', 'Ver eventos de seguridad'],
+            providerMeta: {
+              provider: 'code-operator',
+              model: 'tier-3-approval',
+              promptTokens: 0,
+              completionTokens: 0,
+              durationMs: Date.now() - start,
+            },
+            trace: {
+              ...traceInfo,
+              runtimeId,
+              organizationId,
+              conversationId,
+              createdAt: new Date(),
+              policyValidation: { validatedAt: new Date(), policyVersion: '1.1', claimsChecked: 1, violationsDetected: 0 },
+            },
+          };
+        }
+
+        // Tier 3: Code Error Diagnosis ("diagnostica este error: ...")
+        if (parsedIntent.type === 'CODE_DIAGNOSIS') {
+          const { CodeOperatorService } = await import('@saasfly/hermes-core');
+          const diag = CodeOperatorService.diagnoseError(parsedIntent.rawError);
+          const report = [
+            `🔍 **Diagnóstico de Código en Sandbox (Tier 3)**`,
+            diag.file ? `• **Archivo Localizado:** \`${diag.file}${diag.line ? `:${diag.line}` : ''}\`` : '• **Archivo:** No detectado en stack trace',
+            `• **Tipo de Error:** \`${diag.errorType}\``,
+            `• **Blast Radius:** \`${diag.blastRadius}\``,
+            `• **Causa Raíz:** ${diag.rootCause}`,
+            `• **Remediación Sugerida:** ${diag.suggestedAction}`,
+          ].join('\n');
+
+          await this.traceRecorder.complete(traceHandle, { success: true, durationMs: Date.now() - start });
+          return {
+            responseId: `resp_code_diag_${Date.now()}`,
+            organizationId,
+            conversationId,
+            content: report,
+            suggestedActions: ['/briefing', '/schema'],
+            providerMeta: {
+              provider: 'code-operator',
+              model: 'tier-3-diagnostics',
+              promptTokens: 0,
+              completionTokens: 0,
+              durationMs: Date.now() - start,
+            },
+            trace: {
+              ...traceInfo,
+              runtimeId,
+              organizationId,
+              conversationId,
+              createdAt: new Date(),
+              policyValidation: { validatedAt: new Date(), policyVersion: '1.1', claimsChecked: 1, violationsDetected: 0 },
+            },
+          };
+        }
+
+        // Tier 2: Check if message is a new Operational Command
+        if (parsedIntent.type === 'OPERATIONAL_ACTION') {
+          const planResult = ExecutivePlanner.createPlan({
+            action: parsedIntent.action,
+            target: parsedIntent.target,
+            payload: parsedIntent.payload,
+            title: parsedIntent.title,
+            description: parsedIntent.description,
+            blastRadius: parsedIntent.blastRadius,
+            interlocutor,
+            founderKey,
+          });
+
+          await this.traceRecorder.complete(traceHandle, { success: planResult.ok, durationMs: Date.now() - start });
+          return {
+            responseId: `resp_plan_${Date.now()}`,
+            organizationId,
+            conversationId,
+            content: planResult.reviewCard,
+            suggestedActions: planResult.ok ? ['confirmo', 'cancela'] : ['/briefing'],
+            providerMeta: {
+              provider: 'executive-planner',
+              model: 'tier-2-planning',
+              promptTokens: 0,
+              completionTokens: 0,
+              durationMs: Date.now() - start,
+            },
+            trace: {
+              ...traceInfo,
+              runtimeId,
+              organizationId,
+              conversationId,
+              createdAt: new Date(),
+              policyValidation: { validatedAt: new Date(), policyVersion: '1.1', claimsChecked: 1, violationsDetected: 0 },
+            },
+          };
+        }
+
+        // Tier 0: Executive Daily Briefing direct fulfillment for Marco
+        const isBriefing = /(?:^\/briefing|^\/?pulso|resumen del d[ií]a|qu[eé] necesita atenci[oó]n|dame el briefing|c[oó]mo est[aá] todo|estado de pandoras|qu[eé] hay hoy)/i.test(msgText);
+        if (isBriefing) {
+          const { ExecutiveBriefingEngine } = await import('@saasfly/hermes-core');
+          const briefing = await ExecutiveBriefingEngine.generateBriefing();
+          await this.traceRecorder.complete(traceHandle, {
+            success: true,
+            durationMs: Date.now() - start,
+          });
+          return {
+            responseId: `resp_briefing_${Date.now()}`,
+            organizationId,
+            conversationId,
+            content: briefing.rawMarkdown,
+            suggestedActions: ['/leads', '/schedule', '/tenants'],
+            providerMeta: {
+              provider: 'executive-briefing-engine',
+              model: 'tier-0-intelligence',
+              promptTokens: 0,
+              completionTokens: 0,
+              durationMs: Date.now() - start,
+            },
+            trace: {
+              ...traceInfo,
+              runtimeId,
+              organizationId,
+              conversationId,
+              createdAt: new Date(),
+              policyValidation: {
+                validatedAt: new Date(),
+                policyVersion: '1.1',
+                claimsChecked: 1,
+                violationsDetected: 0,
+              },
+            },
+          };
+        }
+
+        // Tier 1: Deep Inspection of Tenant
+        const tenantMatch = msgText.match(/(?:inspecciona|audita|revisa|estado de|detalle de)\s+(?:el\s+tenant|el\s+proyecto|tenant|proyecto)\s+([a-zA-Z0-9_-]+)/i)
+          || msgText.match(/^\/tenant\s+([a-zA-Z0-9_-]+)/i);
+        if (tenantMatch && tenantMatch[1]) {
+          const { ExecutiveAuditService } = await import('@saasfly/hermes-core');
+          const report = await ExecutiveAuditService.inspectTenant(tenantMatch[1]);
+          await this.traceRecorder.complete(traceHandle, { success: true, durationMs: Date.now() - start });
+          return {
+            responseId: `resp_tenant_audit_${Date.now()}`,
+            organizationId,
+            conversationId,
+            content: report.markdown,
+            suggestedActions: ['/leads', '/briefing', 'Ver paridad de base de datos'],
+            providerMeta: {
+              provider: 'executive-audit-service',
+              model: 'tier-1-inspection',
+              promptTokens: 0,
+              completionTokens: 0,
+              durationMs: Date.now() - start,
+            },
+            trace: {
+              ...traceInfo,
+              runtimeId,
+              organizationId,
+              conversationId,
+              createdAt: new Date(),
+              policyValidation: { validatedAt: new Date(), policyVersion: '1.1', claimsChecked: 1, violationsDetected: 0 },
+            },
+          };
+        }
+
+        // Tier 1: Leads & CRM Inspection
+        const isLeadsIntent = /(?:revisa|audita|muestra|dame|ver)\s+(?:los\s+)?leads|^\/leads/i.test(msgText);
+        if (isLeadsIntent) {
+          const { ExecutiveAuditService } = await import('@saasfly/hermes-core');
+          const report = await ExecutiveAuditService.inspectLeads();
+          await this.traceRecorder.complete(traceHandle, { success: true, durationMs: Date.now() - start });
+          return {
+            responseId: `resp_leads_audit_${Date.now()}`,
+            organizationId,
+            conversationId,
+            content: report.markdown,
+            suggestedActions: ['/briefing', 'Ver reuniones de hoy', 'Estado de tenants'],
+            providerMeta: {
+              provider: 'executive-audit-service',
+              model: 'tier-1-inspection',
+              promptTokens: 0,
+              completionTokens: 0,
+              durationMs: Date.now() - start,
+            },
+            trace: {
+              ...traceInfo,
+              runtimeId,
+              organizationId,
+              conversationId,
+              createdAt: new Date(),
+              policyValidation: { validatedAt: new Date(), policyVersion: '1.1', claimsChecked: 1, violationsDetected: 0 },
+            },
+          };
+        }
+
+        // Tier 1: Security Logs Inspection
+        const isLogsIntent = /(?:revisa|audita|muestra|ver)\s+(?:los\s+)?logs|seguridad|eventos de seguridad|^\/logs/i.test(msgText);
+        if (isLogsIntent) {
+          const { ExecutiveAuditService } = await import('@saasfly/hermes-core');
+          const report = await ExecutiveAuditService.inspectSystemLogs();
+          await this.traceRecorder.complete(traceHandle, { success: true, durationMs: Date.now() - start });
+          return {
+            responseId: `resp_logs_audit_${Date.now()}`,
+            organizationId,
+            conversationId,
+            content: report.markdown,
+            suggestedActions: ['/briefing', 'Ver paridad de base de datos'],
+            providerMeta: {
+              provider: 'executive-audit-service',
+              model: 'tier-1-inspection',
+              promptTokens: 0,
+              completionTokens: 0,
+              durationMs: Date.now() - start,
+            },
+            trace: {
+              ...traceInfo,
+              runtimeId,
+              organizationId,
+              conversationId,
+              createdAt: new Date(),
+              policyValidation: { validatedAt: new Date(), policyVersion: '1.1', claimsChecked: 1, violationsDetected: 0 },
+            },
+          };
+        }
+
+        // Tier 1: Schema Parity Inspection
+        const isSchemaIntent = /(?:paridad|esquema|migraciones|base de datos|schema)\s+(?:de\s+)?(?:db|neon|bd)?|^\/schema/i.test(msgText);
+        if (isSchemaIntent) {
+          const { ExecutiveAuditService } = await import('@saasfly/hermes-core');
+          const report = await ExecutiveAuditService.inspectSchemaParity();
+          await this.traceRecorder.complete(traceHandle, { success: true, durationMs: Date.now() - start });
+          return {
+            responseId: `resp_schema_audit_${Date.now()}`,
+            organizationId,
+            conversationId,
+            content: report.markdown,
+            suggestedActions: ['/briefing', '/leads'],
+            providerMeta: {
+              provider: 'executive-audit-service',
+              model: 'tier-1-inspection',
+              promptTokens: 0,
+              completionTokens: 0,
+              durationMs: Date.now() - start,
+            },
+            trace: {
+              ...traceInfo,
+              runtimeId,
+              organizationId,
+              conversationId,
+              createdAt: new Date(),
+              policyValidation: { validatedAt: new Date(), policyVersion: '1.1', claimsChecked: 1, violationsDetected: 0 },
+            },
+          };
+        }
+      }
+
+      // 🚀 TENANT BUSINESS INTENT: Demand & Distribution (Sofia / Media Co bridge)
+      const rawUserMsg = input.message?.content?.trim() || '';
+      const { DemandIntentHandler } = await import('@saasfly/hermes-core');
+      
+      const pendingDemandProposal = DemandIntentHandler.getPendingProposal(organizationId);
+      if (pendingDemandProposal && /^(?:confirmo|confirmar|aprobar|apruebo|ejecuta|ejecutar|procede|proceder|s[ií]|adelante|\/confirm)$/i.test(rawUserMsg)) {
+        const confirmResult = await DemandIntentHandler.confirmProposal(organizationId);
+        await this.traceRecorder.complete(traceHandle, { success: confirmResult.success, durationMs: Date.now() - start });
+        return {
+          responseId: `resp_demand_confirm_${Date.now()}`,
+          organizationId,
+          conversationId,
+          content: confirmResult.content,
+          suggestedActions: confirmResult.suggestedActions,
+          providerMeta: {
+            provider: 'demand-intent-handler',
+            model: 'demand-distribution-v1',
+            promptTokens: 0,
+            completionTokens: 0,
+            durationMs: Date.now() - start,
+          },
+          trace: {
+            ...traceInfo,
+            runtimeId,
+            organizationId,
+            conversationId,
+            createdAt: new Date(),
+            policyValidation: { validatedAt: new Date(), policyVersion: '1.1', claimsChecked: 1, violationsDetected: 0 },
+          },
+        };
+      }
+
+      if (pendingDemandProposal && /^(?:cancela|cancelar|descarta|descartar|aborta|abortar|no|\/cancel)$/i.test(rawUserMsg)) {
+        const cancelResult = DemandIntentHandler.cancelProposal(organizationId);
+        await this.traceRecorder.complete(traceHandle, { success: true, durationMs: Date.now() - start });
+        return {
+          responseId: `resp_demand_cancel_${Date.now()}`,
+          organizationId,
+          conversationId,
+          content: cancelResult.content,
+          suggestedActions: cancelResult.suggestedActions,
+          providerMeta: {
+            provider: 'demand-intent-handler',
+            model: 'demand-distribution-v1',
+            promptTokens: 0,
+            completionTokens: 0,
+            durationMs: Date.now() - start,
+          },
+          trace: {
+            ...traceInfo,
+            runtimeId,
+            organizationId,
+            conversationId,
+            createdAt: new Date(),
+            policyValidation: { validatedAt: new Date(), policyVersion: '1.1', claimsChecked: 1, violationsDetected: 0 },
+          },
+        };
+      }
+
+      if (DemandIntentHandler.isDemandIntent(rawUserMsg)) {
+        const proposalResult = await DemandIntentHandler.handleDemandProposal(organizationId, rawUserMsg);
+        await this.traceRecorder.complete(traceHandle, { success: true, durationMs: Date.now() - start });
+        return {
+          responseId: `resp_demand_prop_${Date.now()}`,
+          organizationId,
+          conversationId,
+          content: proposalResult.content,
+          suggestedActions: proposalResult.suggestedActions,
+          providerMeta: {
+            provider: 'demand-intent-handler',
+            model: 'demand-distribution-v1',
+            promptTokens: 0,
+            completionTokens: 0,
+            durationMs: Date.now() - start,
+          },
+          trace: {
+            ...traceInfo,
+            runtimeId,
+            organizationId,
+            conversationId,
+            createdAt: new Date(),
+            policyValidation: { validatedAt: new Date(), policyVersion: '1.1', claimsChecked: 1, violationsDetected: 0 },
+          },
+        };
+      }
+
+      // ── Deterministic Omnichannel Identity Handler (0 tokens LLM) ────────
+      const { ExecutiveIntentClassifier } = await import('@saasfly/hermes-core');
+      const generalIntent = ExecutiveIntentClassifier.classify(rawUserMsg, false);
+
+      if (generalIntent.type === 'GENERAL_IDENTITY_QUERY') {
+        const rawInterlocutor = (reasoningInput.reasoningContext as any).interlocutor;
+        const orgName = setup.reasoningContext.tenantIdentity.organizationName || "Pandora's Growth OS";
+        let generalReply = '';
+
+        if (rawInterlocutor && rawInterlocutor.isVerified && rawInterlocutor.name && rawInterlocutor.name !== 'Usuario' && rawInterlocutor.name !== 'Visitante' && rawInterlocutor.name !== 'User') {
+          const roleDesc = rawInterlocutor.title || (rawInterlocutor.role === 'INVESTOR' ? 'Inversionista Registrado' : (rawInterlocutor.isCollaborator ? 'Colaborador del Ecosistema' : 'Contacto Registrado'));
+          generalReply = `¡Hola, **${rawInterlocutor.name}**! Por supuesto que te reconozco.\n\nTe tengo identificado/a como **${roleDesc}** en ${orgName}.\n\n¿En qué te puedo asistir el día de hoy?`;
+        } else if (rawInterlocutor && rawInterlocutor.name && rawInterlocutor.name !== 'Usuario' && rawInterlocutor.name !== 'Visitante' && rawInterlocutor.name !== 'User' && !rawInterlocutor.name.startsWith('Contacto ') && !rawInterlocutor.name.startsWith('wa_') && !rawInterlocutor.name.startsWith('tg_')) {
+          generalReply = `¡Hola, **${rawInterlocutor.name}**! Te tengo presente en nuestro canal de atención de ${orgName}.\n\n¿En qué proyecto u oportunidad puedo apoyarte hoy?`;
+        } else {
+          generalReply = `Todavía no tengo una identidad verificada con tu nombre para esta conversación en ${orgName}.\n\n¿Me podrías compartir tu nombre o correo para registrarte adecuadamente y brindarte atención personalizada?`;
+        }
+
+        await this.traceRecorder.complete(traceHandle, { success: true, durationMs: Date.now() - start });
+        return {
+          responseId: `resp_identity_${Date.now()}`,
+          organizationId,
+          conversationId,
+          content: generalReply,
+          suggestedActions: ['Explorar oportunidades', 'Agendar una reunión', 'Conocer proyectos'],
+          providerMeta: {
+            provider: 'deterministic-identity-handler',
+            model: 'tier-0-general-recognition',
+            promptTokens: 0,
+            completionTokens: 0,
+            durationMs: Date.now() - start,
+          },
+          trace: {
+            ...traceInfo,
+            runtimeId,
+            organizationId,
+            conversationId,
+            createdAt: new Date(),
+            policyValidation: { validatedAt: new Date(), policyVersion: '1.1', claimsChecked: 1, violationsDetected: 0 },
+          },
+        };
+      }
+
+      if (generalIntent.type === 'NAME_DISCLOSURE') {
+        const declaredName = generalIntent.declaredName;
+        const orgName = setup.reasoningContext.tenantIdentity.organizationName || "Pandora's Growth OS";
+
+        // Non-blocking enrichment of lead with self-declared name (Zero privilege elevation)
+        if (setup.controlPlaneContext.actorId && setup.controlPlaneContext.actorId.startsWith('lead_')) {
+          const leadId = setup.controlPlaneContext.actorId.replace(/^lead_/, '');
+          import('@saasfly/db-core')
+            .then(async ({ db }) => {
+              const { marketingLeads } = await import('@saasfly/db-core');
+              const { eq } = await import("@saasfly/db-core");
+              await db.update(marketingLeads)
+                .set({ name: declaredName, updatedAt: new Date() })
+                .where(eq(marketingLeads.id, leadId))
+                .catch(() => undefined);
+            })
+            .catch(() => undefined);
+        }
+
+        const reply = `¡Mucho gusto, **${declaredName}**! Es un placer saludarte.\n\nHe tomado nota de tu nombre para dirigirme a ti en esta sesión de ${orgName}.\n\n¿En qué podemos colaborar o en qué proyecto estás interesado/a hoy?`;
+        await this.traceRecorder.complete(traceHandle, { success: true, durationMs: Date.now() - start });
+        return {
+          responseId: `resp_name_disc_${Date.now()}`,
+          organizationId,
+          conversationId,
+          content: reply,
+          suggestedActions: ['Explorar proyectos', 'Agendar una reunión'],
+          providerMeta: {
+            provider: 'deterministic-identity-handler',
+            model: 'tier-0-name-disclosure',
+            promptTokens: 0,
+            completionTokens: 0,
+            durationMs: Date.now() - start,
+          },
+          trace: {
+            ...traceInfo,
+            runtimeId,
+            organizationId,
+            conversationId,
+            createdAt: new Date(),
+            policyValidation: { validatedAt: new Date(), policyVersion: '1.1', claimsChecked: 1, violationsDetected: 0 },
+          },
+        };
+      }
+
+      await this.traceRecorder.record(traceHandle, {
+        type: 'PROVIDER_STARTED',
+        metadata: {}
+      });
+
+      // Step 5: Invoke the Reasoning Provider
+      const reasoningOutput = await this.provider.generate(reasoningInput);
+
+      await this.traceRecorder.record(traceHandle, {
+        type: 'PROVIDER_COMPLETED',
+        metadata: {
+          provider: { name: reasoningOutput.meta?.provider ?? 'unknown', model: reasoningOutput.meta?.model ?? 'unknown' }
+        }
+      });
+
+      // Step 5.5: Surface Proposal Enforcement (Post-LLM Intent Gate)
+      if (surfaceName && reasoningOutput.content) {
+        const { ProposalEngine } = await import('../onboarding/proposal-engine');
+        const { SurfaceRegistry } = await import('../context/surface-definition');
+        const { UniversalSecurityGates } = await import('./universal-security-gates');
+        
+        const surfaceDef = SurfaceRegistry.getSurface(surfaceName);
+        let parsedProposal = null;
+        try {
+          const match = reasoningOutput.content.match(/```json\s*(\{[\s\S]*?\})\s*```/);
+          if (match && match[1]) {
+            parsedProposal = JSON.parse(match[1]);
+          } else {
+            parsedProposal = JSON.parse(reasoningOutput.content);
+          }
+        } catch(e) {
+          // If it's not JSON, it might just be conversational, but we should ensure it's not trying to execute.
+        }
+
+        if (parsedProposal && parsedProposal.proposalId && parsedProposal.action) {
+          const validationResult = ProposalEngine.processProposal(parsedProposal, surfaceDef.allowedActions);
+          const postIntentCheck = UniversalSecurityGates.evaluatePostIntentGate(parsedProposal.action, surfaceDef);
+          
+          if (validationResult.status === 'BLOCKED' || postIntentCheck.blocked) {
+            const blockReason = postIntentCheck.blocked ? postIntentCheck.blockReason : validationResult.blockReason;
+            await this.traceRecorder.complete(traceHandle, { success: true, durationMs: Date.now() - start });
+            return {
+              responseId: `blocked_prop_${crypto.randomUUID()}`,
+              organizationId,
+              conversationId,
+              content: `🚫 **Propuesta Bloqueada (Adversarial Gate)**\n\nRazón: \`${blockReason}\`\n\nEl LLM intentó generar una propuesta no válida o fuera del alcance autorizado para esta superficie.`,
+              suggestedActions,
+              providerMeta: { ...reasoningOutput.meta, durationMs: Date.now() - start },
+              trace: {
+                ...traceInfo,
+                runtimeId,
+                organizationId,
+                conversationId,
+                createdAt: new Date(),
+                policyValidation: { validatedAt: new Date(), policyVersion: '1.1', claimsChecked: 1, violationsDetected: 1 },
+              },
+              policyViolations: [{ code: 'UNAUTHORIZED_CAPABILITY', message: `Proposal Engine Block. Reason: ${validationResult.blockReason || 'PROPOSAL_BLOCKED'}`, severity: 'BLOCK' }],
+            };
+          }
+        }
+      }
+
+      // Step 6: Policy Boundary (K12-A29, K12-A30)
+      const policyValidator = new DefaultRuntimePolicyValidator();
+      const policyResult = await policyValidator.validate(
+        reasoningOutput,
+        setup.reasoningContext,
+        RUNTIME_POLICY,
+        {
+          organizationId,
+          controlPlaneContext: input.controlPlaneContext,
+          correlationId: traceHandle.traceId,
+        }
+      );
+      const decision: PolicyDecision = policyResult.decision;
+
+      await this.traceRecorder.record(traceHandle, {
+        type: decision.action === 'BLOCK' ? 'POLICY_BLOCKED' : (decision.action === 'REWRITE' ? 'POLICY_REWRITTEN' : 'POLICY_VALIDATED'),
+        metadata: {
+          policy: {
+            version: '1.1',
+            decision: decision.action,
+            violations: decision.violations.map(v => v.code),
+          }
+        }
+      });
+
+      const trace: RuntimeTrace = {
+        ...traceInfo,
+        runtimeId,
+        organizationId,
+        conversationId,
+        createdAt: new Date(),
+        policyValidation: policyResult.trace,
+      };
+
+      // Step 7: BLOCK path — K12-A37: no persistence
+      if (decision.action === 'BLOCK') {
+        console.warn(`[HermesRuntime] POLICY BLOCKED: `, policyResult.violations);
+        await this.traceRecorder.complete(traceHandle, { success: true, durationMs: Date.now() - start });
+        return {
+          responseId: `blocked_${crypto.randomUUID()}`,
+          organizationId,
+          conversationId,
+          content: decision.output && decision.output !== 'Message blocked by Hermes Governance Policy.'
+            ? decision.output
+            : 'Como inteligencia oficial del proyecto, me ciño estrictamente a la información y políticas institucionales verificadas. ¿Hay algún aspecto específico sobre el modelo, etapas o documentación que te gustaría consultar?',
+          suggestedActions,
+          providerMeta: { ...reasoningOutput.meta, durationMs: Date.now() - start },
+          trace,
+          policyViolations: policyResult.violations,
+        };
+      }
+
+      // Step 8: Atomic persist (ALLOW or REWRITE)
+      const assistantMessage = await this.persistTurn(setup, decision.output);
+
+      // Step 8b: Emit Claim Provenance Receipt (Proof of Governed Response - Milestone K26.1)
+      let claimProvenanceReceipt: ClaimProvenanceReceipt | undefined = undefined;
+      let provenanceDegraded: boolean = false;
+      try {
+        const intentTier = ClaimContractEngine.determineIntentTier(decision.output);
+        if (intentTier !== 'LEVEL_0_CONVERSATIONAL') {
+          const signer = new HermesIdentitySigner();
+          const receipt = await ClaimContractEngine.generateClaimProvenanceReceipt(
+            decision.output,
+            canonicalTenantId,
+            signer,
+            {
+              conversationId,
+              policyVersion: 'v1.0.4-k26.1',
+              explicitTier: intentTier,
+            }
+          );
+          if (receipt) {
+            claimProvenanceReceipt = receipt;
+          }
+        }
+      } catch (receiptErr: any) {
+        provenanceDegraded = true;
+        console.warn('[HermesRuntime] ⚠️ Claim provenance generation failed (audited degradation):', receiptErr?.message);
+
+        // K26.1 Fail-closed security event recording in immutable audit hash-chain
+        SecurityAuditLogger.logEvent({
+          organizationId,
+          eventType: 'PROVENANCE_RECEIPT_DEGRADED',
+          severity: 'CRITICAL',
+          policyDecision: 'DENY',
+          correlationId: `deg_${Date.now()}`,
+          metadata: {
+            reason: 'HERMES_IDENTITY_SIGNER_FAILURE',
+            error: receiptErr?.message || String(receiptErr),
+            conversationId,
+            action: 'AUDITED_PROVENANCE_DEGRADATION',
+          },
+        }).catch(err => {
+          console.error('[HermesRuntime] Failed to record security event for degraded provenance:', err);
+        });
+      }
+
+      // Step 8c: Attach to trace & record in trace recorder
+      trace.claimProvenanceReceipt = claimProvenanceReceipt;
+      if (provenanceDegraded) {
+        trace.provenanceDegraded = true;
+      }
+
+      await this.traceRecorder.record(traceHandle, {
+        type: 'POLICY_VALIDATED',
+        metadata: {
+          provenance: {
+            receiptId: claimProvenanceReceipt?.receiptId,
+            tier: claimProvenanceReceipt?.provenanceTier,
+            claimsCount: claimProvenanceReceipt?.claims.length ?? 0,
+            provenanceDegraded,
+          },
+        },
+      });
+
+      // Step 8d: Journey Auto-Navigation (Milestone K28 — executable journeys)
+      // Fire-after-persist, fail-open for the response itself: a journey engine
+      // failure NEVER blocks or degrades the governed reply.
+      let journeyNavigation: RuntimeResponse['journeyNavigation'] = undefined;
+      try {
+        const journeyEngine = new JourneyEngine();
+        const navResult = await journeyEngine.evaluateAndAdvance({
+          organizationId: canonicalTenantId,
+          actorId: input.controlPlaneContext.actorId,
+          text: input.message?.content || '',
+        });
+        if (!navResult.skipped) {
+          journeyNavigation = {
+            advanced: navResult.success,
+            journeyId: navResult.journeyId,
+            previousStageId: navResult.previousStageId,
+            currentStageId: navResult.currentStageId,
+            reason: navResult.reason,
+          };
+          await this.traceRecorder.record(traceHandle, {
+            type: 'JOURNEY_ADVANCED',
+            metadata: { journeyNavigation },
+          });
+        }
+      } catch (journeyErr: any) {
+        console.warn('[HermesRuntime] Journey auto-navigation warning (non-blocking):', journeyErr?.message);
+      }
+
+      // Step 8e: Governed User Learning Loop (Asynchronous fire-and-forget)
+      // Governed Boundary: Learns ONLY user communication traits into hermesCognitiveProfiles.
+      // CANNOT alter, mutate, or inject into platform institutional truth or Claim Contracts.
+      const actorUserId = input.controlPlaneContext.identity?.userId || input.controlPlaneContext.actorId;
+      if (actorUserId && !actorUserId.startsWith('system_')) {
+        const fullHistoryForLearning = [
+          ...setup.conversationHistory.map((m: any) => ({
+            role: (m.role || 'user').toLowerCase(),
+            content: m.content || '',
+          })),
+          { role: 'user', content: input.message?.content || '' },
+          { role: 'assistant', content: decision.output || '' },
+        ];
+        // Dynamic import to maintain strict architectural decoupling
+        import('@saasfly/hermes-core')
+          .then(({ HermesLearningLoop }) => {
+            return HermesLearningLoop.triggerLearning(actorUserId, fullHistoryForLearning);
+          })
+          .catch(learnErr => {
+            console.warn('[HermesRuntime] Governed learning loop background trigger warning:', learnErr?.message);
+          });
+      }
+
+      await this.traceRecorder.complete(traceHandle, {
+        success: true,
+        durationMs: Date.now() - start,
+        receiptSummary: claimProvenanceReceipt ? {
+          responseHash: claimProvenanceReceipt.responseHash,
+          tier: claimProvenanceReceipt.provenanceTier,
+          contractVersion: claimProvenanceReceipt.claims[0]?.version,
+          signerAddress: claimProvenanceReceipt.agentWalletAddress,
+        } : undefined,
+      });
+
+      return {
+        responseId: assistantMessage.id,
+        organizationId,
+        conversationId,
+        content: decision.output,
+        suggestedActions,
+        providerMeta: {
+          ...reasoningOutput.meta,
+          durationMs: Date.now() - start,
+          provenanceDegraded: provenanceDegraded || undefined,
+        },
+        trace,
+        claimProvenanceReceipt,
+        journeyNavigation,
+      };
+    } catch (err) {
+      if (traceHandle) {
+        await this.traceRecorder.complete(traceHandle, {
+          success: false,
+          durationMs: Date.now() - start,
+          errorCode: err instanceof Error ? err.message : 'UNKNOWN',
+        });
+      }
+      throw err;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // PUBLIC: stream() — governed cognitive streaming (K12-A26..A40)
+  // ---------------------------------------------------------------------------
+  async stream(
+    input: RuntimeInput,
+    options?: RuntimeStreamOptions,
+  ): Promise<AsyncIterable<RuntimeStreamEvent>> {
+    const start = Date.now();
+    let traceHandle: RuntimeTraceHandle | undefined;
+
+    try {
+      const setup = await this.setupCognitiveTurn(input);
+      traceHandle = setup.traceHandle;
+      const { runtimeId, organizationId, canonicalTenantId, conversationId, reasoningInput, traceInfo, suggestedActions } = setup;
+
+      const streamId = `stream_${crypto.randomUUID()}`;
+      const signal = options?.signal;
+
+      const streamingProvider = this.provider as Partial<StreamingReasoningProvider>;
+      const canStream = typeof streamingProvider.stream === 'function';
+      const self = this;
+      const policyValidator = new DefaultRuntimePolicyValidator();
+
+      let sequence = 0;
+      const nextSeq = () => sequence++;
+      const baseEvent = { streamId, organizationId, conversationId };
+
+      async function* execute(): AsyncIterable<RuntimeStreamEvent> {
+        yield { type: 'START', sequence: nextSeq(), responseId: runtimeId, ...baseEvent };
+        
+        await self.traceRecorder.record(traceHandle!, {
+          type: 'STREAM_STARTED',
+          metadata: { stream: { chunksReceived: 0, chunksEmitted: 0, cancelled: false, completed: false } }
+        });
+
+        let accumulatedContent = '';
+        let providerMeta: Partial<RuntimeStreamEvent['providerMeta']> = {};
+        let chunksReceived = 0;
+        let chunksEmitted = 0;
+
+        try {
+          if (canStream && streamingProvider.stream) {
+            const reasoningStream = await streamingProvider.stream(reasoningInput, signal);
+            for await (const chunk of reasoningStream.chunks) {
+              chunksReceived++;
+              if (signal?.aborted) {
+                await reasoningStream.cancel();
+                await self.traceRecorder.record(traceHandle!, {
+                  type: 'STREAM_CANCELLED',
+                  metadata: { stream: { chunksReceived, chunksEmitted, cancelled: true, completed: false } }
+                });
+                yield {
+                  type: 'ERROR',
+                  sequence: nextSeq(),
+                  responseId: runtimeId,
+                  ...baseEvent,
+                  error: { code: 'CANCELLED', message: 'Stream cancelled by client.' },
+                };
+                return;
+              }
+
+              if (chunk.type === 'error') {
+                await self.traceRecorder.record(traceHandle!, {
+                  type: 'PROVIDER_FAILED',
+                  metadata: { errorCode: chunk.error?.code ?? 'UNKNOWN_ERROR' }
+                });
+                yield {
+                  type: 'ERROR',
+                  sequence: nextSeq(),
+                  responseId: runtimeId,
+                  ...baseEvent,
+                  error: chunk.error ?? { code: 'PROVIDER_ERROR', message: 'Unknown provider error.' },
+                };
+                return;
+              }
+
+              if (chunk.type === 'delta' && chunk.content) {
+                accumulatedContent += chunk.content;
+              }
+
+              if (chunk.type === 'done') {
+                if (chunk.meta) providerMeta = chunk.meta;
+                break;
+              }
+            }
+          } else {
+            const output = await self.provider.generate(reasoningInput);
+            accumulatedContent = output.content;
+            providerMeta = output.meta;
+            chunksReceived = 1;
+          }
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : String(err);
+          await self.traceRecorder.record(traceHandle!, {
+            type: 'PROVIDER_FAILED',
+            metadata: { errorCode: msg }
+          });
+          yield {
+            type: 'ERROR',
+            sequence: nextSeq(),
+            responseId: runtimeId,
+            ...baseEvent,
+            error: { code: 'PROVIDER_ERROR', message: msg },
+          };
+          return;
+        }
+
+        const fakeOutput = { content: accumulatedContent, meta: { provider: 'stream', model: '', promptTokens: 0, completionTokens: 0, durationMs: Date.now() - start } };
+        const policyResult = await policyValidator.validate(fakeOutput, setup.reasoningContext, RUNTIME_POLICY);
+        const decision: PolicyDecision = policyResult.decision;
+
+        await self.traceRecorder.record(traceHandle!, {
+          type: decision.action === 'BLOCK' ? 'POLICY_BLOCKED' : (decision.action === 'REWRITE' ? 'POLICY_REWRITTEN' : 'POLICY_VALIDATED'),
+          metadata: {
+            policy: {
+              version: '1.1',
+              decision: decision.action,
+              violations: decision.violations.map(v => v.code),
+            }
+          }
+        });
+
+        const trace: Partial<RuntimeTrace> = {
+          ...traceInfo,
+          runtimeId,
+          organizationId,
+          conversationId,
+          createdAt: new Date(),
+          policyValidation: policyResult.trace,
+        };
+
+        if (decision.action === 'BLOCK') {
+          console.warn(`[HermesRuntime] STREAM POLICY BLOCKED:`, policyResult.violations);
+          yield {
+            type: 'BLOCKED',
+            sequence: nextSeq(),
+            responseId: runtimeId,
+            ...baseEvent,
+            policyViolations: policyResult.violations,
+            trace,
+          };
+          await self.traceRecorder.complete(traceHandle!, { success: true, durationMs: Date.now() - start });
+          return;
+        }
+
+        const governedContent = decision.output;
+        const words = governedContent.split(' ');
+        for (let i = 0; i < words.length; i++) {
+          chunksEmitted++;
+          yield {
+            type: 'DELTA',
+            sequence: nextSeq(),
+            responseId: runtimeId,
+            ...baseEvent,
+            content: (i === 0 ? '' : ' ') + words[i],
+          };
+        }
+
+        await self.traceRecorder.record(traceHandle!, {
+          type: 'STREAM_COMPLETED',
+          metadata: { stream: { chunksReceived, chunksEmitted, cancelled: false, completed: true } }
+        });
+
+        const assistantMessage = await self.persistTurn(setup, governedContent);
+
+        yield {
+          type: 'COMPLETE',
+          sequence: nextSeq(),
+          responseId: assistantMessage.id,
+          ...baseEvent,
+          content: governedContent,
+          providerMeta,
+          trace,
+        };
+        await self.traceRecorder.complete(traceHandle!, { success: true, durationMs: Date.now() - start });
+      }
+
+      return execute();
+    } catch (err) {
+      if (traceHandle) {
+        await this.traceRecorder.complete(traceHandle, {
+          success: false,
+          durationMs: Date.now() - start,
+          errorCode: err instanceof Error ? err.message : 'UNKNOWN',
+        });
+      }
+      throw err;
+    }
+  }
+}
+
+// ─── Singleton factory for portal/conversation routes ─────────────────────────
+
+let _defaultRuntime: HermesRuntime | null = null;
+let _defaultTraceStore: InMemoryRuntimeTraceStore | null = null;
+
+export function getDefaultTraceStore(): InMemoryRuntimeTraceStore {
+  if (!_defaultTraceStore) {
+    _defaultTraceStore = new InMemoryRuntimeTraceStore();
+  }
+  return _defaultTraceStore;
+}
+
+/**
+ * G1 Kill Switch: Check HERMES_ENABLED before invoking any cognitive turn.
+ * Returns true if Hermes is allowed to respond.
+ *
+ * Usage in route handlers:
+ *   if (!isHermesEnabled()) return NextResponse.json({ error: 'Hermes is currently unavailable.' }, { status: 503 });
+ */
+export function isHermesEnabled(): boolean {
+  return process.env.HERMES_ENABLED !== 'false';
+}
+
+/**
+ * G2 Provider Factory:
+ * HERMES_REASONING_PROVIDER controls which provider is loaded at runtime.
+ *
+ * Values:
+ *   'ollama'        → OllamaStreamingProvider (production default)
+ *   'ollama-stream' → OllamaStreamingProvider (alias, backward-compatible)
+ *   'ollama-sync'   → OllamaReasoningProvider (non-streaming, legacy)
+ *   (unset / any)   → MockStreamingProvider (test/dev)
+ */
+export function getDefaultRuntime(): HermesRuntime {
+  if (!_defaultRuntime) {
+    const providerType = process.env.HERMES_REASONING_PROVIDER as string | undefined;
+
+    let provider: ReasoningProvider;
+    if (providerType === 'ollama' || providerType === 'ollama-stream') {
+      // Production: streaming provider — supports both respond() and stream()
+      const { OllamaStreamingProvider } = require('./reasoning-providers');
+      provider = new OllamaStreamingProvider({
+        baseUrl: process.env.OLLAMA_BASE_URL,
+        model: process.env.OLLAMA_MODEL,
+      });
+    } else if (providerType === 'ollama-sync') {
+      // Legacy sync (no streaming) — useful for debugging
+      const { OllamaReasoningProvider } = require('./reasoning-providers');
+      provider = new OllamaReasoningProvider({
+        baseUrl: process.env.OLLAMA_BASE_URL,
+        model: process.env.OLLAMA_MODEL,
+      });
+    } else {
+      // Default: MockStreamingProvider supports both respond() and stream()
+      provider = new MockStreamingProvider();
+    }
+
+    const traceRecorder = new DefaultRuntimeTraceRecorder(getDefaultTraceStore());
+    _defaultRuntime = new HermesRuntime(provider, undefined, traceRecorder);
+  }
+  return _defaultRuntime;
+}

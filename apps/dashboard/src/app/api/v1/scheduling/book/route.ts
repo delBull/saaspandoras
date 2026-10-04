@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
-import { schedulingSlots } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { schedulingSlots } from '@saasfly/db/schema';
+import { eq } from "@saasfly/db-core";
 import { SovereignCalendarEngine } from '@/lib/scheduling/sovereign-calendar-engine';
 import { syncBookingToPipeline } from '@/lib/scheduling/syncBookingPipeline';
 

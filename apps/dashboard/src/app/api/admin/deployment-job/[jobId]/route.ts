@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { db } from "@/db";
-import { deploymentJobs } from "@/db/schema";
-import { eq } from "drizzle-orm";
-import { getAuth } from "@/lib/auth";
+import { db } from "@saasfly/db-core";
+import { deploymentJobs } from "@saasfly/db-core";
+import { eq } from "@saasfly/db-core";
+import { getAuth } from "@saasfly/auth-sdk";
 import { headers } from "next/headers";
 
 export const runtime = "nodejs";

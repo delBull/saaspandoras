@@ -1,4 +1,4 @@
-import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
+import { getNexusAuthContext } from '@saasfly/shared';
 import { AdminAccessGate } from '../AdminAccessGate';
 import HermesQAClient from './hermes-qa-client';
 

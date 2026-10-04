@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { trackGamificationEvent } from '@/lib/gamification/service';
-import { db } from '@/db';
-import { projects, userReferrals, users } from '@/db/schema';
-import { eq, and, sql } from 'drizzle-orm';
-import { getAuth, isAdmin } from '@/lib/auth';
+import { db } from '@saasfly/db';
+import { projects, userReferrals, users } from '@saasfly/db/schema';
+import { eq, and, sql } from "@saasfly/db-core";
+import { getAuth, isAdmin } from '@saasfly/auth-sdk';
 import { headers } from 'next/headers';
 
 export async function POST(request: Request) {

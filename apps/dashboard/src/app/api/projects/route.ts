@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { db } from "~/db";
-import { projects } from "~/db/schema";
-import { inArray, desc, ne, and, eq, or, ilike } from "drizzle-orm";
-import { getAuth, isAdmin } from "@/lib/auth";
+import { db } from "@saasfly/db-core";
+import { projects } from "@saasfly/db-core";
+import { inArray, desc, ne, and, eq, or, ilike } from "@saasfly/db-core";
+import { getAuth, isAdmin } from "@saasfly/auth-sdk";
 import { headers } from "next/headers";
 
 export const dynamic = 'force-dynamic';

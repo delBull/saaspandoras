@@ -1,8 +1,8 @@
 import React from 'react';
 import { notFound } from 'next/navigation';
-import { db } from '~/db';
-import { projects, projectBriefings } from '~/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { db } from '@saasfly/db-core';
+import { projects, projectBriefings } from '@saasfly/db-core';
+import { eq, and } from "@saasfly/db-core";
 import { BriefingRenderer } from '~/components/briefings/BriefingRenderer';
 
 export default async function BriefingPage({ params }: { params: Promise<{ slug: string; briefingSlug: string }> }) {

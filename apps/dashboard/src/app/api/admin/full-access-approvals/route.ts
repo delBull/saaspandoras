@@ -5,10 +5,10 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
-import { operationalIntents, projects } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
-import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
+import { db } from '@saasfly/db';
+import { operationalIntents, projects } from '@saasfly/db/schema';
+import { eq, and } from "@saasfly/db-core";
+import { getNexusAuthContext } from '@saasfly/shared';
 
 export const runtime = 'nodejs';
 

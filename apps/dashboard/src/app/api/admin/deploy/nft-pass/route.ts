@@ -1,10 +1,10 @@
 import { requireEnvUrl } from '@/lib/env-utils';
 import { NextResponse } from "next/server";
-import { getAuth } from "@/lib/auth";
+import { getAuth } from "@saasfly/auth-sdk";
 import { headers } from "next/headers";
-import { SUPER_ADMIN_WALLET } from "@/lib/constants";
-import { db } from "@/db";
-import { projects } from "@/db/schema";
+import { SUPER_ADMIN_WALLET } from "@saasfly/auth-sdk";
+import { db } from "@saasfly/db-core";
+import { projects } from "@saasfly/db-core";
 import { deployNFTPass, type NFTPassConfig } from "@pandoras/protocol-deployer";
 
 // Force Node.js runtime for database/blockchain interactions

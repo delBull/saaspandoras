@@ -1,0 +1,260 @@
+/**
+ * 🏛️ Organization SDK — OrganizationContext Resolver
+ * lib/platform/organization-sdk.ts
+ *
+ * Single entry point to resolve ALL context about an organization (project)
+ * and its installed products. Runtime, Portal, and Studios should call this
+ * instead of querying multiple tables independently.
+ *
+ * 🔒 S'Narai Protection: projectId=2 is read-only from this SDK.
+ *    The SDK never mutates projects data.
+ */
+
+import { db } from '@saasfly/db-core';
+import { projects, installedProducts } from '@saasfly/db-core/schema';
+import { eq, and } from "@saasfly/db-core";
+import {
+  PRODUCT_REGISTRY,
+  ProductKey,
+  PlanKey,
+  getVisibleModules,
+  getDefaultCapabilities,
+  getDefaultConnectors,
+} from '../index';
+
+// ── Types ────────────────────────────────────────────────────────────────────
+
+export interface InstalledProductContext {
+  id: string;
+  product: string;
+  productFamily: string;
+  plan: PlanKey;
+  status: string;
+  capabilities: Record<string, boolean>;
+  connectors: Record<string, boolean | Record<string, string>>;
+  config: Record<string, unknown>;
+  runtimeManifest: Record<string, unknown>;
+  visibleModules: string[];
+  trialEndsAt: Date | null;
+  activatedAt: Date | null;
+}
+
+export interface OrganizationContext {
+  // Identity (from projects table)
+  projectId: number;
+  organizationId: string; // Canonical UUID
+  slug: string;           // Human-readable / legacy slug
+  name: string;
+  logoUrl: string | null;
+  projectStatus: string;
+  onboardingStage: string | null;
+  tenantType?: 'PRODUCTION' | 'SANDBOX' | 'TRIAL' | null;
+  trialTier?: string | null;
+  trialStartedAt?: Date | null;
+  trialEndsAt?: Date | null;
+  trialStatus?: string | null;
+  isSimulationMode?: boolean | null;
+
+  // All installed products for this org
+  installedProducts: InstalledProductContext[];
+
+  // Active product context (resolved by productKey parameter)
+  activeProduct: InstalledProductContext | null;
+
+  // Convenience accessors (delegates to activeProduct)
+  capabilities: Record<string, boolean>;
+  connectors: Record<string, boolean | Record<string, string>>;
+  config: Record<string, unknown>;
+  runtimeManifest: Record<string, unknown>;
+  visibleModules: string[];
+  plan: PlanKey;
+  status: string;
+}
+
+// ── SDK ───────────────────────────────────────────────────────────────────────
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export const OrganizationSDK = {
+
+  /**
+   * Resolve full organization context for a given projectId (number) or organizationId / slug (string).
+   * Supports Dual-Read: UUID first, slug fallback, numeric ID fallback.
+   */
+  async resolve(projectIdOrTenant: number | string, productKey?: ProductKey): Promise<OrganizationContext> {
+    let project: any | undefined;
+
+    const projectColumns = {
+      id: true,
+      organizationId: true,
+      slug: true,
+      title: true,
+      logoUrl: true,
+      status: true,
+      tenantType: true,
+      trialTier: true,
+      trialStartedAt: true,
+      trialEndsAt: true,
+      trialStatus: true,
+      isSimulationMode: true,
+    };
+
+    if (typeof projectIdOrTenant === 'number') {
+      project = await db.query.projects.findFirst({
+        where: eq(projects.id, projectIdOrTenant),
+        columns: projectColumns,
+      });
+    } else if (UUID_REGEX.test(projectIdOrTenant.trim())) {
+      project = await db.query.projects.findFirst({
+        where: eq(projects.organizationId, projectIdOrTenant.trim()),
+        columns: projectColumns,
+      });
+    } else {
+      // Slug lookup (dual-read fallback)
+      project = await db.query.projects.findFirst({
+        where: eq(projects.slug, projectIdOrTenant.trim()),
+        columns: projectColumns,
+      });
+    }
+
+    if (!project) {
+      throw new Error(`[OrganizationSDK] Project/Organization not found: ${projectIdOrTenant}`);
+    }
+
+    const projectId = project.id;
+
+    // 1.5 Load Onboarding Stage (if draft/onboarding)
+    let onboardingStage: string | null = null;
+    if (project.status === 'draft') {
+      const { portalOnboardingState } = await import('@saasfly/db-core/schema');
+      const state = await db.query.portalOnboardingState.findFirst({
+        where: eq(portalOnboardingState.tenantId, String(projectId))
+      });
+      if (state) {
+        onboardingStage = state.stage;
+      }
+    }
+
+    // 2. Load all installed products for this project
+    let rawProducts: any[] = [];
+    try {
+      rawProducts = await db.query.installedProducts.findMany({
+        where: eq(installedProducts.projectId, projectId),
+      });
+    } catch (dbErr) {
+      console.warn('[OrganizationSDK] installedProducts table missing or unpopulated, using fallback product context');
+    }
+
+    if (rawProducts.length === 0) {
+      rawProducts = [{
+        id: `virtual_${projectId}_hermes`,
+        product: 'HERMES',
+        productFamily: 'GROWTH_OS',
+        plan: 'sandbox',
+        status: 'trial',
+        capabilities: { intelligence: true, knowledge: true, channels: true },
+        connectors: {},
+        config: {},
+        runtimeManifest: {},
+        trialEndsAt: null,
+        activatedAt: new Date(),
+      }];
+    }
+
+    // 3. Map to InstalledProductContext (enrich with visible modules)
+    const enrichedProducts: InstalledProductContext[] = rawProducts.map(p => {
+      const caps = (p.capabilities as Record<string, boolean>) || {};
+      const visibleMods = (p.product in PRODUCT_REGISTRY)
+        ? getVisibleModules(p.product as ProductKey, caps)
+        : [];
+
+      return {
+        id: p.id,
+        product: p.product,
+        productFamily: p.productFamily,
+        plan: p.plan as PlanKey,
+        status: p.status,
+        capabilities: caps,
+        connectors: (p.connectors as Record<string, boolean | Record<string, string>>) || {},
+        config: (p.config as Record<string, unknown>) || {},
+        runtimeManifest: (p.runtimeManifest as Record<string, unknown>) || {},
+        visibleModules: visibleMods,
+        trialEndsAt: p.trialEndsAt,
+        activatedAt: p.activatedAt,
+      };
+    });
+
+    // 4. Resolve active product
+    const activeProduct = productKey
+      ? enrichedProducts.find(p => p.product === productKey) ?? null
+      : enrichedProducts[0] ?? null;
+
+    return {
+      projectId: project.id,
+      organizationId: project.organizationId,
+      slug: project.slug,
+      name: project.title,
+      logoUrl: project.logoUrl ?? null,
+      projectStatus: (project as any).status || 'draft',
+      onboardingStage,
+      tenantType: project.tenantType || null,
+      trialTier: project.trialTier || null,
+      trialStartedAt: project.trialStartedAt || null,
+      trialEndsAt: project.trialEndsAt || null,
+      trialStatus: project.trialStatus || null,
+      isSimulationMode: project.isSimulationMode ?? null,
+      installedProducts: enrichedProducts,
+      activeProduct,
+      // Convenience accessors
+      capabilities:    activeProduct?.capabilities    ?? {},
+      connectors:      activeProduct?.connectors      ?? {},
+      config:          activeProduct?.config          ?? {},
+      runtimeManifest: activeProduct?.runtimeManifest ?? {},
+      visibleModules:  activeProduct?.visibleModules  ?? [],
+      plan:            (activeProduct?.plan ?? 'sandbox') as PlanKey,
+      status:          activeProduct?.status ?? 'trial',
+    };
+  },
+
+  /**
+   * Resolve organization context from a portal session token.
+   * Used by the Client Portal to load the right product without exposing projectId.
+   */
+  async resolveFromSessionToken(sessionToken: string): Promise<OrganizationContext | null> {
+    const product = await db.query.installedProducts.findFirst({
+      where: eq(installedProducts.portalSessionToken, sessionToken),
+    });
+
+    if (!product) return null;
+
+    return OrganizationSDK.resolve(product.projectId, product.product as ProductKey);
+  },
+
+  /**
+   * Check whether a capability is active for an installed product.
+   * Shorthand for ctx.capabilities[capability] === true.
+   */
+  async hasCapability(projectId: number, product: ProductKey, capability: string): Promise<boolean> {
+    const installed = await db.query.installedProducts.findFirst({
+      where: and(
+        eq(installedProducts.projectId, projectId),
+        eq(installedProducts.product, product)
+      ),
+      columns: { capabilities: true },
+    });
+
+    if (!installed) return false;
+    return (installed.capabilities as Record<string, boolean>)[capability] === true;
+  },
+
+  /**
+   * Build default capabilities and connectors for a fresh product installation.
+   * Used by Provisioning Engine.
+   */
+  buildInstallDefaults(product: ProductKey, plan: PlanKey) {
+    return {
+      capabilities: getDefaultCapabilities(product, plan),
+      connectors:   getDefaultConnectors(product, plan),
+    };
+  },
+};

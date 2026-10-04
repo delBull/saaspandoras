@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { db } from "@/db";
-import { users } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { users } from "@saasfly/db-core";
+import { eq } from "@saasfly/db-core";
 import { getContract } from "thirdweb";
 import { ownerOf } from "thirdweb/extensions/erc721";
 import { config } from "@/config";
-import { client } from "@/lib/thirdweb-client";
+import { client } from "@saasfly/shared";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

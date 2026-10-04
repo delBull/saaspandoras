@@ -1,4 +1,4 @@
-import { Project } from "@/db/schema";
+import { Project } from "@saasfly/db-core";
 
 // Environment variables for Webhooks
 const DISCORD_WEBHOOK_LEADS = process.env.DISCORD_WEBHOOK_WHATSAPP_LEADS || ''; // Leads from WhatsApp Flow

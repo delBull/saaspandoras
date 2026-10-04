@@ -7,8 +7,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { AcademyStore } from '@/lib/pandoras/core/domains/academy/candidates/candidate-store';
-import { COO_EXECUTIVE_PROGRAM } from '@/lib/pandoras/core/domains/academy/curriculum/coo-program';
+import { AcademyStore } from '@saasfly/academy-sdk';
+import { COO_EXECUTIVE_PROGRAM } from '@saasfly/academy-sdk';
 
 export const dynamic = 'force-dynamic';
 

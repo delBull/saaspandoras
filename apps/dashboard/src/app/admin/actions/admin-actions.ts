@@ -1,9 +1,9 @@
 'use server';
 
-import { db } from '@/db';
-import { administrators, nexusCollaborators } from '@/db/schema';
-import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
-import { eq } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { administrators, nexusCollaborators } from '@saasfly/db/schema';
+import { getNexusAuthContext } from '@saasfly/shared';
+import { eq } from "@saasfly/db-core";
 import { revalidatePath } from 'next/cache';
 
 const VALID_ROLES = ['ADMIN', 'SUPER_ADMIN'];

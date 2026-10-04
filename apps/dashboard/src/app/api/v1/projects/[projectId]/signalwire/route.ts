@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generateBotResponse } from '@/lib/marketing/bot-engine';
+import { generateBotResponse } from '@saasfly/shared';
 import { SignalWireService } from '@/lib/integrations/signalwire-service';
-import { db } from '@/db';
-import { projects, securityEvents } from '@/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { projects, securityEvents } from '@saasfly/db/schema';
+import { eq, desc } from "@saasfly/db-core";
 import { sendTelegramAlert } from '@/lib/telegram';
 
 // In-memory ring buffer for recent incoming SMS & OTP verification codes
@@ -251,7 +251,7 @@ export async function POST(
         return NextResponse.json({ success: true, otpReceived: true, body: bodyText });
       }
 
-      const { getDefaultRuntime } = await import('@/lib/pandoras/core/domains/hermes/runtime/hermes-runtime');
+      const { getDefaultRuntime } = await import('@saasfly/hermes-core');
       const runtime = getDefaultRuntime();
       const runtimeResponse = await runtime.respond({
         organizationId: projectRecord.slug,

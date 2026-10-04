@@ -6,11 +6,11 @@
  * and envelope-encrypts + anchors all documents to IPFS (hermes_knowledge_registry).
  */
 
-import { db } from '../src/db';
-import { hermesKnowledge, hermesKnowledgeRegistry } from '../src/db/schema';
-import { eq, or } from 'drizzle-orm';
-import { TenantIpfsVaultService } from '../src/lib/pandoras/core/domains/hermes/knowledge/ipfs-vault';
-import { HermesIdentitySigner } from '../src/lib/pandoras/core/domains/hermes/identity/identity-signer';
+import { db } from '@saasfly/db-core';
+import { hermesKnowledge, hermesKnowledgeRegistry } from '@saasfly/db-core/schema';
+import { eq, or } from "@saasfly/db-core";
+import { TenantIpfsVaultService } from '@saasfly/hermes-core';
+import { HermesIdentitySigner } from '@saasfly/hermes-core';
 import crypto from 'crypto';
 
 const TENANT_ID = 'snarai';

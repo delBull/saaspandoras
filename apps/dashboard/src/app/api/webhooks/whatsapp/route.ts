@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { InterlocutorResolver } from '@/lib/hermes/identity/interlocutor-resolver';
-import { getDefaultRuntime } from '@/lib/pandoras/core/domains/hermes/runtime/hermes-runtime';
-import { TenantAuthorityService } from '@/lib/pandoras/core/domains/hermes/tenants/tenant-authority';
-import { sendWhatsAppMessage } from '@/lib/whatsapp/utils/client'; // Must be implemented in your WA utils
+import { InterlocutorResolver } from '@saasfly/hermes-core';
+import { getDefaultRuntime } from '@saasfly/hermes-core';
+import { TenantAuthorityService } from '@saasfly/hermes-core';
+import { sendWhatsAppMessage } from '@saasfly/shared'; // Must be implemented in your WA utils
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;

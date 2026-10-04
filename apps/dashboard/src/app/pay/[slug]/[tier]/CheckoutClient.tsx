@@ -6,7 +6,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useActiveAccount, TransactionButton, useWalletBalance, ConnectButton, darkTheme } from "thirdweb/react";
 import { prepareContractCall, defineChain, getContract } from "thirdweb";
-import { client } from "@/lib/thirdweb-client";
+import { client } from "@saasfly/shared";
 import { toast } from "sonner";
 import { CheckCircle, Loader2, Lock, ArrowRight, ShieldCheck, Flame, ChevronRight, Zap, AlertTriangle, FileText, CheckSquare, Square, X, Crown, Star } from 'lucide-react';
 import { LegalDocModal } from '@/components/legal/LegalDocModal';
@@ -19,8 +19,8 @@ import useSWR from 'swr';
 import { resolveExecution } from "@/lib/protocol-engine/execute";
 import { resolveArtifactPrice } from "@/lib/protocol-engine/artifact/pricing";
 import { CHAIN_TOKENS } from "@/lib/protocol-engine/artifact/payment";
-import { calculatePhaseStatus, getRawPhases } from "@/lib/phase-utils";
-import { sanitizeUrl } from "@/lib/project-utils";
+import { calculatePhaseStatus, getRawPhases } from "@saasfly/shared";
+import { sanitizeUrl } from "@saasfly/shared";
 
 // Generic fetcher for SWR
 const fetcher = (url: string) => fetch(url).then((res) => res.json());

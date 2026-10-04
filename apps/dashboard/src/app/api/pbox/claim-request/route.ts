@@ -17,9 +17,9 @@
  */
 import type { NextRequest } from 'next/server';
 import { createHmac, randomBytes } from 'crypto';
-import { db } from '@/db';
-import { telegramBindings, pboxBalances } from '@/db/schema';
-import { eq, sql } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { telegramBindings, pboxBalances } from '@saasfly/db/schema';
+import { eq, sql } from "@saasfly/db-core";
 import type { PBOXClaimPayload } from '@pandoras/gamification/types/bridge';
 import { getBridgeFlags } from '@/lib/alerts/flags';
 

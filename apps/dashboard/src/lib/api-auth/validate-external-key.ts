@@ -1,6 +1,6 @@
-import { db } from "@/db";
-import { integrationClients } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { integrationClients } from "@saasfly/db-core";
+import { eq, and } from "@saasfly/db-core";
 import { createHash } from "crypto";
 
 export interface ExternalClient {

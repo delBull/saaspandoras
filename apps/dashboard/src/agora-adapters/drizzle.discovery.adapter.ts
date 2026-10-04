@@ -1,6 +1,6 @@
-import { db } from "@/db";
-import { agoraListings, protocolNavs } from "@/db/schema";
-import { eq, and, lt, desc, inArray } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { agoraListings, protocolNavs } from "@saasfly/db-core";
+import { eq, and, lt, desc, inArray } from "@saasfly/db-core";
 
 export interface IMarketDiscoveryAdapter {
     findUndervaluedListings(protocolId: number, minPrice: string): Promise<any[]>;

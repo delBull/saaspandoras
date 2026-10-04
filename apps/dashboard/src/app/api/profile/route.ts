@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { getAuth } from "@/lib/auth";
+import { getAuth } from "@saasfly/auth-sdk";
 import { headers } from "next/headers";
 import { ensureUser } from "@/lib/user";
-import { sql } from "@/lib/database";
+import { sql, db } from '@saasfly/db-core';
 import { normalizePlatformRole } from "@/lib/roles";
 
 // Test database connection at startup
@@ -52,14 +52,14 @@ export async function GET(request: Request) {
     walletAddress = await getWalletAddress();
 
     // Get user data directly from users table - optimized query
-    const usersResult = await sql`
+    const usersResult = await db.execute(sql`
       SELECT "id", "name", "email", "image", "walletAddress", "role",
               "connectionCount", "lastConnectionAt", "createdAt",
               "kycLevel", "kycCompleted", "kycData", "hasPandorasKey",
               "telegram_id" AS "telegramId"
       FROM "users"
       WHERE LOWER("walletAddress") = LOWER(${walletAddress})
-    `;
+    `);
     const user = usersResult[0];
 
     // 🔥 SELF-HEALING SYNC: If user is connected to web but telegramId is missing in dashboard DB,
@@ -83,11 +83,11 @@ export async function GET(request: Request) {
                 if (res.ok) {
                     const edgeData = await res.json();
                     if (edgeData.telegramId) {
-                        await sql`
+                        await db.execute(sql`
                             UPDATE "users" 
                             SET "telegram_id" = ${edgeData.telegramId} 
                             WHERE "id" = ${user.id}
-                        `;
+                        `);
                         user.telegramId = edgeData.telegramId;
                         console.log(`✨ Profile API Auto-Sync: Recovered telegramId for ${walletAddress}`);
                     }
@@ -110,23 +110,23 @@ export async function GET(request: Request) {
     }
 
     // Get user projects - Get ALL projects for the user, accounting for legacy property 'update_authority_address'
-    const projects = await sql`
+    const projects = await db.execute(sql`
       SELECT id, title, description, status, created_at, business_category, logo_url, cover_photo_url, applicant_wallet_address, update_authority_address, target_amount, raised_amount, slug, applicant_name, applicant_email, applicant_phone
       FROM "projects"
       WHERE LOWER("applicant_wallet_address") = LOWER(${walletAddress})
          OR LOWER("update_authority_address") = LOWER(${walletAddress})
       ORDER BY "created_at" DESC
-    `;
+    `);
 
     // Calculate project count (including all statuses: live, approved, pending, draft, active_client, completed, rejected, etc.)
     const projectCount = projects.length;
 
 
     // Calculate user role
-    const adminResults = await sql`
+    const adminResults = await db.execute(sql`
       SELECT COUNT(*) as count FROM "administrators"
       WHERE LOWER("wallet_address") = LOWER(${walletAddress})
-    `;
+    `);
     const isAdmin = Number(adminResults[0]?.count || 0) > 0;
     const isSuperAdmin = walletAddress.toLowerCase() === '0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9';
 
@@ -138,7 +138,7 @@ export async function GET(request: Request) {
 
     let systemProjectsManaged: number | undefined;
     if (isAdmin || isSuperAdmin) {
-      const totalProjectsResults = await sql`SELECT COUNT(*) as count FROM "projects"`;
+      const totalProjectsResults = await db.execute(sql`SELECT COUNT(*) as count FROM "projects"`);
       systemProjectsManaged = Number(totalProjectsResults[0]?.count || 0);
     }
 
@@ -246,7 +246,7 @@ export async function POST(request: Request) {
     const { profileData } = body;
 
     // Build unified update query
-    await sql`
+    await db.execute(sql`
       UPDATE "users"
       SET "name" = ${profileData.name ?? null},
           "email" = ${profileData.email ?? null},
@@ -263,7 +263,7 @@ export async function POST(request: Request) {
       address: profileData.address ?? null,
     })}
       WHERE LOWER("walletAddress") = LOWER(${bodyWalletAddress as string})
-    `;
+    `);
 
     // 🎯 UPDATE REFERRAL PROGRESS: Si el usuario completó KYC básico, actualizar progreso de referidos
     if (profileData.kycCompleted && profileData.kycLevel === 'basic') {

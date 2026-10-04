@@ -11,9 +11,9 @@
  */
 
 import jwt from 'jsonwebtoken';
-import { db } from '@/db';
-import { installedProducts, projects } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { installedProducts, projects } from '@saasfly/db/schema';
+import { eq, and } from "@saasfly/db-core";
 import { randomUUID } from 'crypto';
 
 const PORTAL_JWT_SECRET = process.env.PORTAL_JWT_SECRET || process.env.NEXTAUTH_SECRET || '';

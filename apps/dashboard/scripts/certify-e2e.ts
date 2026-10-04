@@ -6,18 +6,18 @@
  * using the deterministic MockReasoningProvider.
  */
 
-import { db } from '../src/db';
+import { db } from '@saasfly/db-core';
 import { 
   projects, 
   hermesKnowledge,
   knowledgeSources,
   hermesConversationMessages,
   hermesConversations
-} from '../src/db/schema';
-import { eq } from 'drizzle-orm';
+} from '@saasfly/db-core/schema';
+import { eq } from "@saasfly/db-core";
 import { nanoid } from 'nanoid';
-import { HermesRuntime } from '../src/lib/pandoras/core/domains/hermes/runtime/hermes-runtime';
-import { MockReasoningProvider, MockStreamingProvider } from '../src/lib/pandoras/core/domains/hermes/runtime/reasoning-providers';
+import { HermesRuntime } from '@saasfly/hermes-core';
+import { MockReasoningProvider, MockStreamingProvider } from '@saasfly/hermes-core';
 
 // Helper to retry DB calls to handle NeonDB ECONNRESET
 async function withRetry<T>(operation: () => Promise<T>, maxRetries = 20): Promise<T> {

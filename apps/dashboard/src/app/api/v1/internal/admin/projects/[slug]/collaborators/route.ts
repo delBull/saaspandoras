@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
-import { projectCollaborators, nexusCollaborators } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
-import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
+import { db } from '@saasfly/db';
+import { projectCollaborators, nexusCollaborators } from '@saasfly/db/schema';
+import { eq, and } from "@saasfly/db-core";
+import { getNexusAuthContext } from '@saasfly/shared';
 
 // GET: Fetch assigned collaborators for a specific project
 export async function GET(

@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
-import { getAuth } from "@/lib/auth";
-import { db } from "@/db";
-import { userReferrals } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { getAuth } from "@saasfly/auth-sdk";
+import { db } from "@saasfly/db-core";
+import { userReferrals } from "@saasfly/db-core";
+import { eq } from "@saasfly/db-core";
 
 // Endpoint GET para verificar estado de referidos del usuario actual
 export async function GET(_request: Request) {

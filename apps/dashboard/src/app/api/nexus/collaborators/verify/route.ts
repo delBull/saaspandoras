@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyCollaboratorToken } from '@/lib/nexus/collaborators-service';
+import { verifyCollaboratorToken } from '@saasfly/hermes-core';
 
 function getCorsHeaders(req: NextRequest) {
   const origin = req.headers.get('origin') || '*';

@@ -2,7 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 import { deployNFTPassServer, deployW2EProtocol, NetworkType, NFTPassConfig, W2EConfig } from "@pandoras/protocol-deployer";
 import { db, schema } from "./db.js";
-import { eq, and, lt } from "drizzle-orm";
+import { eq, and, lt } from "@saasfly/db-core";
 
 dotenv.config();
 

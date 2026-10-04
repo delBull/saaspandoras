@@ -1,6 +1,6 @@
-import { db } from '@/db';
-import { dealEnvelopes, projects } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { dealEnvelopes, projects } from '@saasfly/db/schema';
+import { eq, and } from "@saasfly/db-core";
 import { 
   DocumentEnvelope, 
   SignerParticipant, 
@@ -13,7 +13,7 @@ import { DocumentHasher } from './document-hasher';
 import { EIP712Builder } from './eip712-builder';
 import { EvidencePackager } from './evidence-packager';
 import { SovereignRelayerService } from './relayer-service';
-import { SovereignIpfsOrchestrator } from '@/lib/pandoras/core/domains/hermes/knowledge/ipfs/orchestrator';
+import { SovereignIpfsOrchestrator } from '@saasfly/hermes-core';
 
 export interface CreateEnvelopeInput {
   organizationId: string;

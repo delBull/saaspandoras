@@ -1,6 +1,6 @@
 import React from "react";
 import { redirect } from "next/navigation";
-import { getNexusAuthContext } from "@/lib/nexus/nexus-rbac";
+import { getNexusAuthContext } from "@saasfly/shared";
 import { Terminal, Code, BookOpen, Blocks, BrainCircuit, Database, ShieldCheck, CheckCircle2 } from "lucide-react";
 import { RequestDeveloperDocsButton } from "./RequestDeveloperDocsButton";
 

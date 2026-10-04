@@ -47,7 +47,7 @@ import {
   HermesTrace,
   buildDemoScenario,
   SimulatedScenario,
-} from '@/lib/hermes/simulator-types';
+} from '@saasfly/hermes-core';
 import type { LucideIcon } from 'lucide-react';
 
 type Tab = 'overview' | 'knowledge' | 'journeys' | 'conversations' | 'inbox' | 'pipeline';

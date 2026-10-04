@@ -1,9 +1,9 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
-import { marketingLeads } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
-import { getAuth, isAdmin } from '@/lib/auth';
+import { db } from '@saasfly/db';
+import { marketingLeads } from '@saasfly/db/schema';
+import { eq, and } from "@saasfly/db-core";
+import { getAuth, isAdmin } from '@saasfly/auth-sdk';
 import { headers } from 'next/headers';
 import { resolveGrowthAction } from '@/lib/marketing/growth-engine/engine';
 import { executeGrowthActions } from '@/lib/marketing/growth-engine/actions';

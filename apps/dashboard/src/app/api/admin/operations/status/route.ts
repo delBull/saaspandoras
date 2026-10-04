@@ -1,9 +1,9 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { getAuth, isAdmin } from "@/lib/auth";
-import { db } from "@/db";
-import { webhookEvents, integrationClients } from "@/db/schema";
-import { eq, and, gte, sql } from "drizzle-orm";
+import { getAuth, isAdmin } from "@saasfly/auth-sdk";
+import { db } from "@saasfly/db-core";
+import { webhookEvents, integrationClients } from "@saasfly/db-core";
+import { eq, and, gte, sql } from "@saasfly/db-core";
 
 export const dynamic = 'force-dynamic';
 

@@ -1,8 +1,8 @@
-import { db } from '@/db';
-import { eq, and, gt } from 'drizzle-orm';
-import { marketingLeads, projects, nexusCampaignProposals } from '@/db/schema';
+import { db } from '@saasfly/db';
+import { eq, and, gt } from "@saasfly/db-core";
+import { marketingLeads, projects, nexusCampaignProposals } from '@saasfly/db/schema';
 import { DomainAdapter, NexusOperation } from './DomainAdapter';
-import { NexusAuthContext, checkNexusPermission } from '@/lib/nexus/nexus-rbac';
+import { NexusAuthContext, checkNexusPermission } from '@saasfly/shared';
 
 export class GrowthAdapter implements DomainAdapter {
   async getOperations(authCtx: NexusAuthContext): Promise<NexusOperation[]> {

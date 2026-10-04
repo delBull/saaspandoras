@@ -1,7 +1,7 @@
 'use server';
 
 import { AssetRepository } from "@/lib/domain/asset-repository";
-import { getAuth, isAdmin } from "@/lib/auth";
+import { getAuth, isAdmin } from "@saasfly/auth-sdk";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 

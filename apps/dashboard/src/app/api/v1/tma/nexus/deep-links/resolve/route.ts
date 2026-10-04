@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/db';
-import { nexusDeepLinks, projects } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { nexusDeepLinks, projects } from '@saasfly/db/schema';
+import { eq, and } from "@saasfly/db-core";
 import crypto from 'crypto';
-import { getNexusAuthContext, checkNexusPermission } from '@/lib/nexus/nexus-rbac';
+import { getNexusAuthContext, checkNexusPermission } from '@saasfly/shared';
 // Assuming we have domain adapters from Phase B to re-run the auth chain
 import { DomainAdapter } from '../../operations/adapters/DomainAdapter';
 import { TreasuryAdapter } from '../../operations/adapters/TreasuryAdapter';

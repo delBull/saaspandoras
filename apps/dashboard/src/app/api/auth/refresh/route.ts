@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
-import { db } from "@/db";
-import { users } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { users } from "@saasfly/db-core";
+import { eq } from "@saasfly/db-core";
 import { getContract, readContract } from "thirdweb";
 import crypto from "crypto";
-import { client } from "@/lib/thirdweb-client";
+import { client } from "@saasfly/shared";
 import { config } from "@/config";
 import { PANDORAS_KEY_ABI } from "@/lib/pandoras-key-abi";
 

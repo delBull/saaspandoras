@@ -1,11 +1,11 @@
 
 import { NextResponse } from 'next/server';
-import { db } from "@/db";
-import { projects } from "@/db/schema";
+import { db } from "@saasfly/db-core";
+import { projects } from "@saasfly/db-core";
 import { syncLeadAsClient } from '@/actions/leads';
-import { sql } from "drizzle-orm";
+import { sql } from "@saasfly/db-core";
 // import ProtocolApplicationEmail from '@/emails/protocol-application'; // Dynamic import used instead
-import { sendWhatsAppMessage } from '@/lib/whatsapp/utils/client';
+import { sendWhatsAppMessage } from '@saasfly/shared';
 
 // Configure Resend
 const RESEND_API_KEY = process.env.RESEND_API_KEY!;

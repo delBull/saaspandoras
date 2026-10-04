@@ -3,8 +3,8 @@
  * src/lib/dash-api/identity.ts
  */
 
-import type { GetIdentityResponseDTO, TeamMemberDTO } from '@/lib/dash-contracts/identity';
-import type { DashApiError } from '@/lib/dash-contracts/journeys';
+import type { GetIdentityResponseDTO, TeamMemberDTO } from '@saasfly/shared';
+import type { DashApiError } from '@saasfly/shared';
 import { resolveApiBaseUrl, getServerAuthHeaders } from './utils';
 
 export class DashApiIdentityClient {

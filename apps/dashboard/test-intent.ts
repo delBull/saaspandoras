@@ -1,5 +1,5 @@
-import { db } from '@/db';
-import { operationalIntents } from '@/db/schema';
+import { db } from '@saasfly/db';
+import { operationalIntents } from '@saasfly/db/schema';
 async function run() {
   try {
     const intentId = `intent_full_access_auto_${Date.now()}`;

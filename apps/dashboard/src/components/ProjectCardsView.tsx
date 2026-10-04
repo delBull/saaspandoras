@@ -3,7 +3,7 @@
 import React from 'react';
 import { useFeaturedProjects } from '@/hooks/useFeaturedProjects';
 import type { Project } from '@/types/admin';
-import { getProjectStatusConfig } from '@/lib/project-status';
+import { getProjectStatusConfig } from '@saasfly/shared';
 
 import {
   Tooltip,

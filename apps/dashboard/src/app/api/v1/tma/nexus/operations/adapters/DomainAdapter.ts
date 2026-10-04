@@ -1,4 +1,4 @@
-import { NexusAuthContext } from '@/lib/nexus/nexus-rbac';
+import { NexusAuthContext } from '@saasfly/shared';
 
 export type OperationPriority = 'CRITICAL' | 'HIGH' | 'NORMAL' | 'LOW';
 export type OperationType = 'DECISION' | 'TASK' | 'ALERT' | 'INTERVENTION';

@@ -2,9 +2,9 @@ import React from 'react';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
-import { db } from '@/db';
-import { projects, hermesKnowledge, hermesSecurityEvents } from '@/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { db } from '@saasfly/db-core';
+import { projects, hermesKnowledge, hermesSecurityEvents } from '@saasfly/db-core';
+import { eq, desc } from "@saasfly/db-core";
 import {
   Layers,
   Bot,
@@ -19,7 +19,7 @@ import {
   Users,
 } from 'lucide-react';
 import { SetupCompletionWidget } from '@/components/ecosystem/SetupCompletionWidget';
-import { setupProgressService } from '@/lib/mesh/setup-progress.service';
+import { setupProgressService } from '@saasfly/shared';
 import { resolveTenantExperienceContext } from '@/lib/mesh/tenant-experience-context';
 
 export const dynamic = 'force-dynamic';

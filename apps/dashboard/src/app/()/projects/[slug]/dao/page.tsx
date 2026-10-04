@@ -19,7 +19,7 @@ import { Loader2 } from "lucide-react";
 import useSWR from "swr";
 import { useActiveAccount, useReadContract, useActiveWalletConnectionStatus } from "thirdweb/react";
 import { getContract, defineChain } from "thirdweb";
-import { client } from "@/lib/thirdweb-client"; // Verify client import path
+import { client } from "@saasfly/shared"; // Verify client import path
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 

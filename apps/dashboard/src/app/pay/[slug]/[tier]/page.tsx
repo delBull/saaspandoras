@@ -3,12 +3,12 @@ import { Suspense } from 'react';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
-import { db } from '@/db';
-import { projects } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { db } from '@saasfly/db-core';
+import { projects } from '@saasfly/db-core';
+import { eq } from "@saasfly/db-core";
 import CheckoutClient from './CheckoutClient';
-import { matchPhase, getRawPhases, type Phase } from '@/lib/phase-utils';
-import { resolveProjectSlug } from '@/lib/project-utils';
+import { matchPhase, getRawPhases, type Phase } from '@saasfly/shared';
+import { resolveProjectSlug } from '@saasfly/shared';
 
 export default async function CheckoutHubPage({
     params
@@ -37,7 +37,7 @@ export default async function CheckoutHubPage({
         try {
             const thirdweb = await import("thirdweb");
             const { defineChain } = await import("thirdweb/chains");
-            const { client: twClient } = await import("@/lib/thirdweb-client");
+            const { client: twClient } = await import("@saasfly/shared");
 
             const contract = thirdweb.getContract({
                 client: twClient,
@@ -66,7 +66,7 @@ export default async function CheckoutHubPage({
     }
 
 
-    const { calculatePhaseStatus } = await import("@/lib/phase-utils");
+    const { calculatePhaseStatus } = await import("@saasfly/shared");
 
     let accumulated = 0;
     let foundActive = null;

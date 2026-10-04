@@ -1,7 +1,7 @@
-import { getNexusAuthContext } from "@/lib/nexus/nexus-rbac";
-import { db } from "@/db";
-import { eq, or, and, inArray } from "drizzle-orm";
-import { meetings, meetingParticipants, schedulingBookings, nexusCollaborators } from "@/db/schema";
+import { getNexusAuthContext } from "@saasfly/shared";
+import { db } from "@saasfly/db-core";
+import { eq, or, and, inArray } from "@saasfly/db-core";
+import { meetings, meetingParticipants, schedulingBookings, nexusCollaborators } from "@saasfly/db-core";
 import jwt from "jsonwebtoken";
 import Link from "next/link";
 import { ArrowLeft, Calendar, Video } from "lucide-react";

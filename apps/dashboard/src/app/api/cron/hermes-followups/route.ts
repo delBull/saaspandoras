@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/db';
-import { channelIdentityBindings, projects, users, daoMembers, installedProducts } from '@/db/schema';
-import { eq, sql } from 'drizzle-orm';
-import { WhatsAppAdapter } from '@/lib/pandoras/core/domains/channels/adapters/whatsapp-adapter';
-import { TelegramAdapter } from '@/lib/pandoras/core/domains/channels/adapters/telegram-adapter';
+import { db } from '@saasfly/db';
+import { channelIdentityBindings, projects, users, daoMembers, installedProducts } from '@saasfly/db/schema';
+import { eq, sql } from "@saasfly/db-core";
+import { WhatsAppAdapter } from '@saasfly/hermes-core';
+import { TelegramAdapter } from '@saasfly/hermes-core';
 import { SubscriptionEngine } from '@/lib/platform/subscription-engine';
 
 // Interfaz para la deduplicación de canales

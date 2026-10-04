@@ -17,7 +17,7 @@ export async function GET(request: Request) {
             });
         }
 
-        const { reconstructPEM } = await import("@/lib/auth");
+        const { reconstructPEM } = await import("@saasfly/auth-sdk");
         const hasPublicKey = !!process.env.JWT_PUBLIC_KEY;
         const secret = hasPublicKey ? reconstructPEM(process.env.JWT_PUBLIC_KEY!, 'PUBLIC') : process.env.JWT_SECRET;
         

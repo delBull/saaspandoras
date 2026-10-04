@@ -2,8 +2,8 @@
 
 import React, { useState, useTransition } from 'react';
 import type { UserData } from '@/types/admin';
-import { PlatformActor } from '@/lib/dash-contracts/admin';
-import { CANONICAL_CAPABILITIES } from '@/lib/canonical-capabilities';
+import { PlatformActor } from '@saasfly/shared';
+import { CANONICAL_CAPABILITIES } from '@saasfly/shared';
 import { X, ShieldAlert, Save, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { CognitiveProfileWidget } from '@/components/hermes/CognitiveProfileWidget';

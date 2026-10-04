@@ -1,0 +1,305 @@
+import { getRawPhases } from "./phase-utils";
+
+/**
+ * Resolves a project slug to its canonical version.
+ * Handles legacy aliases (e.g., narai -> snarai) to ensure backwards compatibility.
+ * This is the central source of truth for project renaming transitions.
+ */
+export function resolveProjectSlug(slug: string): string {
+  if (!slug) return slug;
+  const s = slug.toLowerCase();
+  
+  // Legacy Aliases Mapping (Scalable)
+  const ALIASES: Record<string, string> = {
+    'narai': 'snarai',
+  };
+  
+  return ALIASES[s] || slug;
+}
+
+
+/**
+ * Calculates the percentage of completion of a project
+ * Based on required vs optional fields completed
+ */
+export function calculateProjectCompletion(project: Record<string, unknown>): {
+  percentage: number;
+  status: 'draft' | 'pending';
+  missingFields: string[];
+} {
+  const requiredSections = [
+    // Sección 1: Identidad del Proyecto
+    { field: 'title', label: 'Título del proyecto' },
+    { field: 'slug', label: 'Slug único' },
+    { field: 'description', label: 'Descripción del proyecto' },
+    { field: 'businessCategory', label: 'Categoría de negocio' },
+
+    // Sección 7: Contacto del Solicitante
+    { field: 'applicantName', label: 'Nombre del solicitante' },
+    { field: 'applicantPosition', label: 'Cargo del solicitante' },
+    { field: 'applicantEmail', label: 'Email del solicitante' },
+    { field: 'verificationAgreement', label: 'Acuerdo de verificación' },
+
+    // Sección 3: Información financiera básica
+    { field: 'targetAmount', label: 'Monto objetivo' },
+    { field: 'tokenType', label: 'Tipo de token' },
+    { field: 'totalTokens', label: 'Supply total de tokens' },
+    { field: 'tokensOffered', label: 'Tokens ofrecidos' },
+    { field: 'tokenPriceUsd', label: 'Precio por token' },
+
+    // Sección 5: Información legal básica
+    { field: 'legalStatus', label: 'Estatus legal' },
+  ];
+
+  const optionalSections = [
+    // Información adicional valiosa
+    { field: 'website', label: 'Sitio web' },
+    { field: 'logoUrl', label: 'Logo del proyecto' },
+    { field: 'coverPhotoUrl', label: 'Imagen de portada' },
+    { field: 'tagline', label: 'Tagline descriptivo' },
+    { field: 'videoPitch', label: 'Video pitch' },
+    { field: 'whitepaperUrl', label: 'Whitepaper' },
+
+    // Información financiera adicional
+    { field: 'totalValuationUsd', label: 'Valuación total' },
+    { field: 'estimatedApy', label: 'APY estimado' },
+    { field: 'yieldSource', label: 'Fuente de rendimiento' },
+    { field: 'lockupPeriod', label: 'Periodo de lock-up' },
+    { field: 'fundUsage', label: 'Uso de fondos' },
+
+    // Equipo y transparencia
+    { field: 'teamMembers', label: 'Miembros del equipo' },
+    { field: 'advisors', label: 'Asesores' },
+    { field: 'tokenDistribution', label: 'Distribución de tokens' },
+
+    // Información técnica
+    { field: 'contractAddress', label: 'Dirección del contrato' },
+    { field: 'treasuryAddress', label: 'Dirección de tesorería' },
+
+    // Documentación
+    { field: 'valuationDocumentUrl', label: 'Documento de valuación' },
+    { field: 'fiduciaryEntity', label: 'Entidad fiduciaria' },
+    { field: 'dueDiligenceReportUrl', label: 'Reporte de due diligence' },
+
+    // Redes sociales
+    { field: 'twitterUrl', label: 'Twitter' },
+    { field: 'discordUrl', label: 'Discord' },
+    { field: 'telegramUrl', label: 'Telegram' },
+    { field: 'linkedinUrl', label: 'LinkedIn' },
+
+    // Contacto adicional
+    { field: 'applicantPhone', label: 'Teléfono del solicitante' },
+  ];
+
+  // Validar campos requeridos
+  const missingFields: string[] = [];
+  let completedFields = 0;
+  const totalRequiredFields = requiredSections.length;
+
+  // Validar campos requeridos
+  for (const item of requiredSections) {
+    const value = project[item.field];
+    if (value === null || value === undefined || value === '' ||
+      (typeof value === 'string' && value.trim() === '')) {
+      missingFields.push(item.label);
+    } else {
+      completedFields++;
+    }
+  }
+
+  // Agregar puntos de campos opcionales
+  for (const item of optionalSections) {
+    const value = project[item.field];
+    if (value !== null && value !== undefined &&
+      value !== '' && !(typeof value === 'string' && value.trim() === '')) {
+      // Campos opcionales cuentan como bono
+      completedFields += 0.5;
+    }
+  }
+
+  // Calcular porcentaje (campos requeridos + bono opcionales)
+  const totalPossibleFields = totalRequiredFields + (optionalSections.length * 0.5);
+  const percentage = Math.round((completedFields / totalPossibleFields) * 100);
+
+  // Determinar si el proyecto está listo para postulación
+  const isReadyForSubmission = missingFields.length === 0;
+  const status = isReadyForSubmission ? 'pending' : 'draft';
+
+  return {
+    percentage: Math.min(100, Math.max(0, percentage)),
+    status,
+    missingFields
+  };
+}
+
+/**
+ * Helper to get the calculated target amount (Meta) of a project.
+ * Prioritizes the deployed configuration (w2eConfig) over the initial application form.
+ */
+export function getTargetAmount(project: any): number {
+  if (!project) return 0;
+  
+  try {
+    // Priority 1: Use the explicit database targetAmount if it exists and is > 0
+    // This avoids currency mismatches (e.g. phases priced in ETH but target is in USD)
+    const dbAmount = Number(project.target_amount || project.targetAmount || project.goal || project.target_amount_usd);
+    if (!isNaN(dbAmount) && dbAmount > 0) {
+      return dbAmount;
+    }
+
+    // Priority 2: Use the unified phase extractor
+    const phases = getRawPhases(project);
+
+    if (Array.isArray(phases) && phases.length > 0) {
+      const totalPhasesAmount = phases.reduce((acc: number, phase: any) => {
+        const price = Number(phase.tokenPrice || phase.price || 0);
+        const allocation = Number(phase.tokenAllocation || phase.allocation || phase.limit || phase.amount || phase.maxSupply || 0);
+        const cap = Number(phase.cap || phase.target || 0);
+        
+        // V2 PRIORITY: If we have price and allocation, use their product.
+        // This prevents cases where "limit" might be incorrectly set to the unit price.
+        const calculatedValue = (price > 0 && allocation > 0) ? (price * allocation) : 0;
+        
+        // Use the higher value between calculated and explicit cap (if any)
+        const phaseValue = Math.max(calculatedValue, cap);
+        
+        return acc + (isNaN(phaseValue) ? 0 : phaseValue);
+      }, 0);
+      
+      if (totalPhasesAmount > 0) return totalPhasesAmount;
+    }
+
+    // Absolute fallback
+    return 0;
+  } catch (e) {
+    console.warn("[getTargetAmount] Parsing failed, using fallback:", e);
+    const fallbackAmount = Number(project?.target_amount || project?.targetAmount || 0);
+    return (!isNaN(fallbackAmount) && fallbackAmount > 0) ? fallbackAmount : 0;
+  }
+}
+
+/**
+ * Sanitizes a URL for use in <img> tags.
+ * Handles IPFS, relative paths, and invalid placeholders.
+ * V3 FIX: Forces absolute URLs for commerce widgets to load correctly on external domains.
+ */
+export function sanitizeUrl(url: any): string | null {
+  if (!url || typeof url !== 'string') return null;
+  
+  let cleanUrl = url.trim();
+  
+  // Temporary fix for staging DB having the wrong logo for S'Narai
+  if (cleanUrl === '/images/default-logo.jpg') {
+    cleanUrl = '/images/narai.jpg';
+  }
+  
+  // Ignore common placeholder strings or invalid values
+  const placeholders = ['image', 'logo', 'icon', 'undefined', 'null', 'cover', 'placeholder'];
+  if (placeholders.includes(cleanUrl.toLowerCase())) return null;
+  
+  // Handle IPFS: ipfs://CID or ipfs:CID or strict raw CIDv0 / CIDv1
+  const isCidV0 = /^Qm[1-9A-HJ-NP-Za-km-z]{44,}$/.test(cleanUrl);
+  const isCidV1 = /^ba[fkyz][a-z0-9]{40,}$/i.test(cleanUrl);
+  if (
+    cleanUrl.startsWith('ipfs:') || 
+    cleanUrl.startsWith('ipfs://') || 
+    isCidV0 ||
+    isCidV1
+  ) {
+    return resolveIpfsUrl(cleanUrl);
+  }
+
+  // Handle standard absolute URLs
+  if (cleanUrl.startsWith('http')) {
+    // Route legacy public gateway URLs through resolveIpfsUrl
+    if (cleanUrl.includes('cloudflare-ipfs.com/ipfs/') || cleanUrl.includes('ipfs.io/ipfs/')) {
+      const path = cleanUrl.substring(cleanUrl.indexOf('/ipfs/') + 6);
+      return resolveIpfsUrl(path);
+    }
+
+    // Route legacy broken aztecaz domains for S'Narai cover to local dashboard asset
+    if (cleanUrl.includes('snarai.aztecaz.xyz/snarai_cov.png')) {
+      return '/images/snarai_cov.png';
+    }
+
+    // Safety check: if the url is something like http://logo-gold.png (which happens if mistakenly entered),
+    // we should treat it as a relative filename instead of a domain.
+    try {
+      const parsed = new URL(cleanUrl);
+      if (!parsed.hostname.includes('.')) {
+        cleanUrl = cleanUrl.replace(/^https?:\/\//, '');
+        // Proceed to fallback
+      } else {
+        return cleanUrl;
+      }
+    } catch (e) {
+      // Invalid URL, proceed to fallback
+      cleanUrl = cleanUrl.replace(/^https?:\/\//, '');
+    }
+  }
+  
+  // Handle relative paths - Use current origin when in browser or fallback to env/production URL
+  if (cleanUrl.startsWith('/')) {
+    if (typeof window !== 'undefined') {
+      return cleanUrl; // Local browser handles relative paths natively
+    }
+    let baseUrl = process.env.NEXT_PUBLIC_URL || 'https://dash.pandoras.finance';
+    if (baseUrl === '/' || baseUrl === '//') baseUrl = 'https://dash.pandoras.finance';
+    baseUrl = baseUrl.replace(/\/$/, '');
+    return `${baseUrl}${cleanUrl}`;
+  }
+
+  // Handle data URLs
+  if (cleanUrl.startsWith('data:')) {
+    return cleanUrl;
+  }
+  
+  // Default fallback: Assume it might be a relative asset on the dashboard
+  let baseUrl = process.env.NEXT_PUBLIC_URL || 'https://dash.pandoras.finance';
+  if (baseUrl === '/' || baseUrl === '//') baseUrl = 'https://dash.pandoras.finance';
+  // Remove trailing slash from baseUrl if present
+  baseUrl = baseUrl.replace(/\/$/, '');
+  return `${baseUrl}/${cleanUrl}`;
+}
+
+/**
+ * Resolves an IPFS CID or URI to an active IPFS Gateway.
+ * Interim production default: gateway.pinata.cloud (active functional gateway)
+ * Switchable via NEXT_PUBLIC_IPFS_GATEWAY (e.g. https://ipfs.pandoras.finance/ipfs once DNS is live).
+ */
+export function resolveIpfsUrl(url?: string | null): string | null {
+  if (!url) return null;
+  const clean = url.trim();
+  
+  let path = '';
+  if (clean.startsWith('ipfs://') || clean.startsWith('ipfs:')) {
+    path = clean.replace(/^ipfs:(\/*)/, '');
+  } else if (/^Qm[1-9A-HJ-NP-Za-km-z]{44,}$/.test(clean) || /^ba[fkyz][a-z0-9]{40,}$/i.test(clean)) {
+    path = clean;
+  } else if (clean.includes('/ipfs/')) {
+    path = clean.substring(clean.indexOf('/ipfs/') + 6);
+  }
+
+  if (path) {
+    // Default to active Pinata gateway until ipfs.pandoras.finance DNS is active
+    const gateway = (process.env.NEXT_PUBLIC_IPFS_GATEWAY || 'https://gateway.pinata.cloud/ipfs').replace(/\/$/, '');
+    return `${gateway}/${path}`;
+  }
+
+  return clean;
+}
+
+/**
+ * Returns prioritized fallback gateway URLs for client-side multi-gateway retry.
+ */
+export function getIpfsGatewayFallbackUrls(cidOrPath: string): string[] {
+  const path = cidOrPath.replace(/^ipfs:(\/*)/, '');
+  const customGateway = process.env.NEXT_PUBLIC_IPFS_GATEWAY?.replace(/\/$/, '');
+  const urls: string[] = [];
+  if (customGateway) urls.push(`${customGateway}/${path}`);
+  urls.push(`https://gateway.pinata.cloud/ipfs/${path}`);
+  urls.push(`https://ipfs.io/ipfs/${path}`);
+  urls.push(`https://cloudflare-ipfs.com/ipfs/${path}`);
+  return urls;
+}
+

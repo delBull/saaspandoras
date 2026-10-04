@@ -4,21 +4,21 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
-import { projects, marketingCampaigns, marketingExecutions } from '@/db/schema';
-import { eq, or, desc, sql } from 'drizzle-orm';
-import { getAuth } from '@/lib/auth';
-import { checkRateLimit, clientIpFromHeaders } from '@/lib/hermes/auth/rate-limiter';
-import { validatePortalSession } from '@/lib/platform/portal-auth';
-import { OrganizationSDK } from '@/lib/platform/organization-sdk';
-import { SessionTokenService } from '@/lib/hermes/auth/session-token.service';
-import { isWalletAuthorizedForTenant } from '@/lib/hermes/auth/wallet-tenant-membership';
+import { db } from '@saasfly/db';
+import { projects, marketingCampaigns, marketingExecutions } from '@saasfly/db/schema';
+import { eq, or, desc, sql } from "@saasfly/db-core";
+import { getAuth } from '@saasfly/auth-sdk';
+import { checkRateLimit, clientIpFromHeaders } from '@saasfly/hermes-core';
+import { validatePortalSession } from '@saasfly/shared';
+import { OrganizationSDK } from '@saasfly/shared';
+import { SessionTokenService } from '@saasfly/hermes-core';
+import { isWalletAuthorizedForTenant } from '@saasfly/hermes-core';
 import { capabilityRegistry } from '@/lib/growth/capability-registry.service';
 import type { 
   GetEmailMarketingResponseDTO, 
   EmailTemplateDTO, 
   EmailCampaignDTO 
-} from '@/lib/dash-contracts/growth';
+} from '@saasfly/shared';
 
 export const dynamic = 'force-dynamic';
 

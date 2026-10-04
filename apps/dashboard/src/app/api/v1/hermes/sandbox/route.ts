@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generateBotResponse } from '@/lib/marketing/bot-engine';
+import { generateBotResponse } from '@saasfly/shared';
 import { Redis } from 'ioredis';
 
 // Global Freno de Mano: Max 100 sandbox requests/day across ALL users combined (First-Come, First-Served)
@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Build dynamic system prompt using sanitized DemoContext
-    const { resolveSafeDemoContext, buildSandboxTrace } = await import('@/lib/hermes/simulator-types');
+    const { resolveSafeDemoContext, buildSandboxTrace } = await import('@saasfly/hermes-core');
     const demoCtx = resolveSafeDemoContext({
       company: companyName,
       industry,
@@ -198,7 +198,7 @@ REGLAS DE FORMATO VISUAL Y ESTILO:
 
     // Record intelligence event for Growth OS Mission Control Analytics
     try {
-      const { HermesIntelligenceEngine } = await import('@/lib/hermes/intelligence-engine');
+      const { HermesIntelligenceEngine } = await import('@saasfly/hermes-core');
       HermesIntelligenceEngine.recordBehaviorEvent({
         projectSlug: 'sandbox',
         eventType: 'HANDLED_OBJECTION',

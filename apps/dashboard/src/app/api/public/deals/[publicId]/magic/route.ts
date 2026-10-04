@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { getRoomByPublicId, markMagicSent } from "@/lib/nexus-deals/repo";
-import { generateDealToken } from "@/lib/nexus-deals/tokens";
-import { sendDealMagicLink } from "@/lib/nexus-deals/email";
-import { KIND_LABEL } from "@/lib/nexus-deals/types";
+import { getRoomByPublicId, markMagicSent } from "@saasfly/nexus-deals-sdk";
+import { generateDealToken } from "@saasfly/nexus-deals-sdk";
+import { sendDealMagicLink } from "@saasfly/nexus-deals-sdk";
+import { KIND_LABEL } from "@saasfly/nexus-deals-sdk";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

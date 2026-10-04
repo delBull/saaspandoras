@@ -1,7 +1,7 @@
 
-import { db } from "../db";
-import { projects } from "../db/schema";
-import { eq, and } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { projects } from "@saasfly/db-core/schema";
+import { eq, and } from "@saasfly/db-core";
 import { harmonizeProject } from "../lib/projects/harmonizer";
 
 async function verify() {

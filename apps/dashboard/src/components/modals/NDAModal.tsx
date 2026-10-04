@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
-import { NDA_VERSION, getNdaConfig } from "@/lib/nexus-deals/nda-content";
+import { NDA_VERSION, getNdaConfig } from "@saasfly/nexus-deals-sdk";
 
 interface NDAModalProps {
   isOpen: boolean;

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { validatePortalSession } from '@/lib/platform/portal-auth';
-import { db } from '@/db';
-import { marketingLeads } from '@/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { validatePortalSession } from '@saasfly/shared';
+import { db } from '@saasfly/db';
+import { marketingLeads } from '@saasfly/db/schema';
+import { eq, desc } from "@saasfly/db-core";
 
 export const dynamic = 'force-dynamic';
 

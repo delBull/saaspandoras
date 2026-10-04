@@ -1,8 +1,8 @@
-import { getNexusAuthContext } from "@/lib/nexus/nexus-rbac";
+import { getNexusAuthContext } from "@saasfly/shared";
 import { NexusCommandCenter } from "./NexusCommandCenter";
 import { NexusLoginGate } from "./NexusLoginGate";
 import { NexusProvisioningPending } from "./NexusProvisioningPending";
-import { generateAcademyToken } from "@/lib/nexus-deals/tokens";
+import { generateAcademyToken } from "@saasfly/nexus-deals-sdk";
 
 export const dynamic = "force-dynamic";
 

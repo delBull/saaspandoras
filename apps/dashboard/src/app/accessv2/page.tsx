@@ -20,7 +20,7 @@ import React, { Suspense } from 'react';
 import { NFTGate } from '@/components/nft-gate';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useActiveAccount, useConnectModal, useDisconnect, useActiveWallet } from 'thirdweb/react';
-import { client } from '@/lib/thirdweb-client';
+import { client } from '@saasfly/shared';
 import { wallets } from '@/lib/wallets';
 import { config } from '@/config';
 import { useEffect, useState } from 'react';

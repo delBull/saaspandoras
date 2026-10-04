@@ -3,8 +3,8 @@
  * src/lib/dash-api/channels.ts
  */
 
-import type { MaskedChannelsConfigDTO, SaveChannelConfigRequestDTO } from '@/lib/dash-contracts/channels';
-import type { DashApiError } from '@/lib/dash-contracts/journeys';
+import type { MaskedChannelsConfigDTO, SaveChannelConfigRequestDTO } from '@saasfly/shared';
+import type { DashApiError } from '@saasfly/shared';
 import { resolveApiBaseUrl, getServerAuthHeaders } from './utils';
 
 export class DashApiChannelsClient {

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import type { PortalOrganization } from '@/lib/portal/portal-types';
+import type { PortalOrganization } from '@saasfly/shared';
 import { Layers, Bot, Rocket, Landmark, ShieldCheck, LogOut, Sliders, Lock } from 'lucide-react';
 import { DisplayControlsWidget } from '@pandoras/display-engine';
 

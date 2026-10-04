@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db";
-import { projects as projectsSchema, projectDocuments as projectDocumentsSchema } from "@/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { projects as projectsSchema, projectDocuments as projectDocumentsSchema } from "@saasfly/db-core";
+import { eq, desc } from "@saasfly/db-core";
 import { IntegrationKeyService } from "@/lib/integrations/auth";
 
 export const runtime = "nodejs";

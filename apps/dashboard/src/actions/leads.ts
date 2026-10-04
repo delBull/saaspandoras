@@ -1,8 +1,8 @@
 "use server";
 
-import { db } from "@/db";
-import { clients, marketingLeads } from "@/db/schema";
-import { eq, and, or } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { clients, marketingLeads } from "@saasfly/db-core";
+import { eq, and, or } from "@saasfly/db-core";
 import { notifyNewLead } from "@/lib/discord";
 
 /**

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { sql } from '@/lib/database';
+import { sql } from '@saasfly/db-core';
 
 export const dynamic = 'force-dynamic';
 

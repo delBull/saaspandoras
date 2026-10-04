@@ -22,7 +22,7 @@ import {
   Calendar,
   Layers
 } from 'lucide-react';
-import { AdminTenantLensDTO } from '@/lib/dash-contracts/admin';
+import { AdminTenantLensDTO } from '@saasfly/shared';
 import { AdminWhitelabelConfig } from './AdminWhitelabelConfig';
 
 interface AdminTenantLensProps {

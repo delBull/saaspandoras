@@ -29,7 +29,7 @@ import {
   XCircle,
   Wallet
 } from "lucide-react";
-import { SUPER_ADMIN_WALLET } from "@/lib/constants";
+import { SUPER_ADMIN_WALLET } from "@saasfly/auth-sdk";
 import Link from "next/link";
 
 interface Admin {

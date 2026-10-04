@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { DashApi } from '@/lib/dash-api';
-import type { GrowthOverviewDTO } from '@/lib/dash-contracts/growth';
+import type { GrowthOverviewDTO } from '@saasfly/shared';
 import { 
   Rocket, 
   TrendingUp, 
@@ -65,7 +65,7 @@ export default async function GrowthOverviewPage({ params }: { params: Promise<{
   // Real data only: payment-inbox buckets + last hermes events for THIS org.
   let vigilance: { pending: number; processedToday: number; failed: number; lastEvents: { id: string; description: string; timestamp: string; actor: string }[] } = { pending: 0, processedToday: 0, failed: 0, lastEvents: [] };
   try {
-    const { HermesPaymentEventInbox } = await import('@/lib/pandoras/core/domains/hermes/payments/core/event-inbox');
+    const { HermesPaymentEventInbox } = await import('@saasfly/hermes-core');
     const canonicalOrg = fetched?.organizationId || orgId;
     vigilance = await HermesPaymentEventInbox.vigilanceSnapshot(String(canonicalOrg));
   } catch (vigErr: any) {

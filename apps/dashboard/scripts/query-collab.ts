@@ -1,5 +1,5 @@
-import { db } from '../src/db/index';
-import { sql } from 'drizzle-orm';
+import { db } from '@saasfly/db-core';
+import { sql } from "@saasfly/db-core";
 
 async function main() {
   const res = await db.execute(sql`SELECT id, name, email, telegram_user_id FROM nexus_collaborators`);

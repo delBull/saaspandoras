@@ -1,17 +1,17 @@
 import { NextResponse } from "next/server";
-import { db } from "~/db";
-import { eq } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { eq } from "@saasfly/db-core";
 
 // ⚠️ EXPLICITAMENTE USAR Node.js RUNTIME para APIs que usan PostgreSQL
 export const runtime = "nodejs";
-import { projects as projectsSchema } from "@/db/schema";
+import { projects as projectsSchema } from "@saasfly/db-core";
 import { projectApiSchema } from "@/lib/project-schema-api";
-import { getAuth } from "@/lib/auth";
+import { getAuth } from "@saasfly/auth-sdk";
 import { headers } from "next/headers";
 import slugify from "slugify";
 import { trackGamificationEvent } from "@/lib/gamification/service";
 import { WebhookService } from "@/lib/integrations/webhook-service";
-import { integrationClients } from "@/db/schema";
+import { integrationClients } from "@saasfly/db-core";
 
 export async function POST(request: Request) {
   try {

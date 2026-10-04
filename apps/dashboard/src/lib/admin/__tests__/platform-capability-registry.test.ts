@@ -7,8 +7,8 @@ import { describe, it, expect } from 'vitest';
 import {
   PlatformCapabilityRegistryService,
   PlatformCapability,
-} from '../platform-capability-registry.service';
-import { PlatformActor } from '@/lib/dash-contracts/admin';
+} from '@saasfly/shared';
+import { PlatformActor } from '@saasfly/shared';
 
 describe('PlatformCapabilityRegistryService (F9.2)', () => {
   const superAdminWith2fa: PlatformActor = {

@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { 
   PlatformCapabilityRegistryService,
   PlatformResourceScope
-} from '../platform-capability-registry.service';
-import { PlatformActor } from '@/lib/dash-contracts/admin';
+} from '@saasfly/shared';
+import { PlatformActor } from '@saasfly/shared';
 
 /**
  * 🛡️ F9.9 PLATFORM BOUNDARY ADVERSARIAL CERTIFICATION SUITE

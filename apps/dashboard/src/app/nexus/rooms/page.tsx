@@ -1,5 +1,5 @@
-import { getNexusAuthContext, checkNexusPermission } from "@/lib/nexus/nexus-rbac";
-import { verifyUnlockToken } from "@/lib/nexus-deals/tokens";
+import { getNexusAuthContext, checkNexusPermission } from "@saasfly/shared";
+import { verifyUnlockToken } from "@saasfly/nexus-deals-sdk";
 import DealRoomAccessGate from "./DealRoomAccessGate";
 import DealRoomConsole from "./DealRoomConsole";
 

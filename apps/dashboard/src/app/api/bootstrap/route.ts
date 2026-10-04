@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { db } from "@/db";
-import { sql, eq, and, inArray, desc } from "drizzle-orm";
-import { projects, users, gamificationEvents } from "@/db/schema";
-import { getProjectPhasesWithStats } from "@/lib/phase-utils";
+import { db } from "@saasfly/db-core";
+import { sql, eq, and, inArray, desc } from "@saasfly/db-core";
+import { projects, users, gamificationEvents } from "@saasfly/db-core";
+import { getProjectPhasesWithStats } from "@saasfly/shared";
 import { unstable_cache } from "next/cache";
 
 export const dynamic = 'force-dynamic';

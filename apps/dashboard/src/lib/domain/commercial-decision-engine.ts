@@ -1,6 +1,6 @@
-import { db } from '@/db';
-import { marketingLeadEvents } from '@/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { marketingLeadEvents } from '@saasfly/db/schema';
+import { eq, desc } from "@saasfly/db-core";
 import { DecisionDTO, LeadActivityDTO } from './dto';
 
 export class CommercialDecisionEngine {

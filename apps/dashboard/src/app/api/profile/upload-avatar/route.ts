@@ -3,10 +3,10 @@ import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { put } from '@vercel/blob';
 import sharp from 'sharp';
-import { getAuth } from '@/lib/auth';
-import { db } from '@/db';
-import { users } from '@/db/schema';
-import { eq, and } from "drizzle-orm";
+import { getAuth } from '@saasfly/auth-sdk';
+import { db } from '@saasfly/db';
+import { users } from '@saasfly/db/schema';
+import { eq, and } from "@saasfly/db-core";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB max
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];

@@ -4,7 +4,7 @@ import { useActiveAccount } from "thirdweb/react";
 import { getContract, readContract } from "thirdweb";
 import { getWalletBalance } from "thirdweb/wallets";
 import { useEffect, useState } from "react";
-import { client } from "@/lib/thirdweb-client";
+import { client } from "@saasfly/shared";
 import { config } from "@/config";
 
 const ERC20_ABI = [ { constant: true, name: "balanceOf", type: "function", stateMutability: "view", inputs: [{ name: "owner", type: "address" }], outputs: [{ name: "balance", type: "uint256" }], } ] as const;

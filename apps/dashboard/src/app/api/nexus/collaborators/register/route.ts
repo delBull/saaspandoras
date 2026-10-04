@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
-import { nexusCollaborators, users, type NexusProvisionStatus } from '@/db/schema';
+import { db } from '@saasfly/db';
+import { nexusCollaborators, users, type NexusProvisionStatus } from '@saasfly/db/schema';
 import crypto from 'crypto';
-import { eq } from 'drizzle-orm';
-import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
+import { eq } from "@saasfly/db-core";
+import { getNexusAuthContext } from '@saasfly/shared';
 import { notifyProvisioningRequest } from '@/lib/nexus/provisioning';
 
 const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL || process.env.NEXUS_ADMIN_EMAIL || '')

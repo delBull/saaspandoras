@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/db';
-import { publicIntegrations, marketingLeads, projects } from '@/db/schema';
-import { eq, and, or } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { publicIntegrations, marketingLeads, projects } from '@saasfly/db/schema';
+import { eq, and, or } from "@saasfly/db-core";
 import crypto from 'crypto';
-import { IdentityResolver } from '@/lib/marketing/identity-resolver';
+import { IdentityResolver } from '@saasfly/shared';
 import { IdentityService } from '@/lib/marketing/identity-service';
 
 // In-memory rate limiting (Replace with Redis in production)

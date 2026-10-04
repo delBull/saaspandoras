@@ -1,11 +1,11 @@
 import { requireEnvUrl } from '@/lib/env-utils';
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
-import { getAuth } from "@/lib/auth";
-import { db } from "@/db";
-import { userReferrals, users } from "@/db/schema";
+import { getAuth } from "@saasfly/auth-sdk";
+import { db } from "@saasfly/db-core";
+import { userReferrals, users } from "@saasfly/db-core";
 import { GamificationService } from "@/lib/gamification/service";
-import { eq, and } from "drizzle-orm";
+import { eq, and } from "@saasfly/db-core";
 
 // API para procesar referidos desde enlaces ?ref=wallet
 export async function POST(request: Request) {

@@ -25,10 +25,10 @@
  */
 
 import { cookies, headers } from 'next/headers';
-import { validatePortalSession } from '@/lib/platform/portal-auth';
-import { OrganizationSDK } from '@/lib/platform/organization-sdk';
-import { getAuth, isAdmin } from '@/lib/auth';
-import { isWalletAuthorizedForTenant } from '@/lib/hermes/auth/wallet-tenant-membership';
+import { validatePortalSession } from '../platform/portal-auth';
+import { OrganizationSDK } from '../platform/organization-sdk';
+import { getAuth, isAdmin } from '@saasfly/auth-sdk';
+import { isWalletAuthorizedForTenant } from '@saasfly/hermes-core';
 import {
   PortalTenantContext,
   PortalOrganization,
@@ -205,8 +205,8 @@ export async function tryResolvePortalContext(
  */
 export async function getTenantOnboardingStage(context: PortalContext, requestedSlug: string): Promise<string | null> {
   try {
-    const { db } = await import('@/db');
-    const { portalOnboardingState } = await import('@/db/schema');
+    const { db } = await import('@saasfly/db-core');
+    const { portalOnboardingState } = await import('@saasfly/db-core/schema');
     const { eq, or } = await import('drizzle-orm');
 
     const [onboarding] = await db

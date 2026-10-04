@@ -1,7 +1,7 @@
 import crypto from 'crypto';
-import { db } from '@/db';
-import { webhookEvents, integrationClients } from '@/db/schema';
-import { eq, and, isNotNull } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { webhookEvents, integrationClients } from '@saasfly/db/schema';
+import { eq, and, isNotNull } from "@saasfly/db-core";
 
 export class WebhookService {
     /**

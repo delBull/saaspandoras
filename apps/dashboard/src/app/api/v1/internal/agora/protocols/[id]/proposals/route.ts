@@ -1,8 +1,8 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { db } from "@/db";
-import { governanceProposals, governanceVotes } from "@/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { governanceProposals, governanceVotes } from "@saasfly/db-core";
+import { eq, desc } from "@saasfly/db-core";
 
 export async function GET(
     request: NextRequest,

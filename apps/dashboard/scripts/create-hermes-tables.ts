@@ -1,5 +1,5 @@
-import { db } from '../src/db/index.js';
-import { sql } from 'drizzle-orm';
+import { db } from '@saasfly/db-core';
+import { sql } from "@saasfly/db-core";
 
 async function main() {
   console.log('Creating hermes_conversations and hermes_conversation_messages tables...');

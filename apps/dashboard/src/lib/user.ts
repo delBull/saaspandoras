@@ -1,28 +1,25 @@
-import { sql } from "./database";
+import { db, users } from "@saasfly/db-core";
 import { randomUUID } from "crypto";
+import { eq, sql } from "drizzle-orm";
 
 export async function ensureUser(walletAddress: string) {
-
   try {
-    // First, try to find existing user
-    const users = await sql`
-      SELECT "id" FROM "users"
-      WHERE LOWER("walletAddress") = LOWER(${walletAddress})
-      LIMIT 1
-    `;
-
-    if (users.length > 0) {
-      return users[0];
+    const existing = await db.select({ id: users.id })
+      .from(users)
+      .where(sql`LOWER(${users.walletAddress}) = LOWER(${walletAddress})`)
+      .limit(1);
+    
+    if (existing.length > 0) {
+      return existing[0];
     }
 
-    // If not found, create new user
-    const newUsers = await sql`
-      INSERT INTO "users" ("id", "walletAddress", "createdAt")
-      VALUES (${randomUUID()}, LOWER(${walletAddress}), ${new Date().toISOString()})
-      RETURNING "id"
-    `;
+    const newUser = await db.insert(users).values({
+      id: randomUUID(),
+      walletAddress: walletAddress.toLowerCase(),
+      createdAt: new Date(),
+    }).returning({ id: users.id });
 
-    return newUsers[0];
+    return newUser[0];
   } catch (error) {
     console.error("Error in ensureUser:", error);
     throw error;

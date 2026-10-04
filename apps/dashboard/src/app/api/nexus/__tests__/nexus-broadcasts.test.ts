@@ -16,9 +16,9 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { NextRequest } from 'next/server';
 import { GET, POST, PATCH } from '../broadcasts/route';
 import { formatBroadcastWhatsAppMessage } from '@/lib/nexus/broadcast-formatter';
-import { db } from '@/db';
-import { nexusCollaborators, nexusBroadcasts } from '@/db/schema';
-import { eq, inArray } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { nexusCollaborators, nexusBroadcasts } from '@saasfly/db/schema';
+import { eq, inArray } from "@saasfly/db-core";
 
 const TEST_ADMIN_TOKEN = 'test_token_super_admin_sec_999';
 const TEST_VIEWER_TOKEN = 'test_token_viewer_sec_111';

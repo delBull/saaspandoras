@@ -39,12 +39,13 @@
   "scripts": {
     "clean": "rm -rf .turbo node_modules",
     "format": "prettier --check '**/*.{mjs,ts,json}' ",
-    "build": "tsup src/index.ts src/email.ts src/emails/magic-link-email.tsx src/subscriptions.ts src/env.mjs --format esm,cjs --dts --clean",
+    "build": "tsup --external @saasfly/hermes-core --external @saasfly/nexus-deals-sdk src/index.ts src/email.ts src/emails/magic-link-email.tsx src/subscriptions.ts src/env.mjs --format esm,cjs --dts --clean",
     "dev": "tsup src/index.ts src/email.ts src/emails/magic-link-email.tsx src/subscriptions.ts src/env.mjs --format esm,cjs --watch"
   },
   "dependencies": {
     "@saasfly/ui": "workspace:*",
-    "resend": "2.1.0"
+    "resend": "2.1.0",
+    "@saasfly/db-core": "workspace:*"
   },
   "devDependencies": {
     "@saasfly/eslint-config": "workspace:*",

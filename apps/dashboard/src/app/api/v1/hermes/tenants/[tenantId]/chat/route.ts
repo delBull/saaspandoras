@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { HermesRuntime, getDefaultRuntime } from '@/lib/pandoras/core/domains/hermes/runtime/hermes-runtime';
-import { ActorIdentityBindingService } from '@/lib/pandoras/core/domains/hermes/runtime/prompt-hygiene-contract';
-import { hermesConversations } from '@/db/schema';
-import { db } from '@/db';
-import { and, eq } from 'drizzle-orm';
-import { checkTenantRateLimit, buildRateLimitHeaders } from '@/lib/hermes/auth/rate-limiter';
-import { TenantAuthorityService } from '@/lib/pandoras/core/domains/hermes/tenants/tenant-authority';
+import { HermesRuntime, getDefaultRuntime } from '@saasfly/hermes-core';
+import { ActorIdentityBindingService } from '@saasfly/hermes-core';
+import { hermesConversations } from '@saasfly/db/schema';
+import { db } from '@saasfly/db';
+import { and, eq } from "@saasfly/db-core";
+import { checkTenantRateLimit, buildRateLimitHeaders } from '@saasfly/hermes-core';
+import { TenantAuthorityService } from '@saasfly/hermes-core';
 
 export const dynamic = 'force-dynamic';
 
@@ -119,7 +119,7 @@ export async function POST(
     }
 
     // 3. Mandatory Actor Identity Binding & Interlocutor Resolution
-    const { InterlocutorResolver } = await import('@/lib/hermes/identity/interlocutor-resolver');
+    const { InterlocutorResolver } = await import('@saasfly/hermes-core');
     const interlocutor = await InterlocutorResolver.resolve({
       channel: 'telegram',
       externalUserId: actorId,
@@ -201,7 +201,7 @@ export async function POST(
     if (shouldEscalate) {
       // Trigger escalation via internal API (avoid circular imports — use db directly)
       try {
-        const { EscalationService } = await import('@/lib/hermes/escalation/escalation-service');
+        const { EscalationService } = await import('@saasfly/hermes-core');
         const escalation = await EscalationService.triggerEscalation({
           organizationId: canonical.canonicalOrgId,
           conversationId,

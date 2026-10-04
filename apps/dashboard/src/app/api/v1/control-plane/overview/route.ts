@@ -4,17 +4,17 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
-import { projects, installedProducts, operationalIntents } from '@/db/schema';
-import { eq, and, or, count } from 'drizzle-orm';
-import { getAuth } from '@/lib/auth';
-import { checkRateLimit, clientIpFromHeaders } from '@/lib/hermes/auth/rate-limiter';
-import { validatePortalSession } from '@/lib/platform/portal-auth';
-import { OrganizationSDK } from '@/lib/platform/organization-sdk';
-import { SessionTokenService } from '@/lib/hermes/auth/session-token.service';
-import { isWalletAuthorizedForTenant } from '@/lib/hermes/auth/wallet-tenant-membership';
+import { db } from '@saasfly/db';
+import { projects, installedProducts, operationalIntents } from '@saasfly/db/schema';
+import { eq, and, or, count } from "@saasfly/db-core";
+import { getAuth } from '@saasfly/auth-sdk';
+import { checkRateLimit, clientIpFromHeaders } from '@saasfly/hermes-core';
+import { validatePortalSession } from '@saasfly/shared';
+import { OrganizationSDK } from '@saasfly/shared';
+import { SessionTokenService } from '@saasfly/hermes-core';
+import { isWalletAuthorizedForTenant } from '@saasfly/hermes-core';
 import { capabilityRegistry } from '@/lib/growth/capability-registry.service';
-import type { ControlPlaneOverviewDTO } from '@/lib/dash-contracts/control-plane';
+import type { ControlPlaneOverviewDTO } from '@saasfly/shared';
 
 export const dynamic = 'force-dynamic';
 

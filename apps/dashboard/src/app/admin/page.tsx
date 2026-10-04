@@ -7,7 +7,7 @@
  */
 
 import React from 'react';
-import { db } from '@/db';
+import { db } from '@saasfly/db-core';
 import { 
   projects, 
   hermesTenantCredits, 
@@ -17,9 +17,9 @@ import {
   administrators,
   marketingLeads,
   nexusCollaborators
-} from '@/db/schema';
-import { desc, sql, eq } from 'drizzle-orm';
-import { getNexusAuthContext } from '@/lib/nexus/nexus-rbac';
+} from '@saasfly/db-core';
+import { desc, sql, eq } from "@saasfly/db-core";
+import { getNexusAuthContext } from '@saasfly/shared';
 import { AdminOverviewView } from '@/components/admin/views/AdminOverviewView';
 import { AdminTenantsView } from '@/components/admin/views/AdminTenantsView';
 import { AdminBillingView } from '@/components/admin/views/AdminBillingView';
@@ -38,7 +38,7 @@ import {
   PlatformB2bLeadDTO,
   B2bPipelineMetricsDTO,
   PlatformRole 
-} from '@/lib/dash-contracts/admin';
+} from '@saasfly/shared';
 
 interface AdminPageProps {
   searchParams?: Promise<{ tab?: string }>;

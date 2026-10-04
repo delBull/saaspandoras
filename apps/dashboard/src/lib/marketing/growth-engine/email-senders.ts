@@ -1,4 +1,4 @@
-import { resend, FROM_EMAIL } from '@/lib/resend';
+import { resend, FROM_EMAIL } from '@saasfly/shared';
 import ExploreStep1Email from '@/emails/explore/step1';
 import InvestStep1Email from '@/emails/invest/step1';
 import B2BWelcomeEmail from '@/emails/b2b-welcome';
@@ -13,8 +13,8 @@ import FastLaneSuccessEmail from '@/emails/FastLaneSuccessEmail';
 import CheckoutRecoveryEmail from '@/emails/CheckoutRecoveryEmail';
 
 import { EngagementLevel } from './types';
-import { db } from '@/db';
-import { emailMetrics } from '@/db/schema';
+import { db } from '@saasfly/db';
+import { emailMetrics } from '@saasfly/db/schema';
 
 /**
  * Tracks an email attempt in the local database for real-time metrics

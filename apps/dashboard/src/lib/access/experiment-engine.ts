@@ -1,8 +1,8 @@
 import { UXData } from "@/components/auth/AuthProvider";
 import { AccessState } from "./state-machine";
-import { db } from "@/db";
-import { platformSettings } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { db } from "@saasfly/db-core";
+import { platformSettings } from "@saasfly/db-core";
+import { eq } from "@saasfly/db-core";
 import { accessCache, withTimeout } from "./resilience";
 
 interface ExperimentConfig {

@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { verifySignature } from "thirdweb/auth";
-import { client } from "@/lib/thirdweb-client";
-import { db } from "@/db";
-import { authChallenges, users } from "@/db/schema";
-import { eq, and, gt } from "drizzle-orm";
+import { client } from "@saasfly/shared";
+import { db } from "@saasfly/db-core";
+import { authChallenges, users } from "@saasfly/db-core";
+import { eq, and, gt } from "@saasfly/db-core";
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
 

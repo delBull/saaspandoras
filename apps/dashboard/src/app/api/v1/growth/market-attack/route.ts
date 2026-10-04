@@ -16,8 +16,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { checkRateLimit, clientIpFromHeaders } from '@/lib/hermes/auth/rate-limiter';
-import { resolveCanonicalAuthSession } from '@/lib/hermes/auth/canonical-resolver';
+import { checkRateLimit, clientIpFromHeaders } from '@saasfly/hermes-core';
+import { resolveCanonicalAuthSession } from '@saasfly/hermes-core';
 import { capabilityRegistry } from '@/lib/growth/capability-registry.service';
 import { tryResolvePortalContext } from '@/lib/portal/resolve-portal-context';
 import { CampaignDomainService } from '@/lib/marketing/campaigns.service';
@@ -106,7 +106,7 @@ export async function GET(req: NextRequest) {
       hints: { temperature: 0.2, maxTokens: 400 },
     } as any;
 
-    const runtime = (await import('@/lib/pandoras/core/domains/hermes/runtime/hermes-runtime')).getDefaultRuntime();
+    const runtime = (await import('@saasfly/hermes-core')).getDefaultRuntime();
     const response = await runtime.respond({
       organizationId: 'pandoras', // Hermes runs under the pandoras core runtime identity to have clearance
       conversationId: `market_attack_${session.canonicalOrgId}_${Date.now()}`,

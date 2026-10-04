@@ -1,6 +1,6 @@
 // @ts-ignore
 import { describe, it, expect, beforeEach } from 'bun:test';
-import { PlatformAuditLedgerService } from '@/lib/admin/platform-audit-ledger.service';
+import { PlatformAuditLedgerService } from '@saasfly/hermes-core';
 import { WhatsAppDispatcher } from '../dispatcher';
 
 describe('⚡ Suite B: Concurrency, Idempotency & Persistent Ledger', () => {
@@ -140,7 +140,7 @@ describe('⚡ Suite B: Concurrency, Idempotency & Persistent Ledger', () => {
   });
 
   it('IDEMP-04: Outbound CAS lease recovery — Expired lease (>5 min) is reclaimed, active lease (<5 min) is blocked', async () => {
-    const { HermesOutboundDispatcher } = await import('@/lib/hermes/agents/HermesOutboundDispatcher');
+    const { HermesOutboundDispatcher } = await import('@saasfly/hermes-core');
 
     // Access the private claim method via any cast to verify CAS logic
     const claimMethod = (HermesOutboundDispatcher as any).claimLeadForOutreach;

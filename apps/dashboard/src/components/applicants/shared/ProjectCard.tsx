@@ -1,10 +1,10 @@
-import { sanitizeUrl, getTargetAmount } from "@/lib/project-utils";
-import { resolveIpfsUrl } from "@/lib/utils";
+import { sanitizeUrl, getTargetAmount } from "@saasfly/shared";
+import { resolveIpfsUrl } from "@saasfly/shared";
 import Link from "next/link";
 import { EyeIcon, ImageIcon } from "lucide-react";
 import type { Project } from "../../../hooks/applicants/useApplicantsData";
 import { useWalletBalance, useReadContract } from "thirdweb/react";
-import { client } from "@/lib/thirdweb-client";
+import { client } from "@saasfly/shared";
 import { getContract, defineChain } from "thirdweb";
 
 interface ProjectCardProps {

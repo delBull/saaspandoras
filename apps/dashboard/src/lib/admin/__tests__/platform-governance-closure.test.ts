@@ -2,11 +2,11 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { 
   PlatformCapabilityRegistryService,
   PlatformResourceScope
-} from '../platform-capability-registry.service';
+} from '@saasfly/shared';
 import { 
   PlatformAuditLedgerService 
-} from '../platform-audit-ledger.service';
-import { PlatformActor } from '@/lib/dash-contracts/admin';
+} from '@saasfly/hermes-core';
+import { PlatformActor } from '@saasfly/shared';
 
 /**
  * 🏛️ F9.10 PLATFORM GOVERNANCE CLOSURE & OPERATIONAL READINESS SUITE

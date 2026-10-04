@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@saasfly/ui/use-toast";
 import { useActiveAccount, useSendTransaction } from "thirdweb/react";
 import { getContract, prepareContractCall } from "thirdweb";
-import { client } from "@/lib/thirdweb-client";
+import { client } from "@saasfly/shared";
 import { config } from "@/config";
 import { PANDORAS_KEY_ABI } from "@/lib/pandoras-key-abi";
 import { Switch } from "@saasfly/ui/switch";

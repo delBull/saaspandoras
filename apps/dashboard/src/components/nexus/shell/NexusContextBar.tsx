@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import type { NexusAuthContext } from "@/lib/nexus/nexus-rbac";
+import type { NexusAuthContext } from "@saasfly/shared";
 
 interface NexusContextBarProps {
   auth?: NexusAuthContext;

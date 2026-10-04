@@ -19,16 +19,16 @@
  */
 
 import { CLIENT_SEQUENCE } from '@/lib/email/templates/hermes-email-sequences';
-import { db } from '@/db';
-import { projects, installedProducts, marketingLeads, clients } from '@/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { db } from '@saasfly/db';
+import { projects, installedProducts, marketingLeads, clients } from '@saasfly/db/schema';
+import { eq, and } from "@saasfly/db-core";
 import {
   PRODUCT_REGISTRY,
   ProductKey,
   PlanKey,
   getDefaultCapabilities,
   getDefaultConnectors,
-} from './product-registry';
+} from '@saasfly/shared';
 import { generatePortalToken } from './portal-auth';
 
 // ── 🔒 S'Narai Protection ────────────────────────────────────────────────────
