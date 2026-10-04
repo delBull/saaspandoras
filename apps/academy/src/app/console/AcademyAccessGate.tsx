@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { GraduationCap, Lock, RefreshCw, Mail, ArrowRight, CheckCircle2 } from "lucide-react";
+import { fetchAcademy } from "@/lib/fetch-academy";
 
 export default function AcademyAccessGate() {
   const [email, setEmail] = useState("");
@@ -17,7 +18,7 @@ export default function AcademyAccessGate() {
       : null;
 
     setLoading(true);
-    fetch("/api/admin/academy/unlock", {
+    fetchAcademy("/api/admin/academy/unlock", {
       method: "POST",
       credentials: "include",
       headers: {
@@ -45,7 +46,7 @@ export default function AcademyAccessGate() {
         ? (localStorage.getItem("pandoras_nexus_token") || localStorage.getItem("nexus_token"))
         : null;
 
-      const res = await fetch("/api/admin/academy/unlock", {
+      const res = await fetchAcademy("/api/admin/academy/unlock", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

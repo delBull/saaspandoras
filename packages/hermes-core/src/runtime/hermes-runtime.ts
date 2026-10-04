@@ -50,7 +50,7 @@ import { CognitiveContextAdapter } from './context-adapter';
 import { HermesPromptBuilder } from './prompt-builder';
 import { CognitiveContextBuilder } from '../addons/context-merger';
 import { JourneyEngine } from './journey-engine';
-import { MockReasoningProvider, MockStreamingProvider } from './reasoning-providers';
+import { MockReasoningProvider, MockStreamingProvider, OllamaStreamingProvider, OllamaReasoningProvider } from './reasoning-providers';
 import { ConversationMemoryProvider } from './memory/contracts';
 import { PostgresConversationMemoryProvider } from './memory/postgres-memory-provider';
 import { MemoryAdapter } from './memory/memory-adapter';
@@ -1977,7 +1977,8 @@ export function isHermesEnabled(): boolean {
  *   'ollama'        → OllamaStreamingProvider (production default)
  *   'ollama-stream' → OllamaStreamingProvider (alias, backward-compatible)
  *   'ollama-sync'   → OllamaReasoningProvider (non-streaming, legacy)
- *   (unset / any)   → MockStreamingProvider (test/dev)
+ *   'mock'          → MockStreamingProvider (explicit test/dev only)
+ *   (unset / unknown) → FATAL throw (Fail-Closed — never silently degrade to mock in production)
  */
 export function getDefaultRuntime(): HermesRuntime {
   if (!_defaultRuntime) {
@@ -1986,27 +1987,29 @@ export function getDefaultRuntime(): HermesRuntime {
     let provider: ReasoningProvider;
     if (providerType === 'ollama' || providerType === 'ollama-stream') {
       // Production: streaming provider — supports both respond() and stream()
-      const { OllamaStreamingProvider } = require('./reasoning-providers');
       provider = new OllamaStreamingProvider({
         baseUrl: process.env.OLLAMA_BASE_URL,
         model: process.env.OLLAMA_MODEL,
       });
     } else if (providerType === 'ollama-sync') {
       // Legacy sync (no streaming) — useful for debugging
-      const { OllamaReasoningProvider } = require('./reasoning-providers');
       provider = new OllamaReasoningProvider({
         baseUrl: process.env.OLLAMA_BASE_URL,
         model: process.env.OLLAMA_MODEL,
       });
     } else if (providerType === 'mock') {
-      const { MockStreamingProvider } = require('./reasoning-providers');
+      // Explicit test/dev mock — must be set intentionally, never a default
       provider = new MockStreamingProvider();
     } else {
-      throw new Error(`[HermesRuntime] FATAL: HERMES_REASONING_PROVIDER is not configured or invalid (got: ${providerType}). Must be 'ollama', 'ollama-stream', 'ollama-sync', or 'mock'.`);
+      // FAIL-CLOSED: unset or unknown provider is a FATAL configuration error.
+      // This was sealed in commit 24b1b0db and must not be reverted.
+      // An unknown providerType (including undefined) must never silently degrade.
+      throw new Error(`[HermesRuntime] FATAL: HERMES_REASONING_PROVIDER is not configured or invalid (got: ${providerType ?? 'undefined'}). Must be 'ollama', 'ollama-stream', 'ollama-sync', or 'mock'.`);
     }
 
     const traceRecorder = new DefaultRuntimeTraceRecorder(getDefaultTraceStore());
     _defaultRuntime = new HermesRuntime(provider, undefined, traceRecorder);
+
   }
   return _defaultRuntime;
 }
