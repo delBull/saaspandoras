@@ -11,6 +11,9 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src'),
       '~': path.resolve(__dirname, './src'),
+      // @saasfly/db/schema is not exported by the package — redirect to db-core
+      '@saasfly/db/schema': path.resolve(__dirname, '../../packages/db-core/src/schema.ts'),
     },
   },
 });
+

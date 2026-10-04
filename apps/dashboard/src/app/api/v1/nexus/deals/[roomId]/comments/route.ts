@@ -5,6 +5,7 @@ import { eq } from "@saasfly/db-core";
 import { resend } from '@saasfly/shared';
 import NexusDealComment from '@/emails/NexusDealComment';
 import { validateDealRoomAccess } from '@/lib/admin-auth';
+import { canUserAccessDeal } from '@saasfly/nexus-deals-sdk';
 
 export async function POST(
   request: Request,
@@ -21,6 +22,25 @@ export async function POST(
       return NextResponse.json({ error: 'Faltan campos requeridos.' }, { status: 400 });
     }
 
+    // ── GATE B: Cross-Deal Resource Scope Check ────────────────────────────
+    // Auth validates identity, but NOT resource scope. We must verify the
+    // roomId belongs to the caller before performing any write.
+    const targetRoom = await db.query.nexusDealRooms.findFirst({
+      where: eq(nexusDealRooms.id, roomId),
+      with: { signers: true },
+    });
+    if (!targetRoom) {
+      return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
+    }
+    const isSuperAdmin = session?.role === 'SUPER_ADMIN';
+    const userIdentifier = session?.address || session?.userId || '';
+    const userEmail = session?.email;
+    if (!canUserAccessDeal(targetRoom, userIdentifier, userEmail, isSuperAdmin)) {
+      // Return 404, not 403, to avoid leaking that the resource exists
+      return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
+    }
+    // ──────────────────────────────────────────────────────────────────────
+
     // Insert comment
     const [comment] = await db.insert(nexusDealComments).values({
       roomId,
@@ -29,13 +49,8 @@ export async function POST(
       content,
     }).returning();
 
-    // Fetch room to get title and signers
-    const room = await db.query.nexusDealRooms.findFirst({
-      where: eq(nexusDealRooms.id, roomId),
-      with: {
-        signers: true,
-      }
-    });
+    // Room already fetched + verified above — reuse
+    const room = targetRoom;
 
     if (room) {
       // Logic to notify counterparties
@@ -101,6 +116,21 @@ export async function GET(
 
   try {
     const { roomId } = await params;
+
+    // ── GATE B: Cross-Deal Resource Scope Check (READ) ────────────────────
+    const targetRoom = await db.query.nexusDealRooms.findFirst({
+      where: eq(nexusDealRooms.id, roomId),
+    });
+    if (!targetRoom) {
+      return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
+    }
+    const isSuperAdmin = session?.role === 'SUPER_ADMIN';
+    const userIdentifier = session?.address || session?.userId || '';
+    const userEmail = session?.email;
+    if (!canUserAccessDeal(targetRoom, userIdentifier, userEmail, isSuperAdmin)) {
+      return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
+    }
+    // ─────────────────────────────────────────────────────────────────────
     
     const comments = await db.query.nexusDealComments.findMany({
       where: eq(nexusDealComments.roomId, roomId),
