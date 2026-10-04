@@ -56,6 +56,7 @@
         "@saasfly/db-core": "workspace:*",
         "@saasfly/hermes-core": "workspace:*",
         "@saasfly/nexus-deals-sdk": "workspace:*",
+        "@saasfly/shared": "workspace:*",
         "@saasfly/ui": "workspace:*",
         "framer-motion": "^12.23.12",
         "lucide-react": "^0.561.0",
@@ -576,7 +577,6 @@
       "dependencies": {
         "@saasfly/db-core": "workspace:*",
         "@saasfly/shared": "workspace:*",
-        "@saasfly/shared": "workspace:*",
       },
       "devDependencies": {
         "@saasfly/eslint-config": "workspace:*",
@@ -675,6 +675,7 @@
       "name": "@saasfly/shared",
       "version": "0.1.0",
       "dependencies": {
+        "@saasfly/db-core": "workspace:*",
         "@saasfly/ui": "workspace:*",
         "resend": "2.1.0",
       },

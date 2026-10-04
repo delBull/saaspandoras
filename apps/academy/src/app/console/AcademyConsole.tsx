@@ -43,7 +43,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { COO_EXECUTIVE_PROGRAM } from "@saasfly/academy-sdk";
 import { AcademyCandidate } from "@saasfly/academy-sdk";
-import { AcademyModule } from "@saasfly/academy-sdk/types";
+import type { AcademyModule } from "@saasfly/academy-sdk";
 
 // ─── TRACKS & PROGRAMS CATALOG ───────────────────────────────────────────────
 

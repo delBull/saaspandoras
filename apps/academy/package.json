@@ -14,6 +14,7 @@
     "react-dom": "^19.1.0",
     "@saasfly/api": "workspace:*",
     "@saasfly/db-core": "workspace:*",
+    "@saasfly/shared": "workspace:*",
     "@saasfly/nexus-deals-sdk": "workspace:*",
     "@saasfly/auth-sdk": "workspace:*",
     "@saasfly/hermes-core": "workspace:*",

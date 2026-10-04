@@ -1,6 +1,6 @@
 import { headers } from "next/headers";
-import { getNexusAuthContext, checkNexusPermission } from "@/lib/nexus/nexus-rbac";
-import { verifyAcademyToken, verifyUnlockToken } from "@/lib/nexus-deals/tokens";
+import { getNexusAuthContext, checkNexusPermission } from "@saasfly/shared";
+import { verifyAcademyToken, verifyUnlockToken } from "@saasfly/nexus-deals-sdk";
 import AcademyAccessGate from "./AcademyAccessGate";
 import AcademyConsole from "./AcademyConsole";
 
@@ -30,7 +30,7 @@ export default async function AdminAcademyPage({
   // Fallback directo por email si el colaborador está activo en la tabla de colaboradores
   if (!unlocked && auth.email) {
     try {
-      const { getCollaboratorByEmail } = await import('@/lib/nexus/collaborators-service');
+      const { getCollaboratorByEmail } = await import('@saasfly/hermes-core');
       const collab = await getCollaboratorByEmail(auth.email);
       if (collab && collab.status === 'ACTIVE') {
         if (collab.role === 'SUPER_ADMIN' || collab.role === 'ADMIN') {
