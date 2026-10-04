@@ -4,7 +4,16 @@ import { eq } from "@saasfly/db-core";
 import { TenantKnowledgeStore, ControlPlaneContext } from '../knowledge/tenant-knowledge-store';
 import { KnowledgePackLoader } from '../knowledge-pack';
 import * as assert from 'assert';
-const ensureInitialWorkspace = async (email: string) => ({ projectSlug: `workspace-${email.replace('@', '-')}` });
+const ensureInitialWorkspace = async (email: string) => {
+  const slug = `workspace-${email.replace('@', '-').replace('.', '-')}`;
+  await db.insert(projects).values({
+    title: 'Oscar Test Workspace',
+    slug,
+    description: 'Test workspace description',
+    isSimulationMode: true
+  }).onConflictDoNothing();
+  return { projectSlug: slug };
+};
 async function testOscarOnboarding() {
   console.log("Starting Destructive Test: Tenant #002 (Óscar)...\n");
 
@@ -42,6 +51,7 @@ async function testOscarOnboarding() {
     'identity', 
     'Óscar Corp is a leading AI consultancy firm based in Madrid.'
   );
+  if (identityUpdate.success !== true) console.error("IDENTITY UPDATE FAILED:", identityUpdate);
   assert.strictEqual(identityUpdate.success, true);
   console.log("✅ Hermes mutated 'identity' via tool. Event:", identityUpdate.event?.id);
 

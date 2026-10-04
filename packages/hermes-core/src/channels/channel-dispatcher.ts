@@ -1,7 +1,7 @@
 import { NormalizedInboundMessage } from './normalized-message';
 import { EventSpine } from '../events/event-spine';
 import { randomUUID } from 'crypto';
-import '../hermes/runtime/cognitive-runtime-listener'; // Ensure listener is registered
+import '../runtime/cognitive-runtime-listener'; // Ensure listener is registered
 
 export interface ChannelDispatcher {
   dispatchAsync(normalized: NormalizedInboundMessage): Promise<void>;

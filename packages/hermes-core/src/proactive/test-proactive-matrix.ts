@@ -19,6 +19,7 @@ async function testProactiveMatrix() {
   };
 
   const context = await ProactiveContextBuilder.build(baseSignal, "S'Narai Tenant", { product: "Founder Certificate" });
+  context.tenant.policy.quietHours = undefined; // Disable quiet hours for deterministic testing
 
   // --- P4 Policy Enforcement ---
   const disabledContext = JSON.parse(JSON.stringify(context)) as ProactiveContext;

@@ -10,7 +10,7 @@ import {
     jsonb,
     index,
     uuid
-} from "@saasfly/db-core"pg-core";
+} from "drizzle-orm/pg-core";
 
 // ============================================
 // TENANT CONFIGURATION (Multi-Tenant Support)

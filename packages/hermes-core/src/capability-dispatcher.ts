@@ -111,7 +111,6 @@ export class CapabilityDispatcher {
       default:
         throw new Error(`NOT_CONFIGURED: Capability '${capability}' is not yet implemented or wired to ExecutionOS.`);
     }
-    }
   }
 
   // Helper method to verify against administrators table if env var is missing
