@@ -57,14 +57,6 @@ export class CapabilityDispatcher {
     }
 
     switch (capability) {
-      case 'calendar.schedule':
-        return {
-          success: true,
-          actionExecuted: 'calendar.schedule',
-          data: { appointmentId: `apt_${Date.now()}`, slot: payload.requestedSlot || 'Sábado 11:00 AM' },
-          userSummary: `Cita agendada tentativamente para ${payload.requestedSlot || 'el horario solicitado'}.`
-        };
-
       case 'crm.update_stage': {
         try {
           // Resolver el canonicalOrgId server-side usando OrganizationSDK
@@ -116,67 +108,9 @@ export class CapabilityDispatcher {
         }
       }
 
-      case 'payments.create_spei_link':
-        return {
-          success: true,
-          actionExecuted: 'payments.create_spei_link',
-          data: { speiClabe: '646180111111111111', reference: `REF-${Date.now().toString(36).toUpperCase()}` },
-          userSummary: 'Referencia SPEI Fast Lane generada.'
-        };
-
-      case 'tokenization.get_holdings':
-        return {
-          success: true,
-          actionExecuted: 'tokenization.get_holdings',
-          data: { project: 'S\'Narai', certificates: 2, votingPower: '2.5%' },
-          userSummary: 'Holdings y poder de voto recuperados.'
-        };
-
-      case 'support.escalate_human':
-        return {
-          success: true,
-          actionExecuted: 'support.escalate_human',
-          data: { conversationId: payload.conversationId },
-          userSummary: 'Conversación escalada a un agente humano.'
-        };
-
-      case 'manage_team.add_collaborator':
-        return { success: true, actionExecuted: capability, data: { email: payload.email, role: payload.role }, userSummary: `Invitación enviada a ${payload.email} exitosamente.` };
-
-      case 'finance.approve_deposit':
-        return { success: true, actionExecuted: capability, data: { depositId: payload.depositId }, userSummary: `Depósito ${payload.depositId || ''} aprobado en la tesorería.` };
-
-      case 'compliance.approve_kyc':
-        return { success: true, actionExecuted: capability, data: { userId: payload.userId }, userSummary: `KYC aprobado. El usuario ya puede invertir.` };
-
-      case 'deals.add_comment':
-        return { success: true, actionExecuted: capability, data: { roomId: payload.roomId }, userSummary: `Comentario/Resumen añadido al Deal Room.` };
-
-      case 'manage_team.telegram_invite':
-        return { success: true, actionExecuted: capability, data: { url: 'https://t.me/+mock_invite' }, userSummary: `Enlace de invitación seguro generado.` };
-
-      case 'project.approve_purchase':
-        return { success: true, actionExecuted: capability, data: { purchaseId: payload.purchaseId }, userSummary: `Compra de RWA aprobada. Certificados en proceso de emisión on-chain.` };
-
-      case 'project.distribute_yield':
-        return { success: true, actionExecuted: capability, data: { txHash: '0xmock' }, userSummary: `Rendimientos distribuidos masivamente a la DAO.` };
-
-      case 'project.update_treasury':
-        return { success: true, actionExecuted: capability, data: { balances: 'updated' }, userSummary: `Sincronización de tesorería completada.` };
-
-      case 'project.sync_dao':
-        return { success: true, actionExecuted: capability, data: { members: 'synced' }, userSummary: `Padrón de la DAO sincronizado con los contratos inteligentes.` };
-
-      case 'knowledge.add_document':
-        return { success: true, actionExecuted: capability, data: { documentId: payload.documentId }, userSummary: `Documento inyectado en la bóveda K25 del proyecto.` };
-
       default:
-        return {
-          success: false,
-          actionExecuted: capability,
-          data: null,
-          userSummary: 'Capacidad no soportada o inactiva.'
-        };
+        throw new Error(`NOT_CONFIGURED: Capability '${capability}' is not yet implemented or wired to ExecutionOS.`);
+    }
     }
   }
 

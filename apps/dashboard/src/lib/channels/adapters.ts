@@ -138,7 +138,6 @@ export class EmailAdapter implements ChannelAdapter {
     }
 
     // Stub for Resend / SendGrid
-    console.log(`[EmailAdapter] Stub: Sending email to ${binding.address}`);
-    return { success: true, channel: "email", messageId: `email_${Date.now()}` };
+    throw new Error("NOT_CONFIGURED: EmailAdapter is not yet fully implemented for outbox dispatch.");
   }
 }
