@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { db } from "../index";
-import { sql, createSqlFunction } from "../../lib/database";
+import { sql, createSqlFunction } from "../database";
 
 describe("Database Driver & Transaction Engine", () => {
   it("should have db.transaction defined as a function", () => {

@@ -11,6 +11,7 @@
       }
     ],
     "esModuleInterop": true,
+    "moduleResolution": "bundler",
     "jsx": "preserve"
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
