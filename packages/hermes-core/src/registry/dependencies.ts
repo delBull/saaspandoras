@@ -32,20 +32,7 @@ class HermesDependencyRegistry {
 
     get<T>(key: string): T {
         if (!this.deps[key]) {
-            console.warn(`[HermesRegistry] Dependency ${key} is not registered yet. Falling back to dynamic require.`);
-            // Fallback for development/extirpation
-            try {
-                if (key === 'IdentityResolver') return require('@saasfly/shared').IdentityResolver;
-                if (key === 'PlatformCapabilityRegistryService') return require('@/lib/admin/platform-capability-registry.service').PlatformCapabilityRegistryService;
-                if (key === 'PlatformAuditLedgerService') return require('@/lib/admin/platform-audit-ledger.service').PlatformAuditLedgerService;
-                if (key === 'NexusTeamNotificationDispatcher') return require('@saasfly/shared').NexusTeamNotificationDispatcher;
-                if (key === 'capabilityRegistry') return require('@/lib/growth/capability-registry.service').capabilityRegistry;
-                if (key === 'SetupProgressService') return require('@saasfly/shared').SetupProgressService;
-                if (key === 'tenantProvisioningService') return require('@saasfly/shared').tenantProvisioningService;
-                if (key === 'DiscordWebhookService') return require('@/lib/integrations/discord/webhook').DiscordWebhookService;
-            } catch (e) {
-                // Ignore
-            }
+            throw new Error(`[HermesRegistry] FATAL: Dependency ${key} is not registered. You must initialize DI before using this component.`);
         }
         return this.deps[key] as T;
     }

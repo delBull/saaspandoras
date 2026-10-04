@@ -10,6 +10,9 @@
  */
 export async function register() {
     if (process.env.NEXT_RUNTIME === 'nodejs') {
+        // Initialize Hermes Core DI on server startup
+        await import('@/lib/hermes/composition');
+        
         process.on('uncaughtException', (err: any) => {
             // ECONNRESET: browser navigated away while server was sending a response.
             if (err?.code === 'ECONNRESET') {

@@ -1998,9 +1998,11 @@ export function getDefaultRuntime(): HermesRuntime {
         baseUrl: process.env.OLLAMA_BASE_URL,
         model: process.env.OLLAMA_MODEL,
       });
-    } else {
-      // Default: MockStreamingProvider supports both respond() and stream()
+    } else if (providerType === 'mock') {
+      const { MockStreamingProvider } = require('./reasoning-providers');
       provider = new MockStreamingProvider();
+    } else {
+      throw new Error(`[HermesRuntime] FATAL: HERMES_REASONING_PROVIDER is not configured or invalid (got: ${providerType}). Must be 'ollama', 'ollama-stream', 'ollama-sync', or 'mock'.`);
     }
 
     const traceRecorder = new DefaultRuntimeTraceRecorder(getDefaultTraceStore());
