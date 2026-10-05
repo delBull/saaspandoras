@@ -6,7 +6,7 @@ import { db } from '@saasfly/db';
 import { sql } from "@saasfly/db-core";
 
 export async function runAdminOperation(taskName: string) {
-  const auth = await getNexusAuthContext();
+  const __hdrs = await import("next/headers").then(m => m.headers()); const auth = await getNexusAuthContext(await __hdrs);
   if (!auth.isAuthenticated || (auth.role !== 'SUPER_ADMIN' && auth.role !== 'ADMIN' && auth.role !== 'ADMIN_OPERATIONS')) {
     return { success: false, error: 'Sin permisos de operaciones' };
   }

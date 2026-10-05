@@ -3,7 +3,7 @@ import { AdminAccessGate } from '../AdminAccessGate';
 import HermesQAClient from './hermes-qa-client';
 
 export default async function HermesQAPage() {
-  const auth = await getNexusAuthContext();
+  const __hdrs = await import("next/headers").then(m => m.headers()); const auth = await getNexusAuthContext(await __hdrs);
 
   if (!auth.isAuthenticated || (auth.role !== 'SUPER_ADMIN' && auth.role !== 'ADMIN')) {
     return (

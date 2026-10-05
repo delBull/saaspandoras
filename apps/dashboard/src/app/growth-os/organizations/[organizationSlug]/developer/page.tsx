@@ -18,7 +18,7 @@ export default async function DeveloperHubPage({ params }: { params: Promise<{ o
   }
 
   // 1. Authenticate Actor
-  const auth = await getNexusAuthContext();
+  const __hdrs = await import("next/headers").then(m => m.headers()); const auth = await getNexusAuthContext(await __hdrs);
   if (!auth.isAuthenticated) {
     redirect('/login');
   }

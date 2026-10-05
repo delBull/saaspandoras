@@ -1,4 +1,5 @@
 import React from 'react';
+import { headers } from 'next/headers';
 import { getNexusAuthContext } from '@saasfly/shared';
 import { PlatformAdminShell } from '@/components/admin/shell/PlatformAdminShell';
 import { PlatformActor, PlatformRole } from '@saasfly/shared';
@@ -10,7 +11,8 @@ export default async function AdminLayout({
   children: React.ReactNode;
 }) {
   // 1. Resolve Platform Authority Server-Side
-  const auth = await getNexusAuthContext();
+  const reqHeaders = await headers();
+  const auth = await getNexusAuthContext(reqHeaders);
 
   if (!auth.isAuthenticated) {
     return (

@@ -14,7 +14,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function UsersPage() {
   // 1. Resolve Platform Authority Server-Side
-  const auth = await getNexusAuthContext();
+  const __hdrs = await import("next/headers").then(m => m.headers()); const auth = await getNexusAuthContext(await __hdrs);
 
   // Rol permitido: SUPER_ADMIN, ADMIN (Mapeado a AUDITOR en PlatformRole)
   if (!auth.isAuthenticated || (auth.role !== 'SUPER_ADMIN' && auth.role !== 'ADMIN')) {

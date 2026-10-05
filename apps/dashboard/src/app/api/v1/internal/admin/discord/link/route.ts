@@ -7,7 +7,7 @@ import { utils } from 'ethers';
 
 export async function POST(req: Request) {
   try {
-    const auth = await getNexusAuthContext();
+    const __hdrs = await import("next/headers").then(m => m.headers()); const auth = await getNexusAuthContext(await __hdrs);
 
     if (!auth.isAuthenticated || !auth.wallet) {
       return NextResponse.json({ success: false, error: 'Unauthorized: No wallet session' }, { status: 401 });

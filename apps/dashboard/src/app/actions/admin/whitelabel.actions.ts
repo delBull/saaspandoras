@@ -16,7 +16,7 @@ export interface WhitelabelConfig {
 
 export async function updateTenantWhitelabelConfig(tenantSlug: string, config: WhitelabelConfig) {
   try {
-    const auth = await getNexusAuthContext();
+    const __hdrs = await import("next/headers").then(m => m.headers()); const auth = await getNexusAuthContext(await __hdrs);
 
     const actor: PlatformActor = {
       id: auth.email || 'SYSTEM',
@@ -67,7 +67,7 @@ export async function updateTenantWhitelabelConfig(tenantSlug: string, config: W
 }
 
 export async function getTenantWhitelabelConfig(tenantSlug: string): Promise<WhitelabelConfig | null> {
-  const auth = await getNexusAuthContext();
+  const __hdrs = await import("next/headers").then(m => m.headers()); const auth = await getNexusAuthContext(await __hdrs);
   if (auth.role !== 'SUPER_ADMIN' && auth.role !== 'ADMIN') {
     throw new Error('Unauthorized');
   }

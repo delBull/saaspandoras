@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     }
 
     // ── Admin gate — fail-closed ─────────────────────────────────────────
-    const auth = await getNexusAuthContext();
+    const __hdrs = await import("next/headers").then(m => m.headers()); const auth = await getNexusAuthContext(await __hdrs);
     if (!auth.isAuthenticated || (!auth.permissions?.ecosystem && !auth.permissions?.['tenants.manage'])) {
       return NextResponse.json({ code: 'FORBIDDEN', message: 'Admin access required.' }, { status: 403 });
     }

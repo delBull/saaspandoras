@@ -12,7 +12,7 @@ const WALLET_REGEX = /^0x[0-9a-fA-F]{40}$/;
 
 export async function grantAdminPrivilegesAction(formData: FormData) {
   try {
-    const auth = await getNexusAuthContext();
+    const __hdrs = await import("next/headers").then(m => m.headers()); const auth = await getNexusAuthContext(await __hdrs);
     if (auth.role !== 'SUPER_ADMIN') {
       return { error: 'No tienes privilegios de SUPER_ADMIN para otorgar acceso.' };
     }

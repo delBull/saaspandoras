@@ -9,7 +9,7 @@ import { CollaboratorsAdmin } from "@/components/admin/CollaboratorsAdmin";
 export const dynamic = "force-dynamic";
 
 export default async function CollaboratorsPage() {
-  const auth = await getNexusAuthContext();
+  const __hdrs = await import("next/headers").then(m => m.headers()); const auth = await getNexusAuthContext(await __hdrs);
 
   if (!auth.isAuthenticated || (auth.role !== "SUPER_ADMIN" && auth.role !== "ADMIN")) {
     return (

@@ -29,7 +29,7 @@ export async function analyzeCrmLeadAction(leadId: string): Promise<{
   error?: string;
 }> {
   try {
-    const auth = await getNexusAuthContext();
+    const __hdrs = await import("next/headers").then(m => m.headers()); const auth = await getNexusAuthContext(await __hdrs);
     if (!auth.isAuthenticated || (auth.role !== 'SUPER_ADMIN' && auth.role !== 'ADMIN' && auth.role !== 'ADMIN_OPERATIONS')) {
       throw new Error('Unauthorized');
     }

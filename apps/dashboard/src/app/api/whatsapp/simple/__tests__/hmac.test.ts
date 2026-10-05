@@ -1,7 +1,7 @@
 // @ts-ignore
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createHmac } from 'crypto';
-import { verifyMetaSignature } from '../route';
+import { verifyMetaSignature } from '@/lib/whatsapp/security';
 import { buildCanonicalWhatsAppConversationId, maskPhoneNumber } from '@saasfly/shared';
 
 describe('🛡️ Suite A: Meta WhatsApp HMAC & Identity Security', () => {

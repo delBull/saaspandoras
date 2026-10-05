@@ -3,7 +3,7 @@ import crypto from 'crypto';
 import { DefaultOmnichannelGateway } from '@saasfly/hermes-core';
 import { DefaultCognitiveChannelDispatcher } from '@saasfly/hermes-core';
 import { DuplicateMessageError, InvalidChannelPayloadError } from '@saasfly/hermes-core';
-import { verifyMetaSignature } from '@/app/api/whatsapp/simple/route';
+import { verifyMetaSignature } from '@/lib/whatsapp/security';
 
 const omnichannelGateway = new DefaultOmnichannelGateway();
 const channelDispatcher = new DefaultCognitiveChannelDispatcher();

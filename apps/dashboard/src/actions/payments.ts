@@ -15,7 +15,7 @@ export async function createPaymentLink(data: {
     destinationWallet?: string;
 }) {
     try {
-        const auth = await getNexusAuthContext();
+        const __hdrs = await import("next/headers").then(m => m.headers()); const auth = await getNexusAuthContext(await __hdrs);
         if (!auth.isAuthenticated || (auth.role !== 'SUPER_ADMIN' && auth.role !== 'ADMIN')) {
             throw new Error("Unauthorized");
         }
@@ -57,7 +57,7 @@ export async function createPaymentLink(data: {
 
 export async function getPaymentsDashboardStats() {
     try {
-        const auth = await getNexusAuthContext();
+        const __hdrs = await import("next/headers").then(m => m.headers()); const auth = await getNexusAuthContext(await __hdrs);
         if (!auth.isAuthenticated || (auth.role !== 'SUPER_ADMIN' && auth.role !== 'ADMIN')) {
             throw new Error("Unauthorized");
         }
@@ -159,7 +159,7 @@ export async function getPaymentsDashboardStats() {
 
 export async function deletePaymentLink(id: string) {
     try {
-        const auth = await getNexusAuthContext();
+        const __hdrs = await import("next/headers").then(m => m.headers()); const auth = await getNexusAuthContext(await __hdrs);
         if (!auth.isAuthenticated || (auth.role !== 'SUPER_ADMIN' && auth.role !== 'ADMIN')) {
             throw new Error("Unauthorized");
         }
@@ -176,7 +176,7 @@ export async function deletePaymentLink(id: string) {
 
 export async function updateTransactionStatus(transactionId: string, status: 'completed' | 'rejected') {
     try {
-        const auth = await getNexusAuthContext();
+        const __hdrs = await import("next/headers").then(m => m.headers()); const auth = await getNexusAuthContext(await __hdrs);
         if (!auth.isAuthenticated || (auth.role !== 'SUPER_ADMIN' && auth.role !== 'ADMIN')) {
             throw new Error("Unauthorized");
         }

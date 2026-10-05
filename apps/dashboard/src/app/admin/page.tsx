@@ -51,7 +51,9 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   const activeTab = params?.tab || 'overview';
 
   // 1. Resolve Platform Authority Server-Side
-  const auth = await getNexusAuthContext();
+  const { headers } = await import('next/headers');
+  const reqHeaders = await headers();
+  const auth = await getNexusAuthContext(reqHeaders);
 
   if (!auth.isAuthenticated || (auth.role !== 'SUPER_ADMIN' && auth.role !== 'ADMIN')) {
     return (

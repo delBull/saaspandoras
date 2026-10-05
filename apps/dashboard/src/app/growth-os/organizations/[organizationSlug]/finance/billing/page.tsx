@@ -3,14 +3,15 @@ import { HermesUnifiedCheckout } from "@/components/payments/HermesUnifiedChecko
 import { Zap, Landmark } from "lucide-react";
 import { GenerateBillingIntentButton } from "./GenerateBillingIntentButton";
 
-export default function TenantBillingPage({
+export default async function TenantBillingPage({
   params,
   searchParams
 }: {
-  params: { organizationSlug: string };
-  searchParams: { intentId?: string }
+  params: Promise<{ organizationSlug: string }>;
+  searchParams: Promise<{ intentId?: string }>;
 }) {
-  const intentId = searchParams.intentId;
+  const { organizationSlug } = await params;
+  const { intentId } = await searchParams;
 
   if (!intentId) {
     return (
@@ -21,7 +22,7 @@ export default function TenantBillingPage({
               <Landmark className="w-8 h-8 text-lime-400" />
               Central Billing Hub
             </h1>
-            <p className="text-sm text-zinc-400 mt-2 max-w-2xl leading-relaxed">Gestiona tu subscripción y pagos de Growth OS & Hermes OS para {params.organizationSlug.toUpperCase()}.</p>
+            <p className="text-sm text-zinc-400 mt-2 max-w-2xl leading-relaxed">Gestiona tu subscripción y pagos de Growth OS & Hermes OS para {organizationSlug.toUpperCase()}.</p>
           </div>
         </div>
 
@@ -35,7 +36,7 @@ export default function TenantBillingPage({
             </div>
           </div>
           <div className="relative z-10 w-full md:w-auto">
-            <GenerateBillingIntentButton organizationSlug={params.organizationSlug} />
+            <GenerateBillingIntentButton organizationSlug={organizationSlug} />
           </div>
         </div>
       </div>
@@ -49,7 +50,7 @@ export default function TenantBillingPage({
           <Landmark className="w-8 h-8 text-lime-400" />
         </div>
         <h1 className="text-3xl font-black text-white tracking-tight">Portal de Pagos Soberano</h1>
-        <p className="text-zinc-400 text-sm mt-2 font-mono">Organización: <span className="text-white font-bold">{params.organizationSlug.toUpperCase()}</span></p>
+        <p className="text-zinc-400 text-sm mt-2 font-mono">Organización: <span className="text-white font-bold">{organizationSlug.toUpperCase()}</span></p>
       </div>
       
       <div className="w-full max-w-md relative z-10 shadow-2xl">

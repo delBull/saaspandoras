@@ -12,8 +12,10 @@ export default async function NexusRootPage({
   searchParams: Promise<{ unlock?: string; token?: string; tour?: string; role?: string }>;
 }) {
   const { token, tour, role } = await searchParams;
+  const { headers } = await import('next/headers');
+  const reqHeaders = await headers();
 
-  const auth = await getNexusAuthContext(null, token, 'NEXUS');
+  const auth = await getNexusAuthContext(reqHeaders, token, 'NEXUS');
 
   if (auth.isAuthenticated) {
     // Provisioning gate: PENDING collaborators may complete their profile but
