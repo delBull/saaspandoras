@@ -1,5 +1,5 @@
 // @ts-ignore
-import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createHmac } from 'crypto';
 import { verifyMetaSignature } from '../route';
 import { buildCanonicalWhatsAppConversationId, maskPhoneNumber } from '@saasfly/shared';

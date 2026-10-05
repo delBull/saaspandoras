@@ -35,6 +35,7 @@ import {
   CreditCard,
   Bot,
   ClipboardList,
+  GraduationCap,
 } from 'lucide-react';
 import { PlatformInspectorProvider } from '../inspector/PlatformInspectorContext';
 import { PlatformInspectorDrawer } from '../inspector/PlatformInspectorDrawer';
@@ -175,6 +176,14 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
       icon: Bot,
       active: currentTab === 'hermes',
       allowedRoles: ['SUPER_ADMIN', 'ADMIN_OPERATIONS', 'ADMIN'] as PlatformRole[],
+    },
+    {
+      id: 'academy',
+      label: 'Academy Managers',
+      href: '/admin/academy/managers',
+      icon: GraduationCap,
+      active: currentTab === 'managers' || pathname.includes('/admin/academy/managers'),
+      allowedRoles: ['SUPER_ADMIN', 'ADMIN'] as PlatformRole[],
     },
   ].filter(item => item.allowedRoles.includes(actor.role));
 

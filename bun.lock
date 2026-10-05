@@ -675,6 +675,7 @@
       "name": "@saasfly/shared",
       "version": "0.1.0",
       "dependencies": {
+        "@saasfly/db": "workspace:*",
         "@saasfly/db-core": "workspace:*",
         "@saasfly/ui": "workspace:*",
         "resend": "2.1.0",

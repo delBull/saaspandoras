@@ -9,11 +9,12 @@ export class AcademyAuditSubscriber {
       candidateId: string;
       programId?: string;
       ipfsCid: string;
+      tenantId?: string;
     }>('ACADEMY_CERTIFICATION_ISSUED', async (event) => {
       console.log(`[AcademyAuditSubscriber] Processing certification event: ${event.id}`);
       
       const payload = event.payload;
-      const tenantId = 'pandoras_academy'; // Default tenant for academy certifications
+      const tenantId = payload.tenantId || 'pandoras_academy'; // Use payload tenant or default
 
       try {
         // 1. Log to Security Audit Logger

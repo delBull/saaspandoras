@@ -5,16 +5,20 @@ import { nexusActionRequests, nexusCollaborators } from '@saasfly/db-core/schema
 import { eq } from "@saasfly/db-core";
 import { resolveEffectivePermissions } from '@saasfly/shared';
 
-vi.mock('@/db', () => ({
-  db: {
-    insert: vi.fn().mockReturnValue({ values: vi.fn() }),
-    update: vi.fn().mockReturnValue({ set: vi.fn().mockReturnValue({ where: vi.fn().mockReturnValue({ returning: vi.fn().mockResolvedValue([{ id: 1 }]) }) }) }),
-    query: {
-      nexusCollaborators: { findFirst: vi.fn() },
-      nexusActionRequests: { findFirst: vi.fn() },
+vi.mock('@saasfly/db-core', async (importActual) => {
+  const actual = await importActual<typeof import('@saasfly/db-core')>();
+  return {
+    ...actual,
+    db: {
+      insert: vi.fn().mockReturnValue({ values: vi.fn() }),
+      update: vi.fn().mockReturnValue({ set: vi.fn().mockReturnValue({ where: vi.fn().mockReturnValue({ returning: vi.fn().mockResolvedValue([{ id: 1 }]) }) }) }),
+      query: {
+        nexusCollaborators: { findFirst: vi.fn() },
+        nexusActionRequests: { findFirst: vi.fn() },
+      },
     },
-  },
-}));
+  };
+});
 
 const mockTransport = {
   sendMessage: vi.fn(),

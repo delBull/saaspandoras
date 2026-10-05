@@ -45,7 +45,8 @@
   "dependencies": {
     "@saasfly/ui": "workspace:*",
     "resend": "2.1.0",
-    "@saasfly/db-core": "workspace:*"
+    "@saasfly/db-core": "workspace:*",
+    "@saasfly/db": "workspace:*"
   },
   "devDependencies": {
     "@saasfly/eslint-config": "workspace:*",

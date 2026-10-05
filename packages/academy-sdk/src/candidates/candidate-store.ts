@@ -1017,7 +1017,8 @@ class AcademyStoreSingleton {
               certificationId: finalCertification.id,
               candidateId: assessment.candidateId,
               programId: assessment.programId,
-              ipfsCid: finalCertification.ipfsCid
+              ipfsCid: finalCertification.ipfsCid,
+              tenantId: candidate?.canonicalOrgId || 'pandoras_academy'
             }
           } as any);
         } catch (e) {

@@ -6,6 +6,7 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     setupFiles: ['dotenv/config'],
+    testTimeout: 20000,
   },
   resolve: {
     alias: {

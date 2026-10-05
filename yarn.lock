@@ -6350,6 +6350,7 @@
     "@saasfly/db-core" "workspace:*"
     "@saasfly/hermes-core" "workspace:*"
     "@saasfly/nexus-deals-sdk" "workspace:*"
+    "@saasfly/shared" "workspace:*"
     "@saasfly/ui" "workspace:*"
     framer-motion "^12.23.12"
     lucide-react "^0.561.0"
@@ -6628,7 +6629,6 @@
   dependencies:
     "@saasfly/db-core" "workspace:*"
     "@saasfly/shared" "workspace:*"
-    "@saasfly/shared" "workspace:*"
 
 "@saasfly/nextjs@apps/nextjs":
   version "workspace:apps/nextjs"
@@ -6750,6 +6750,8 @@
     tsup "^8.5.1"
     typescript "5.4.5"
   dependencies:
+    "@saasfly/db" "workspace:*"
+    "@saasfly/db-core" "workspace:*"
     "@saasfly/ui" "workspace:*"
     resend "2.1.0"
 

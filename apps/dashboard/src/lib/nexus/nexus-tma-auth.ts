@@ -21,7 +21,7 @@
  */
 
 import { createHmac } from 'crypto';
-import { db } from '@saasfly/db';
+import { db } from '@saasfly/db-core';
 import { nexusCollaborators } from '@saasfly/db/schema';
 import { eq } from "@saasfly/db-core";
 import { resolveEffectivePermissions, type NexusRole } from '@saasfly/shared';

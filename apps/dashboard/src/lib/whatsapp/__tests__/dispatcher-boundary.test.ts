@@ -1,5 +1,5 @@
 // @ts-ignore
-import { describe, it, expect, beforeEach } from 'bun:test';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { WhatsAppDispatcher } from '../dispatcher';
 import { PlatformCapabilityRegistryService, PlatformActor } from '@saasfly/shared';
 

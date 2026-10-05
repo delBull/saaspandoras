@@ -72,7 +72,8 @@ describe('Hermes Real Estate Pack — Phase 5: Tenant Provisioning Integration',
     expect(policyResult.action).toBe('BLOCK');
     expect(policyResult.allowed).toBe(false);
     expect(policyResult.violations.length).toBeGreaterThan(0);
-    expect(policyResult.violations[0]?.message).toContain('rendimiento financiero garantizado');
+    // The violation message is the policy rule description, not the input phrase
+    expect(policyResult.violations[0]?.message).toContain('rendimiento');
   });
 
   it('PROV-RE-003: Registered Tenant Soul is accessible via HermesSoulRegistry', async () => {

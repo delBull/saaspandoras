@@ -11,6 +11,7 @@ export type CandidateAttendanceStatus = 'INVITED' | 'ATTENDED' | 'IN_PROGRESS' |
 
 export interface AcademyCandidate {
   id: string; // cand_uuid
+  canonicalOrgId?: string;
   name: string;
   email: string;
   phone?: string;

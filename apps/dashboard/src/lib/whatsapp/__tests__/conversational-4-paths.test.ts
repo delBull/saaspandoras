@@ -1,5 +1,5 @@
 // @ts-ignore
-import { describe, it, expect, beforeEach, afterEach, vi } from 'bun:test';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { WhatsAppDispatcher } from '../dispatcher';
 import { getDefaultRuntime } from '@saasfly/hermes-core';
 
@@ -9,6 +9,7 @@ describe('🏛️ Suite D: Conversational 4-Path Routing & Control Plane Invaria
   const capturedContexts: Record<string, any> = {};
 
   beforeEach(async () => {
+    process.env.HERMES_REASONING_PROVIDER = 'mock';
     process.env.WHATSAPP_PHONE_NUMBER_ID = masterPhone;
     process.env.META_PHONE_NUMBER_ID = masterPhone;
     WhatsAppDispatcher.resetDeduplicationForTesting();

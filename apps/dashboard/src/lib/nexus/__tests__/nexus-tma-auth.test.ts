@@ -28,15 +28,19 @@ import {
 const { mockFindFirst } = vi.hoisted(() => ({
   mockFindFirst: vi.fn()
 }));
-vi.mock('@/db', () => ({
-  db: {
-    query: {
-      nexusCollaborators: {
-        findFirst: mockFindFirst,
+vi.mock('@saasfly/db-core', async (importActual) => {
+  const actual = await importActual<typeof import('@saasfly/db-core')>();
+  return {
+    ...actual,
+    db: {
+      query: {
+        nexusCollaborators: {
+          findFirst: mockFindFirst,
+        },
       },
     },
-  },
-}));
+  };
+});
 
 // ─── Test Helpers ─────────────────────────────────────────────────────────────
 

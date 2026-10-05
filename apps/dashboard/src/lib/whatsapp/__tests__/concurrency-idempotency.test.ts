@@ -1,5 +1,5 @@
 // @ts-ignore
-import { describe, it, expect, beforeEach } from 'bun:test';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { PlatformAuditLedgerService } from '@saasfly/hermes-core';
 import { WhatsAppDispatcher } from '../dispatcher';
 

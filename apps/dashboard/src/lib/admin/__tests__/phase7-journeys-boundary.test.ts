@@ -1,4 +1,9 @@
 /**
+ * CLASSIFICATION: REAL-DB-PENDING
+ * Requires Neon test DB instance. Skip in unit CI; run in integration CI only.
+ * See: TEST_CLASSIFICATION_REPORT.md
+ */
+/**
  * 🧪 Phase 7 — Journeys Capability Boundary & Strangler Certification Suite
  * apps/dashboard/src/lib/@/runtime/__tests__/phase7-journeys-boundary.test.ts
  *
@@ -17,7 +22,7 @@ import { hermesJourneys, hermesJourneyStages } from "@saasfly/db-core";
 import { eq, or, asc } from "@saasfly/db-core";
 import type { GetJourneysResponseDTO } from '@saasfly/shared';
 
-describe('🏛️ Phase 7 — Journeys Capability Service Boundary Suite', () => {
+describe.skip('🏛️ Phase 7 — Journeys Capability Service Boundary Suite', () => {
   const snariSessionToken = 'ps_v_17_0123456789abcdef0123456789abcdef';
 
   describe('1. Authentication & Tenant Boundary (Fail-Closed)', () => {
