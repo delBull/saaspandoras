@@ -27,6 +27,14 @@ const nextConfig = {
     memoryBasedWorkersCount: true,
     // Enable webpack build worker to prevent main thread memory leaks
     webpackBuildWorker: true,
+    // Fix Next.js 14+ barrel file imports for client components
+    optimizePackageImports: [
+      '@saasfly/shared',
+      '@saasfly/db-core',
+      '@saasfly/hermes-core',
+      '@saasfly/auth-sdk',
+      '@saasfly/nexus-deals-sdk'
+    ],
   },
   images: {
     remotePatterns: [
@@ -58,10 +66,15 @@ const nextConfig = {
         ...config.resolve.fallback,
         fs: false,
         net: false,
+        'node:net': false,
         tls: false,
         crypto: false,
         perf_hooks: false,
         bufferutil: false,
+        dns: false,
+        'node:dns': false,
+        'node:diagnostics_channel': false,
+        'util/types': false,
         'utf-8-validate': false,
         '@x402/core': false,
         '@x402/core/client': false,

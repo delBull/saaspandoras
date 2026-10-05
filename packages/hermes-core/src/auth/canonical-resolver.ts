@@ -1,4 +1,15 @@
-import { cookies, headers } from 'next/headers';
+// Hide next/headers from Webpack static analysis for Client Components
+let cookies: any;
+let headers: any;
+if (typeof process !== "undefined" && typeof window === "undefined") {
+    try {
+        const mod = eval('require("next/headers")');
+        cookies = mod.cookies;
+        headers = mod.headers;
+    } catch (e) {
+        // Ignore
+    }
+}
 import { NextRequest } from 'next/server';
 import { validatePortalSession } from '@saasfly/shared';
 import { OrganizationSDK } from '@saasfly/shared';

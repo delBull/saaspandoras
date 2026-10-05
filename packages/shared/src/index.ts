@@ -5,6 +5,7 @@ export { MagicLinkEmail } from "./emails/magic-link-email";
 export { siteConfig } from "./config/site";
 
 export * from './admin/platform-capability-registry.service';
+export * from './admin/canonical-capabilities';
 
 export * from './config/site';
 export * from './dash-contracts/activity';

@@ -2,10 +2,22 @@ import { db } from "@saasfly/db-core";
 import { administrators, users } from "@saasfly/db-core";
 import { eq, sql } from "@saasfly/db-core";
 import { SUPER_ADMIN_WALLET } from "./constants";
-import { cookies as nextCookies, headers as nextHeaders } from "next/headers";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { unstable_cache } from "next/cache";
+
+// Hide next/headers from Webpack static analysis for Client Components
+let nextCookies: any;
+let nextHeaders: any;
+if (typeof process !== "undefined" && typeof window === "undefined") {
+    try {
+        const mod = eval('require("next/headers")');
+        nextCookies = mod.cookies;
+        nextHeaders = mod.headers;
+    } catch (e) {
+        // Ignore
+    }
+}
 
 interface JWTPayload {
   userId?: string;

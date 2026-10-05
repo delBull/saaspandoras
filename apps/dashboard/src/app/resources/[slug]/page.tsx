@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Metadata } from "next";
 import { ArrowRightIcon, DocumentTextIcon, ChatBubbleOvalLeftEllipsisIcon, MegaphoneIcon } from "@heroicons/react/24/outline";
 
-const playfair = Playfair_Display({ subsets: ["latin"], weight: ["400", "600", "700"] });
+const playfair = Playfair_Display({ subsets: ["latin"] });
 const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "600"] });
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {

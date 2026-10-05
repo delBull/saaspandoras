@@ -10,7 +10,19 @@ import { db } from '@saasfly/db-core';
 import { users, nexusCollaborators, projectCollaborators, type NexusPermissionsOverride, type NexusProvisionStatus } from '@saasfly/db-core/schema';
 import { eq, and, gt } from "@saasfly/db-core";
 import { getAuth, isAdmin } from '@saasfly/auth-sdk';
-import { headers as nextHeaders, cookies as nextCookies } from 'next/headers';
+
+// Hide next/headers from Webpack static analysis for Client Components
+let nextHeaders: any;
+let nextCookies: any;
+if (typeof process !== "undefined" && typeof window === "undefined") {
+    try {
+        const mod = eval('require("next/headers")');
+        nextHeaders = mod.headers;
+        nextCookies = mod.cookies;
+    } catch (e) {
+        // Ignore
+    }
+}
 
 export type NexusRole = 
   | 'SUPER_ADMIN' 
@@ -42,8 +54,7 @@ export interface NexusPermissions {
   hermesQa?: boolean;
 }
 
-// Re-export from dedicated file for client compatibility
-export { CANONICAL_CAPABILITIES } from '../admin/canonical-capabilities';
+// Re-export moved to shared/src/index.ts for client compatibility
 
 export interface NexusAuthContext {
   isAuthenticated: boolean;

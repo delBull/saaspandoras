@@ -9,7 +9,7 @@ import { Metadata } from "next";
 import { resolveIpfsUrl } from "@saasfly/shared";
 import { sanitizeUrl } from "@saasfly/shared";
 
-const playfair = Playfair_Display({ subsets: ["latin"], weight: ["400", "600", "700"] });
+const playfair = Playfair_Display({ subsets: ["latin"] });
 const inter = Inter({ subsets: ["latin"], weight: ["200", "300", "400", "600"] });
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string, eventId: string }> }): Promise<Metadata> {

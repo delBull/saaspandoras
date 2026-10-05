@@ -13,7 +13,16 @@ import { eq, lt, or, and, sql, gt } from "@saasfly/db-core";
 import { resend } from '@saasfly/shared';
 import crypto from 'crypto';
 
-import { headers as nextHeaders } from 'next/headers';
+// Hide next/headers from Webpack static analysis for Client Components
+let nextHeaders: any;
+if (typeof process !== "undefined" && typeof window === "undefined") {
+    try {
+        const mod = eval('require("next/headers")');
+        nextHeaders = mod.headers;
+    } catch (e) {
+        // Ignore
+    }
+}
 import { WhatsAppAdapter } from '../channels/adapters/whatsapp-adapter';
 import type { NexusProvisionStatus } from '@saasfly/db-core';
 

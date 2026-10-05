@@ -7,7 +7,7 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval, isBefore, startOfD
 import { es } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 
-const playfair = Playfair_Display({ subsets: ["latin"], weight: ["400", "600", "700"] });
+const playfair = Playfair_Display({ subsets: ["latin"] });
 
 export function EventRegistrationForm({ eventId, projectId, eventDate, eventLocation, isCalendar, config }: { eventId: number, projectId: number, eventDate: string, eventLocation: string, isCalendar?: boolean, config?: any }) {
     const [state, formAction, isPending] = useActionState(registerForEvent, null);
