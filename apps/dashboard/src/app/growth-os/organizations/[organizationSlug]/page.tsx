@@ -16,7 +16,8 @@ import {
   Activity,
   Plus,
   Bot,
-  Terminal
+  Terminal,
+  GraduationCap
 } from 'lucide-react';
 
 export default async function GrowthOverviewPage({ params }: { params: Promise<{ organizationSlug: string }> }) {
@@ -116,6 +117,15 @@ export default async function GrowthOverviewPage({ params }: { params: Promise<{
                 Hermes AI Portal
               </Link>
             )}
+            <a
+              href={`${process.env.NEXT_PUBLIC_ACADEMY_URL || 'https://academy.saaspandoras.com'}/console?tenant=${slugId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-lg shadow-blue-600/20"
+            >
+              <GraduationCap className="w-4 h-4" />
+              Academy Console
+            </a>
           </div>
         </div>
       </div>

@@ -12,12 +12,12 @@ import * as path from 'path';
  * Metadata lives in PostgreSQL, the actual AST/Blobs live in Storage (local FS for now, S3 later).
  */
 export class ArtifactStore {
-  private baseDir = path.join(process.cwd(), '.artifacts');
-
-  constructor() {
-    if (!fs.existsSync(this.baseDir)) {
-      fs.mkdirSync(this.baseDir, { recursive: true });
+  private get baseDir() {
+    // Use /tmp in Vercel/Serverless environments since /var/task is read-only
+    if (process.env.VERCEL || process.env.NEXT_PUBLIC_VERCEL_ENV) {
+      return path.join('/tmp', '.artifacts');
     }
+    return path.join(process.cwd(), '.artifacts');
   }
 
   /**
