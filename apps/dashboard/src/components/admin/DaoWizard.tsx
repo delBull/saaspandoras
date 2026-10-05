@@ -25,7 +25,7 @@ import { SimpleTooltip } from '../ui/simple-tooltip';
 import { defineChain, getContract, prepareContractCall } from "thirdweb";
 import { sepolia } from "thirdweb/chains";
 import { useSendTransaction, TransactionButton } from "thirdweb/react";
-import { client } from "@saasfly/shared";
+import { client } from "@saasfly/shared/thirdweb-client";
 import { W2EUtilityABI } from "@/lib/abi/W2EUtility";
 import { encodeFunctionData } from "viem";
 import { toast } from 'sonner';

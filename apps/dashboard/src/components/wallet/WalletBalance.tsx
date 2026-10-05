@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import { useWalletBalance } from 'thirdweb/react';
 import { type Chain } from 'thirdweb/chains';
-import { client } from '@saasfly/shared';
+import { client } from '@saasfly/shared/thirdweb-client';
 import { useTokenPricesContext } from '@/contexts/TokenPriceContext';
 
 // Types for network configuration

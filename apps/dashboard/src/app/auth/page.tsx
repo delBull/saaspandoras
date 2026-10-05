@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useActiveAccount, ConnectButton, darkTheme } from "thirdweb/react";
-import { client } from "@saasfly/shared";
+import { client } from "@saasfly/shared/thirdweb-client";
 import { wallets } from "@/lib/wallets";
 import { useSearchParams } from 'next/navigation';
 import { ShieldCheck, Loader2 } from 'lucide-react';

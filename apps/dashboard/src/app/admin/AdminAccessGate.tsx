@@ -13,7 +13,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ShieldAlert, ArrowLeft, Lock } from 'lucide-react';
 import { ConnectButton } from 'thirdweb/react';
-import { client } from '@saasfly/shared';
+import { client } from '@saasfly/shared/thirdweb-client';
 import { wallets } from '@/lib/wallets';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useRouter } from 'next/navigation';

@@ -3,14 +3,14 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { BuildingLibraryIcon } from "@heroicons/react/24/outline";
-import { resolveIpfsUrl } from "@saasfly/shared";
+import { resolveIpfsUrl } from "@saasfly/shared/project-utils";
 import { useActiveAccount, useReadContract } from "thirdweb/react";
 import { getContract, defineChain } from "thirdweb";
-import { client } from "@saasfly/shared";
+import { client } from "@saasfly/shared/thirdweb-client";
 import { useRouter } from "next/navigation";
 import type { ProjectData } from "@/app/()/projects/types";
 import { StatusTag } from "./ProjectStatusIndicators";
-import { sanitizeUrl } from "@saasfly/shared";
+import { sanitizeUrl } from "@saasfly/shared/project-utils";
 
 interface ProjectHeaderProps {
   project: ProjectData;

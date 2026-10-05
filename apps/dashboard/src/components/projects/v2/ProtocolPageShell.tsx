@@ -6,7 +6,7 @@ import ProjectSidebar from '../ProjectSidebar';
 import MobileInvestmentCard from '../MobileInvestmentCard';
 import RecommendedProjectsSection from '../RecommendedProjectsSection';
 import { StatusAlert } from '../ProjectStatusIndicators';
-import { getTargetAmount } from '@saasfly/shared';
+import { getTargetAmount } from '@saasfly/shared/project-utils';
 
 interface ProtocolPageShellProps {
     project: ProjectData;

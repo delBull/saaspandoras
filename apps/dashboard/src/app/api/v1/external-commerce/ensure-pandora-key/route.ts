@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getContract, readContract, prepareContractCall, sendTransaction } from "thirdweb";
 import { privateKeyToAccount } from "thirdweb/wallets";
-import { client } from "@saasfly/shared";
+import { client } from "@saasfly/shared/thirdweb-client";
 import { config } from "@/config";
 import { PANDORAS_KEY_ABI } from "@/lib/pandoras-key-abi";
 import { db } from "@saasfly/db-core";

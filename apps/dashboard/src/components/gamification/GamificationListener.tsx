@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { useActiveAccount, useReadContract } from 'thirdweb/react';
 import { getContract } from 'thirdweb';
-import { client } from '@saasfly/shared';
+import { client } from '@saasfly/shared/thirdweb-client';
 import { config } from '@/config';
 import { useToast } from '@saasfly/ui/use-toast';
 import { CheckCircle2, Trophy } from 'lucide-react';

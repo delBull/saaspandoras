@@ -5,7 +5,7 @@ import { daoMembers, purchases, ambassadors, ambassadorClients, ambassadorCommis
 import { sendPurchaseEmail } from '@/lib/email/purchase-mailer';
 
 import { defineChain } from "thirdweb/chains";
-import { client as twClient } from "@saasfly/shared";
+import { client as twClient } from "@saasfly/shared/thirdweb-client";
 import { eth_getTransactionReceipt, getRpcClient } from "thirdweb/rpc";
 
 // Public endpoint called after a confirmed on-chain artifact purchase.

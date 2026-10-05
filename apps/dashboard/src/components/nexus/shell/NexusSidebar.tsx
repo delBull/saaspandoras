@@ -22,7 +22,8 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
-  LayoutDashboard
+  LayoutDashboard,
+  LogOut
 } from "lucide-react";
 import type { NexusAuthContext } from "@saasfly/shared";
 
@@ -181,10 +182,20 @@ export function NexusSidebar({ auth, onAction }: NexusSidebarProps) {
                 {auth.name ? auth.name.substring(0, 2).toUpperCase() : "OP"}
               </span>
             </div>
-            <div className="flex flex-col overflow-hidden">
+            <div className="flex flex-col overflow-hidden flex-1">
               <span className="text-sm text-white font-medium truncate">{auth.name || "Operator"}</span>
               <span className="text-[10px] font-mono text-amber-500/80 truncate">{auth.role}</span>
             </div>
+            <button 
+              onClick={async () => {
+                await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+                window.location.href = '/';
+              }}
+              title="Cerrar sesión"
+              className="p-2 rounded-md hover:bg-white/10 text-zinc-500 hover:text-white transition-colors shrink-0"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
           </div>
         </div>
       )}

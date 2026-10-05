@@ -1,5 +1,6 @@
 import React from 'react';
 import { notFound, redirect } from 'next/navigation';
+import { headers } from 'next/headers';
 import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
 import { SovereignHeader } from '@/components/sovereign-mesh/SovereignHeader';
 import { EcosystemFooter } from '@/components/ecosystem/EcosystemFooter';
@@ -20,17 +21,23 @@ export default async function EcosystemLayout({
   params,
 }: EcosystemLayoutProps) {
   const { organizationSlug } = await params;
+  const headerList = await headers();
+  const host = headerList.get('x-forwarded-host') || headerList.get('host') || '';
+  const isDashHost = host.startsWith('dash.') || host.startsWith('staging.dash.');
+  const authRedirect = isDashHost ? '/auth' : `/accessv2?return=/ecosystem/${organizationSlug}`;
+
   let context;
   try {
     context = await resolvePortalContext(organizationSlug);
   } catch (err: any) {
     // If it's a PortalAuthorizationError, redirect to login
-    redirect(`/accessv2?return=/ecosystem/${organizationSlug}`);
+    redirect(authRedirect);
   }
 
   if (!context) {
-    redirect(`/accessv2?return=/ecosystem/${organizationSlug}`);
+    redirect(authRedirect);
   }
+
 
   // Load setup state to know which modules are active for the navbar
   let activeModules: string[] = [];

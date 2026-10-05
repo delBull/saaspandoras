@@ -10,7 +10,7 @@ import ProjectDetails from '../../ProjectDetails';
 import { ExternalLink, Copy, CheckCircle, Users, Shield, Zap, Lock, ArrowRight } from 'lucide-react';
 import { getContract, defineChain } from 'thirdweb';
 import { useReadContract } from 'thirdweb/react';
-import { client } from '@saasfly/shared';
+import { client } from '@saasfly/shared/thirdweb-client';
 import useSWR from 'swr';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());

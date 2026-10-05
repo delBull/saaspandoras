@@ -19,7 +19,7 @@ import { getContract, defineChain, sendTransaction, prepareTransaction, prepareC
 import { AdminPayouts } from "./AdminPayouts";
 import { mintWithSignature } from "thirdweb/extensions/erc20";
 import { usePBOXBalance } from "@/hooks/usePBOXBalance";
-import { client } from "@saasfly/shared";
+import { client } from "@saasfly/shared/thirdweb-client";
 import { toast } from "sonner";
 import { useState } from "react";
 import { OnChainProposalsList } from "./OnChainProposalsList";

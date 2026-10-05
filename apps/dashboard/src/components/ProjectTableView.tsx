@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { FileText } from 'lucide-react';
 import type { Project } from '@/types/admin';
 import type { DeploymentConfig } from '@/types/deployment';
-import { getProjectStatusConfig } from '@saasfly/shared';
+import { getProjectStatusConfig } from '@saasfly/shared/project-status';
 
 import { 
   Tooltip,

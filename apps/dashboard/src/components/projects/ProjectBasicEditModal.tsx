@@ -16,7 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { PhotoIcon } from "@heroicons/react/24/outline";
-import { cn } from "@saasfly/shared";
+import { cn } from "@saasfly/shared/utils";
 
 interface ProjectBasicEditModalProps {
     project: any;

@@ -5,7 +5,7 @@ import { X, Coins, CheckCircle, Loader2, HelpCircle, Copy, ExternalLink, AlertCi
 import { Badge } from "@/components/ui/badge";
 import { useActiveAccount, TransactionButton, useWalletBalance } from "thirdweb/react";
 import { prepareContractCall, defineChain, getContract } from "thirdweb";
-import { client } from "@saasfly/shared";
+import { client } from "@saasfly/shared/thirdweb-client";
 import { toast } from "sonner";
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';

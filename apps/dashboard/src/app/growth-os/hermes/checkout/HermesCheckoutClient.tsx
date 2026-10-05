@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ShieldCheck, ArrowRight, CheckCircle, Zap, Loader2, Landmark, Crown } from "lucide-react";
 import { toast } from "sonner";
 import { ConnectButton, darkTheme, useActiveAccount, TransactionButton } from "thirdweb/react";
-import { client } from "@saasfly/shared";
+import { client } from "@saasfly/shared/thirdweb-client";
 import { wallets } from "@/lib/wallets";
 import { defineChain, getContract, prepareContractCall } from "thirdweb";
 import { useRouter } from "next/navigation";

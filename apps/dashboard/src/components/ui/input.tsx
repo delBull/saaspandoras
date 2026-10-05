@@ -1,6 +1,6 @@
 import * as React from "react"
 
-import { cn } from "@saasfly/shared"
+import { cn } from "@saasfly/shared/utils"
 
 const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
   ({ className, type, ...props }, ref) => {

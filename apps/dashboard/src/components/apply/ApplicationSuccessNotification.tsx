@@ -11,7 +11,7 @@ import {
   Star
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@saasfly/shared";
+import { cn } from "@saasfly/shared/utils";
 
 interface ApplicationSuccessNotificationProps {
   isOpen: boolean;

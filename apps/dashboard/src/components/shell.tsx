@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Sidebar } from "./sidebar";
 import { NFTGate } from "./nft-gate";
-import { cn } from "@saasfly/shared"; // Fixed import path if needed, assuming @/lib/utils is correct
+import { cn } from "@saasfly/shared/utils"; // Fixed import path if needed, assuming @/lib/utils is correct
 import { usePathname } from "next/navigation";
 
 interface DashboardShellProps {

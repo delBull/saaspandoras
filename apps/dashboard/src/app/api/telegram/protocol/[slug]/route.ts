@@ -16,7 +16,7 @@ import type { NextRequest } from 'next/server';
 import type { ProtocolTelegramCapabilities } from '@pandoras/gamification/types/bridge';
 import { readContract } from "thirdweb";
 import { defineChain } from "thirdweb/chains";
-import { client } from "@saasfly/shared";
+import { client } from "@saasfly/shared/thirdweb-client";
 import { getContract } from "thirdweb";
 import { telegramBindings } from '@saasfly/db/schema';
 

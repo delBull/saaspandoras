@@ -3,9 +3,9 @@ import { db } from "@saasfly/db-core";
 import { projects as projectsSchema } from "@saasfly/db-core";
 import { eq } from "@saasfly/db-core";
 import { IntegrationKeyService } from "@/lib/integrations/auth";
-import { getProjectPhasesWithStats } from "@saasfly/shared";
+import { getProjectPhasesWithStats } from "@saasfly/shared/phase-utils";
 import { getContract, defineChain, readContract } from "thirdweb";
-import { client } from "@saasfly/shared";
+import { client } from "@saasfly/shared/thirdweb-client";
 import { totalSupply as erc721TotalSupply } from "thirdweb/extensions/erc721";
 import { totalSupply as erc1155TotalSupply } from "thirdweb/extensions/erc1155";
 

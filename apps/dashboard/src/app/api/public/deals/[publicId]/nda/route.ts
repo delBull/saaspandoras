@@ -5,7 +5,7 @@ import { NDA_VERSION, NDA_FULL_TEXT, NDA_SUMMARY_BULLETS, buildNdaSignMessage, g
 import { sendNdaSignedAlert } from "@saasfly/nexus-deals-sdk";
 import { sendNdaConfirmationEmail } from "@saasfly/nexus-deals-sdk";
 import { verifySignature } from "thirdweb/auth";
-import { client } from "@saasfly/shared";
+import { client } from "@saasfly/shared/thirdweb-client";
 import { db } from "@saasfly/db-core";
 import { nexusDealAuditEvents } from "@saasfly/db-core";
 

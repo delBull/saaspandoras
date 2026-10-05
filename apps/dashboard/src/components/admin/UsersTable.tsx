@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import Image from 'next/image';
 import type { UserData, UserRole } from '@/types/admin';
 import { UserKeyStatus } from './UserKeyStatus';
-import { resolveIpfsUrl } from '@saasfly/shared';
+import { resolveIpfsUrl } from '@saasfly/shared/project-utils';
 import { BrainCircuit } from 'lucide-react';
 
 const USERS_PER_PAGE = 10;

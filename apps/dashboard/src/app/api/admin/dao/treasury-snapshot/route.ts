@@ -3,7 +3,7 @@ import { db } from '@saasfly/db';
 import { daoTreasurySnapshots, projects } from '@saasfly/db/schema';
 import { eq } from "@saasfly/db-core";
 import { defineChain } from "thirdweb";
-import { client } from "@saasfly/shared";
+import { client } from "@saasfly/shared/thirdweb-client";
 import { getWalletBalance } from "thirdweb/wallets";
 
 export async function POST(req: Request) {

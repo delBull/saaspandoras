@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { XIcon, BanknoteIcon, FileTextIcon, InfoIcon, Loader2 } from "lucide-react";
 import { TransactionButton, useReadContract } from "thirdweb/react";
 import { prepareContractCall, getContract, defineChain } from "thirdweb";
-import { client } from "@saasfly/shared";
+import { client } from "@saasfly/shared/thirdweb-client";
 import { encodeFunctionData, parseUnits } from "viem";
 
 interface CreateProposalModalProps {

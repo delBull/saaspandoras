@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@saas
 import type { UserData, Project } from '@/types/admin';
 import { useActiveAccount } from 'thirdweb/react';
 import { MissionControlDashboard } from '@/components/projects/MissionControlDashboard';
-import { getProjectStatusConfig } from '@saasfly/shared';
+import { getProjectStatusConfig } from '@saasfly/shared/project-status';
 
 export default function ProfileProjectsPage() {
   const router = useRouter();

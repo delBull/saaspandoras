@@ -12,7 +12,7 @@ import {
   SheetTitle,
 } from "@saasfly/ui/sheet";
 import { ScrollArea } from "@saasfly/ui/scroll-area";
-import { cn } from "@saasfly/shared";
+import { cn } from "@saasfly/shared/utils";
 //import UniswapClon from "~/components/uniswapclon";
 
 // REINTEGRADO: Definición del componente Disclaimer

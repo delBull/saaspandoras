@@ -7,7 +7,7 @@ import { useReadContract, useActiveAccount, useSendTransaction, useWalletBalance
 import { toast } from "sonner";
 import { TransactionButton } from "thirdweb/react";
 import { prepareContractCall, getContract, toWei } from "thirdweb";
-import { client } from "@saasfly/shared";
+import { client } from "@saasfly/shared/thirdweb-client";
 import { config } from "@/config";
 import { governanceABI } from "@/lib/governance-abi";
 import { base, baseSepolia } from "thirdweb/chains";

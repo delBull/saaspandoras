@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import React, { useRef, useState } from "react";
-import { cn } from "@saasfly/shared";
+import { cn } from "@saasfly/shared/utils";
 import Image from "next/image";
 import { XMarkIcon } from "@heroicons/react/24/solid";
 import Link from "next/link";

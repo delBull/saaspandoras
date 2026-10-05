@@ -4,7 +4,7 @@ import { headers } from "next/headers";
 import { SUPER_ADMIN_WALLET } from "@saasfly/auth-sdk";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
-import { client } from "@saasfly/shared";
+import { client } from "@saasfly/shared/thirdweb-client";
 import { upload } from "thirdweb/storage";
 
 // Force Node.js runtime for file system access

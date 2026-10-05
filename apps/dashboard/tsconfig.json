@@ -24,6 +24,12 @@
       "@pandoras/gamification/*": [
         "../../packages/gamification/src/*"
       ],
+      "@saasfly/shared/thirdweb-client": ["../../packages/shared/src/thirdweb-client.ts"],
+      "@saasfly/shared/canonical-capabilities": ["../../packages/shared/src/admin/canonical-capabilities.ts"],
+      "@saasfly/shared/utils": ["../../packages/shared/src/utils.ts"],
+      "@saasfly/shared/project-utils": ["../../packages/shared/src/project-utils.ts"],
+      "@saasfly/shared/phase-utils": ["../../packages/shared/src/phase-utils.ts"],
+      "@saasfly/shared/project-status": ["../../packages/shared/src/project-status.ts"],
       "@saasfly/shared": ["../../packages/shared/src/index.ts"], "@saasfly/hermes-core": ["../../packages/hermes-core/src/index.ts"], "@saasfly/auth-sdk": ["../../packages/auth-sdk/src/index.ts"], "@saasfly/ui": [
         "../../packages/ui/src"
       ],

@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useActiveAccount } from 'thirdweb/react';
 import { useProfile } from '@/hooks/useProfile';
-import { resolveIpfsUrl } from '@saasfly/shared';
+import { resolveIpfsUrl } from '@saasfly/shared/project-utils';
 import Image from 'next/image';
 import {
   UserIcon,

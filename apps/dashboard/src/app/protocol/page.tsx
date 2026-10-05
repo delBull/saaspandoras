@@ -27,7 +27,7 @@ import {
 import { ModernBackground } from "@/components/ui/modern-background";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
-import { cn } from "@saasfly/shared";
+import { cn } from "@saasfly/shared/utils";
 import { useGoogleAnalytics, trackEvent, trackPageView } from "@/lib/analytics";
 import { ApplyFormProtocol } from "@/components/apply/ApplyFormProtocol";
 

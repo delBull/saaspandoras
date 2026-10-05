@@ -13,7 +13,7 @@ import { GovernanceWithdrawModal } from "./GovernanceWithdrawModal";
 import { ManageActivities } from "../dao/ManageActivities";
 import { useReadContract, useActiveAccount, useContractEvents, TransactionButton } from "thirdweb/react";
 import { getContract, prepareEvent, prepareContractCall } from "thirdweb";
-import { client } from "@saasfly/shared";
+import { client } from "@saasfly/shared/thirdweb-client";
 import { config } from "@/config";
 import { governanceABI } from "@/lib/governance-abi";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";

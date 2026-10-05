@@ -1,7 +1,7 @@
 'use client';
 
 import type { ProjectData } from "@/app/()/projects/types";
-import { getTargetAmount, sanitizeUrl } from "@saasfly/shared";
+import { getTargetAmount, sanitizeUrl } from "@saasfly/shared/project-utils";
 
 interface MobileInvestmentCardProps {
   project: ProjectData;

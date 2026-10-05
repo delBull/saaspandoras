@@ -3,7 +3,7 @@ import { db } from '@saasfly/db';
 import { daoMembers, projects } from '@saasfly/db/schema';
 import { eq, sql, count, sum, desc, and, inArray } from "@saasfly/db-core";
 import { defineChain, getContract, readContract } from "thirdweb";
-import { client } from "@saasfly/shared";
+import { client } from "@saasfly/shared/thirdweb-client";
 import { getWalletBalance } from "thirdweb/wallets";
 import { harmonizeProject } from "@/lib/projects/harmonizer";
 

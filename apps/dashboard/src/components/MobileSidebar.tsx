@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { cn } from '@saasfly/shared';
+import { cn } from '@saasfly/shared/utils';
 import { 
   HomeIcon, 
   UserGroupIcon, 
@@ -15,7 +15,7 @@ import {
   ShieldCheckIcon
 } from '@heroicons/react/24/outline';
 import { useActiveAccount, useConnectModal, useDisconnect, useActiveWallet } from "thirdweb/react";
-import { client } from "@saasfly/shared";
+import { client } from "@saasfly/shared/thirdweb-client";
 import { wallets } from "@/lib/wallets";
 import { config } from "@/config";
 import { useAdmin } from "@/hooks/useAdmin";

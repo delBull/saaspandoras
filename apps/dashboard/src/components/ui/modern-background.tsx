@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import React from "react";
-import { cn } from "@saasfly/shared";
+import { cn } from "@saasfly/shared/utils";
 
 interface ModernBackgroundProps {
   className?: string;

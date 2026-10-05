@@ -5,7 +5,7 @@ import { useApplicantsDataBasic, type Project } from "@/hooks/applicants/useAppl
 import { useActiveAccount } from "thirdweb/react";
 import { getContract, readContract, defineChain } from "thirdweb";
 import { config } from "@/config"; // Use global config
-import { client } from "@saasfly/shared";
+import { client } from "@saasfly/shared/thirdweb-client";
 import { Loader2, FolderIcon, ArrowRightIcon, CoinsIcon, CreditCardIcon, VoteIcon } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";

@@ -43,6 +43,7 @@ export default async function RootDashboardPage({ searchParams }: PageProps) {
   ]);
 
   const host = headerList.get('x-forwarded-host') || headerList.get('host') || '';
+  const isDashHost = host.startsWith('dash.') || host.startsWith('staging.dash.');
 
   // If accessed via app.pandoras.finance or explicit consumer view query param
   if (host.startsWith('app.') || params.view === 'consumer') {
@@ -101,8 +102,8 @@ export default async function RootDashboardPage({ searchParams }: PageProps) {
       // Authenticated but no tenant -> send to onboarding
       redirect('/onboarding');
     } else {
-      // Not authenticated -> send to login
-      redirect('/accessv2');
+      // Not authenticated -> dash.* uses its own auth gate; other hosts keep /accessv2 protection
+      redirect(isDashHost ? '/auth' : '/accessv2');
     }
   }
 
@@ -110,7 +111,7 @@ export default async function RootDashboardPage({ searchParams }: PageProps) {
   const context = await tryResolvePortalContext(resolvedSlug);
 
   if (!context) {
-    redirect(`/accessv2?return=/ecosystem/${resolvedSlug}`);
+    redirect(isDashHost ? '/auth' : `/accessv2?return=/ecosystem/${resolvedSlug}`);
   }
 
   try {

@@ -104,7 +104,6 @@ export * from './channels/publishers/telegram-publisher';
 export * from './channels/publishers/x-publisher';
 export * from './channels/secret-resolver';
 export * from './channels/tenant-channel.service';
-export * from './channels/tests/test-omnichannel-locks';
 export * from './commerce-engine';
 export * from './compute/runpod-serverless.service';
 export * from './compute/tenant-billing.service';

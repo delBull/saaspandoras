@@ -1,4 +1,4 @@
-import { cn } from "@saasfly/shared"
+import { cn } from "@saasfly/shared/utils"
 
 function Skeleton({
   className,

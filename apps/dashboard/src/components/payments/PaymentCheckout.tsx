@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Loader2, CheckCircle, Wallet, Landmark } from "lucide-react";
-import { client } from "@saasfly/shared";
+import { client } from "@saasfly/shared/thirdweb-client";
 import { base, sepolia } from "thirdweb/chains";
 import { getContract } from "thirdweb";
 import { transfer } from "thirdweb/extensions/erc20";

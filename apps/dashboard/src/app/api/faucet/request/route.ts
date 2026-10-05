@@ -4,7 +4,7 @@ import { actionLogs } from '@saasfly/db/schema';
 import { eq, and } from "@saasfly/db-core";
 import { prepareTransaction, sendTransaction, waitForReceipt } from 'thirdweb';
 import { privateKeyToAccount } from 'thirdweb/wallets';
-import { client } from '@saasfly/shared';
+import { client } from '@saasfly/shared/thirdweb-client';
 import { config } from '@/config';
 import crypto from 'crypto';
 

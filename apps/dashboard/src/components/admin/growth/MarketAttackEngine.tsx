@@ -51,7 +51,7 @@ import {
   TabsTrigger
 } from "@/components/ui/tabs";
 import { marketAttackData, type MarketAttackContent } from "@/lib/market-attack-data";
-import { cn } from "@saasfly/shared";
+import { cn } from "@saasfly/shared/utils";
 
 interface MarketAttackEngineProps {
   projectId?: string;

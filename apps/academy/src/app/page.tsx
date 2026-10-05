@@ -55,7 +55,7 @@ export default function AcademyPublicLanding() {
       desc: 'Fideicomisos fiduciarios, bóvedas PAS v1.0, psicología de venta para realtors y estructuración de preventas. Tesis final con inversión real en S\'Narai.',
       modulesCount: 5,
       passingScore: 85,
-      href: '/academy/master-tokenizacion'
+      href: '/master-tokenizacion'
     },
     {
       role: 'COO',
@@ -108,7 +108,7 @@ export default function AcademyPublicLanding() {
     if (!tokenInput.trim()) return;
     const cleanToken = tokenInput.trim();
     const token = cleanToken.startsWith('inv_') ? cleanToken : `inv_${cleanToken}`;
-    window.location.href = `/academy/assessment/${token}`;
+    window.location.href = `/assessment/${token}`;
   };
 
   return (
@@ -314,7 +314,7 @@ export default function AcademyPublicLanding() {
 
                     <div className="pt-4 border-t border-white/10 flex items-center justify-between">
                       <Link
-                        href={(t as any).href || "/admin/academy"}
+                        href={(t as any).href || "/console"}
                         className={`text-xs font-mono font-bold flex items-center gap-1 ${
                           (t as any).href ? 'text-[#D4A853] hover:text-amber-300' : 'text-purple-400 hover:text-purple-300'
                         }`}

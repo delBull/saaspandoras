@@ -6,7 +6,7 @@ import { users } from "@saasfly/db-core";
 import { eq } from "@saasfly/db-core";
 import { getContract, readContract } from "thirdweb";
 import crypto from "crypto";
-import { client } from "@saasfly/shared";
+import { client } from "@saasfly/shared/thirdweb-client";
 import { config } from "@/config";
 import { PANDORAS_KEY_ABI } from "@/lib/pandoras-key-abi";
 

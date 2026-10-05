@@ -19,7 +19,7 @@ import {
 import { getCampaignPerformance } from "@/actions/campaigns";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "../../ui/skeleton";
-import { cn } from "@saasfly/shared";
+import { cn } from "@saasfly/shared/utils";
 
 interface PerformanceData {
   id: number;

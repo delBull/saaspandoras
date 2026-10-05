@@ -10,7 +10,7 @@ import {
   Save
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@saasfly/shared";
+import { cn } from "@saasfly/shared/utils";
 
 interface ApplicationDraftNotificationProps {
   isOpen: boolean;

@@ -14,7 +14,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { ConnectButton, darkTheme } from "thirdweb/react";
-import { client } from "@saasfly/shared";
+import { client } from "@saasfly/shared/thirdweb-client";
 
 // MOCK DATA PARA S'NARAI
 const MOCK_PROJECT = {

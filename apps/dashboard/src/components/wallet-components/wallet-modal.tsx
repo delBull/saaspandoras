@@ -6,7 +6,7 @@ import { X, ArrowUpIcon, ArrowDownIcon, ClockIcon, CreditCardIcon, Copy } from '
 import { useActiveAccount, useSendTransaction, useWalletBalance } from 'thirdweb/react';
 import { prepareTransaction, toWei } from 'thirdweb';
 import { base } from 'thirdweb/chains';
-import { client } from '@saasfly/shared';
+import { client } from '@saasfly/shared/thirdweb-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import QRCode from 'react-qr-code';

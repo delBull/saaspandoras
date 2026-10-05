@@ -1,6 +1,6 @@
 import * as React from "react"
 
-import { cn } from "@saasfly/shared"
+import { cn } from "@saasfly/shared/utils"
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface TextareaProps

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { verifySignature } from "thirdweb/auth";
-import { client } from "@saasfly/shared";
+import { client } from "@saasfly/shared/thirdweb-client";
 import { db } from "@saasfly/db-core";
 import { authChallenges, users } from "@saasfly/db-core";
 import { eq, and, gt } from "@saasfly/db-core";

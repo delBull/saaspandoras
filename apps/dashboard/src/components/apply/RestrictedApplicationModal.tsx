@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Lock, ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useConnectModal } from "thirdweb/react";
-import { client } from "@saasfly/shared";
+import { client } from "@saasfly/shared/thirdweb-client";
 
 interface RestrictedApplicationModalProps {
     isOpen: boolean;

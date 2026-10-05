@@ -27,11 +27,11 @@ import {
 import { AnimatedBackground } from "@/components/apply/AnimatedBackground";
 import { PreFilterModal } from "@/components/apply/PreFilterModal";
 import { Button } from "@/components/ui/button";
-import { cn } from "@saasfly/shared";
+import { cn } from "@saasfly/shared/utils";
 import { RestrictedApplicationModal } from "@/components/apply/RestrictedApplicationModal";
 import { useActiveAccount, useReadContract } from "thirdweb/react";
 import { getContract } from "thirdweb";
-import { client } from "@saasfly/shared";
+import { client } from "@saasfly/shared/thirdweb-client";
 import { config } from "@/config";
 
 export default function ApplyInfoPage() {

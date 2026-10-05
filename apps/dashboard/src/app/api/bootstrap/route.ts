@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@saasfly/db-core";
 import { sql, eq, and, inArray, desc } from "@saasfly/db-core";
 import { projects, users, gamificationEvents } from "@saasfly/db-core";
-import { getProjectPhasesWithStats } from "@saasfly/shared";
+import { getProjectPhasesWithStats } from "@saasfly/shared/phase-utils";
 import { unstable_cache } from "next/cache";
 
 export const dynamic = 'force-dynamic';

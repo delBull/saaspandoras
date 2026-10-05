@@ -6,7 +6,7 @@ import { purchases as purchasesSchema, projects as projectsSchema } from '@saasf
 import { eq } from "@saasfly/db-core";
 import { getContract, readContract } from 'thirdweb';
 import { defineChain } from 'thirdweb/chains';
-import { client as twClient } from '@saasfly/shared';
+import { client as twClient } from '@saasfly/shared/thirdweb-client';
 
 export default async function CertificatePage({ 
   params, 

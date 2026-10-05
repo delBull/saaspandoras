@@ -22,6 +22,21 @@ const nextConfig = {
     'playwright',
   ],
 
+  // Turbopack ignores the webpack `resolve.fallback` below; stub Node builtins for the browser only.
+  turbopack: {
+    resolveAlias: {
+      dns: { browser: './src/lib/empty-module.js' },
+      'node:dns': { browser: './src/lib/empty-module.js' },
+      net: { browser: './src/lib/empty-module.js' },
+      'node:net': { browser: './src/lib/empty-module.js' },
+      tls: { browser: './src/lib/empty-module.js' },
+      fs: { browser: './src/lib/empty-module.js' },
+      'util/types': { browser: './src/lib/empty-module.js' },
+      perf_hooks: { browser: './src/lib/empty-module.js' },
+      'node:diagnostics_channel': { browser: './src/lib/empty-module.js' },
+    },
+  },
+
   experimental: {
     // Reduce memory usage during build
     memoryBasedWorkersCount: true,

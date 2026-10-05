@@ -3,7 +3,7 @@
 import * as React from "react"
 import { CheckCircle2, Circle } from "lucide-react"
 
-import { cn } from "@saasfly/shared"
+import { cn } from "@saasfly/shared/utils"
 
 const RadioGroup = React.forwardRef<
     HTMLDivElement,

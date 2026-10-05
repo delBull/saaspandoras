@@ -5,7 +5,7 @@ import { eq } from "@saasfly/db-core";
 import { IntegrationKeyService } from "@/lib/integrations/auth";
 import { readContract } from "thirdweb";
 import { defineChain } from "thirdweb/chains";
-import { client as twClient } from "@saasfly/shared";
+import { client as twClient } from "@saasfly/shared/thirdweb-client";
 import { getContract } from "thirdweb";
 import { ProgressionEngine, Tier } from "@/lib/protocol-engine/progression";
 

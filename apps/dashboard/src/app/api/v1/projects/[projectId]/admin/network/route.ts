@@ -6,7 +6,7 @@ import { getAuth } from '@saasfly/auth-sdk';
 import { headers } from 'next/headers';
 import { withSecurity, apiRateLimiter } from '@saasfly/shared';
 import { verifySignature } from 'thirdweb/auth';
-import { client } from '@saasfly/shared';
+import { client } from '@saasfly/shared/thirdweb-client';
 
 async function handlerGet(
     req: Request,

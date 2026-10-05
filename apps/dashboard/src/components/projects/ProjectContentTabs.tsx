@@ -45,10 +45,10 @@ import { UserGovernanceList } from "../user/UserGovernanceList";
 import type { ProjectData } from "@/app/()/projects/types";
 import { defineChain, getContract, readContract, resolveMethod } from "thirdweb";
 import { useReadContract, useWalletBalance } from "thirdweb/react";
-import { getTargetAmount, sanitizeUrl } from "@saasfly/shared";
-import { client } from "@saasfly/shared";
+import { getTargetAmount, sanitizeUrl } from "@saasfly/shared/project-utils";
+import { client } from "@saasfly/shared/thirdweb-client";
 import { config } from "@/config";
-import { calculatePhaseStatus, getProjectPhasesWithStats } from "@saasfly/shared";
+import { calculatePhaseStatus, getProjectPhasesWithStats } from "@saasfly/shared/phase-utils";
 // Format Helper
 const formatCurrency = (amount: number | string) => {
   const num = Number(amount);

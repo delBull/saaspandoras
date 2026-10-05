@@ -8,7 +8,7 @@ import { headers } from 'next/headers';
 import { TelemetryService } from '@/lib/security/telemetry';
 import { withSecurity, apiRateLimiter } from '@saasfly/shared';
 import { verifySignature } from 'thirdweb/auth';
-import { client } from '@saasfly/shared';
+import { client } from '@saasfly/shared/thirdweb-client';
 import { SovereignIpfsOrchestrator } from '@saasfly/hermes-core';
 import { SovereignIpfsAlerting } from '@saasfly/hermes-core';
 import { sendPurchaseEmail } from '@/lib/email/purchase-mailer';

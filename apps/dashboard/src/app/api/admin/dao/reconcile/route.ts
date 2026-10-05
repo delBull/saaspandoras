@@ -4,7 +4,7 @@ import { gamificationEvents, daoMembers, projects } from '@saasfly/db/schema';
 import { eq, sql, and } from "@saasfly/db-core";
 import { defineChain } from "thirdweb";
 import { getWalletBalance } from "thirdweb/wallets";
-import { client } from "@saasfly/shared";
+import { client } from "@saasfly/shared/thirdweb-client";
 
 export async function POST(req: Request) {
     try {

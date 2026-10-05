@@ -104,6 +104,14 @@ export function middleware(request: NextRequest) {
 
   // 0.2.3 Academy Subdomain Routing (e.g. academy.pandoras.finance)
   const isAcademySubdomain = host.startsWith("academy.") || host.startsWith("staging.academy.");
+
+  // Local dev only: Academy is a decoupled app (apps/academy, `next dev --port 3003`).
+  // Proxy academy.localhost:3000 -> localhost:3003 so subdomain testing works locally.
+  if (host.startsWith("academy.localhost") && process.env.NODE_ENV !== "production") {
+    const academyTarget = new URL(`${pathname}${request.nextUrl.search}`, process.env.ACADEMY_LOCAL_URL || "http://localhost:3003");
+    return NextResponse.rewrite(academyTarget);
+  }
+
   if (isAcademySubdomain && !pathname.startsWith("/api") && !pathname.startsWith("/_next")) {
     if (pathname === "/" || pathname === "") {
       return NextResponse.rewrite(new URL("/academy", request.url));

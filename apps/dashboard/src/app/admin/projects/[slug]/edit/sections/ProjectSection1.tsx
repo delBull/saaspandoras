@@ -1,7 +1,7 @@
 "use client";
 
 import { Upload, Image as ImageIcon, Film, Tag } from "lucide-react";
-import { sanitizeUrl } from "@saasfly/shared";
+import { sanitizeUrl } from "@saasfly/shared/project-utils";
 
 import { useFormContext } from "react-hook-form";
 import { useState } from "react";

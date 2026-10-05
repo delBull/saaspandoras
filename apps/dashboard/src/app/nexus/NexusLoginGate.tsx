@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Shield, Lock, Mail, ArrowRight, Wallet, CheckCircle2, AlertCircle, ChevronDown, MessageCircle } from "lucide-react";
 import { ConnectButton } from "thirdweb/react";
-import { client } from "@saasfly/shared";
+import { client } from "@saasfly/shared/thirdweb-client";
 import { wallets } from "@/lib/wallets";
 import { config } from "@/config";
 import { useAuth } from "@/components/auth/AuthProvider";

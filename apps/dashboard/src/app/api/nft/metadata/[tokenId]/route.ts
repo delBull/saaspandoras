@@ -5,7 +5,7 @@ import { eq } from "@saasfly/db-core";
 import { getContract } from "thirdweb";
 import { ownerOf } from "thirdweb/extensions/erc721";
 import { config } from "@/config";
-import { client } from "@saasfly/shared";
+import { client } from "@saasfly/shared/thirdweb-client";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

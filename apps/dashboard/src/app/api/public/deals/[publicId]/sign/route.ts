@@ -6,7 +6,7 @@ import { buildCombinedSignMessage } from "@saasfly/nexus-deals-sdk";
 import { sendSignatureAlert, sendNdaSignedAlert } from "@saasfly/nexus-deals-sdk";
 import { sendNdaConfirmationEmail, sendDealSignedEmail } from "@saasfly/nexus-deals-sdk";
 import { verifySignature } from "thirdweb/auth";
-import { client } from "@saasfly/shared";
+import { client } from "@saasfly/shared/thirdweb-client";
 import { db } from "@saasfly/db-core";
 import { nexusDealAuditEvents } from "@saasfly/db-core";
 import { KIND_LABEL } from "@saasfly/nexus-deals-sdk";
