@@ -135,7 +135,7 @@ export async function POST(
         tenantId: canonical.canonicalOrgId,
         authProvider: 'TELEGRAM_INIT_DATA',
         nonce: `tg_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
-        proofSignature: `sig_tg_${canonical.canonicalOrgId}_${Date.now()}`,
+        proofSignature: channelSecret, // H1 Hardening: Use the actual verified channel secret as proof, no implicit fallback
         issuedAt: Date.now(),
       },
       'TENANT_RESTRICTED',

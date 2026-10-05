@@ -278,32 +278,39 @@ export class HermesRuntime implements HermesCognitiveRuntime {
         const hasExecutivePrivilege = (rawInterlocutor as any)?.isBoss || (controlPlaneContext as any).role === 'OWNER' || (rawInterlocutor as any)?.executivePrivilege;
 
         for (const k of effectiveContext.knowledge) {
-          // Resolve required clearance from item metadata, defaulting to PUBLIC if unset.
-          const itemClearance = (k as any).classification || (k as any).governance?.visibility || 'PUBLIC';
-          
-          if (hasExecutivePrivilege) {
-             filteredKnowledge.push(k);
-             continue;
-          }
-          
-          const validation = await ChannelMeshService.validateDisclosureClearance({
-            channelType: activeChannel as any, // HermesChannelType
-            requiredClearance: itemClearance,
-            tenantId: canonicalTenantId,
-            artifactId: k.id,
-          });
-          
-          if (validation.allowed) {
-            filteredKnowledge.push(k);
-          } else {
-            // Drop it from the context
-            console.log(`[HermesRuntime] K27.6 Dropping artifact ${k.id} due to Channel Mesh Ceiling on ${activeChannel}.`);
+          try {
+            // Resolve required clearance from item metadata, defaulting to PUBLIC if unset.
+            const itemClearance = (k as any).classification || (k as any).governance?.visibility || 'PUBLIC';
+            
+            if (hasExecutivePrivilege) {
+               filteredKnowledge.push(k);
+               continue;
+            }
+            
+            const validation = await ChannelMeshService.validateDisclosureClearance({
+              channelType: activeChannel as any, // HermesChannelType
+              requiredClearance: itemClearance,
+              tenantId: canonicalTenantId,
+              artifactId: k.id,
+            });
+            
+            if (validation.allowed) {
+              filteredKnowledge.push(k);
+            } else {
+              // Drop it from the context
+              console.log(`[HermesRuntime] K27.6 Dropping artifact ${k.id} due to Channel Mesh Ceiling on ${activeChannel}.`);
+            }
+          } catch (artifactErr) {
+            // H5 Hardening: Channel Mesh fail-closed for disclosure
+            console.log(`[HermesRuntime] K27.6 Dropping artifact ${k.id} because clearance could not be determined:`, artifactErr);
           }
         }
         
         effectiveContext.knowledge = filteredKnowledge;
       } catch (err) {
-        console.warn('[HermesRuntime] Non-blocking warning during Channel Mesh clearance validation:', err);
+        // H5 Hardening: Channel Mesh fail-closed for disclosure (if module load fails entirely)
+        console.error('[HermesRuntime] H5 Hardening: Channel Mesh unavailable -> UNKNOWN -> no restricted knowledge. Error:', err);
+        effectiveContext.knowledge = []; // Fail closed entirely
       }
       // --- END CHANNEL MESH CLEARANCE ---
 

@@ -81,6 +81,18 @@ export async function POST(req: NextRequest) {
     }
 
     // 3. Mandatory Actor Identity Binding with Cryptographic Proof
+    // H1 Hardening: Kill implicit session creation.
+    if (!auth.sessionId) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'UNAUTHENTICATED',
+          message: 'Valid cryptographic session proof (sessionId) is required.',
+        },
+        { status: 401 }
+      );
+    }
+
     const { InterlocutorResolver } = await import('@saasfly/hermes-core');
     const callerWallet = req.headers.get('x-wallet-address') || req.headers.get('x-thirdweb-address') || undefined;
     const interlocutor = await InterlocutorResolver.resolve({
@@ -96,7 +108,7 @@ export async function POST(req: NextRequest) {
         tenantId: effectiveOrgId,
         authProvider,
         nonce: `nonce_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-        proofSignature: auth.sessionId || `sig_${effectiveOrgId}_${Date.now()}`,
+        proofSignature: auth.sessionId,
         issuedAt: Date.now(),
       },
       channelType === 'INTERNAL_WORKBENCH' || interlocutor.isBoss ? 'CONFIDENTIAL' : 'TENANT_RESTRICTED',
