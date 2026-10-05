@@ -3,8 +3,7 @@ import { db } from '@saasfly/db';
 import { projects } from '@saasfly/db/schema';
 import { eq } from "@saasfly/db-core";
 import { withSecurity, apiRateLimiter } from '@saasfly/shared';
-import { HermesExecutionEngine } from '@saasfly/hermes-core';
-import { TelegramAdapter } from '@saasfly/hermes-core';
+
 import { OrganizationSDK } from '@saasfly/shared';
 
 /**

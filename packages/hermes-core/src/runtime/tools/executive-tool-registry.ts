@@ -435,7 +435,7 @@ export function registerExecutiveTools(executor: HermesToolExecutor): void {
     const { action, tenantId, recipient, amountUsd, purpose } = (params as any) || {};
     const { FinancialOrchestratorService } = await import('@saasfly/hermes-core');
     const finPrep = FinancialOrchestratorService.prepareProposal({
-      action: String(action),
+      action: String(action) as any,
       tenantId: String(tenantId),
       recipient: String(recipient),
       amountUsd: Number(amountUsd),
@@ -473,12 +473,12 @@ export function registerExecutiveTools(executor: HermesToolExecutor): void {
     const founderKey = `${organizationId}:${(context as any)?.interlocutor?.id || 'founder'}`;
     
     const planResult = ExecutivePlanner.createPlan({
-      action: String(action),
+      action: String(action) as any,
       target: String(target),
       payload: payload as any,
       title: String(title || action),
       description: String(description || ''),
-      blastRadius: String(blastRadius || 'LOW'),
+      blastRadius: String(blastRadius || 'LOW') as 'LOW' | 'MEDIUM' | 'HIGH',
       interlocutor: (context as any)?.interlocutor,
       founderKey,
     });

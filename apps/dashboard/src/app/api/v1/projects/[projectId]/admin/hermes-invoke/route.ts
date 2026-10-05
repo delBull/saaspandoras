@@ -36,31 +36,32 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ pro
     const adminChannel = admin.whatsappPhone ? 'whatsapp' : 'telegram';
     const adminExternalId = admin.whatsappPhone || admin.discordUserId || ''; // mock using discordId as TG ID for now
     
-    // 3. Dispatch the outbound push message via Hermes Engine / Edge
-    const { HermesExecutionEngine } = await import('@saasfly/hermes-core');
-    const engine = new HermesExecutionEngine();
+    // 3. Dispatch the outbound push message via Hermes Runtime
+    const { getDefaultRuntime } = await import('@saasfly/hermes-core');
+    const runtime = getDefaultRuntime();
     
     // We send an "internal" message to Hermes instructing it to message the admin
-    const request = {
-        requestId: `invoke-${Date.now()}`,
-        executionId: `sys-${Date.now()}`,
-        tenantId: projectId,
-        requester: 'system_nexus',
-        channel: adminChannel as any,
-        capability: 'communication.route',
-        executionProfile: 'interactive' as const,
-        identity: { userId: adminExternalId },
-        priority: 'high' as const,
-        payload: {
-            projectId: projectId,
-            chatId: adminExternalId,
-            userMessage: `[SYSTEM CONTEXT INJECTION]\nEl admin está revisando el contexto del cliente.\nContexto:\n${contextStr}\n\nInicia la conversación preguntándole al admin qué necesita saber sobre este deal.`,
-            raw: {}
-        }
-    };
+    const runtimeResponse = await runtime.respond({
+      organizationId: projectId,
+      conversationId: `conv_${adminChannel}_${projectId}_${adminExternalId}`,
+      message: {
+        id: `sys-${Date.now()}`,
+        role: 'SYSTEM',
+        content: `[SYSTEM CONTEXT INJECTION]\nEl admin está revisando el contexto del cliente.\nContexto:\n${contextStr}\n\nInicia la conversación preguntándole al admin qué necesita saber sobre este deal.`,
+        createdAt: new Date(),
+      },
+      controlPlaneContext: {
+        actorId: `admin_${adminExternalId}`,
+        organizationId: projectId,
+        role: 'ADMIN',
+        permissions: ['view_overview', 'view_governance'],
+        sessionId: `invoke_sess_${projectId}_${adminExternalId}`,
+        channel: adminChannel,
+      }
+    });
 
-    // This executes Hermes which will generate the reply and push it via the channel
-    const result = await engine.execute(request);
+    // We rely on the adapter or subsequent push to deliver the content, or for now we mock it as the comment suggests.
+    const result = { reply: runtimeResponse.content };
 
     return NextResponse.json({ 
         ok: true, 

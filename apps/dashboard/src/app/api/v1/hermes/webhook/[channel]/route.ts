@@ -1,12 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ExecutionEngine } from '@saasfly/hermes-core';
 import { OrganizationSDK } from '@saasfly/shared';
 import { db } from '@saasfly/db';
 import { projects } from '@saasfly/db/schema';
 import { eq } from "@saasfly/db-core";
-import { HermesExecutionEngine } from '@saasfly/hermes-core';
-import { TelegramAdapter } from '@saasfly/hermes-core';
-import { ExecutionRequest } from '@saasfly/hermes-core';
 import { DefaultOmnichannelGateway } from '@saasfly/hermes-core';
 import { DefaultCognitiveChannelDispatcher } from '@saasfly/hermes-core';
 import { DuplicateMessageError, InvalidChannelPayloadError } from '@saasfly/hermes-core';
@@ -52,97 +48,70 @@ export async function POST(
     let userMessage = '';
     let chatId = '';
 
-    if (channel === 'telegram') {
-      const tgText = body?.message?.text || body?.channel_post?.text || '';
-      
-      // Anti-spam boundary for well-known telegram bots/channels
-      if (tgText && (tgText.includes('t.me/') || tgText.includes('A_ToolsX') || tgText.includes('A-TOOLS X') || tgText.includes('join our channel'))) {
-        console.warn(`[Telegram Webhook] Blocked suspected spam payload: ${tgText.substring(0, 50)}...`);
-        return NextResponse.json({ ok: true, status: 'SPAM_IGNORED' });
+    const tgText = body?.message?.text || body?.channel_post?.text || '';
+    if (channel === 'telegram' && tgText && (tgText.includes('t.me/') || tgText.includes('A_ToolsX') || tgText.includes('A-TOOLS X') || tgText.includes('join our channel'))) {
+      console.warn(`[Telegram Webhook] Blocked suspected spam payload: ${tgText.substring(0, 50)}...`);
+      return NextResponse.json({ ok: true, status: 'SPAM_IGNORED' });
+    }
+
+    const projectRecord = await db.query.projects.findFirst({
+      where: eq(projects.id, projectId),
+    });
+
+    if (!projectRecord) {
+      return NextResponse.json({ error: 'Unknown project' }, { status: 400 });
+    }
+
+    const metadata = (projectRecord.w2eConfig as any) || {};
+    const storedSecret = metadata?.botConfig?.webhookSecret;
+
+    if (channel === 'telegram' && storedSecret) {
+      const requestSecret = req.headers.get('x-telegram-bot-api-secret-token');
+      if (!requestSecret || requestSecret !== storedSecret) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+    }
+
+    // Inject target tenant so the BindingResolver can correctly map the user
+    body.targetTenant = projectRecord.slug;
+
+    try {
+      let externalId = String(body.update_id || body.id || Date.now());
+      if (channel === 'whatsapp') {
+        externalId = body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.id || String(Date.now());
       }
 
-      const projectRecord = await db.query.projects.findFirst({
-        where: eq(projects.id, projectId),
+      // C5.18: Thin webhook boundary. Delegate directly to OmnichannelGateway.
+      const normalized = await omnichannelGateway.receive({
+        channelType: channel as any,
+        externalId,
+        rawPayload: body
       });
 
-      if (!projectRecord) {
-        return NextResponse.json({ error: 'Unknown project' }, { status: 400 });
+      // Asynchronous dispatch for native webhooks and bot daemon
+      channelDispatcher.dispatchAsync(normalized).catch((err) => {
+        console.error(`[${channel} Dispatch Error]:`, err);
+      });
+
+      return NextResponse.json({
+        ok: true,
+        status: 'ACCEPTED',
+        normalizedMessageId: normalized.message.messageId,
+        organizationId: normalized.organizationId,
+        correlationId: normalized.correlationId
+      });
+    } catch (error: any) {
+      if (error instanceof DuplicateMessageError) {
+        return NextResponse.json({ status: 'IDEMPOTENT_SKIPPED', message: error.message }, { status: 200 });
       }
-
-      const metadata = (projectRecord.w2eConfig as any) || {};
-      const storedSecret = metadata?.botConfig?.webhookSecret;
-
-      if (storedSecret) {
-        const requestSecret = req.headers.get('x-telegram-bot-api-secret-token');
-        if (!requestSecret || requestSecret !== storedSecret) {
-          return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        }
+      if (error instanceof InvalidChannelPayloadError) {
+        return NextResponse.json({ error: error.message }, { status: 400 });
       }
-
-      // Inject the target tenant so the BindingResolver can correctly map the user
-      body.targetTenant = projectRecord.slug;
-
-      try {
-        // C5.18: Thin webhook boundary. Delegate directly to OmnichannelGateway.
-        const normalized = await omnichannelGateway.receive({
-          channelType: 'telegram',
-          externalId: String(body.update_id),
-          rawPayload: body
-        });
-
-        // Asynchronous dispatch for native webhooks and bot daemon
-        channelDispatcher.dispatchAsync(normalized).catch((err) => {
-          console.error('[Telegram Dispatch Error]:', err);
-        });
-
-        return NextResponse.json({
-          ok: true,
-          status: 'ACCEPTED',
-          normalizedMessageId: normalized.message.messageId,
-          organizationId: normalized.organizationId,
-          correlationId: normalized.correlationId
-        });
-      } catch (error: any) {
-        if (error instanceof DuplicateMessageError) {
-          return NextResponse.json({ status: 'IDEMPOTENT_SKIPPED', message: error.message }, { status: 200 });
-        }
-        if (error instanceof InvalidChannelPayloadError) {
-          return NextResponse.json({ error: error.message }, { status: 400 });
-        }
-        console.error('[Telegram Webhook Error]:', error);
-        return NextResponse.json({ error: 'Internal processing error' }, { status: 500 });
-      }
+      console.error(`[${channel} Webhook Error]:`, error);
+      return NextResponse.json({ error: 'Internal processing error' }, { status: 500 });
     }
-
-    // Default fallback for other channels temporarily
-    if (channel === 'whatsapp') {
-      userMessage = body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.text?.body || body?.message || '';
-      chatId = body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.from || body?.from || '';
-    } else {
-      userMessage = body?.message || body?.text || '';
-      chatId = body?.chatId || body?.userId || 'webchat-session';
-    }
-
-    if (!userMessage) {
-      return NextResponse.json({ ok: true, note: 'No text message to process' });
-    }
-
-    // Legacy execution for non-telegram
-    const result = await ExecutionEngine.execute({
-      projectId,
-      chatId,
-      userMessage,
-      channel
-    });
-
-    return NextResponse.json({
-      ok: true,
-      channel,
-      reply: result.reply
-    });
-
   } catch (error: any) {
     console.error('[Hermes OS v5 Webhook Error]:', error);
-    return NextResponse.json({ error: error?.message || 'Execution Engine processing failed' }, { status: 500 });
+    return NextResponse.json({ error: error?.message || 'Processing failed' }, { status: 500 });
   }
 }
