@@ -124,10 +124,10 @@ export class ChannelMeshService {
     const { channelType, requiredClearance, tenantId, artifactId } = params;
     const config = CHANNEL_CONFIGS[channelType] || CHANNEL_CONFIGS.WEB_WIDGET;
 
-    const reqLevel = CLEARANCE_LEVELS[requiredClearance] || 1;
-    const ceilingLevel = CLEARANCE_LEVELS[config.maxClearanceCeiling] || 1;
+    const reqLevel = CLEARANCE_LEVELS[requiredClearance];
+    const ceilingLevel = CLEARANCE_LEVELS[config.maxClearanceCeiling];
 
-    if (reqLevel > ceilingLevel) {
+    if (reqLevel === undefined || ceilingLevel === undefined || reqLevel > ceilingLevel) {
       await SecurityAuditLogger.logEvent({
         organizationId: tenantId,
         eventType: 'DISCLOSURE_BLOCKED',
@@ -146,7 +146,7 @@ export class ChannelMeshService {
 
       return {
         allowed: false,
-        reason: `Disclosure blocked: Channel "${channelType}" ceiling "${config.maxClearanceCeiling}" is below artifact classification "${requiredClearance}".`,
+        reason: `Disclosure blocked: Channel "${channelType}" ceiling "${config.maxClearanceCeiling}" is below artifact classification "${requiredClearance}" or clearance is unknown.`,
       };
     }
 

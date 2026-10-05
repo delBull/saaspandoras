@@ -537,37 +537,32 @@ export class ChannelGatewayAdapter {
             };
         }
 
-        const { HermesExecutionEngine } = await import('../kernel/execution/execution-api');
-        const engine = new HermesExecutionEngine();
+        const { getDefaultRuntime } = await import('../runtime/hermes-runtime');
+        const runtime = getDefaultRuntime();
         
         const { IdentityResolver } = await import('./identity-resolver');
         const identityId = await IdentityResolver.resolveIdentity(ctx.channel, ctx.externalUserId, ctx.metadata);
         
-        // Native Universal Execution Request
-        const request = {
-            requestId: `req-${Date.now()}-${Math.floor(Math.random()*1000)}`,
-            executionId: `${ctx.channel}-${Date.now()}`,
-            tenantId: String(projectRecord.id),
-            requester: ctx.externalConversationId,
+        const runtimeResponse = await runtime.respond({
+          organizationId: projectRecord.slug,
+          conversationId: ctx.externalConversationId,
+          message: {
+            id: `req-${Date.now()}-${Math.floor(Math.random()*1000)}`,
+            role: 'USER',
+            content: text,
+            createdAt: new Date(),
+          },
+          controlPlaneContext: {
+            actorId: identityId || userId || ctx.externalUserId,
+            organizationId: projectRecord.slug,
+            role: 'VIEWER',
+            permissions: [],
+            sessionId: `sess_${ctx.externalConversationId}`,
             channel: ctx.channel,
-            capability: 'communication.route',
-            executionProfile: 'interactive' as const,
-            identity: { userId, identityId },
-            priority: 'normal' as const,
-            payload: {
-                projectId: projectRecord.id,
-                chatId: ctx.externalConversationId,
-                userMessage: text,
-                botToken: process.env.TELEGRAM_BOT_TOKEN || '',
-                raw: ctx
-            }
-        };
-
-        const result = await engine.execute(request);
+          }
+        });
         
-        // Render from standard execution artifacts
-        const textArtifact = result.artifacts?.find((a: any) => a.type === 'message');
-        const reply = textArtifact ? textArtifact.content : (result as any).reply || '';
+        const reply = runtimeResponse.content || '';
 
         if (reply && reply.trim()) {
             return {

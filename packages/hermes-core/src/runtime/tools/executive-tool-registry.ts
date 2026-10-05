@@ -17,23 +17,57 @@ import {
   AssignAdminTool,
   ApprovePaymentTool,
   ProvisionCollaboratorTool,
+  ExecutiveBriefingTool,
+  ExecutiveCapabilitiesTool,
+  FinancialSignatureTool,
+  FinancialProposalTool,
+  CodeApprovalTool,
+  CodeDiagnosisTool,
+  OperationalActionTool,
+  RegisterContactTool,
+  AddDirectiveTool,
+  PromoteContactTool,
+  SendWhatsAppTool,
+  AuditTenantTool,
+  AuditLeadsTool,
+  AuditLogsTool,
+  AuditSchemaTool,
+  ConfirmPlanTool,
+  CancelPlanTool,
   ExecutiveToolSchema,
 } from './executive-tools';
 import { db } from "@saasfly/db-core";
 import { projects, installedProducts, administrators, privatePaymentLinks, nexusCollaborators, users } from "@saasfly/db-core";
-import { eq, and, inArray, or } from "@saasfly/db-core";
+import { eq, and, inArray, or, ilike } from "@saasfly/db-core";
 import { PlatformAuditLedgerService } from '../../admin/platform-audit-ledger.service';
 import { paymentOrchestrator } from '../../payments/core/orchestrator';
 import { PaymentSettlementEvent } from '../../payments/core/types';
 import crypto from 'crypto';
 import { sendCollaboratorMagicLink } from '../../nexus/collaborators-service';
-import { sendTenantProvisionEmail } from '@saasfly/shared';
+import { sendTenantProvisionEmail, sendWhatsAppMessage } from '@saasfly/shared';
 
 const TOOL_SCHEMAS: ExecutiveToolSchema[] = [
   ActivateTenantTool,
   AssignAdminTool,
   ApprovePaymentTool,
   ProvisionCollaboratorTool,
+  ExecutiveBriefingTool,
+  ExecutiveCapabilitiesTool,
+  FinancialSignatureTool,
+  FinancialProposalTool,
+  CodeApprovalTool,
+  CodeDiagnosisTool,
+  OperationalActionTool,
+  RegisterContactTool,
+  AddDirectiveTool,
+  PromoteContactTool,
+  SendWhatsAppTool,
+  AuditTenantTool,
+  AuditLeadsTool,
+  AuditLogsTool,
+  AuditSchemaTool,
+  ConfirmPlanTool,
+  CancelPlanTool,
 ];
 
 function isExecutive(context: Record<string, unknown> | undefined): boolean {
@@ -363,6 +397,223 @@ export function registerExecutiveTools(executor: HermesToolExecutor): void {
       email: collaborator.email,
       role: finalRole
     };
+  });
+
+  // ── executive_get_briefing ─────────────────────────────────────────────
+  executor.registerHandler('executive_get_briefing', async (params, context) => {
+    if (!isExecutive(context)) throw new Error('EXECUTIVE_GATE_DENY');
+    const { ExecutiveBriefingEngine } = await import('@saasfly/hermes-core');
+    const briefing = await ExecutiveBriefingEngine.generateBriefing();
+    return { briefing: briefing.rawMarkdown };
+  });
+
+  // ── executive_get_capabilities ─────────────────────────────────────────
+  executor.registerHandler('executive_get_capabilities', async (params, context) => {
+    if (!isExecutive(context)) throw new Error('EXECUTIVE_GATE_DENY');
+    const { ExecutiveCapabilitiesManifest } = await import('@saasfly/hermes-core');
+    const channel = (context as any)?.channel || 'whatsapp';
+    const guide = ExecutiveCapabilitiesManifest.getExecutiveGuide(channel);
+    return { capabilitiesGuide: guide };
+  });
+
+  // ── executive_financial_signature ──────────────────────────────────────
+  executor.registerHandler('executive_financial_signature', async (params, context) => {
+    if (!isExecutive(context)) throw new Error('EXECUTIVE_GATE_DENY');
+    const { proposalId, signature } = (params as any) || {};
+    const { FinancialOrchestratorService } = await import('@saasfly/hermes-core');
+    const finResult = await FinancialOrchestratorService.verifyAndExecuteSignature({
+      proposalId: String(proposalId),
+      signature: String(signature),
+      interlocutor: (context as any)?.interlocutor,
+    });
+    return { success: finResult.success, message: finResult.message };
+  });
+
+  // ── executive_financial_proposal ───────────────────────────────────────
+  executor.registerHandler('executive_financial_proposal', async (params, context) => {
+    if (!isExecutive(context)) throw new Error('EXECUTIVE_GATE_DENY');
+    const { action, tenantId, recipient, amountUsd, purpose } = (params as any) || {};
+    const { FinancialOrchestratorService } = await import('@saasfly/hermes-core');
+    const finPrep = FinancialOrchestratorService.prepareProposal({
+      action: String(action),
+      tenantId: String(tenantId),
+      recipient: String(recipient),
+      amountUsd: Number(amountUsd),
+      purpose: String(purpose),
+      interlocutor: (context as any)?.interlocutor,
+    });
+    return { ok: finPrep.ok, reviewCard: finPrep.reviewCard };
+  });
+
+  // ── executive_code_approval ────────────────────────────────────────────
+  executor.registerHandler('executive_code_approval', async (params, context) => {
+    if (!isExecutive(context)) throw new Error('EXECUTIVE_GATE_DENY');
+    const { proposalId } = (params as any) || {};
+    const { CodeOperatorService } = await import('@saasfly/hermes-core');
+    const patchResult = await CodeOperatorService.approvePatch(String(proposalId), (context as any)?.interlocutor);
+    return { success: patchResult.success, message: patchResult.message };
+  });
+
+  // ── executive_code_diagnosis ───────────────────────────────────────────
+  executor.registerHandler('executive_code_diagnosis', async (params, context) => {
+    if (!isExecutive(context)) throw new Error('EXECUTIVE_GATE_DENY');
+    const { rawError } = (params as any) || {};
+    const { CodeOperatorService } = await import('@saasfly/hermes-core');
+    const diag = CodeOperatorService.diagnoseError(String(rawError));
+    return { diagnosis: diag };
+  });
+
+  // ── executive_operational_action ───────────────────────────────────────
+  executor.registerHandler('executive_operational_action', async (params, context) => {
+    if (!isExecutive(context)) throw new Error('EXECUTIVE_GATE_DENY');
+    const { action, target, payload, title, description, blastRadius } = (params as any) || {};
+    const { ExecutivePlanner } = await import('@saasfly/hermes-core');
+    
+    const organizationId = (context as any)?.organizationId || 'system';
+    const founderKey = `${organizationId}:${(context as any)?.interlocutor?.id || 'founder'}`;
+    
+    const planResult = ExecutivePlanner.createPlan({
+      action: String(action),
+      target: String(target),
+      payload: payload as any,
+      title: String(title || action),
+      description: String(description || ''),
+      blastRadius: String(blastRadius || 'LOW'),
+      interlocutor: (context as any)?.interlocutor,
+      founderKey,
+    });
+    return { ok: planResult.ok, reviewCard: planResult.reviewCard };
+  });
+
+  // ── executive_register_contact ─────────────────────────────────────────
+  executor.registerHandler('executive_register_contact', async (params, context) => {
+    if (!isExecutive(context)) throw new Error('EXECUTIVE_GATE_DENY');
+    const { name, phone, email, notes } = (params as any) || {};
+    const organizationId = (context as any)?.organizationId || 'pandoras';
+    const { InterlocutorResolver } = await import('@saasfly/hermes-core');
+    const contact = await InterlocutorResolver.registerContactFromBoss({
+      name: String(name),
+      phone: phone ? String(phone) : undefined,
+      email: email ? String(email) : undefined,
+      notes: notes ? String(notes) : undefined,
+      tenantSlug: organizationId,
+    });
+    return { registered: true, contact };
+  });
+
+  // ── executive_add_directive ────────────────────────────────────────────
+  executor.registerHandler('executive_add_directive', async (params, context) => {
+    if (!isExecutive(context)) throw new Error('EXECUTIVE_GATE_DENY');
+    const { directiveText } = (params as any) || {};
+    const { FounderDirectiveStore } = await import('@saasfly/hermes-core');
+    FounderDirectiveStore.addDirective({
+      text: String(directiveText),
+      actorId: (context as any)?.interlocutor?.actorId || 'marco_founder',
+      channel: (context as any)?.channel || 'web',
+    });
+    return { recorded: true, directiveText };
+  });
+
+  // ── executive_promote_contact ──────────────────────────────────────────
+  executor.registerHandler('executive_promote_contact', async (params, context) => {
+    if (!isExecutive(context)) throw new Error('EXECUTIVE_GATE_DENY');
+    const { targetIdentifier, targetRole, notes } = (params as any) || {};
+    const organizationId = (context as any)?.organizationId || 'pandoras';
+    const { InterlocutorResolver } = await import('@saasfly/hermes-core');
+    const contact = await InterlocutorResolver.promoteContactFromBoss({
+      targetIdentifier: String(targetIdentifier),
+      targetRole: String(targetRole),
+      notes: notes ? String(notes) : undefined,
+      tenantSlug: organizationId,
+    });
+    return { promoted: true, contact };
+  });
+
+  // ── executive_send_whatsapp ────────────────────────────────────────────
+  executor.registerHandler('executive_send_whatsapp', async (params, context) => {
+    if (!isExecutive(context)) throw new Error('EXECUTIVE_GATE_DENY');
+    const { targetNameOrPhone, messageToSend } = (params as any) || {};
+    const target = String(targetNameOrPhone).trim();
+    let destPhone: string | null = null;
+    let destName = target;
+
+    if (/^\+?\d{10,15}$/.test(target)) {
+      destPhone = target.replace(/\D/g, '');
+    } else {
+      const [collab] = await db
+        .select()
+        .from(nexusCollaborators)
+        .where(or(
+          ilike(nexusCollaborators.name, `%${target}%`),
+          eq(nexusCollaborators.name, target)
+        ))
+        .limit(1);
+      if (collab?.whatsappPhone) {
+        destPhone = collab.whatsappPhone.replace(/\D/g, '');
+        destName = collab.name || target;
+      }
+    }
+
+    if (destPhone) {
+      console.log(`📤 [ExecutiveWhatsAppDispatch] Dispatching message from Boss to ${destName} (${destPhone})`);
+      await sendWhatsAppMessage(destPhone, `*Mensaje de Marco (Fundador):*\n\n${messageToSend}`);
+      return { sent: true, destName, destPhone };
+    }
+    
+    throw new Error(`Could not resolve WhatsApp destination for '${targetNameOrPhone}'`);
+  });
+
+  // ── executive_audit_tenant ─────────────────────────────────────────────
+  executor.registerHandler('executive_audit_tenant', async (params, context) => {
+    if (!isExecutive(context)) throw new Error('EXECUTIVE_GATE_DENY');
+    const { tenantSlug } = (params as any) || {};
+    const { ExecutiveAuditService } = await import('@saasfly/hermes-core');
+    const report = await ExecutiveAuditService.inspectTenant(String(tenantSlug));
+    return { markdownReport: report.markdown };
+  });
+
+  // ── executive_audit_leads ──────────────────────────────────────────────
+  executor.registerHandler('executive_audit_leads', async (params, context) => {
+    if (!isExecutive(context)) throw new Error('EXECUTIVE_GATE_DENY');
+    const { ExecutiveAuditService } = await import('@saasfly/hermes-core');
+    const report = await ExecutiveAuditService.inspectLeads();
+    return { markdownReport: report.markdown };
+  });
+
+  // ── executive_audit_logs ───────────────────────────────────────────────
+  executor.registerHandler('executive_audit_logs', async (params, context) => {
+    if (!isExecutive(context)) throw new Error('EXECUTIVE_GATE_DENY');
+    const { ExecutiveAuditService } = await import('@saasfly/hermes-core');
+    const report = await ExecutiveAuditService.inspectSystemLogs();
+    return { markdownReport: report.markdown };
+  });
+
+  // ── executive_audit_schema ─────────────────────────────────────────────
+  executor.registerHandler('executive_audit_schema', async (params, context) => {
+    if (!isExecutive(context)) throw new Error('EXECUTIVE_GATE_DENY');
+    const { ExecutiveAuditService } = await import('@saasfly/hermes-core');
+    const report = await ExecutiveAuditService.inspectSchemaParity();
+    return { markdownReport: report.markdown };
+  });
+
+  // ── executive_confirm_plan ─────────────────────────────────────────────
+  executor.registerHandler('executive_confirm_plan', async (params, context) => {
+    if (!isExecutive(context)) throw new Error('EXECUTIVE_GATE_DENY');
+    const organizationId = (context as any)?.organizationId || 'system';
+    const founderKey = `${organizationId}:${(context as any)?.interlocutor?.id || 'founder'}`;
+    const { ExecutivePlanner } = await import('@saasfly/hermes-core');
+    const execResult = await ExecutivePlanner.executePlan(founderKey, (context as any)?.interlocutor);
+    return { success: execResult.success, message: execResult.message };
+  });
+
+  // ── executive_cancel_plan ──────────────────────────────────────────────
+  executor.registerHandler('executive_cancel_plan', async (params, context) => {
+    if (!isExecutive(context)) throw new Error('EXECUTIVE_GATE_DENY');
+    const organizationId = (context as any)?.organizationId || 'system';
+    const founderKey = `${organizationId}:${(context as any)?.interlocutor?.id || 'founder'}`;
+    const { ExecutivePlanner } = await import('@saasfly/hermes-core');
+    const cancelResult = ExecutivePlanner.cancelPlan(founderKey);
+    return { canceled: true, message: cancelResult.message };
   });
 }
 

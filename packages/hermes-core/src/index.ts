@@ -188,7 +188,7 @@ export * from './execution/ports/transactions/approval-transaction.interface';
 export * from './execution/workflow-definition';
 export * from './execution/workflow-registry';
 export * from './execution/workflow-state-machine';
-export * from './execution-engine';
+
 export * from './executive/audit-service';
 export * from './executive/briefing-engine';
 export * from './executive/capabilities-manifest';
@@ -235,7 +235,7 @@ export * from './journeys/repositories';
 export * from './journeys/transition-validator';
 export * from './kernel/boot/boot-sequence';
 export * from './kernel/execution/dispatcher';
-export * from './kernel/execution/execution-api';
+
 export * from './kernel/execution/resource-manager';
 export * from './kernel/intelligence/decision-journal';
 export * from './kernel/scheduler/scheduler';
