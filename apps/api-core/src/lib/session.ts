@@ -3,7 +3,7 @@ import { getRedis } from './redis.js';
 import crypto from 'crypto';
 import { db } from './db.js';
 import { sessions, securityEvents } from '../db/schema.js';
-import { eq, and, isNull, gt } from "@saasfly/db-core";
+import { eq, and, isNull, gt } from "drizzle-orm";
 
 // Constants
 const SESSION_PREFIX = 'session:';

@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { db } from '../lib/db.js';
 import { tenants, tenantUsers, type TenantConfig, type NFTContractConfig } from '../db/schema-extended.js';
-import { eq, and } from "@saasfly/db-core";
+import { eq, and } from "drizzle-orm";
 import { getNFTBalanceCached } from '../lib/nft-cache.js';
 import { config } from '../config.js';
 

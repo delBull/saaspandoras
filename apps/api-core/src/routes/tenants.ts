@@ -2,7 +2,7 @@ import { Router, type Request, type Response, type NextFunction } from 'express'
 import jwt from 'jsonwebtoken';
 import { db } from '../lib/db.js';
 import { tenants } from '../db/schema-extended.js';
-import { eq } from "@saasfly/db-core";
+import { eq } from "drizzle-orm";
 
 const router = Router();
 
