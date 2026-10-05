@@ -10,7 +10,7 @@ import { resolveIpfsUrl } from "@saasfly/shared/project-utils";
 import { sanitizeUrl } from "@saasfly/shared/project-utils";
 
 const playfair = Playfair_Display({ subsets: ["latin"] });
-const inter = Inter({ subsets: ["latin"], weight: ["200", "300", "400", "600"] });
+const inter = Inter({ subsets: ["latin"] });
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string, eventId: string }> }): Promise<Metadata> {
     const { slug, eventId: eventIdStr } = await params;
