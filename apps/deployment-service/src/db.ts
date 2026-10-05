@@ -1,6 +1,6 @@
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
-import * as schema from "../../dashboard/src/db/schema.js";
+import * as schema from "@saasfly/db-core";
 import dotenv from "dotenv";
 
 dotenv.config();
