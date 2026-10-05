@@ -195,7 +195,7 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
     }
     
     const actorIdentity = (auth.email || auth.wallet || 'operator').toLowerCase().trim();
-    const welcomeKey = `pandoras_welcome_${actorIdentity}`;
+    const welcomeKey = `pandoras_welcome_v2_${actorIdentity}`;
     
     const isFirstVisit = (() => {
       try {
@@ -379,7 +379,7 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
                   <button
                     onClick={() => {
                       const actorIdentity = (auth.email || auth.wallet || 'operator').toLowerCase().trim();
-                      const welcomeKey = `pandoras_welcome_${actorIdentity}`;
+                      const welcomeKey = `pandoras_welcome_v2_${actorIdentity}`;
                       try {
                         localStorage.setItem(welcomeKey, 'true');
                         const domain = window.location.hostname.includes('pandoras.finance') ? 'domain=.pandoras.finance;' : '';
