@@ -4,29 +4,29 @@
   "private": true,
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",
-      "require": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "require": "./dist/index.js"
     },
     "./resend": {
+      "types": "./dist/email.d.ts",
       "import": "./dist/email.mjs",
-      "require": "./dist/email.js",
-      "types": "./dist/email.d.ts"
+      "require": "./dist/email.js"
     },
     "./MagicLinkEmail": {
+      "types": "./dist/magic-link-email.d.ts",
       "import": "./dist/magic-link-email.mjs",
-      "require": "./dist/magic-link-email.js",
-      "types": "./dist/magic-link-email.d.ts"
+      "require": "./dist/magic-link-email.js"
     },
     "./subscriptions": {
+      "types": "./dist/subscriptions.d.ts",
       "import": "./dist/subscriptions.mjs",
-      "require": "./dist/subscriptions.js",
-      "types": "./dist/subscriptions.d.ts"
+      "require": "./dist/subscriptions.js"
     },
     "./env": {
+      "types": "./dist/env.d.ts",
       "import": "./dist/env.mjs",
-      "require": "./dist/env.js",
-      "types": "./dist/env.d.ts"
+      "require": "./dist/env.js"
     }
   },
   "typesVersions": {
