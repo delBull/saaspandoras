@@ -9,6 +9,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@pandoras/protocol-deployer": "workspace:*",
     "@saasfly/db-core": "workspace:*",
     "@saasfly/shared": "workspace:*",
     "jsonwebtoken": "^9.0.2"

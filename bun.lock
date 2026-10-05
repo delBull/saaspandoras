@@ -621,6 +621,7 @@
       "name": "@saasfly/nexus-deals-sdk",
       "version": "1.0.0",
       "dependencies": {
+        "@pandoras/protocol-deployer": "workspace:*",
         "@saasfly/db-core": "workspace:*",
         "@saasfly/shared": "workspace:*",
         "jsonwebtoken": "^9.0.2",

@@ -6723,6 +6723,7 @@
     "@types/jsonwebtoken" "^9.0.5"
     typescript "^5.3.3"
   dependencies:
+    "@pandoras/protocol-deployer" "workspace:*"
     "@saasfly/db-core" "workspace:*"
     "@saasfly/shared" "workspace:*"
     jsonwebtoken "^9.0.2"
