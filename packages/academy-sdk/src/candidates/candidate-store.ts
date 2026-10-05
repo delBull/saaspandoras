@@ -14,6 +14,7 @@
 import { createHash } from 'crypto';
 import { db } from "@saasfly/db-core";
 import { EventSpine } from "@saasfly/hermes-core";
+import { AcademyAuditSubscriber } from "../events/academy-audit-subscriber";
 import {
   academyCandidates,
   academyInvitations,
@@ -45,6 +46,11 @@ class AcademyStoreSingleton {
   constructor() {
     if (process.env.NODE_ENV === 'development') {
       this.seedDevDemoData();
+    }
+    
+    // Initialize the EventSpine audit subscriber if running server-side
+    if (typeof window === 'undefined') {
+      AcademyAuditSubscriber.initialize();
     }
   }
 

@@ -12,3 +12,4 @@ export * from './security/scope-validator';
 export * from './security/types';
 export * from './snapshots/snapshot-manager';
 export * from './assessment/assessment-engine';
+export * from './events/academy-audit-subscriber';
