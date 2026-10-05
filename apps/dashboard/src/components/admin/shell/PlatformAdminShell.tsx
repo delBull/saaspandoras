@@ -57,7 +57,7 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
 
   // If activeSection isn't passed accurately, we deduce it from the URL
   const currentTab = searchParams.get('tab') || (pathname === '/admin' ? 'overview' : pathname.split('/').pop() || 'overview');
-  
+
   // Use currentTab as activeSection if activeSection is the default 'overview' but currentTab is different
   const effectiveSection = (activeSection === 'overview' && currentTab !== 'overview') ? currentTab : activeSection;
 
@@ -65,14 +65,14 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
   // Each nav item declares the roles that can see it. Items are filtered at
   // render time — roles NOT in allowedRoles never see the nav entry.
   const ALL_ROLES: PlatformRole[] = [
-    'SUPER_ADMIN', 
-    'ADMIN', 
-    'ADMIN_OPERATIONS', 
-    'ADMIN_MARKETING', 
-    'ADMIN_COMPLIANCE', 
-    'TENANT_ADMIN', 
-    'OPERATOR', 
-    'MARKETING', 
+    'SUPER_ADMIN',
+    'ADMIN',
+    'ADMIN_OPERATIONS',
+    'ADMIN_MARKETING',
+    'ADMIN_COMPLIANCE',
+    'TENANT_ADMIN',
+    'OPERATOR',
+    'MARKETING',
     'VIEWER'
   ];
 
@@ -147,7 +147,7 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
     },
     {
       id: 'collaborators',
-      label: 'Aprovisionamiento',
+      label: 'Staff',
       href: '/admin/collaborators',
       icon: ClipboardList,
       active: currentTab === 'collaborators',
@@ -230,9 +230,8 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
       <div className="fixed inset-0 bg-[#08080A] text-white font-sans flex overflow-hidden">
         {/* Responsive Sidebar */}
         <aside
-          className={`h-full bg-[#0C0C12] border-r border-white/[0.08] flex flex-col justify-between transition-all duration-300 z-30 shrink-0 select-none ${
-            isCollapsed ? 'w-16' : 'w-64'
-          }`}
+          className={`h-full bg-[#0C0C12] border-r border-white/[0.08] flex flex-col justify-between transition-all duration-300 z-30 shrink-0 select-none ${isCollapsed ? 'w-16' : 'w-64'
+            }`}
         >
           {/* Sidebar Header */}
           <div>
@@ -294,11 +293,10 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
                       <Link
                         key={item.id}
                         href={item.href!}
-                        className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all ${
-                          item.active
-                            ? 'bg-purple-600/15 text-purple-300 border border-purple-500/30 shadow-sm'
-                            : 'text-zinc-400 hover:text-white hover:bg-white/[0.04]'
-                        }`}
+                        className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all ${item.active
+                          ? 'bg-purple-600/15 text-purple-300 border border-purple-500/30 shadow-sm'
+                          : 'text-zinc-400 hover:text-white hover:bg-white/[0.04]'
+                          }`}
                         title={isCollapsed ? item.label : undefined}
                       >
                         <Icon className={`w-4 h-4 shrink-0 ${item.active ? 'text-purple-400' : 'text-zinc-400'}`} />
@@ -323,11 +321,10 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
                       <Link
                         key={item.id}
                         href={item.href}
-                        className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium transition-all ${
-                          item.active
-                            ? 'bg-cyan-600/15 text-cyan-300 border border-cyan-500/30 shadow-sm'
-                            : 'text-zinc-400 hover:text-white hover:bg-white/[0.04]'
-                        }`}
+                        className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium transition-all ${item.active
+                          ? 'bg-cyan-600/15 text-cyan-300 border border-cyan-500/30 shadow-sm'
+                          : 'text-zinc-400 hover:text-white hover:bg-white/[0.04]'
+                          }`}
                         title={isCollapsed ? item.label : undefined}
                       >
                         <div className="flex items-center gap-3 min-w-0">

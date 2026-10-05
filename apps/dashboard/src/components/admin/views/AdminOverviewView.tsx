@@ -60,8 +60,8 @@ export function AdminOverviewView({ kpis, health, recentTenants }: AdminOverview
         'Registrado': new Date(tenant.createdAt).toLocaleDateString(),
       },
       rawPayload: tenant,
-      actionHref: `/ecosystem/${tenant.slug}`,
-      actionLabel: 'Abrir Mesh Hub del Tenant ↗',
+      actionHref: `/admin/projects/${tenant.slug}/provision`,
+      actionLabel: 'Aprovisionar Tenant (Hermes Mesh) ↗',
     });
   };
 

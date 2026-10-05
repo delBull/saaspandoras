@@ -48,7 +48,7 @@ export default async function CollaboratorsPage() {
     <div className="max-w-7xl mx-auto space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-white tracking-tight">Aprovisionamiento de Colaboradores</h2>
+          <h2 className="text-xl font-bold text-white tracking-tight">Aprobaciones de Staff</h2>
           <p className="text-xs text-zinc-400 mt-1">
             Registros por magic link que completaron su perfil y esperan aprobación administrativa para acceder al Nexus.
           </p>
