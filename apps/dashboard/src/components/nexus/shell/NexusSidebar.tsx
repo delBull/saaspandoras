@@ -23,7 +23,8 @@ import {
   ChevronLeft,
   ChevronRight,
   LayoutDashboard,
-  LogOut
+  LogOut,
+  MonitorPlay
 } from "lucide-react";
 import type { NexusAuthContext } from "@saasfly/shared";
 
@@ -71,6 +72,7 @@ export function NexusSidebar({ auth, onAction }: NexusSidebarProps) {
       label: "KNOWLEDGE",
       items: [
         { name: "Knowledge", href: "#", action: "KNOWLEDGE", icon: BookOpen },
+        { name: "Presentations", href: "/pitch/institutional-os", icon: MonitorPlay },
       ]
     },
     {
