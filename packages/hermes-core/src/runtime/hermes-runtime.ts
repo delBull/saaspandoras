@@ -332,7 +332,7 @@ export class HermesRuntime implements HermesCognitiveRuntime {
 
           // 2. Build Strict Resource Scope
           // We extract this from the canonical identity/tenant context.
-          const canonicalOrgId = (rawInterlocutor as any)?.tenantContext?.organizationId || 'default-org-id';
+          const canonicalOrgId = (rawInterlocutor as any)?.tenantContext?.organizationId;
           const projectId = (rawInterlocutor as any)?.tenantContext?.projectId;
           const walletAddress = (rawInterlocutor as any)?.walletAddress;
 
@@ -361,6 +361,11 @@ export class HermesRuntime implements HermesCognitiveRuntime {
               const trustedActorId = (controlPlaneContext as any).actorId || (rawInterlocutor as any)?.canonicalIdentity?.id;
               const telegramUserId = (controlPlaneContext as any).telegramUserId; // Optional contextual auth
               
+              if (!canonicalOrgId) {
+                console.error('[HermesRuntime] H2 Hardening: Missing canonicalOrgId for Nexus Surface. Enforcing fail-closed.');
+                throw new Error('UNAUTHORIZED: canonicalOrgId is strictly required for Nexus Operations.');
+              }
+
               const secureNexusScope = await NexusAuthorizationService.resolveCollaboratorScope(
                 canonicalOrgId,
                 trustedActorId,

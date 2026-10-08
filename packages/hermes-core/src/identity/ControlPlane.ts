@@ -1,5 +1,5 @@
 import { db } from '@saasfly/db-core';
-// import { organizations } from '@saasfly/db-core/schema';
+import { users } from '@saasfly/db-core/schema';
 import { eq } from '@saasfly/db-core';
 import crypto from 'crypto';
 
@@ -16,18 +16,25 @@ export class ControlPlane {
     if (!walletAddress) {
       throw new Error('Unauthorized: No identity provided');
     }
-    // Simplification: In reality, we'd check an admins table or users table with specific capabilities
-    // Assuming we have a way to check if user is admin, here we mock the verification or use actual DB.
-    // For this demonstration, we'll verify if they are in the database and have specific roles
-    // if needed. For now, we return standard ADMIN capability if passed through middleware.
     
-    // Example (should be replaced with actual DB check of `users.role` or `admins` table):
-    // const user = await db.query.users.findFirst({ where: eq(users.wallet, walletAddress) });
-    // if (user?.role !== 'ADMIN') throw new Error('Unauthorized');
+    // Resolve identity against the canonical directory (fail-closed)
+    const [user] = await db.select().from(users).where(eq(users.walletAddress, walletAddress)).limit(1);
+
+    if (!user) {
+      throw new Error('Unauthorized: Identity not found in canonical directory');
+    }
+
+    if (user.status !== 'ACTIVE') {
+      throw new Error(`Unauthorized: Identity session is locked or revoked. Status: ${user.status}`);
+    }
+
+    if (user.role !== 'SUPER_ADMIN' && user.role !== 'ADMIN') {
+      throw new Error(`Unauthorized: Identity lacks administrative capability. Role: ${user.role}`);
+    }
     
     return {
-      identity: walletAddress,
-      capabilities: ['SUPER_ADMIN', 'ADMIN'] // Real implementation would resolve actual DB capabilities
+      identity: user.id, // H1: Must be canonical database ID, not raw input
+      capabilities: [user.role] // Exact capabilities from DB
     };
   }
 

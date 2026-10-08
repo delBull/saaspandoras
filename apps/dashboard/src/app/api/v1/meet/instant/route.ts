@@ -16,7 +16,6 @@ export async function POST(req: NextRequest) {
     // Create the meeting record
     const [meeting] = await db.insert(meetings).values({
       canonicalOrgId: orgId,
-      hostCollaboratorId: 1,
       status: "scheduled",
       startsAt: new Date(),
     }).returning();
