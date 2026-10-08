@@ -65,7 +65,8 @@ export function Providers({
             !pathname?.startsWith('/onboarding') && 
             !pathname?.startsWith('/deal') && 
             !pathname?.startsWith('/resources') && 
-            !pathname?.startsWith('/materials')
+            !pathname?.startsWith('/materials') &&
+            !pathname?.startsWith('/pitch')
           ) && (
             <AutoConnect
               client={client}
