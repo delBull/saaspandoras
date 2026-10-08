@@ -15,18 +15,51 @@ import {
   projectCollaborators,
   projects,
   nexusTasks,
+  nexusCollaborators
 } from '@saasfly/db/schema';
-import { getNexusAuthContext } from '@saasfly/shared';
+import { resolveEffectivePermissions, type NexusRole } from '@saasfly/shared';
+import { cookies } from 'next/headers';
+import { ActorIdentityBindingService, type BoundActorSession } from '@saasfly/hermes-core';
 
 export async function GET(req: Request) {
   try {
-    const authCtx = await getNexusAuthContext(new Headers(req.headers));
+    const cookieStore = await cookies();
+    const sessionStr = cookieStore.get('nexus_tma_session')?.value;
 
-    if (!authCtx.isAuthenticated || !authCtx.collaboratorId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!sessionStr) {
+      return NextResponse.json({ error: 'Unauthorized - Missing Session Cookie' }, { status: 401 });
     }
 
-    const { permissions, canonicalOrgId, collaboratorId, role, name } = authCtx;
+    let boundSession: BoundActorSession;
+    try {
+      boundSession = JSON.parse(sessionStr);
+    } catch {
+      return NextResponse.json({ error: 'Unauthorized - Invalid Session Format' }, { status: 401 });
+    }
+
+    const isValid = ActorIdentityBindingService.validateSession(boundSession);
+    if (!isValid) {
+      return NextResponse.json({ error: 'Unauthorized - Invalid or Expired Session' }, { status: 401 });
+    }
+
+    const collaboratorId = parseInt(boundSession.actorId, 10);
+    const orgId = boundSession.tenantId || 'pandoras';
+
+    const collabRecord = await db.query.nexusCollaborators.findFirst({
+      where: eq(nexusCollaborators.id, collaboratorId)
+    });
+
+    if (!collabRecord || collabRecord.status !== 'ACTIVE') {
+      return NextResponse.json({ error: 'Unauthorized - Inactive Collaborator' }, { status: 403 });
+    }
+
+    const role = collabRecord.role as NexusRole;
+    const name = collabRecord.name;
+    const permissions = resolveEffectivePermissions(
+      role,
+      collabRecord.permissions as Record<string, boolean> | null,
+      'TMA'
+    );
 
     // ── 1. Resolve workspace list (orgs this collaborator belongs to) ──────────
     const projectAssignments = await db
@@ -36,7 +69,7 @@ export async function GET(req: Request) {
       })
       .from(projectCollaborators)
       .innerJoin(projects, eq(projects.slug, projectCollaborators.projectId))
-      .where(eq(projectCollaborators.collaboratorId, collaboratorId!))
+      .where(eq(projectCollaborators.collaboratorId, collaboratorId))
       .limit(10);
 
     const workspaces = projectAssignments.map((p) => ({
@@ -57,7 +90,6 @@ export async function GET(req: Request) {
     if (permissions['finance.manage']) enabledVerticals.push('RWA');
 
     // ── 3. Badge counts (parallel queries, one per vertical enabled) ──────────
-    const orgId = canonicalOrgId ?? 'pandoras';
 
     const [hermesCount, growthCount, financeCount, tasksCount] = await Promise.all([
       // HERMES badge: PENDING escalations
@@ -105,7 +137,7 @@ export async function GET(req: Request) {
         .where(
           and(
             eq(nexusTasks.canonicalOrgId, orgId),
-            eq(nexusTasks.assigneeCollaboratorId, collaboratorId!),
+            eq(nexusTasks.assigneeCollaboratorId, collaboratorId),
             or(eq(nexusTasks.status, 'OPEN'), eq(nexusTasks.status, 'IN_PROGRESS'))
           )
         )

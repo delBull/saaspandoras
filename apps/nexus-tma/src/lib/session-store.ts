@@ -34,7 +34,6 @@ export interface NexusTmaSession {
   organizationId: string | null;
   issuedAt: number;
   expiresAt: number;
-  token: string;
 }
 
 const SESSION_KEY = 'nexus_tma_session';

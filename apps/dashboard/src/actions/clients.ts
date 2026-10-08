@@ -7,6 +7,7 @@ import { sendEmail } from "@/lib/email/client";
 import { sendPaymentNotification } from "@/lib/discord/notifier";
 import { getAuth, isAdmin } from "@saasfly/auth-sdk";
 import { extractOfferMetadataFromDescription } from "@/lib/commercial/offers";
+import { ProvisioningEngine } from "@saasfly/hermes-core";
 
 // ZERO TRUST GUARD: requires a verified JWT session with admin privileges.
 // Returns true if authorized. Admin-only actions below use this to reject
@@ -37,6 +38,7 @@ export async function getClients() {
 }
 
 export async function getClientLinks(clientId: string) {
+    if (!(await isAuthorizedAdmin())) { return { success: false, error: "Unauthorized." }; }
     try {
         const results = await db.query.paymentLinks.findMany({
             where: eq(paymentLinks.clientId, clientId),
@@ -80,6 +82,7 @@ export async function createPaymentLink(data: typeof paymentLinks.$inferInsert) 
 }
 
 export async function updatePaymentStatus(linkId: string, status: 'pending' | 'paid' | 'cancelled', method: 'crypto' | 'wire' = 'wire') {
+    if (!(await isAuthorizedAdmin())) { return { success: false, error: "Unauthorized." }; }
     try {
         // Fetch Link & Client details
         const link = await db.query.paymentLinks.findFirst({
@@ -105,25 +108,30 @@ export async function updatePaymentStatus(linkId: string, status: 'pending' | 'p
 
         // Trigger Business Logic if Paid
         if (status === 'paid') {
-            await processPaymentSuccess(linkId);
+            // H1: updatePaymentStatus ONLY updates the ledger/transactions.
+            // It MUST delegate to PaymentCoreService for actual fulfillment to avoid parallel provisioning paths.
+            const { PaymentCoreService } = await import("@saasfly/hermes-core");
+            await PaymentCoreService.processIncomingPaymentEvent(
+                `wire_${linkId}_${new Date().getTime()}`, 
+                'EXECUTIVE', 
+                linkId, 
+                { metadata: { adminApproved: true } },
+                async () => {
+                    await processPaymentSuccess(linkId);
+                }
+            );
 
-            // Notify Discord (Optional, do not fail entire process if this fails)
-            try {
-                await sendPaymentNotification({
-                    type: "payment_received",
-                    amount: Number(link.amount),
-                    currency: link.currency || "USD",
-                    method: method,
-                    status: "completed",
-                    linkId: link.id,
-                    clientId: link.clientId,
-                    metadata: {
-                        message: `Pago confirmado para enlace ${link.id}`
-                    }
-                });
-            } catch (discordErr) {
-                console.error("Non-fatal error: Discord notification failed", discordErr);
-            }
+            // Notify Discord (H9: Asynchronous side effect)
+            sendPaymentNotification({
+                type: "payment_received",
+                amount: Number(link.amount),
+                currency: link.currency || "USD",
+                method: method,
+                status: "completed",
+                linkId: link.id,
+                clientId: link.clientId,
+                metadata: { message: `Pago confirmado para enlace ${link.id}` }
+            }).catch(() => {});
         }
 
         return { success: true };
@@ -194,6 +202,9 @@ export async function processPaymentSuccess(linkId: string) {
                     }
                 })
                 .where(eq(clients.id, link.clientId));
+
+            // H1: Removed direct ProvisioningEngine call from here.
+            // Provisioning is handled strictly via PaymentCoreService unified flow or must use canonicalOrgId.
         } else if (link.title.includes("SOW Tier 1") || link.title.includes("Tier 1")) {
             newStatus = 'closed_won';
             await advanceProtocolState(link.clientId, 'IN_PROGRESS_TIER_1');
@@ -224,7 +235,11 @@ export async function processPaymentSuccess(linkId: string) {
                 userId: client.userId || undefined 
             });
             
-            const targetProjectId = leadContext?.projectId || 1; // Fallback to 1 only if resolve failed
+            const targetProjectId = leadContext?.projectId;
+            if (!targetProjectId) {
+                console.warn("[Payments] Missing project context for lead. Skipping growth actions.");
+                throw new Error('UNABLE_TO_RESOLVE_PROJECT_CONTEXT');
+            } // Fallback to 1 only if resolve failed
 
             await db.update(marketingLeads)
                 .set({ 
@@ -265,7 +280,8 @@ export async function processPaymentSuccess(linkId: string) {
         }
 
         // 4. Send Receipt
-        await sendReceiptEmail(client.email, client.name || "Builder", link.title, link.amount);
+        // H9: Asynchronous side effect
+        sendReceiptEmail(client.email, client.name || "Builder", link.title, link.amount).catch(() => {});
 
         return { success: true };
     } catch (e) {

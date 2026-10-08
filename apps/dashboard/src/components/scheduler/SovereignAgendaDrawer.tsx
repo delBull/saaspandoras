@@ -67,6 +67,39 @@ export function SovereignAgendaDrawer({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [creatingMeet, setCreatingMeet] = useState(false);
+
+  async function handleCreateInstantMeet() {
+    setCreatingMeet(true);
+    try {
+      const res = await fetch('/api/v1/meet/instant', {
+        method: 'POST',
+      });
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        // Copy guest link to clipboard
+        if (data.guestLink) {
+          navigator.clipboard.writeText(data.guestLink);
+          toast.success('Sala creada. ¡El link de INVITADO se copió a tu portapapeles!');
+          addCliLog(`Link de invitado: ${data.guestLink}`, 'system');
+        } else {
+          toast.success('Sala Soberana creada y abierta en nueva pestaña');
+        }
+        
+        addCliLog(`Instant meet created: ${data.meetingId}`, 'success');
+        
+        // Open the host room in a new tab
+        window.open(`/meet?ref=${data.joinRef}`, '_blank');
+      } else {
+        toast.error(data.error || 'Error al crear la sala');
+        addCliLog(`Error creando meet: ${data.error}`, 'error');
+      }
+    } catch (err: any) {
+      toast.error('Fallo de conexión al crear la sala');
+    } finally {
+      setCreatingMeet(false);
+    }
+  }
 
   // Core Configuration State
   const [config, setConfig] = useState<SovereignCalendarConfig>({
@@ -412,6 +445,22 @@ export function SovereignAgendaDrawer({
                         <ExternalLink className="w-4 h-4" />
                       </a>
                     </div>
+                  </div>
+
+                  {/* Instant Meet Box */}
+                  <div className="p-4 rounded-xl border border-zinc-800 bg-zinc-950/80 flex items-center justify-between">
+                    <div>
+                      <h4 className="text-sm font-medium text-zinc-200">Sala de Video Soberana</h4>
+                      <p className="text-xs text-zinc-500">Inicia una reunión al instante como anfitrión</p>
+                    </div>
+                    <button
+                      onClick={handleCreateInstantMeet}
+                      disabled={creatingMeet}
+                      className="flex items-center gap-2 bg-[#D4A853] hover:bg-[#D4A853]/90 text-black px-4 py-2 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50"
+                    >
+                      {creatingMeet ? <Loader2 className="w-4 h-4 animate-spin" /> : <Video className="w-4 h-4" />}
+                      Crear Meet Ahora
+                    </button>
                   </div>
 
                   {/* Timezone & Core Settings */}

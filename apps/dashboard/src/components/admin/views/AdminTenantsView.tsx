@@ -116,8 +116,8 @@ export function AdminTenantsView({ tenants, actorRole = 'VIEWER' }: AdminTenants
         'Registrado el': new Date(t.createdAt).toLocaleDateString(),
       },
       rawPayload: t,
-      actionHref: `/ecosystem/${t.slug}`,
-      actionLabel: 'Abrir Mesh Hub del Tenant ↗',
+      actionHref: `/admin/projects/${t.slug}/provision`,
+      actionLabel: 'Aprovisionar Tenant (Hermes Mesh) ↗',
     });
   };
 

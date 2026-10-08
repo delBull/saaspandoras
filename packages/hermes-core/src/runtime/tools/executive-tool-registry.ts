@@ -468,10 +468,10 @@ export function registerExecutiveTools(executor: HermesToolExecutor): void {
     if (!isExecutive(context)) throw new Error('EXECUTIVE_GATE_DENY');
     const { action, target, payload, title, description, blastRadius } = (params as any) || {};
     const { ExecutivePlanner } = await import('@saasfly/hermes-core');
-    
+
     const organizationId = (context as any)?.organizationId || 'system';
     const founderKey = `${organizationId}:${(context as any)?.interlocutor?.id || 'founder'}`;
-    
+
     const planResult = ExecutivePlanner.createPlan({
       action: String(action) as any,
       target: String(target),
@@ -559,7 +559,7 @@ export function registerExecutiveTools(executor: HermesToolExecutor): void {
       await sendWhatsAppMessage(destPhone, `*Mensaje de Marco (Fundador):*\n\n${messageToSend}`);
       return { sent: true, destName, destPhone };
     }
-    
+
     throw new Error(`Could not resolve WhatsApp destination for '${targetNameOrPhone}'`);
   });
 
@@ -893,7 +893,7 @@ export function registerNftTools(executor: HermesToolExecutor): void {
   //
   // Uses INFORMATION mode (DB fallback acceptable for narration).
   // Does NOT check on-chain for each token individually (read tool — performance-first).
-    // ── nft_query_collections (Level 0) ────────────────────────────────────
+  // ── nft_query_collections (Level 0) ────────────────────────────────────
   executor.registerHandler('nft_query_collections', async (params, context) => {
     const callerOrg = String((context as any)?.organizationId || '').replace(/^org_/, '');
     if (!callerOrg) throw new Error('NFT_GATE_DENY: organizationId required in context.');

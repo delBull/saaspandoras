@@ -59,18 +59,17 @@ export async function authenticateWithInitData(initData: string): Promise<NexusT
 
 /**
  * Generic authenticated GET helper.
- * Reads the stored session token and sends it as Authorization header.
+ * Uses secure HttpOnly cookies (credentials: 'include').
  */
 export async function nexusGet<T>(
-  path: string,
-  sessionToken: string
+  path: string
 ): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, {
     method: 'GET',
     headers: {
-      'Authorization': `Bearer ${sessionToken}`,
       'Content-Type': 'application/json',
     },
+    credentials: 'include',
   });
 
   const data = await res.json() as T | { error?: string; code?: string };
@@ -88,15 +87,14 @@ export async function nexusGet<T>(
  */
 export async function nexusPost<T = any>(
   path: string,
-  body: any,
-  sessionToken: string
+  body: any
 ): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${sessionToken}`,
       'Content-Type': 'application/json',
     },
+    credentials: 'include',
     body: JSON.stringify(body),
   });
 
@@ -115,15 +113,14 @@ export async function nexusPost<T = any>(
  */
 export async function nexusPatch<T = any>(
   path: string,
-  body: any,
-  sessionToken: string
+  body: any
 ): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, {
     method: 'PATCH',
     headers: {
-      'Authorization': `Bearer ${sessionToken}`,
       'Content-Type': 'application/json',
     },
+    credentials: 'include',
     body: JSON.stringify(body),
   });
 

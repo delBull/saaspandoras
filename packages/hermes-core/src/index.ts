@@ -304,7 +304,7 @@ export * from './packs/snarai-domain-pack';
 export * from './payments/adapters/base-adapter';
 export * from './payments/adapters/growth-adapter';
 export * from './payments/adapters/rwa-adapter';
-export * from './payments/core/event-inbox';
+
 export * from './payments/core/orchestrator';
 export * from './payments/core/types';
 export * from './planner';
@@ -480,3 +480,5 @@ export { NexusTeamTransport } from './nexus/legacy/telegram-team-transport';
 export type { NexusResourceScope } from './nexus/nexus-authorization';
 export * from './admin/platform-audit-ledger.service';
 export { ShadowVerificationEngine } from './knowledge/shadow-verifier';
+export * from './payments/PaymentCoreService';
+export * from './provisioning/ProvisioningEngine';

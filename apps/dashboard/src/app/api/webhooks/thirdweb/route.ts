@@ -7,7 +7,7 @@ import { eq, sql } from "@saasfly/db-core";
 import crypto from "crypto";
 import { LegalEngine } from "@/lib/legal/engine";
 import { paymentInboxEvents } from "@saasfly/db-core";
-
+import { PaymentCoreService, ProvisioningEngine } from "@saasfly/hermes-core";
 // Security: Fail-closed signature verification for thirdweb Pay / Engine webhooks.
 // Payloads are signed with HMAC-SHA256 over the raw request body using THIRDWEB_WEBHOOK_SECRET.
 // The signature header can arrive as raw hex, "sha256=<hex>", or "t=<ts>,v1=<hex>";
@@ -113,212 +113,230 @@ export async function POST(req: Request) {
         const purchaseId = body.metadata?.purchaseId || body.purchaseId;
         let purchase: typeof purchases.$inferSelect | undefined = undefined;
 
-        // P1-6: Payment Event Inbox / Idempotency Boundary
         const providerEventId = body.eventId || body.webhookId || `${txHash}_${log?.logIndex ?? 0}`;
-        if (purchaseId) {
-            try {
-                const [inboxResult] = await db.insert(paymentInboxEvents).values({
-                    id: providerEventId,
-                    provider: 'THIRDWEB',
-                    paymentIntentId: purchaseId,
-                    payload: body,
-                    status: 'pending',
-                }).onConflictDoNothing().returning({ id: paymentInboxEvents.id });
 
-                if (!inboxResult) {
-                    console.log(`♻️ [THIRDWEB_WEBHOOK] Duplicate event ${providerEventId} for intent ${purchaseId} — idempotent no-op`);
-                    return NextResponse.json({ success: true, idempotent: true });
-                }
-            } catch (inboxErr) {
-                console.error(`❌ [THIRDWEB_WEBHOOK] Failed to record inbox event ${providerEventId}:`, inboxErr);
-                return NextResponse.json({ error: "Inbox persistence failed" }, { status: 500 });
-            }
-        }
+        const isSaaSProvisioning = !!body.metadata?.provisioning;
 
-        if (purchaseId) {
-            purchase = await db.query.purchases.findFirst({ where: eq(purchases.purchaseId, purchaseId) });
-
-            if (!purchase) {
-                console.error(`❌ [THIRDWEB_WEBHOOK] purchaseId ${purchaseId} not found — refusing to complete`);
-                return NextResponse.json({ error: "Purchase not found" }, { status: 400 });
-            }
-
-            // Idempotency: never re-process a completed purchase
-            if (purchase.status === "completed") {
-                console.log(`♻️ [THIRDWEB_WEBHOOK] Purchase ${purchaseId} already completed — idempotent no-op`);
-                return NextResponse.json({ success: true, idempotent: true });
-            }
-
-            // Cryptographic integrity: a purchase cannot be finalized without an on-chain hash
-            if (!txHash || txHash === "unknown") {
-                console.error(`❌ [THIRDWEB_WEBHOOK] ${purchaseId} missing on-chain txHash — refusing`);
-                return NextResponse.json({ error: "Missing transaction hash" }, { status: 400 });
-            }
-
-            // Zero-value transfers are never purchases
-            if ((Number(value) || 0) <= 0) {
-                console.error(`❌ [THIRDWEB_WEBHOOK] ${purchaseId} reported value ${value} — refusing`);
-                await db.update(paymentInboxEvents).set({ status: 'failed', error: 'Zero value' }).where(eq(paymentInboxEvents.id, providerEventId));
-                return NextResponse.json({ error: "Invalid transfer value" }, { status: 400 });
-            }
-
-            // Completing a purchase for an unknown wallet is a red flag
-            if (!isHexWallet(toAddress)) {
-                console.error(`❌ [THIRDWEB_WEBHOOK] ${purchaseId} recipient is not a valid wallet — refusing`);
-                await db.update(paymentInboxEvents).set({ status: 'failed', error: 'Invalid recipient' }).where(eq(paymentInboxEvents.id, providerEventId));
-                return NextResponse.json({ error: "Invalid recipient" }, { status: 400 });
-            }
-        }
-
-        // 5. Record DB Entry (ledger of observed transfers)
-        await db.insert(transactions).values({
-            amount: value.toString(),
-            currency: 'CRYPTO',
-            method: 'crypto',
-            status: 'completed',
-            processedAt: new Date(),
-        });
-
-        // 6. Complete the purchase, notify Edge API and sync DAO membership
-        if (purchase && purchaseId) {
-            try {
-                await db
-                    .update(purchases)
-                    .set({
-                        status: 'completed',
-                        transactionHash: txHash,
-                        updatedAt: new Date(),
-                    })
-                    .where(eq(purchases.purchaseId, purchaseId));
-
-                const metadata = purchase.metadata as any;
-                const edgeWebhookUrl = process.env.TELEGRAM_EDGE_API_URL + '/core/callback';
-                const edgeSecret = process.env.CORE_CALLBACK_SECRET;
-
-                if (edgeWebhookUrl && edgeSecret) {
-                    const payload = {
-                        type: 'PURCHASE_COMPLETED',
-                        actionId: purchaseId,
-                        telegramUserId: metadata?.paymentConfig?.payOptions?.metadata?.telegramId,
-                        amount: Number(purchase.amount),
-                        protocolId: metadata?.paymentConfig?.payOptions?.metadata?.projectId,
-                        timestamp: Math.floor(Date.now() / 1000)
-                    };
-
-                    const signature = crypto
-                        .createHmac('sha256', edgeSecret)
-                        .update(JSON.stringify(payload))
-                        .digest('hex');
-
-                    await fetch(edgeWebhookUrl, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'x-core-signature': signature
-                        },
-                        body: JSON.stringify(payload)
-                    });
-                    console.log(`📡 [THIRDWEB_WEBHOOK] Notified Edge API of completed purchase: ${purchaseId}`);
-                }
-
-                // 🏛️ DAO Membership Sync: register or update the holder
-                try {
-                    const wallet = purchase.userId.toLowerCase();
-                    const projectId = purchase.projectId;
-                    const count = 1;
-
-                    await db.insert(daoMembers)
-                        .values({
-                            projectId,
-                            wallet,
-                            artifactsCount: count,
-                            votingPower: count.toString(),
-                            joinedAt: new Date(),
-                            lastActiveAt: new Date(),
-                        })
-                        .onConflictDoUpdate({
-                            target: [daoMembers.projectId, daoMembers.wallet],
-                            set: {
-                                artifactsCount: sql`${daoMembers.artifactsCount} + ${count}`,
-                                votingPower: sql`(${daoMembers.votingPower}::integer + ${count})::text`,
-                                lastActiveAt: new Date(),
+        try {
+            if (isSaaSProvisioning) {
+                // ----------------------------------------------------
+                // PATH 1: SaaS PaymentIntent (Provisioning)
+                // ----------------------------------------------------
+                await PaymentCoreService.processIncomingPaymentEvent(
+                    providerEventId,
+                    'THIRDWEB',
+                    purchaseId || null,
+                    body,
+                    async (settlement) => {
+                        const provisioningConfig = body.metadata.provisioning;
+                        
+                        // Pass a default entitlement for SaaS auto-provisioning
+                        const configWithEntitlement = {
+                            ...provisioningConfig,
+                            entitlement: {
+                                permissions: {
+                                    'users.manage': true,
+                                    'tenants.manage': true,
+                                    'finance.manage': true,
+                                    'growth.manage': true,
+                                    'marketing.manage': true,
+                                    'nexus.manage': true,
+                                    'ecosystem': true
+                                }
                             }
+                        };
+                        
+                        await ProvisioningEngine.executePaidProvisioning(providerEventId, configWithEntitlement);
+                        
+                        await db.insert(transactions).values({
+                            amount: value.toString(),
+                            currency: 'CRYPTO',
+                            method: 'crypto',
+                            status: 'completed',
+                            processedAt: new Date(),
                         });
-                    console.log(`🏛️ [THIRDWEB_WEBHOOK] DAO member synchronized for wallet ${wallet} in project ${projectId}`);
-                } catch (daoError: any) {
-                    console.error("❌ [THIRDWEB_WEBHOOK] Failed to sync DAO member:", daoError.message);
-                }
-            } catch (err) {
-                console.error(`⚠️ [THIRDWEB_WEBHOOK] Error completing purchase ${purchaseId}:`, err);
-            }
-        }
 
-        if (process.env.NODE_ENV === 'production') {
-            console.log(JSON.stringify({
-                type: 'PURCHASE_COMPLETED_WEBHOOK',
-                purchaseId,
-                amount: value.toString(),
-                txHash,
-                timestamp: new Date().toISOString()
-            }));
-        }
+                        console.log(`✅ [THIRDWEB_WEBHOOK] SaaS Provisioning executed for event ${providerEventId}`);
+                    }
+                );
+            } else {
+                // ----------------------------------------------------
+                // PATH 2: RWA/NFT Purchase Domain Handler
+                // ----------------------------------------------------
+                if (purchaseId) {
+                    purchase = await db.query.purchases.findFirst({ where: eq(purchases.purchaseId, purchaseId) });
 
-        // 7. Notify Discord
-        await sendPaymentNotification({
-            type: "payment_received",
-            amount: Number(value),
-            currency: "PANDORAS_KEY (Events)",
-            method: "crypto",
-            status: "completed",
-            metadata: {
-                message: "Pandoras Key Transfer Detected",
-                from: fromAddress,
-                to: toAddress,
-                txHash: txHash
-            }
-        });
+                    if (!purchase) {
+                        console.error(`❌ [THIRDWEB_WEBHOOK] purchaseId ${purchaseId} not found — refusing to complete`);
+                        throw new Error("Purchase not found");
+                    }
 
-        // 8. MINT events: legal certification + notify external clients + DAO membership
-        if (isMint) {
-            console.log(`✅ [THIRDWEB_WEBHOOK] DETECTED MINT EVENT - from: ${fromAddress}, to: ${toAddress}`);
+                    if (purchase.status === "completed") {
+                        console.log(`♻️ [THIRDWEB_WEBHOOK] Purchase ${purchaseId} already completed — idempotent no-op`);
+                        return NextResponse.json({ success: true, idempotent: true });
+                    }
 
-            try {
-                const tokenId = log?.args?.tokenId || log?.args?.[0] || "unknown";
+                    if (!txHash || txHash === "unknown") {
+                        console.error(`❌ [THIRDWEB_WEBHOOK] ${purchaseId} missing on-chain txHash — refusing`);
+                        throw new Error("Missing transaction hash");
+                    }
 
-                // ⚖️ V3: Generate Legal Integrity Proof & Certification
-                if (purchase && purchaseId && tokenId !== "unknown") {
-                    await LegalEngine.certifyPurchase(purchaseId, tokenId.toString());
+                    if ((Number(value) || 0) <= 0) {
+                        console.error(`❌ [THIRDWEB_WEBHOOK] ${purchaseId} reported value ${value} — refusing`);
+                        throw new Error("Invalid transfer value");
+                    }
+
+                    if (!isHexWallet(toAddress)) {
+                        console.error(`❌ [THIRDWEB_WEBHOOK] ${purchaseId} recipient is not a valid wallet — refusing`);
+                        throw new Error("Invalid recipient");
+                    }
                 }
 
-                // Broadcast to all active clients
-                const clients = await db.query.integrationClients.findMany({
-                    where: eq(integrationClients.isActive, true)
+                // 5. Record DB Entry (ledger of observed transfers)
+                await db.insert(transactions).values({
+                    amount: value.toString(),
+                    currency: 'CRYPTO',
+                    method: 'crypto',
+                    status: 'completed',
+                    processedAt: new Date(),
                 });
 
-                for (const client of clients) {
-                    await WebhookService.queueEvent(client.id, 'nft.minted', {
-                        contractAddress: log?.address || "unknown",
-                        tokenId: tokenId,
-                        recipient: toAddress,
-                        txHash: txHash,
-                        isSandbox: client.environment === 'staging'
-                    });
+                // 6. Complete the purchase, notify Edge API and sync DAO membership
+                if (purchase && purchaseId) {
+                    try {
+                        await db
+                            .update(purchases)
+                            .set({
+                                status: 'completed',
+                                transactionHash: txHash,
+                                updatedAt: new Date(),
+                            })
+                            .where(eq(purchases.purchaseId, purchaseId));
+
+                        const metadata = purchase.metadata as any;
+                        const edgeWebhookUrl = process.env.TELEGRAM_EDGE_API_URL ? `${process.env.TELEGRAM_EDGE_API_URL}/core/callback` : null;
+                        const edgeSecret = process.env.CORE_CALLBACK_SECRET;
+
+                        if (edgeWebhookUrl && edgeSecret) {
+                            const payload = {
+                                type: 'PURCHASE_COMPLETED',
+                                actionId: purchaseId,
+                                telegramUserId: metadata?.paymentConfig?.payOptions?.metadata?.telegramId,
+                                amount: Number(purchase.amount),
+                                protocolId: metadata?.paymentConfig?.payOptions?.metadata?.projectId,
+                                timestamp: Math.floor(Date.now() / 1000)
+                            };
+
+                            const signature = crypto
+                                .createHmac('sha256', edgeSecret)
+                                .update(JSON.stringify(payload))
+                                .digest('hex');
+
+                            await fetch(edgeWebhookUrl, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'x-core-signature': signature
+                                },
+                                body: JSON.stringify(payload)
+                            }).catch(e => console.error(`⚠️ Edge notification failed:`, e));
+                            console.log(`📡 [THIRDWEB_WEBHOOK] Notified Edge API of completed purchase: ${purchaseId}`);
+                        }
+
+                        // 🏛️ DAO Membership Sync
+                        try {
+                            const wallet = purchase.userId.toLowerCase();
+                            const projectId = purchase.projectId;
+                            const count = 1;
+
+                            await db.insert(daoMembers)
+                                .values({
+                                    projectId,
+                                    wallet,
+                                    artifactsCount: count,
+                                    votingPower: count.toString(),
+                                    joinedAt: new Date(),
+                                    lastActiveAt: new Date(),
+                                })
+                                .onConflictDoUpdate({
+                                    target: [daoMembers.projectId, daoMembers.wallet],
+                                    set: {
+                                        artifactsCount: sql`${daoMembers.artifactsCount} + ${count}`,
+                                        votingPower: sql`(${daoMembers.votingPower}::integer + ${count})::text`,
+                                        lastActiveAt: new Date(),
+                                    }
+                                });
+                            console.log(`🏛️ [THIRDWEB_WEBHOOK] DAO member synchronized for wallet ${wallet} in project ${projectId}`);
+                        } catch (daoError: any) {
+                            console.error("❌ [THIRDWEB_WEBHOOK] Failed to sync DAO member:", daoError.message);
+                        }
+                    } catch (err) {
+                        console.error(`⚠️ [THIRDWEB_WEBHOOK] Error completing purchase ${purchaseId}:`, err);
+                        throw err; 
+                    }
                 }
-                if (clients.length > 0) {
-                    console.log(`📡 Mint Webhook(s) queued for ${clients.length} clients.`);
+
+                if (process.env.NODE_ENV === 'production') {
+                    console.log(JSON.stringify({
+                        type: 'PURCHASE_COMPLETED_WEBHOOK',
+                        purchaseId,
+                        amount: value.toString(),
+                        txHash,
+                        timestamp: new Date().toISOString()
+                    }));
                 }
-            } catch (webhookError) {
-                console.warn('⚠️ Failed to queue mint webhook:', webhookError);
+
+                // 7. Notify Discord (H9 Async)
+                sendPaymentNotification({
+                    type: "payment_received",
+                    amount: Number(value),
+                    currency: "PANDORAS_KEY (Events)",
+                    method: "crypto",
+                    status: "completed",
+                    metadata: { message: "Pandoras Key Transfer Detected", from: fromAddress, to: toAddress, txHash }
+                }).catch(() => {});
+
+                // 8. MINT events: legal certification + notify external clients
+                if (isMint) {
+                    console.log(`✅ [THIRDWEB_WEBHOOK] DETECTED MINT EVENT - from: ${fromAddress}, to: ${toAddress}`);
+
+                    try {
+                        const tokenId = log?.args?.tokenId || log?.args?.[0] || "unknown";
+
+                        if (purchase && purchaseId && tokenId !== "unknown") {
+                            await LegalEngine.certifyPurchase(purchaseId, tokenId.toString());
+                        }
+
+                        const clients = await db.query.integrationClients.findMany({
+                            where: eq(integrationClients.isActive, true)
+                        });
+
+                        for (const client of clients) {
+                            await WebhookService.queueEvent(client.id, 'nft.minted', {
+                                contractAddress: log?.address || "unknown",
+                                tokenId: tokenId,
+                                recipient: toAddress,
+                                txHash: txHash,
+                                isSandbox: client.environment === 'staging'
+                            });
+                        }
+                        if (clients.length > 0) {
+                            console.log(`📡 Mint Webhook(s) queued for ${clients.length} clients.`);
+                        }
+                    } catch (webhookError) {
+                        console.warn('⚠️ Failed to queue mint webhook:', webhookError);
+                    }
+                }
             }
-        }
 
-        if (purchaseId) {
-            await db.update(paymentInboxEvents)
-                .set({ status: 'processed', processedAt: new Date() })
-                .where(eq(paymentInboxEvents.id, providerEventId));
+            return NextResponse.json({ success: true });
+        } catch (coreError: any) {
+            // PaymentCoreService already logged and marked as failed or it returned a message (e.g. Already processed)
+            if (coreError.message?.includes('Already processed')) {
+                return NextResponse.json({ success: true, idempotent: true });
+            }
+            return NextResponse.json({ error: coreError.message }, { status: 400 });
         }
-
-        return NextResponse.json({ success: true });
     } catch (error) {
         console.error("Thirdweb Webhook Error:", error);
         return NextResponse.json({ error: "Processing failed" }, { status: 500 });
