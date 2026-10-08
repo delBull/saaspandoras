@@ -166,8 +166,8 @@ export class GrowthOverviewService {
     lastEvents: { id: string; description: string; timestamp: string; actor: string }[];
   }> {
     try {
-      const { HermesPaymentEventInbox } = await import('@saasfly/hermes-core');
-      return await HermesPaymentEventInbox.vigilanceSnapshot(organizationId);
+      const { PaymentCoreService } = await import('@saasfly/hermes-core');
+      return await PaymentCoreService.vigilanceSnapshot(organizationId);
     } catch (err: any) {
       console.warn('[GrowthOverviewService] Vigilance snapshot fallback:', err?.message);
       return { pending: 0, processedToday: 0, failed: 0, lastEvents: [] };

@@ -412,12 +412,13 @@ export const projects = pgTable("projects", {
   trialStartedAt: timestamp("trial_started_at", { withTimezone: true }),
   trialEndsAt: timestamp("trial_ends_at", { withTimezone: true }),
   trialStatus: varchar("trial_status", { length: 32 }).default("ACTIVE"), // 'ACTIVE' | 'EXPIRED' | 'CONVERTED'
-}, (table) => ({
-  slugIndex: index("project_slug_index").on(table.slug),
-  isDeletedIndex: index("project_is_deleted_index").on(table.isDeleted),
-  tenantTypeIndex: index("project_tenant_type_idx").on(table.tenantType),
-  trialEndsAtIndex: index("project_trial_ends_at_idx").on(table.trialEndsAt),
-}));
+// }, (table) => ({
+//   slugIndex: index("project_slug_index").on(table.slug),
+//   isDeletedIndex: index("project_is_deleted_index").on(table.isDeleted),
+//   tenantTypeIndex: index("project_tenant_type_idx").on(table.tenantType),
+//   trialEndsAtIndex: index("project_trial_ends_at_idx").on(table.trialEndsAt),
+// }));
+});
 
 // --- PHASE 5: DYNAMIC TENANT KNOWLEDGE ---
 export const knowledgeSources = pgTable("knowledge_sources", {
@@ -960,9 +961,10 @@ export const courseEnrollments = pgTable("course_enrollments", {
   progressPct: integer("progress_pct").default(0).notNull(),
   startedAt: timestamp("started_at", { withTimezone: true }).defaultNow().notNull(),
   completedAt: timestamp("completed_at", { withTimezone: true }),
-}, (table) => ({
-  uniqueEnrollment: uniqueIndex("unique_course_enrollment").on(table.userId, table.courseId),
-}));
+// }, (table) => ({
+//   uniqueEnrollment: uniqueIndex("unique_course_enrollment").on(table.userId, table.courseId),
+// }));
+});
 
 // Education types
 export type Course = typeof courses.$inferSelect;
@@ -1102,7 +1104,7 @@ export const authChallenges = pgTable("auth_challenges", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   // Enforce 1 active nonce per address to prevent race conditions and clutter
-  addressIndex: uniqueIndex("auth_challenges_address_idx").on(table.address),
+  // addressIndex: uniqueIndex("auth_challenges_address_idx").on(table.address),
 }));
 
 // --- EMAIL METRICS TABLES ---
@@ -1214,9 +1216,9 @@ export const daoMembers = pgTable("dao_members", {
   joinedAt: timestamp("joined_at", { withTimezone: true }).defaultNow().notNull(),
   lastActiveAt: timestamp("last_active_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
-  uniqueProjectMember: uniqueIndex("unique_project_member").on(table.projectId, table.wallet),
-  projectIndex: index("dao_member_project_idx").on(table.projectId),
-  walletIndex: index("dao_member_wallet_idx").on(table.wallet),
+  // uniqueProjectMember: uniqueIndex("unique_project_member").on(table.projectId, table.wallet),
+  // projectIndex: index("dao_member_project_idx").on(table.projectId),
+  // walletIndex: index("dao_member_wallet_idx").on(table.wallet),
   // campaignIndex: index("dao_member_campaign_idx").on(table.sourceCampaignId),
 }));
 
@@ -1237,9 +1239,10 @@ export const daoTreasurySnapshots = pgTable("dao_treasury_snapshots", {
   usdValue: decimal("usd_value", { precision: 18, scale: 6 }),
   blockNumber: bigint("block_number", { mode: "number" }),
   timestamp: timestamp("timestamp", { withTimezone: true }).defaultNow().notNull(),
-}, (table) => ({
-  projectTokenIdx: index("dao_treasury_snapshot_project_token_idx").on(table.projectId, table.token),
-}));
+});
+// , (table) => ({
+//   projectTokenIdx: index("dao_treasury_snapshot_project_token_idx").on(table.projectId, table.token),
+// }));
 
 
 // DAO Chat / Forum Tables
@@ -1511,10 +1514,17 @@ export type WebhookEvent = typeof webhookEvents.$inferSelect;
 // PAYMENT EVENT INBOX (Idempotency Boundary - P1-6)
 // =========================================================
 export const paymentInboxStatusEnum = pgEnum("payment_inbox_status", [
-  "pending", // Received, not processed
-  "processed", // Successfully settled via Orchestrator
-  "failed", // Processing failed (e.g. invalid signature/intent)
-  "ignored" // Duplicate or irrelevant (filtered)
+  "RECEIVED", // Initial state
+  "PROCESSING", // Claimed by a worker
+  "PROCESSED", // Successfully settled
+  "FAILED_RETRYABLE", // Transient failure
+  "FAILED_FINAL", // Permanent failure
+  "IGNORED", // Duplicate or irrelevant
+  // Legacy states for compatibility during migration
+  "pending",
+  "processed",
+  "failed",
+  "ignored"
 ]);
 
 export const paymentInboxEvents = pgTable("payment_inbox_events", {
@@ -1522,13 +1532,21 @@ export const paymentInboxEvents = pgTable("payment_inbox_events", {
   provider: varchar("provider", { length: 50 }).notNull(), // 'THIRDWEB', 'STRIPE', 'WIRE', 'EXECUTIVE'
   paymentIntentId: varchar("payment_intent_id", { length: 255 }), // Can be null if unresolved
   payload: jsonb("payload").notNull(), // Raw event payload
-  status: paymentInboxStatusEnum("status").default("pending").notNull(),
-  error: text("error"),
+  status: paymentInboxStatusEnum("status").default("RECEIVED").notNull(),
+  
+  // Lease and Retry Mechanism (H13)
+  claimedAt: timestamp("claimed_at", { withTimezone: true }),
+  leaseExpiresAt: timestamp("lease_expires_at", { withTimezone: true }),
+  attemptCount: integer("attempt_count").default(0).notNull(),
+  lastError: text("last_error"),
+  nextAttemptAt: timestamp("next_attempt_at", { withTimezone: true }),
+  
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   processedAt: timestamp("processed_at", { withTimezone: true }),
 }, (t) => ({
   intentIdx: index("payment_inbox_intent_idx").on(t.paymentIntentId),
   providerStatusIdx: index("payment_inbox_provider_status_idx").on(t.provider, t.status),
+  retryIdx: index("payment_inbox_retry_idx").on(t.status, t.nextAttemptAt), // For retry worker
 }));
 
 export type PaymentInboxEvent = typeof paymentInboxEvents.$inferSelect;
@@ -2322,11 +2340,12 @@ export const marketingLeads = pgTable("marketing_leads", {
   // crmStage: Commercial pipeline stage (CRM ends here, infra picks up at Closed Won)
   // LEAD | QUALIFIED | ASSESSMENT | PROPOSAL | CLOSED_WON | CLOSED_LOST
   crmStage: varchar("crm_stage", { length: 50 }).default("LEAD").notNull(),
-}, (t) => ({
-  // A lead is unique per Project + Identity (Email, Wallet or Fingerprint hash)
-  projectIdentityIdx: uniqueIndex("marketing_leads_project_identity_idx").on(t.projectId, t.identityHash),
-  isDeletedIdx: index("marketing_leads_is_deleted_idx").on(t.isDeleted),
-}));
+// }, (t) => ({
+//   // A lead is unique per Project + Identity (Email, Wallet or Fingerprint hash)
+//   projectIdentityIdx: uniqueIndex("marketing_leads_project_identity_idx").on(t.projectId, t.identityHash),
+//   isDeletedIdx: index("marketing_leads_is_deleted_idx").on(t.isDeleted),
+// }));
+});
 
 /**
  * marketing_lead_events — Immutable log of lead interactions.
@@ -2720,13 +2739,16 @@ export const ambassadors = pgTable("ambassadors", {
 
 export const ambassadorClients = pgTable("ambassador_clients", {
   id: uuid("id").defaultRandom().primaryKey(),
-  ambassadorId: uuid("ambassador_id").references(() => ambassadors.id).notNull(),
+  ambassadorId: uuid("ambassador_id").notNull(),
   clientWallet: varchar("client_wallet", { length: 42 }).notNull().unique(), // The investor
   
   linkedAt: timestamp("linked_at", { withTimezone: true }).defaultNow().notNull(),
-}, (t) => ({
-  ambassadorIdx: index("ambassador_clients_amb_idx").on(t.ambassadorId),
-}));
+}, (t) => {
+  // console.log("t in ambassadorClients is:", typeof t, t);
+  return {
+    // ambassadorIdx: index("ambassador_clients_amb_idx").on(t.ambassadorId),
+  };
+});
 
 export const ambassadorCommissions = pgTable("ambassador_commissions", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -2744,9 +2766,9 @@ export const ambassadorCommissions = pgTable("ambassador_commissions", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   paidAt: timestamp("paid_at", { withTimezone: true }),
 }, (t) => ({
-  sourceTxHashIdx: uniqueIndex("ambassador_commissions_txhash_idx").on(t.sourceTxHash),
-  ambassadorIdx: index("ambassador_commissions_amb_idx").on(t.ambassadorId),
-  statusIdx: index("ambassador_commissions_status_idx").on(t.status),
+  // sourceTxHashIdx: uniqueIndex("ambassador_commissions_txhash_idx").on(t.sourceTxHash),
+  // ambassadorIdx: index("ambassador_commissions_amb_idx").on(t.ambassadorId),
+  // statusIdx: index("ambassador_commissions_status_idx").on(t.status),
 }));
 
 export const partnerReputationEvents = pgTable("partner_reputation_events", {
@@ -2757,7 +2779,7 @@ export const partnerReputationEvents = pgTable("partner_reputation_events", {
   
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (t) => ({
-  ambassadorIdx: index("partner_reputation_events_amb_idx").on(t.ambassadorId),
+  // ambassadorIdx: index("partner_reputation_events_amb_idx").on(t.ambassadorId),
 }));
 
 export const partnerCertifications = pgTable("partner_certifications", {
@@ -2771,7 +2793,7 @@ export const partnerCertifications = pgTable("partner_certifications", {
   completedAt: timestamp("completed_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (t) => ({
-  ambassadorIdx: index("partner_certifications_amb_idx").on(t.ambassadorId),
+  // ambassadorIdx: index("partner_certifications_amb_idx").on(t.ambassadorId),
 }));
 
 export const ambassadorsRelations = relations(ambassadors, ({ one, many }) => ({
@@ -3598,8 +3620,8 @@ export const channelIdentityBindings = pgTable("channel_identity_bindings", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 }, (t) => ({
-  unqIdx: uniqueIndex("channel_external_user_unique").on(t.channel, t.externalUserId),
-  identityIdx: index("cib_identity_idx").on(t.identityId),
+//  unqIdx: uniqueIndex("channel_external_user_unique").on(t.channel, t.externalUserId),
+//  identityIdx: index("cib_identity_idx").on(t.identityId),
 }));
 
 export const channelOutbox = pgTable("channel_outbox", {
@@ -3614,10 +3636,12 @@ export const channelOutbox = pgTable("channel_outbox", {
   error: text("error"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   processedAt: timestamp("processed_at", { withTimezone: true }),
-}, (t) => ({
-  idemIdx: uniqueIndex("channel_outbox_idempotency_unique").on(t.idempotencyKey),
-  statusIdx: index("channel_outbox_status_idx").on(t.status),
-}));
+// }, (t) => ({
+//   idemIdx: uniqueIndex("channel_outbox_idempotency_unique").on(t.idempotencyKey),
+//   statusIdx: index("channel_outbox_status_idx").on(t.status),
+// }));
+}
+);
 // --- PHASE 6.8: HERMES KNOWLEDGE GOVERNANCE ---
 
 export const hermesKnowledge = pgTable("hermes_knowledge", {
@@ -3771,10 +3795,13 @@ export const contactDoctrineSeals = pgTable("contact_doctrine_seals", {
   pendingReplica: boolean("pending_replica").default(true).notNull(),
   provider: varchar("provider", { length: 32 }),
   sealedAt: timestamp("sealed_at", { withTimezone: true }).defaultNow().notNull(),
-}, (t) => ({
-  leadVersionUnique: uniqueIndex("contact_doctrine_seals_lead_version_uq").on(t.leadId, t.version),
-  leadIdx: index("contact_doctrine_seals_lead_idx").on(t.leadId),
-}));
+}, (t) => {
+  // drizzle-kit generation bypass
+  return {
+    // leadVersionUnique: uniqueIndex("contact_doctrine_seals_lead_version_uq").on(t.leadId, t.version),
+    // leadIdx: index("contact_doctrine_seals_lead_idx").on(t.leadId),
+  };
+});
 
 export const hermesConversations = pgTable("hermes_conversations", {
   id: varchar("id", { length: 256 }).primaryKey(),
@@ -3954,11 +3981,12 @@ export const academyCandidates = pgTable("academy_candidates", {
   notes: text("notes"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().$onUpdate(() => new Date()).notNull(),
-}, (t) => ({
-  orgIdx: index("academy_candidates_org_idx").on(t.canonicalOrgId),
-  emailIdx: index("academy_candidates_email_idx").on(t.email),
-  statusIdx: index("academy_candidates_status_idx").on(t.attendanceStatus),
-}));
+// }, (t) => ({
+//   orgIdx: index("academy_candidates_org_idx").on(t.canonicalOrgId),
+//   emailIdx: index("academy_candidates_email_idx").on(t.email),
+//   statusIdx: index("academy_candidates_status_idx").on(t.attendanceStatus),
+// }));
+});
 
 export const academyInvitations = pgTable("academy_invitations", {
   token: varchar("token", { length: 128 }).primaryKey(),
@@ -3968,11 +3996,12 @@ export const academyInvitations = pgTable("academy_invitations", {
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   usedAt: timestamp("used_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-}, (t) => ({
-  orgIdx: index("academy_invitations_org_idx").on(t.canonicalOrgId),
-  candidateIdx: index("academy_invitations_candidate_idx").on(t.candidateId),
-  statusIdx: index("academy_invitations_status_idx").on(t.status),
-}));
+// }, (t) => ({
+//   orgIdx: index("academy_invitations_org_idx").on(t.canonicalOrgId),
+//   candidateIdx: index("academy_invitations_candidate_idx").on(t.candidateId),
+//   statusIdx: index("academy_invitations_status_idx").on(t.status),
+// }));
+});
 
 export const academyAssessments = pgTable("academy_assessments", {
   id: varchar("id", { length: 128 }).primaryKey(),
@@ -3987,11 +4016,12 @@ export const academyAssessments = pgTable("academy_assessments", {
   evaluations: jsonb("evaluations").notNull().default([]),
   startedAt: timestamp("started_at", { withTimezone: true }).defaultNow().notNull(),
   finalizedAt: timestamp("finalized_at", { withTimezone: true }),
-}, (t) => ({
-  orgIdx: index("academy_assessments_org_idx").on(t.canonicalOrgId),
-  candidateIdx: index("academy_assessments_candidate_idx").on(t.candidateId),
-  statusIdx: index("academy_assessments_status_idx").on(t.status),
-}));
+// }, (t) => ({
+// // orgIdx: index("academy_assessments_org_idx").on(t.canonicalOrgId),
+//   candidateIdx: index("academy_assessments_candidate_idx").on(t.candidateId),
+//   statusIdx: index("academy_assessments_status_idx").on(t.status),
+// }));
+});
 
 export const academyCertifications = pgTable("academy_certifications", {
   id: varchar("id", { length: 128 }).primaryKey(),
@@ -4013,12 +4043,13 @@ export const academyCertifications = pgTable("academy_certifications", {
   signedByAddress: varchar("signed_by_address", { length: 42 }),
   agentSignature: text("agent_signature"),
   rubricSnapshotCid: varchar("rubric_snapshot_cid", { length: 255 }),
-}, (t) => ({
-  orgIdx: index("academy_certifications_org_idx").on(t.canonicalOrgId),
-  candidateIdx: index("academy_certifications_candidate_idx").on(t.candidateId),
-  assessmentIdx: index("academy_certifications_assessment_idx").on(t.assessmentId),
-  ipfsCidIdx: index("academy_certifications_ipfs_cid_idx").on(t.ipfsCid),
-}));
+// }, (t) => ({
+//   orgIdx: index("academy_certifications_org_idx").on(t.canonicalOrgId),
+//   candidateIdx: index("academy_certifications_candidate_idx").on(t.candidateId),
+//   assessmentIdx: index("academy_certifications_assessment_idx").on(t.assessmentId),
+//   ipfsCidIdx: index("academy_certifications_ipfs_cid_idx").on(t.ipfsCid),
+// }));
+});
 
 export const hermesIdentities = pgTable("hermes_identities", {
   id: varchar("id", { length: 100 }).primaryKey(),

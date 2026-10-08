@@ -35,3 +35,6 @@ export async function resolveTenantContext(
 ) {
   return TenantContextResolver.resolveTenantContext(identityOrId, organizationIdentifier);
 }
+
+export * from './ControlPlane';
+

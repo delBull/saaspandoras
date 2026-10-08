@@ -152,6 +152,7 @@ export function PlatformInspectorDrawer() {
             <Link
               href={data.actionHref}
               target={data.actionHref.startsWith('http') ? '_blank' : undefined}
+              onClick={() => close()}
               className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-semibold shadow-lg shadow-purple-900/20 transition-all"
             >
               <span>{data.actionLabel || 'Ver Detalle Completo'}</span>

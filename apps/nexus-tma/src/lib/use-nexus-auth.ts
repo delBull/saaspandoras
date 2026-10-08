@@ -68,7 +68,7 @@ export function useNexusAuth(): AuthState {
           activeWorkspace: string;
           badges: { hitlUrgentChats: number; growthHotLeadsToday: number; rwaPendingDeposits: number; total: number };
           capabilities: string[];
-        }>('/api/v1/tma/nexus/overview', newSession.token);
+        }>('/api/v1/tma/nexus/overview');
 
         newSession.enabledVerticals = overview.enabledVerticals ?? [];
         newSession.workspaces = overview.workspaces ?? [];

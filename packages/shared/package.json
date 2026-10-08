@@ -27,6 +27,11 @@
       "types": "./dist/env.d.ts",
       "import": "./dist/env.mjs",
       "require": "./dist/env.js"
+    },
+    "./thirdweb-client": {
+      "types": "./dist/thirdweb-client.d.ts",
+      "import": "./dist/thirdweb-client.mjs",
+      "require": "./dist/thirdweb-client.js"
     }
   },
   "typesVersions": {
@@ -39,8 +44,8 @@
   "scripts": {
     "clean": "rm -rf .turbo node_modules",
     "format": "prettier --check '**/*.{mjs,ts,json}' ",
-    "build": "tsup --external @saasfly/hermes-core --external @saasfly/nexus-deals-sdk src/index.ts src/email.ts src/emails/magic-link-email.tsx src/subscriptions.ts src/env.mjs --format esm,cjs --dts --clean",
-    "dev": "tsup src/index.ts src/email.ts src/emails/magic-link-email.tsx src/subscriptions.ts src/env.mjs --format esm,cjs --watch"
+    "build": "tsup --external @saasfly/hermes-core --external @saasfly/nexus-deals-sdk src/index.ts src/email.ts src/emails/magic-link-email.tsx src/subscriptions.ts src/env.mjs src/thirdweb-client.ts --format esm,cjs --dts --clean",
+    "dev": "tsup src/index.ts src/email.ts src/emails/magic-link-email.tsx src/subscriptions.ts src/env.mjs src/thirdweb-client.ts --format esm,cjs --watch"
   },
   "dependencies": {
     "@saasfly/ui": "workspace:*",

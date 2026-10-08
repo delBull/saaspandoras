@@ -4,6 +4,7 @@ import { db } from "@saasfly/db-core";
 // ✨ ENDPOINT SIMPLIFICADO PARA ADMIN - MINIMAL VALIDATIONS
 export const runtime = "nodejs";
 import { projects as projectsSchema } from "@saasfly/db-core";
+import { ProvisioningEngine, ControlPlane } from "@saasfly/hermes-core";
 import { getAuth, isAdmin } from "@saasfly/auth-sdk";
 import { headers } from "next/headers";
 import slugify from "slugify";
@@ -175,14 +176,40 @@ export async function POST(request: Request) {
 
     console.log('🔒 Admin Quick API: Final insert data keys:', Object.keys(insertData));
 
-    // Insert without heavy schema validation - only safe fields
-    const [newProject] = await db
-      .insert(projectsSchema)
-      .values(insertData as any)
-      .returning();
+    // 1. Resolve Authority & Capabilities
+    const authContext = await ControlPlane.resolveAdminContext(session?.address ?? 'unknown');
 
-    console.log('✅ Admin Quick API: Project created successfully:', newProject?.id ?? 'unknown');
-    return NextResponse.json(newProject, { status: 201 });
+    // 2. Control Plane canonicalizes org creation
+    const canonicalOrgId = await ControlPlane.createOrganization(authContext, { 
+      name: preparedData.title, 
+      slug: preparedData.slug 
+    });
+
+    // Run through the Provisioning Engine (L2 Architecture)
+    const provisioningResult = await ProvisioningEngine.executeAdminProvisioning(
+      authContext,
+      {
+        title: preparedData.title,
+        slug: preparedData.slug,
+        adminEmail: preparedData.applicantEmail || 'admin@pandoras.finance',
+        canonicalOrgId: canonicalOrgId, // Replaces naive crypto.randomUUID()
+        entitlement: {
+          permissions: {
+            'users.manage': true,
+            'tenants.manage': true,
+            'finance.manage': true,
+            'growth.manage': true,
+            'marketing.manage': true,
+            'nexus.manage': true,
+            'ecosystem': true
+          }
+        },
+        extraProjectData: insertData
+      }
+    );
+
+    console.log('✅ Admin Quick API: Project created successfully:', provisioningResult.tenantId);
+    return NextResponse.json({ id: provisioningResult.tenantId, slug: provisioningResult.tenantId, ...insertData }, { status: 201 });
 
   } catch (error) {
     console.error('❌ Admin Quick API Error:', error);

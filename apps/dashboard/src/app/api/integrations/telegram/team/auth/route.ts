@@ -25,6 +25,9 @@ import {
   resolveNexusTmaSession,
   NexusTmaAuthError,
 } from '@/lib/nexus/nexus-tma-auth';
+import { cookies } from 'next/headers';
+import { ActorIdentityBindingService, type ActorBindingProof } from '@saasfly/hermes-core';
+import crypto from 'crypto';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -58,12 +61,35 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // 2. Resolve session (fail-closed — all auth errors throw)
   try {
     const session = await resolveNexusTmaSession(rawInitData);
-    (session as any).token = rawInitData;
 
     console.info(
       `[NexusTmaAuth] ✅ Authenticated collaborator #${session.collaboratorId} (${session.role}) ` +
       `with ${session.capabilities.length} capabilities. tgUserId=***`
     );
+
+    // Create a cryptographic bound session using ActorIdentityBindingService
+    const proof: ActorBindingProof = {
+      actorId: String(session.collaboratorId),
+      tenantId: 'pandoras', // Server-authoritative resolution (Nexus is platform-level)
+      authProvider: 'TELEGRAM_INIT_DATA',
+      proofSignature: 'verified_via_hmac',
+      issuedAt: Math.floor(Date.now() / 1000),
+      nonce: require('crypto').randomUUID()
+    };
+
+    const boundSession = ActorIdentityBindingService.createBoundSession(proof, 'CONFIDENTIAL', 28800);
+
+    const isProd = process.env.NODE_ENV === "production";
+    const cookieStore = await cookies();
+    
+    // NO secrets in localStorage - setting HttpOnly cookie for authentication
+    cookieStore.set("nexus_tma_session", JSON.stringify(boundSession), {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 28800
+    });
 
     return NextResponse.json({ session }, { status: 200 });
 
