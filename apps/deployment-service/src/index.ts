@@ -2,7 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 import { deployNFTPassServer, deployW2EProtocol, NetworkType, NFTPassConfig, W2EConfig } from "@pandoras/protocol-deployer";
 import { db, schema } from "./db.js";
-import { eq, and, lt } from "drizzle-orm";
+import { eq, and, lt } from "@saasfly/db-core";
 
 dotenv.config();
 
@@ -23,9 +23,9 @@ app.get("/health", (_, res) => {
 // Helper to update job status
 async function updateJob(jobId: string, data: Partial<typeof schema.deploymentJobs.$inferInsert>) {
     try {
-        await db.update(schema.deploymentJobs)
+        await db.update(schema.deploymentJobs as any)
             .set({ ...data, updatedAt: new Date() })
-            .where(eq(schema.deploymentJobs.id, jobId as any));
+            .where(eq(schema.deploymentJobs.id as any, jobId as any) as any);
     } catch (err) {
         console.error(`❌ Failed to update job ${jobId}:`, err);
     }
@@ -54,13 +54,13 @@ async function runDeploymentJob(jobId: string) {
 
     // 1. ATOMIC LOCK (Compare-and-Swap)
     // We only process if status is 'pending'
-    const [job] = await db.update(schema.deploymentJobs)
+    const [job] = await db.update(schema.deploymentJobs as any)
         .set({
             status: 'processing' as any,
             startedAt: new Date(),
             step: 'starting'
         })
-        .where(eq(schema.deploymentJobs.id, jobId as any))
+        .where(eq(schema.deploymentJobs.id as any, jobId as any) as any)
         .returning();
 
     // If no rows returned, someone else took it or it's not pending
@@ -89,7 +89,7 @@ async function runDeploymentJob(jobId: string) {
         await updateJob(jobId, { step: 'finalizing' });
 
         // CRITICAL: Update the Project record
-        const updatedProject = await db.update(schema.projects)
+        const updatedProject = await db.update(schema.projects as any)
             .set({
                 licenseContractAddress: result.licenseAddress || (result.artifacts?.[0]?.address),
                 utilityContractAddress: result.phiAddress,
@@ -111,8 +111,8 @@ async function runDeploymentJob(jobId: string) {
                     }
                 }
             })
-            .where(eq(schema.projects.slug, job.projectSlug))
-            .returning({ id: schema.projects.id });
+            .where(eq(schema.projects.slug as any, job.projectSlug as any) as any)
+            .returning({ id: schema.projects.id as any });
 
         // Phase 87 Integration: Inject Genesis Whales into Governance IQ instantly
         const projectId = updatedProject[0]?.id;
@@ -152,7 +152,7 @@ async function runDeploymentJob(jobId: string) {
                     }
                     
                     if (newMembers.length > 0) {
-                        await db.insert(schema.daoMembers).values(newMembers).onConflictDoNothing();
+                        await db.insert(schema.daoMembers as any).values(newMembers as any).onConflictDoNothing();
                         logEvent(jobId, "GGE_MEMBERS_INJECTED", { count: newMembers.length });
                     }
                 } catch (memberErr: any) {
@@ -185,15 +185,15 @@ async function runDeploymentJob(jobId: string) {
 async function cleanupZombies() {
     const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
 
-    const zombies = await db.update(schema.deploymentJobs)
+    const zombies = await db.update(schema.deploymentJobs as any)
         .set({
             status: 'failed' as any,
             error: 'JOB_ZOMBIE: Process likely crashed or timed out'
         })
         .where(and(
-            eq(schema.deploymentJobs.status, 'processing'),
-            lt(schema.deploymentJobs.startedAt, tenMinutesAgo)
-        ))
+            eq(schema.deploymentJobs.status as any, 'processing' as any),
+            lt(schema.deploymentJobs.startedAt as any, tenMinutesAgo as any)
+        ) as any)
         .returning();
 
     if (zombies.length > 0) {
