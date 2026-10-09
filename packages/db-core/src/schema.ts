@@ -1129,7 +1129,7 @@ export const emailMetrics = pgTable("email_metrics", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().$onUpdate(() => new Date()).notNull(),
 }, (table) => ({
-  typeStatusIndex: index("email_metrics_type_status_idx").on(table.status),
+  typeStatusIndex: index("email_metrics_type_status_idx").on(table.type, table.status),
   statusIndex: index("email_metrics_status_idx").on(table.status),
   recipientIndex: index("email_metrics_recipient_idx").on(table.recipient),
   createdAtIndex: index("email_metrics_created_at_idx").on(table.createdAt),

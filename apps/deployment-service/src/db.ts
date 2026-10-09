@@ -19,5 +19,11 @@ const client = postgres(connectionString, {
     ssl: process.env.NODE_ENV === 'production' ? 'require' : false,
 });
 
-export const db = drizzle(client, { schema });
+const filteredSchema = Object.fromEntries(
+    Object.entries(schema).filter(([k, v]) => 
+        k !== 'db' && typeof v !== 'function'
+    )
+);
+
+export const db = drizzle(client, { schema: filteredSchema as any });
 export { schema };
