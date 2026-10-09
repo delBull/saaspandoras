@@ -1129,7 +1129,6 @@ export const emailMetrics = pgTable("email_metrics", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().$onUpdate(() => new Date()).notNull(),
 }, (table) => ({
-  emailIdIndex: uniqueIndex("email_metrics_email_id_idx").on(table.emailId),
   typeStatusIndex: index("email_metrics_type_status_idx").on(table.type, table.status),
   statusIndex: index("email_metrics_status_idx").on(table.status),
   recipientIndex: index("email_metrics_recipient_idx").on(table.recipient),
@@ -5036,4 +5035,67 @@ export const nexusIncidents = pgTable("nexus_incidents", {
   
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+// ── HERMES SOVEREIGN CALENDAR & BRIEFINGS ──────────────────────────────────────
+
+export const hermesMeetingPlatformEnum = pgEnum("hermes_meeting_platform", [
+  "GOOGLE_MEET",
+  "JITSI",
+  "ZOOM",
+  "TEAMS",
+  "OTHER"
+]);
+
+export const hermesMeetings = pgTable("hermes_meetings", {
+  id: varchar("id", { length: 128 }).primaryKey(),
+  organizationId: varchar("organization_id", { length: 256 }).notNull(),
+  title: varchar("title", { length: 256 }).notNull(),
+  description: text("description"),
+  
+  platform: hermesMeetingPlatformEnum("platform").default("OTHER").notNull(),
+  joinUrl: varchar("join_url", { length: 1024 }),
+  
+  startTime: timestamp("start_time", { withTimezone: true }).notNull(),
+  endTime: timestamp("end_time", { withTimezone: true }).notNull(),
+  
+  organizerEmail: varchar("organizer_email", { length: 256 }),
+  attendees: jsonb("attendees").$type<{ email: string, name?: string, status?: string }[]>(),
+  
+  status: varchar("status", { length: 64 }).default("SCHEDULED").notNull(), // SCHEDULED, CANCELLED, COMPLETED
+  
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const hermesBriefingPreferences = pgTable("hermes_briefing_preferences", {
+  organizationId: varchar("organization_id", { length: 256 }).primaryKey(),
+  enabled: boolean("enabled").default(true).notNull(),
+  
+  channel: varchar("channel", { length: 64 }).default("EMAIL").notNull(), // EMAIL, WHATSAPP, TELEGRAM
+  leadTimeMinutes: integer("lead_time_minutes").default(30).notNull(), // Minutes before meeting to send briefing
+  
+  targetEmails: jsonb("target_emails").$type<string[]>(), // Array of emails if channel is EMAIL
+  targetPhones: jsonb("target_phones").$type<string[]>(), // Array of phones if channel is WHATSAPP
+  
+  includeFacts: boolean("include_facts").default(true).notNull(),
+  includeFinancials: boolean("include_financials").default(false).notNull(),
+  
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const hermesBriefings = pgTable("hermes_briefings", {
+  id: varchar("id", { length: 128 }).primaryKey(),
+  organizationId: varchar("organization_id", { length: 256 }).notNull(),
+  meetingId: varchar("meeting_id", { length: 128 }).notNull(),
+  
+  channel: varchar("channel", { length: 64 }).notNull(),
+  destination: varchar("destination", { length: 256 }).notNull(),
+  
+  status: varchar("status", { length: 64 }).default("PENDING").notNull(), // PENDING, SENT, FAILED
+  errorReason: text("error_reason"),
+  
+  sentAt: timestamp("sent_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });

@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
-import { db } from "@saasfly/db-core";
-import { telegramBindings, users } from "@saasfly/db-core";
+import { db, nexusCollaborators } from "@saasfly/db-core";
 import { eq } from "@saasfly/db-core";
 import { cookies } from "next/headers";
-import { ActorIdentityBindingService, ActorBindingProof } from "@saasfly/hermes-core";
 
 export const runtime = "nodejs";
 
@@ -67,75 +65,61 @@ export async function POST(request: Request) {
     const tgUser = JSON.parse(userStr);
     const telegramUserId = tgUser.id.toString();
 
-    // L1 Canonical Identity Resolution
-    const bindingResult = await db
-      .select({ walletAddress: telegramBindings.walletAddress })
-      .from(telegramBindings)
-      .where(eq(telegramBindings.telegramUserId, telegramUserId))
+    // L1 Canonical Identity Resolution (Nexus Collaborators)
+    const [collaborator] = await db
+      .select({ 
+        id: nexusCollaborators.id, 
+        role: nexusCollaborators.role,
+        token: nexusCollaborators.token,
+        status: nexusCollaborators.status
+      })
+      .from(nexusCollaborators)
+      .where(eq(nexusCollaborators.telegramUserId, telegramUserId))
       .limit(1);
 
-    const binding = bindingResult[0];
-
-    if (!binding || !binding.walletAddress) {
+    if (!collaborator || collaborator.status === 'REJECTED' || collaborator.status === 'DISABLED') {
       return NextResponse.json({
         success: false,
         isLinked: false,
-        message: "No canonical identity linked. Please link your wallet first in Nexus."
+        message: "No active Nexus Collaborator profile linked to this Telegram account."
       }, { status: 403 });
     }
 
-    const walletAddress = binding.walletAddress.toLowerCase();
-
-    const userResult = await db
-      .select({ id: users.id, role: users.role })
-      .from(users)
-      .where(eq(users.walletAddress, walletAddress))
-      .limit(1);
-
-    const canonicalUser = userResult[0];
-
-    if (!canonicalUser) {
-      return NextResponse.json({
-        success: false,
-        isLinked: false,
-        message: "Linked account no longer exists."
-      }, { status: 403 });
+    if (!collaborator.token) {
+       // Auto-heal: Generate a token if for some reason they don't have one
+       const newToken = crypto.randomUUID();
+       const extendedExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+       await db.update(nexusCollaborators)
+         .set({ token: newToken, expiresAt: extendedExpiry })
+         .where(eq(nexusCollaborators.id, collaborator.id));
+       collaborator.token = newToken;
+    } else {
+       // Slide expiration
+       const extendedExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+       await db.update(nexusCollaborators)
+         .set({ expiresAt: extendedExpiry })
+         .where(eq(nexusCollaborators.id, collaborator.id))
+         .catch(() => null);
     }
-
-    // Server-authoritative resolution for Nexus TMA
-    // For now we lock it to pandoras tenant.
-    const canonicalOrgId = "pandoras"; 
-
-    // Create a cryptographic bound session
-    const proof: ActorBindingProof = {
-      actorId: canonicalUser.id,
-      tenantId: canonicalOrgId,
-      authProvider: 'TELEGRAM_INIT_DATA',
-      proofSignature: 'verified_via_hmac',
-      issuedAt: Math.floor(Date.now() / 1000),
-      nonce: crypto.randomUUID()
-    };
-
-    // Short-lived session (2 hours)
-    const boundSession = ActorIdentityBindingService.createBoundSession(proof, 'CONFIDENTIAL', 7200);
 
     // Set secure HttpOnly cookie so TMA does not store secrets in localStorage
+    // Using pandoras_nexus_token unifies this with Nexus Web (getNexusAuthContext)
     const cookieStore = await cookies();
     const isProd = process.env.NODE_ENV === "production";
     
-    cookieStore.set("nexus_tma_session", JSON.stringify(boundSession), {
+    cookieStore.set("pandoras_nexus_token", collaborator.token, {
       httpOnly: true,
       secure: isProd,
       sameSite: "lax",
       path: "/",
-      maxAge: 7200
+      maxAge: 30 * 24 * 60 * 60 // 30 days to match nexus token
     });
 
     return NextResponse.json({
       success: true,
       user: {
-        id: canonicalUser.id,
-        role: canonicalUser.role
+        id: collaborator.id,
+        role: collaborator.role || 'COLLABORATOR'
       }
     });
 
