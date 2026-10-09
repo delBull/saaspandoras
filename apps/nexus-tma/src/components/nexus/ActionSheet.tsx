@@ -6,11 +6,10 @@ interface ActionSheetProps {
   isOpen: boolean;
   onClose: () => void;
   item: any; // AttentionItem
-  sessionToken: string;
   onSuccess: () => void;
 }
 
-export const ActionSheet: React.FC<ActionSheetProps> = ({ isOpen, onClose, item, sessionToken, onSuccess }) => {
+export const ActionSheet: React.FC<ActionSheetProps> = ({ isOpen, onClose, item, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -21,9 +20,9 @@ export const ActionSheet: React.FC<ActionSheetProps> = ({ isOpen, onClose, item,
     setError(null);
     try {
       if (item.type === 'KYC') {
-        await nexusPost(`/api/v1/nexus/kyc/${item.resourceId}/approve`, {}, sessionToken);
+        await nexusPost(`/api/v1/nexus/kyc/${item.resourceId}/approve`, {});
       } else if (item.type === 'DEPOSIT') {
-        await nexusPost(`/api/v1/nexus/finance/deposits/${item.resourceId}/approve`, {}, sessionToken);
+        await nexusPost(`/api/v1/nexus/finance/deposits/${item.resourceId}/approve`, {});
       } else {
         // Fallback generic or other endpoint
         console.warn('Unhandled action type', item.type);
@@ -91,7 +90,6 @@ export const ActionSheet: React.FC<ActionSheetProps> = ({ isOpen, onClose, item,
 
         <ContextualHermesTrigger 
           attentionItemId={item.id} 
-          sessionToken={sessionToken} 
           onOpened={() => console.log('Hermes triggered')} 
         />
       </div>
