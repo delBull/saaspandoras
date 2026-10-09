@@ -235,7 +235,6 @@
         "@pandoras/agora-engine": "workspace:*",
         "@pandoras/protocol-deployer": "workspace:*",
         "dotenv": "^16.4.5",
-        "drizzle-orm": "^0.44.5",
         "ethers": "5.7.2",
         "express": "^4.19.2",
         "postgres": "^3.4.3",
