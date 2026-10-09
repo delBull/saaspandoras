@@ -138,6 +138,26 @@ const client = new A2AClient({
           </div>
         </div>
       </section>
+
+      <section className="p-6 md:p-8 rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/5 to-transparent relative overflow-hidden">
+        <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
+          <BookOpen className="w-48 h-48 text-emerald-500" />
+        </div>
+        <div className="relative z-10 max-w-4xl">
+          <div className="flex items-center gap-3 mb-4">
+            <span className="px-2.5 py-1 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 font-mono text-[10px] tracking-widest uppercase">Nuevo</span>
+            <h2 className="text-2xl font-bold text-white">Media Co & Forge API</h2>
+          </div>
+          <p className="text-zinc-300 mb-6 leading-relaxed">
+            Documentación técnica oficial para tenants y clientes de Pandora's Media Co. Aprende cómo aprovisionar sub-tenants, 
+            crear jobs de contenido (videos, copy) y registrar aprobaciones mediante llamadas Server-to-Server.
+          </p>
+          <a href="/nexus/developers/media-co" className="inline-flex items-center justify-center rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-400 font-medium px-6 py-3 transition-colors">
+            <BookOpen className="w-5 h-5 mr-2" />
+            Ver Referencia de la API
+          </a>
+        </div>
+      </section>
     </div>
   );
 }
