@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db, meetings } from "@saasfly/db-core";
+import { db } from "@saasfly/db-core";
+import { meetings, nexusCollaborators } from "@saasfly/db-core/schema";
 import jwt from "jsonwebtoken";
 
 const MEET_JOIN_SECRET = process.env.MEET_JOIN_SECRET;
@@ -11,11 +12,20 @@ export async function POST(req: NextRequest) {
     }
 
     const orgId = "pandoras"; // Default canoncial org
-    const collaboratorId = "1"; // Default host collaborator id
+    
+    // Fetch a valid host collaborator from the DB to avoid foreign key violations
+    const [hostCollaborator] = await db
+      .select({ id: nexusCollaborators.id })
+      .from(nexusCollaborators)
+      .limit(1)
+      .catch(() => []); // fallback
+
+    const collaboratorId = hostCollaborator?.id || 1; // Fallback to 1 if no collaborators exist
     
     // Create the meeting record
     const [meeting] = await db.insert(meetings).values({
       canonicalOrgId: orgId,
+      hostCollaboratorId: collaboratorId,
       status: "scheduled",
       startsAt: new Date(),
     }).returning();

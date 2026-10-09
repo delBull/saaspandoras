@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Build Sovereign ControlPlaneContext with Universal Interlocutor Recognition
-    const { InterlocutorResolver } = await import('@saasfly/hermes-core');
+    const { InterlocutorResolver, ActorIdentityBindingService } = await import('@saasfly/hermes-core');
     const interlocutor = await InterlocutorResolver.resolve({
       channel: 'nexus',
       externalUserId: operatorContext?.id || operatorContext?.email,
@@ -91,6 +91,21 @@ export async function POST(req: NextRequest) {
     const effectiveName = interlocutor.name || operatorContext?.name || (isBoss ? 'Marco' : 'Operador');
     const actorId = interlocutor.actorId || operatorContext?.email || operatorContext?.id || `nexus_${validatedRole.toLowerCase()}`;
 
+    // Cryptographically bind the session as required by HermesRuntime Hardening (Fase A - P0)
+    const crypto = await import('crypto');
+    const boundActorSession = ActorIdentityBindingService.createBoundSession(
+      {
+        actorId,
+        tenantId: 'pandoras',
+        authProvider: 'PORTAL_INTERNAL',
+        proofSignature: crypto.randomBytes(32).toString('hex'),
+        issuedAt: Math.floor(Date.now() / 1000),
+        nonce: crypto.randomUUID(),
+      },
+      isBoss ? 'INTERNAL_OPERATIONAL' : 'CONFIDENTIAL',
+      3600
+    );
+
     const controlPlaneContext: any = {
       channel: 'INTERNAL_DASHBOARD', // K27.6: authoritative ceiling source (CONFIDENTIAL)
       actorId,
@@ -101,6 +116,7 @@ export async function POST(req: NextRequest) {
         'runtime.respond',
         ...(auth.permissions['nexus.manage'] ? ['governance.admin', 'claims.verify', 'platform.decrees'] : []),
       ],
+      boundActorSession,
       identity: {
         userId: operatorContext?.id,
         identityId: actorId,
