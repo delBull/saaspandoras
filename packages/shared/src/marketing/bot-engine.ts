@@ -4,6 +4,12 @@ import Redis from 'ioredis';
 // Create a singleton Redis client safely
 const redis = process.env.REDIS_URL ? new Redis(process.env.REDIS_URL) : null;
 
+/**
+ * @deprecated [DEPRECATED / NO AUTHORITY] 
+ * Do not use `BotEngine` for execution. It has no authority over tenant resources.
+ * All new conversational surfaces must enter through `HermesRuntime.respond()` 
+ * to ensure capability checks, policy gates, and sovereign identity resolution.
+ */
 export async function generateBotResponse(context: {
   projectName?: string;
   userMessage: string;

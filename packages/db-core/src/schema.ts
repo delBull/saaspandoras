@@ -4131,15 +4131,11 @@ export const dealEnvelopes = pgTable("deal_envelopes", {
   status: varchar("status", { length: 50 }).notNull().default('DRAFT'), // DRAFT | PENDING_SIGNATURES | COMPLETED | DECLINED | REVOKED | EXPIRED
   evidencePackageCid: varchar("evidence_package_cid", { length: 255 }),
   blockchainEvidence: jsonb("blockchain_evidence"), // BlockchainEvidence
-  preservationEvidence: jsonb("preservation_evidence"), // PreservationEvidence (Stage 2)
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   completedAt: timestamp("completed_at", { withTimezone: true }),
   expiresAt: timestamp("expires_at", { withTimezone: true }),
-}, (t) => ({
-  orgStatusIdx: index("deal_envelopes_org_status_idx").on(t.organizationId, t.status),
-  docHashIdx: index("deal_envelopes_doc_hash_idx").on(t.documentHash),
-}));
+});
 
 // ── PANDORA'S A2A v1.1 CAPABILITY GOVERNANCE & MEDIA ARTIFACTS ───────────────
 
@@ -4596,13 +4592,6 @@ export const distributionJobs = pgTable("distribution_jobs", {
   reconciliationLockUntil: timestamp("reconciliation_lock_until", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
-}, (t) => {
-  return {
-    tenantIdempotencyUq: uniqueIndex("distribution_jobs_tenant_idempotency_uq").on(t.tenantId, t.idempotencyKey),
-    tenantStatusIdx: index("distribution_jobs_tenant_status_idx").on(t.tenantId, t.status),
-    campaignPieceIdx: index("distribution_jobs_campaign_piece_idx").on(t.campaignId, t.pieceId),
-    reconciliationIdx: index("distribution_jobs_reconcile_idx").on(t.status, t.nextReconciliationAt),
-  };
 });
 
 export type DistributionJob = typeof distributionJobs.$inferSelect;
@@ -4628,12 +4617,6 @@ export const distributionExecutionAttempts = pgTable("distribution_execution_att
   errorMessage: text("error_message"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
-}, (t) => {
-  return {
-    jobAttemptIdx: index("distribution_attempts_job_attempt_idx").on(t.jobId, t.attemptNumber),
-    tenantProviderIdx: index("distribution_attempts_tenant_provider_idx").on(t.tenantId, t.provider),
-    executionIdIdx: index("distribution_attempts_execution_id_idx").on(t.executionId),
-  };
 });
 
 export type DistributionExecutionAttempt = typeof distributionExecutionAttempts.$inferSelect;

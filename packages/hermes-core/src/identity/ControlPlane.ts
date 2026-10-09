@@ -46,11 +46,22 @@ export class ControlPlane {
       throw new Error('Unauthorized: Missing capability to create canonical organization');
     }
 
-    const orgId = crypto.randomUUID();
-    
-    // In a full implementation, we'd insert into an 'organizations' table.
-    // For now, if the table exists, we do it. Otherwise, we just return the UUID.
-    // Assuming 'organizations' table might not exist yet, we just return the authoritative ID.
-    return orgId;
+    const { db } = await import('@saasfly/db-core');
+    const { projects } = await import('@saasfly/db-core/schema');
+
+    // Insert canonical organization (project tenant)
+    const [inserted] = await db.insert(projects).values({
+      title: data.name,
+      slug: data.slug,
+      description: "Auto-provisioned by Hermes Control Plane",
+      status: 'live'
+    }).returning({ slug: projects.slug });
+
+    if (!inserted || !inserted.slug) {
+      throw new Error('Failed to create canonical organization');
+    }
+
+    // Returning the deterministic, persistent canonical slug
+    return inserted.slug;
   }
 }

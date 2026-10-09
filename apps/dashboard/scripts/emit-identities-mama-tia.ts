@@ -52,7 +52,7 @@ async function main() {
 
       if (existing.length > 0) {
         if (existing.length > 1) throw new Error(`Regeneración imposible: ${s.label} ya tiene ${existing.length} filas de users — resolver manualmente.`);
-        userId = existing[0].id;
+        userId = existing[0]!.id;
         console.log(`[reuse] ${s.label}: user ya existe → ${userId}`);
       } else {
         userId = crypto.randomUUID();
@@ -109,12 +109,12 @@ async function main() {
       await SecurityAuditLogger.logEvent({
         organizationId: "pandoras",
         actorId: ADMIN_ACTOR,
-        eventType: "IDENTITY_ISSUED",
+        eventType: "CREDENTIAL_ISSUED",
         severity: "INFO",
         policyDecision: "ALLOW",
         correlationId: CORRELATION_ID,
         artifactId: canonical,
-        classification: "INTERNAL",
+        classification: "INTERNAL_OPERATIONAL",
         metadata: {
           label: s.label,
           subjectName: s.name,
