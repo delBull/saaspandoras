@@ -137,7 +137,13 @@ export function CalendarManager({ userId }: { userId: string }) {
             });
 
             if (res.success) {
-                toast.success("Evento creado y notificado");
+                if (res.sovereignMeeting) {
+                    toast.success(`Evento y Sala Jitsi Soberana Creados`, {
+                        description: `Sala: ${res.sovereignMeeting.jitsiRoomId}`
+                    });
+                } else {
+                    toast.success("Evento creado y notificado");
+                }
                 setCreateModalOpen(false);
                 loadSlots();
             } else {
@@ -452,6 +458,17 @@ export function CalendarManager({ userId }: { userId: string }) {
                                 onChange={(e) => setNewEvent({ ...newEvent, leadEmail: e.target.value })}
                                 className="bg-zinc-950 border-zinc-800 focus:ring-lime-500"
                             />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="presentationId">Pitch Template (Opcional)</Label>
+                            <Input
+                                id="presentationId"
+                                placeholder="Ej. pitch_deck_v1"
+                                value={(newEvent as any).presentationId || ''}
+                                onChange={(e) => setNewEvent({ ...newEvent, presentationId: e.target.value } as any)}
+                                className="bg-zinc-950 border-zinc-800 focus:ring-lime-500"
+                            />
+                            <p className="text-[10px] text-zinc-500">ID de la presentación a vincular en la videollamada soberana.</p>
                         </div>
                     </div>
                     <DialogFooter>

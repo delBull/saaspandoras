@@ -1129,7 +1129,7 @@ export const emailMetrics = pgTable("email_metrics", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().$onUpdate(() => new Date()).notNull(),
 }, (table) => ({
-  typeStatusIndex: index("email_metrics_type_status_idx").on(table.type, table.status),
+  typeStatusIndex: index("email_metrics_type_status_idx").on(table.status),
   statusIndex: index("email_metrics_status_idx").on(table.status),
   recipientIndex: index("email_metrics_recipient_idx").on(table.recipient),
   createdAtIndex: index("email_metrics_created_at_idx").on(table.createdAt),
@@ -1635,6 +1635,10 @@ export const meetings = pgTable("meetings", {
   appointmentId: text("appointment_id").references(() => schedulingBookings.id), // Link to Agenda
   hostCollaboratorId: integer("host_collaborator_id").references(() => nexusCollaborators.id), // The actual owner/host
   
+  jitsiRoomId: text("jitsi_room_id"), // Sovereign Jitsi Meet ID
+  presentationId: text("presentation_id"), // ID to link to Fullscreen Pitch Template
+
+  
   status: meetingStatusEnum("status").default("scheduled").notNull(),
   
   startsAt: timestamp("starts_at", { withTimezone: true }),
@@ -1646,6 +1650,12 @@ export const meetings = pgTable("meetings", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+export const meetingFollowUpStatusEnum = pgEnum("meeting_follow_up_status", [
+  "pending",
+  "sent",
+  "no_action"
+]);
+
 export const meetingParticipants = pgTable("meeting_participants", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   meetingId: text("meeting_id").references(() => meetings.id).notNull(),
@@ -1654,6 +1664,8 @@ export const meetingParticipants = pgTable("meeting_participants", {
   participantType: participantTypeEnum("participant_type").default("anonymous_guest").notNull(),
   role: participantRoleEnum("role").default("guest").notNull(),
   
+  followUpStatus: meetingFollowUpStatusEnum("follow_up_status").default("pending").notNull(),
+
   invitedAt: timestamp("invited_at", { withTimezone: true }).defaultNow(),
   joinedAt: timestamp("joined_at", { withTimezone: true }),
   leftAt: timestamp("left_at", { withTimezone: true }),

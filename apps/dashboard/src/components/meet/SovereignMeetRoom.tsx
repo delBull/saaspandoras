@@ -10,6 +10,7 @@ interface SovereignMeetRoomProps {
     role: string;
     jwt: string;
     appId: string;
+    presentationId?: string | null;
 }
 
 // Toolbar buttons for desktop (full feature set)
@@ -51,6 +52,7 @@ export function SovereignMeetRoom({
     role,
     jwt,
     appId,
+    presentationId
 }: SovereignMeetRoomProps) {
     const [loading, setLoading] = useState(true);
     const [isMobile, setIsMobile] = useState(false);
@@ -90,6 +92,18 @@ export function SovereignMeetRoom({
                     <p className="text-lime-400 font-mono text-[10px] tracking-widest uppercase animate-pulse">
                         Estableciendo Conexión Soberana...
                     </p>
+                </div>
+            )}
+            
+            {isHost && presentationId && (
+                <div className="absolute top-4 left-4 z-20">
+                    <button
+                        onClick={() => window.open(`/pitch?id=${presentationId}`, '_blank')}
+                        className="bg-lime-500 text-black px-4 py-2 rounded-full font-bold text-xs uppercase tracking-wider hover:bg-lime-400 transition-colors flex items-center gap-2 shadow-lg shadow-lime-500/20 border border-lime-400/50"
+                    >
+                        <span>🚀</span>
+                        Lanzar Pitch Deck
+                    </button>
                 </div>
             )}
 

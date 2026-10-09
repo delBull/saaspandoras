@@ -118,9 +118,10 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       token,
-      roomName: meetingId,
+      roomName: meeting.jitsiRoomId || meetingId, // Use Sovereign Jitsi Room ID if available
       appId: JITSI_APP_ID,
       role,
+      presentationId: meeting.presentationId, // Forward presentation ID for Pitch
     });
   } catch (error) {
     console.error("[Sovereign Meet] Token Error:", error);
