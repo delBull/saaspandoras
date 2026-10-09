@@ -3,11 +3,10 @@ import { nexusPost } from '../../lib/api-client';
 
 interface ContextualHermesTriggerProps {
   attentionItemId: string;
-  sessionToken: string;
   onOpened: () => void;
 }
 
-export const ContextualHermesTrigger: React.FC<ContextualHermesTriggerProps> = ({ attentionItemId, sessionToken, onOpened }) => {
+export const ContextualHermesTrigger: React.FC<ContextualHermesTriggerProps> = ({ attentionItemId, onOpened }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -18,7 +17,7 @@ export const ContextualHermesTrigger: React.FC<ContextualHermesTriggerProps> = (
       // 1. We just send the ID. The server must resolve identity, scope and capability.
       // 2. The server will initialize a Contextual Hermes session tied to this ID.
       // NOTE: This endpoint is an example of what would trigger the Telegram/TMA chat overlay.
-      await nexusPost('/api/v1/nexus/hermes/contextual/init', { attentionItemId }, sessionToken);
+      await nexusPost('/api/v1/nexus/hermes/contextual/init', { attentionItemId });
       
       onOpened();
     } catch (err: any) {
