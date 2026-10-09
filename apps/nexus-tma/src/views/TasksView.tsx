@@ -33,14 +33,14 @@ export function TasksView({ session }: TasksViewProps) {
     try {
       setLoading(true);
       setError(null);
-      const data = await nexusGet<{ tasks: NexusTask[] }>('/api/v1/tma/nexus/tasks', session.token);
+      const data = await nexusGet<{ tasks: NexusTask[] }>('/api/v1/tma/nexus/tasks');
       setTasks(data.tasks || []);
     } catch (err: any) {
       setError(err.message || 'Failed to load tasks');
     } finally {
       setLoading(false);
     }
-  }, [session.token]);
+  }, []);
 
   useEffect(() => {
     fetchTasks();
@@ -53,7 +53,7 @@ export function TasksView({ session }: TasksViewProps) {
       await nexusPost('/api/v1/tma/nexus/tasks', {
         title: newTaskTitle,
         priority: newTaskPriority,
-      }, session.token);
+      });
       setIsCreating(false);
       setNewTaskTitle('');
       setNewTaskPriority('NORMAL');
@@ -67,7 +67,7 @@ export function TasksView({ session }: TasksViewProps) {
 
   const handleAction = async (taskId: string, action: 'CLAIM' | 'COMPLETE' | 'CANCEL') => {
     try {
-      await nexusPatch(`/api/v1/tma/nexus/tasks/${taskId}`, { action }, session.token);
+      await nexusPatch(`/api/v1/tma/nexus/tasks/${taskId}`, { action });
       await fetchTasks();
     } catch (err: any) {
       setError(err.message || `Failed to ${action.toLowerCase()} task`);

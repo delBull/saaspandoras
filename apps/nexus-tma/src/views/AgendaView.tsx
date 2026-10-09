@@ -20,18 +20,17 @@ interface AgendaMeeting {
 }
 
 interface AgendaViewProps {
-    session: any;
     onBack: () => void;
 }
 
-export const AgendaView: React.FC<AgendaViewProps> = ({ session, onBack }) => {
+export const AgendaView: React.FC<AgendaViewProps> = ({ onBack }) => {
     const [meetings, setMeetings] = useState<AgendaMeeting[]>([]);
     const [loading, setLoading] = useState(true);
     const [cancellingId, setCancellingId] = useState<string | null>(null);
 
     const fetchAgenda = async () => {
         try {
-            const res = await nexusGet<{ agenda: AgendaMeeting[] }>('/api/v1/tma/nexus/agenda', session.token);
+            const res = await nexusGet<{ agenda: AgendaMeeting[] }>('/api/v1/tma/nexus/agenda');
             if (res.agenda) {
                 setMeetings(res.agenda);
             }
@@ -53,7 +52,7 @@ export const AgendaView: React.FC<AgendaViewProps> = ({ session, onBack }) => {
         if (!window.confirm('¿Estás seguro de cancelar esta reunión?')) return;
         try {
             setCancellingId(id);
-            await nexusPost(`/api/v1/tma/nexus/meetings/${id}/cancel`, {}, session.token);
+            await nexusPost(`/api/v1/tma/nexus/meetings/${id}/cancel`, {});
             await fetchAgenda();
         } catch (error) {
             console.error('Error cancelling meeting', error);

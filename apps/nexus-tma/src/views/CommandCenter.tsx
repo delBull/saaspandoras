@@ -67,7 +67,7 @@ export function CommandCenter({ session, hasCapability }: CommandCenterProps) {
       if (startParam && !deepLinkOp && !resolvingDeepLink) {
         setResolvingDeepLink(true);
         try {
-          const res = await nexusPost('/api/v1/tma/nexus/deep-links/resolve', { reference: startParam }, session.token);
+          const res = await nexusPost('/api/v1/tma/nexus/deep-links/resolve', { reference: startParam });
           if (res.operation) {
             setDeepLinkOp(res.operation);
           }
@@ -79,12 +79,12 @@ export function CommandCenter({ session, hasCapability }: CommandCenterProps) {
       }
 
       // 2. Load standard hub via new Inbox endpoint
-      const data = await nexusGet<{ items: any[] }>('/api/v1/nexus/inbox', session.token);
+      const data = await nexusGet<{ items: any[] }>('/api/v1/nexus/inbox');
       setInboxItems(data.items || []);
 
       // 3. Load next 2 agenda items
       try {
-        const agendaData = await nexusGet<{ agenda: any[] }>('/api/v1/tma/nexus/agenda', session.token);
+        const agendaData = await nexusGet<{ agenda: any[] }>('/api/v1/tma/nexus/agenda');
         if (agendaData.agenda) {
           setAgendaMeetings(agendaData.agenda.slice(0, 2));
         }
@@ -96,7 +96,7 @@ export function CommandCenter({ session, hasCapability }: CommandCenterProps) {
     } finally {
       setLoading(false);
     }
-  }, [session.token, deepLinkOp, resolvingDeepLink]);
+  }, [deepLinkOp, resolvingDeepLink]);
 
   useEffect(() => {
     fetchOperations();
@@ -122,7 +122,7 @@ export function CommandCenter({ session, hasCapability }: CommandCenterProps) {
   const totalOps = inboxItems.length;
 
   if (showAgenda) {
-    return <AgendaView session={session} onBack={() => setShowAgenda(false)} />;
+    return <AgendaView onBack={() => setShowAgenda(false)} />;
   }
 
   return (
@@ -284,7 +284,6 @@ export function CommandCenter({ session, hasCapability }: CommandCenterProps) {
                isOpen={true} 
                onClose={() => setDeepLinkOp(null)} 
                item={deepLinkOp} 
-               sessionToken={session.token} 
                onSuccess={handleActionSuccess} 
              />
           </div>
@@ -351,7 +350,6 @@ export function CommandCenter({ session, hasCapability }: CommandCenterProps) {
               isOpen={selectedItem !== null} 
               onClose={() => setSelectedItem(null)} 
               item={selectedItem} 
-              sessionToken={session.token} 
               onSuccess={handleActionSuccess} 
             />
           </>
