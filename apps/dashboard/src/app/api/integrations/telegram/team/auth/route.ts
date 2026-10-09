@@ -67,28 +67,31 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       `with ${session.capabilities.length} capabilities. tgUserId=***`
     );
 
-    // Create a cryptographic bound session using ActorIdentityBindingService
-    const proof: ActorBindingProof = {
-      actorId: String(session.collaboratorId),
-      tenantId: 'pandoras', // Server-authoritative resolution (Nexus is platform-level)
-      authProvider: 'TELEGRAM_INIT_DATA',
-      proofSignature: 'verified_via_hmac',
-      issuedAt: Math.floor(Date.now() / 1000),
-      nonce: require('crypto').randomUUID()
-    };
+    // To unify Nexus TMA with Nexus Web, we use the collaborator's token
+    // and set it as pandoras_nexus_token so the same ControlPlaneContext resolves.
+    const { db, nexusCollaborators } = require('@saasfly/db-core');
+    const { eq } = require('@saasfly/db-core');
 
-    const boundSession = ActorIdentityBindingService.createBoundSession(proof, 'CONFIDENTIAL', 28800);
+    const [collaborator] = await db
+      .select({ token: nexusCollaborators.token })
+      .from(nexusCollaborators)
+      .where(eq(nexusCollaborators.id, session.collaboratorId))
+      .limit(1);
+
+    if (!collaborator || !collaborator.token) {
+      throw new Error("Collaborator token missing during session creation.");
+    }
 
     const isProd = process.env.NODE_ENV === "production";
     const cookieStore = await cookies();
     
-    // NO secrets in localStorage - setting HttpOnly cookie for authentication
-    cookieStore.set("nexus_tma_session", JSON.stringify(boundSession), {
+    // Set the unified Nexus token cookie
+    cookieStore.set("pandoras_nexus_token", collaborator.token, {
       httpOnly: true,
       secure: isProd,
       sameSite: "lax",
       path: "/",
-      maxAge: 28800
+      maxAge: 30 * 24 * 60 * 60 // 30 days
     });
 
     return NextResponse.json({ session }, { status: 200 });
