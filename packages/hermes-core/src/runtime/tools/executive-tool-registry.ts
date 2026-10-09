@@ -418,15 +418,7 @@ export function registerExecutiveTools(executor: HermesToolExecutor): void {
 
   // ── executive_financial_signature ──────────────────────────────────────
   executor.registerHandler('executive_financial_signature', async (params, context) => {
-    if (!isExecutive(context)) throw new Error('EXECUTIVE_GATE_DENY');
-    const { proposalId, signature } = (params as any) || {};
-    const { FinancialOrchestratorService } = await import('@saasfly/hermes-core');
-    const finResult = await FinancialOrchestratorService.verifyAndExecuteSignature({
-      proposalId: String(proposalId),
-      signature: String(signature),
-      interlocutor: (context as any)?.interlocutor,
-    });
-    return { success: finResult.success, message: finResult.message };
+    throw new Error('ACTION_GATEWAY_REQUIRED: Direct financial signature from Hermes is deprecated. Hermes must only propose. Execution belongs to Action Gateway.');
   });
 
   // ── executive_financial_proposal ───────────────────────────────────────
@@ -447,11 +439,7 @@ export function registerExecutiveTools(executor: HermesToolExecutor): void {
 
   // ── executive_code_approval ────────────────────────────────────────────
   executor.registerHandler('executive_code_approval', async (params, context) => {
-    if (!isExecutive(context)) throw new Error('EXECUTIVE_GATE_DENY');
-    const { proposalId } = (params as any) || {};
-    const { CodeOperatorService } = await import('@saasfly/hermes-core');
-    const patchResult = await CodeOperatorService.approvePatch(String(proposalId), (context as any)?.interlocutor);
-    return { success: patchResult.success, message: patchResult.message };
+    throw new Error('ACTION_GATEWAY_REQUIRED: Direct code approval from Hermes is deprecated. Hermes must only propose. Execution belongs to Action Gateway.');
   });
 
   // ── executive_code_diagnosis ───────────────────────────────────────────
@@ -516,51 +504,12 @@ export function registerExecutiveTools(executor: HermesToolExecutor): void {
 
   // ── executive_promote_contact ──────────────────────────────────────────
   executor.registerHandler('executive_promote_contact', async (params, context) => {
-    if (!isExecutive(context)) throw new Error('EXECUTIVE_GATE_DENY');
-    const { targetIdentifier, targetRole, notes } = (params as any) || {};
-    const organizationId = (context as any)?.organizationId || 'pandoras';
-    const { InterlocutorResolver } = await import('@saasfly/hermes-core');
-    const contact = await InterlocutorResolver.promoteContactFromBoss({
-      targetIdentifier: String(targetIdentifier),
-      targetRole: String(targetRole),
-      notes: notes ? String(notes) : undefined,
-      tenantSlug: organizationId,
-    });
-    return { promoted: true, contact };
+    throw new Error('ACTION_GATEWAY_REQUIRED: Direct contact promotion from Hermes is deprecated. Hermes must only propose. Execution belongs to Action Gateway.');
   });
 
   // ── executive_send_whatsapp ────────────────────────────────────────────
   executor.registerHandler('executive_send_whatsapp', async (params, context) => {
-    if (!isExecutive(context)) throw new Error('EXECUTIVE_GATE_DENY');
-    const { targetNameOrPhone, messageToSend } = (params as any) || {};
-    const target = String(targetNameOrPhone).trim();
-    let destPhone: string | null = null;
-    let destName = target;
-
-    if (/^\+?\d{10,15}$/.test(target)) {
-      destPhone = target.replace(/\D/g, '');
-    } else {
-      const [collab] = await db
-        .select()
-        .from(nexusCollaborators)
-        .where(or(
-          ilike(nexusCollaborators.name, `%${target}%`),
-          eq(nexusCollaborators.name, target)
-        ))
-        .limit(1);
-      if (collab?.whatsappPhone) {
-        destPhone = collab.whatsappPhone.replace(/\D/g, '');
-        destName = collab.name || target;
-      }
-    }
-
-    if (destPhone) {
-      console.log(`📤 [ExecutiveWhatsAppDispatch] Dispatching message from Boss to ${destName} (${destPhone})`);
-      await sendWhatsAppMessage(destPhone, `*Mensaje de Marco (Fundador):*\n\n${messageToSend}`);
-      return { sent: true, destName, destPhone };
-    }
-
-    throw new Error(`Could not resolve WhatsApp destination for '${targetNameOrPhone}'`);
+    throw new Error('ACTION_GATEWAY_REQUIRED: Direct WhatsApp dispatch from Hermes is deprecated. Hermes must only propose. Execution belongs to Action Gateway.');
   });
 
   // ── executive_audit_tenant ─────────────────────────────────────────────
@@ -598,12 +547,7 @@ export function registerExecutiveTools(executor: HermesToolExecutor): void {
 
   // ── executive_confirm_plan ─────────────────────────────────────────────
   executor.registerHandler('executive_confirm_plan', async (params, context) => {
-    if (!isExecutive(context)) throw new Error('EXECUTIVE_GATE_DENY');
-    const organizationId = (context as any)?.organizationId || 'system';
-    const founderKey = `${organizationId}:${(context as any)?.interlocutor?.id || 'founder'}`;
-    const { ExecutivePlanner } = await import('@saasfly/hermes-core');
-    const execResult = await ExecutivePlanner.executePlan(founderKey, (context as any)?.interlocutor);
-    return { success: execResult.success, message: execResult.message };
+    throw new Error('ACTION_GATEWAY_REQUIRED: Direct plan confirmation from Hermes is deprecated. Hermes must only propose. Execution belongs to Action Gateway.');
   });
 
   // ── executive_cancel_plan ──────────────────────────────────────────────

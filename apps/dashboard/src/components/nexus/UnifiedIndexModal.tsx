@@ -81,6 +81,8 @@ const SECTIONS: NexusSection[] = [
     bgAccent: "bg-purple-500/10",
     cap: "institutionalBooks",
     links: [
+      // Referencia a automatización: DOCUMENTACIÓN/Hermes/ROADMAP_MEETING_TO_EXECUTION.md
+      // Aquí irá el Engine para el ciclo comercial tras presentar.
       { label: "Pitch Decks & Presentations", note: "Institutional Agent OS Pitch (Coming Soon Engine)", href: "/pitch/institutional-os" },
       { label: "Academy & Leadership Curriculum", note: "Alumnos, curriculum COO/CFO y emisión de blueprints de certificación.", href: process.env.NODE_ENV === 'development' ? 'http://academy.localhost:3000/console' : 'https://academy.pandoras.finance/console', external: true },
       { label: "Pandoras Institutional Framework (Libros 0–VIII)", note: "Cuerpo documental institucional.", href: "https://pandoras.finance/libros", external: true },
