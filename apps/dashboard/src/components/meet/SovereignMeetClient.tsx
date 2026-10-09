@@ -4,6 +4,19 @@ import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { SovereignMeetRoom } from "./SovereignMeetRoom";
 
+/**
+ * 🏛️ ARCHITECTURE NOTE: Sovereign Agenda Core (Jitsi Adapter)
+ * ==============================================================
+ * This component acts as the Meeting Adapter for Jitsi.
+ * In a decoupled architecture, this UI shouldn't care if the underlying engine is Jitsi, Zoom, or WebRTC.
+ * It strictly takes a `joinRef` (opaque token) and resolves the meeting parameters.
+ * 
+ * Future Integration Checklist (Academy & other Tenants):
+ * - [ ] Extensibility: Allow Academy to pass a custom UI wrapper or layout instead of the hardcoded `bg-black`.
+ * - [ ] Provider Agnostic: Move the JWT fetch (`/api/v1/meet/token`) behind an interface so Academy can swap the meeting provider if needed.
+ * - [ ] Presentation Decoupling: Currently it expects `presentationId` to launch a Pitch. Academy might need to launch a "Course Module" instead. Consider renaming to `resourceId` and passing a `resourceType` to determine what to launch.
+ */
+
 interface SovereignMeetClientProps {
     /**
      * Opaque join reference token (HMAC-signed HS256 JWT).
@@ -26,6 +39,8 @@ export function SovereignMeetClient({ joinRef }: SovereignMeetClientProps) {
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
 
+    const [presentationId, setPresentationId] = useState<string | null>(null);
+
     useEffect(() => {
         const fetchToken = async () => {
             try {
@@ -45,6 +60,9 @@ export function SovereignMeetClient({ joinRef }: SovereignMeetClientProps) {
                 setAppId(data.appId);
                 setRoomName(data.roomName);
                 setRole(data.role);
+                if (data.presentationId) {
+                    setPresentationId(data.presentationId);
+                }
             } catch (err: any) {
                 setError(err.message);
             } finally {
@@ -93,6 +111,7 @@ export function SovereignMeetClient({ joinRef }: SovereignMeetClientProps) {
             role={role || "participant"}
             jwt={token}
             appId={appId}
+            presentationId={presentationId}
         />
     );
 }

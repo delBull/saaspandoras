@@ -524,7 +524,47 @@ export async function createAdminBooking(userId: string, data: {
             confirmedAt: new Date()
         });
 
-        // 3. Trigger Notifications
+        // 3. Sovereign Agenda (Jitsi Meet Integration)
+        let sovereignMeeting = null;
+        if (data.meetingType === 'video') {
+            const { meetings, meetingParticipants, users } = await import('@saasfly/db-core');
+            const { eq } = await import('drizzle-orm');
+            const cryptoStr = await import('crypto');
+            
+            // Try to find the user's organization context or fallback
+            const user = await db.query.users.findFirst({
+                where: eq(users.id, userId)
+            });
+            
+            if (user) {
+                const jitsiRoomId = `nexus-admin-${cryptoStr.randomBytes(8).toString('hex')}`;
+                const meetingId = crypto.randomUUID();
+                
+                await db.insert(meetings).values({
+                    id: meetingId,
+                    canonicalOrgId: 'default', // Fallback, since admin might not be in a specific tenant context here
+                    appointmentId: bookingId,
+                    jitsiRoomId,
+                    presentationId: null, // Can be extended from UI
+                    status: 'scheduled',
+                    startsAt: data.startTime,
+                    endsAt: endTime,
+                });
+
+                await db.insert(meetingParticipants).values({
+                    id: crypto.randomUUID(),
+                    meetingId,
+                    identityId: user.id,
+                    participantType: 'anonymous_guest',
+                    role: 'host',
+                    followUpStatus: 'pending'
+                });
+
+                sovereignMeeting = { meetingId, jitsiRoomId };
+            }
+        }
+
+        // 4. Trigger Notifications
         // We use the same notification handlers
         const { sendSchedulerNotification } = await import("@/lib/discord/scheduler-notifier");
         const { sendBookingPendingEmail } = await import("@/lib/email/scheduler-mailer");
@@ -534,7 +574,7 @@ export async function createAdminBooking(userId: string, data: {
             sendSchedulerNotification(bookingId, data.startTime, {
                 name: data.leadName,
                 email: data.leadEmail,
-                notes: `(Admin Manual) ${data.title}`
+                notes: `(Admin Manual) ${data.title}` + (sovereignMeeting ? `\nJitsi Room: ${sovereignMeeting.jitsiRoomId}` : '')
             }),
             // Use existing emailer (might need adjustment to send "Confirmed" directly)
             sendBookingPendingEmail(data.leadEmail, {
@@ -544,7 +584,7 @@ export async function createAdminBooking(userId: string, data: {
             })
         ]);
 
-        return { success: true, bookingId };
+        return { success: true, bookingId, sovereignMeeting };
 
     } catch (error) {
         console.error("[Scheduler] Admin booking failed:", error);
