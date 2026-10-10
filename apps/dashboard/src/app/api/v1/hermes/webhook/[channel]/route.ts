@@ -88,6 +88,21 @@ export async function POST(
         rawPayload: body
       });
 
+      // ---- INVITATION CONSUMER INTERCEPTOR ----
+      const { InvitationConsumerService } = await import('@/lib/nexus/invitation-consumer');
+      const messageText = normalized.message.content || '';
+      const consumedLeadName = await InvitationConsumerService.attemptConsumption(
+        messageText,
+        channel,
+        normalized.actor.externalActorId,
+        normalized.organizationId
+      );
+
+      if (consumedLeadName) {
+         // Change the message to an internal system prompt so Hermes starts the onboarding seamlessly
+         normalized.message.content = `<SYSTEM_INJECT> El usuario acaba de consumir su invitación VIP (lead: ${consumedLeadName}) y su identidad de Telegram/WhatsApp ha sido enlazada exitosamente al CRM interno. Salúdalo afectuosamente por su nombre y dile que estás listo para mostrarle los paquetes y propuestas comerciales disponibles. No le pidas datos personales porque ya los tenemos inyectados por KYC interno. Dale la bienvenida al ecosistema.`;
+      }
+
       // Asynchronous dispatch for native webhooks and bot daemon
       channelDispatcher.dispatchAsync(normalized).catch((err) => {
         console.error(`[${channel} Dispatch Error]:`, err);

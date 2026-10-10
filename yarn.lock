@@ -6756,7 +6756,7 @@
     typescript "^5.3.3"
   dependencies:
     "@neondatabase/serverless" "^0.9.0"
-    drizzle-orm "^0.30.2"
+    drizzle-orm "^0.31.0"
 
 "@saasfly/deployment-service@apps/deployment-service":
   version "workspace:apps/deployment-service"
@@ -13300,10 +13300,10 @@ drizzle-kit@^0.31.4, drizzle-kit@^0.31.9:
     esbuild "^0.25.4"
     tsx "^4.21.0"
 
-drizzle-orm@^0.30.2:
-  version "0.30.10"
-  resolved "https://registry.npmjs.org/drizzle-orm/-/drizzle-orm-0.30.10.tgz"
-  integrity sha512-IRy/QmMWw9lAQHpwbUh1b8fcn27S/a9zMIzqea1WNOxK9/4EB8gIo+FZWLiPXzl2n9ixGSv8BhsLZiOppWEwBw==
+drizzle-orm@^0.31.0:
+  version "0.31.4"
+  resolved "https://registry.npmjs.org/drizzle-orm/-/drizzle-orm-0.31.4.tgz"
+  integrity sha512-VGD9SH9aStF2z4QOTnVlVX/WghV/EnuEzTmsH3fSVp2E4fFgc8jl3viQrS/XUJx1ekW4rVVLJMH42SfGQdjX3Q==
 
 drizzle-orm@^0.44.5:
   version "0.44.7"
@@ -20634,7 +20634,7 @@ pretty-format@^29.0.0, pretty-format@^29.7.0:
     ansi-styles "^5.0.0"
     react-is "^18.0.0"
 
-prisma@5.9.1:
+prisma@*, prisma@5.9.1:
   version "5.9.1"
   resolved "https://registry.npmjs.org/prisma/-/prisma-5.9.1.tgz"
   integrity sha512-Hy/8KJZz0ELtkw4FnG9MS9rNWlXcJhf98Z2QMqi0QiVMoS8PzsBkpla0/Y5hTlob8F3HeECYphBjqmBxrluUrQ==

@@ -9,7 +9,7 @@ import { OrganizationSDK } from '@saasfly/shared';
  */
 
 export interface DispatchRequest {
-  capability: 'calendar.schedule' | 'crm.update_stage' | 'payments.create_spei_link' | 'tokenization.get_holdings' | 'support.escalate_human' | 'manage_team.add_collaborator' | 'finance.approve_deposit' | 'compliance.approve_kyc' | 'deals.add_comment' | 'manage_team.telegram_invite' | 'project.approve_purchase' | 'project.distribute_yield' | 'project.update_treasury' | 'project.sync_dao' | 'knowledge.add_document';
+  capability: 'calendar.schedule' | 'crm.update_stage' | 'crm.inject_lead' | 'payments.create_spei_link' | 'tokenization.get_holdings' | 'support.escalate_human' | 'manage_team.add_collaborator' | 'finance.approve_deposit' | 'compliance.approve_kyc' | 'deals.add_comment' | 'manage_team.telegram_invite' | 'project.approve_purchase' | 'project.distribute_yield' | 'project.update_treasury' | 'project.sync_dao' | 'knowledge.add_document';
   projectId: number;
   payload: Record<string, any>;
   actorId?: string; // The caller's identifier (WhatsApp phone, Telegram ID, or wallet)
@@ -104,6 +104,55 @@ export class CapabilityDispatcher {
             actionExecuted: 'crm.update_stage',
             data: null,
             userSummary: 'Error de servidor al intentar actualizar el CRM.'
+          };
+        }
+      }
+
+      case 'crm.inject_lead': {
+        try {
+          // Instead of duplicating logic, we securely call our rigorous backend API
+          const apiUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+          const token = process.env.PANDORAS_INTERNAL_SYSTEM_TOKEN || process.env.HERMES_EDGE_SECRET || 'pk_test_placeholder';
+          
+          const res = await fetch(`${apiUrl}/api/v1/internal/nexus/leads/inject`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              name: payload.name,
+              email: payload.email,
+              phoneNumber: payload.phoneNumber,
+              canonicalOrgId: 'pandoras', // We are injecting into our internal CRM
+              referrerId: actorId
+            })
+          });
+
+          const data = await res.json();
+
+          if (res.ok) {
+            return {
+              success: true,
+              actionExecuted: 'crm.inject_lead',
+              data: { inviteUrl: data.inviteUrl, leadId: data.leadId },
+              userSummary: `Lead inyectado exitosamente. Enlace de invitación (Golden Link): ${data.inviteUrl}`
+            };
+          } else {
+            return {
+              success: false,
+              actionExecuted: 'crm.inject_lead',
+              data: null,
+              userSummary: `Error al inyectar: ${data.error}`
+            };
+          }
+        } catch (error: any) {
+          console.error(`[CapabilityDispatcher] Exception executing CRM Inject Lead:`, error);
+          return {
+            success: false,
+            actionExecuted: 'crm.inject_lead',
+            data: null,
+            userSummary: 'Error de red al intentar inyectar el lead.'
           };
         }
       }
