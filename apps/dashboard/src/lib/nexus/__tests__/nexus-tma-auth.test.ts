@@ -25,7 +25,7 @@ import {
   resolveNexusTmaSession,
 } from '../nexus-tma-auth';
 
-let mockFindFirst = vi.fn();
+const { mockFindFirst } = vi.hoisted(() => ({ mockFindFirst: vi.fn() }));
 vi.mock('@saasfly/db-core', async (importActual) => {
   const actual = await importActual<typeof import('@saasfly/db-core')>();
   return {

@@ -2355,7 +2355,56 @@ export const marketingLeads = pgTable("marketing_leads", {
 //   // A lead is unique per Project + Identity (Email, Wallet or Fingerprint hash)
 //   projectIdentityIdx: uniqueIndex("marketing_leads_project_identity_idx").on(t.projectId, t.identityHash),
 //   isDeletedIdx: index("marketing_leads_is_deleted_idx").on(t.isDeleted),
-// }));
+// });
+});
+
+export const commercialOrderStatusEnum = pgEnum("commercial_order_status", [
+  'PENDING_PAYMENT',
+  'PENDING_APPROVAL',
+  'PAID',
+  'PROVISIONING',
+  'PROVISIONED',
+  'REJECTED',
+  'CANCELLED'
+]);
+
+export const commercialOrders = pgTable("commercial_orders", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  leadId: uuid("lead_id").references(() => marketingLeads.id).notNull(),
+  
+  currency: varchar("currency", { length: 10 }).default('USD').notNull(),
+  totalAmount: decimal("total_amount", { precision: 18, scale: 2 }).notNull(),
+  
+  status: commercialOrderStatusEnum("status").default('PENDING_PAYMENT').notNull(),
+  
+  requestedOrgName: varchar("requested_org_name", { length: 255 }).notNull(),
+  requestedOrgSlug: varchar("requested_org_slug", { length: 255 }).notNull(),
+  
+  idempotencyKey: varchar("idempotency_key", { length: 255 }).notNull().unique(),
+  
+  verifiedBy: varchar("verified_by", { length: 255 }),
+  verifiedAt: timestamp("verified_at", { withTimezone: true }),
+  
+  provisionedProjectId: integer("provisioned_project_id").references(() => projects.id),
+  
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  // Partial index to prevent multiple active orders per lead
+  activeOrderIdx: uniqueIndex("commercial_orders_active_idx").on(t.leadId).where(sql`status IN ('PENDING_PAYMENT', 'PENDING_APPROVAL', 'PAID', 'PROVISIONING')`),
+}));
+
+export const commercialOrderLines = pgTable("commercial_order_lines", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  orderId: uuid("order_id").references(() => commercialOrders.id).notNull(),
+  
+  productKey: varchar("product_key", { length: 50 }).notNull(),
+  priceVersion: varchar("price_version", { length: 50 }).notNull(),
+  unitPrice: decimal("unit_price", { precision: 18, scale: 2 }).notNull(),
+  
+  metadata: jsonb("metadata").default({}), 
+  
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
 /**

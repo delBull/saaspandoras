@@ -60,6 +60,17 @@ const TOOLS_LIST: [string, ToolDefinition][] = [
     },
   ],
   [
+    'crm.inject_lead',
+    {
+      id: 'crm.inject_lead',
+      name: 'Inyectar Lead (KYC Interno)',
+      category: 'crm',
+      inputSchema: { name: 'string', email: 'string', phoneNumber: 'string' },
+      permissionsRequired: ['crm:write'],
+      timeoutMs: 5000,
+    },
+  ],
+  [
     'platform.update_tenant_knowledge',
     {
       id: 'platform.update_tenant_knowledge',

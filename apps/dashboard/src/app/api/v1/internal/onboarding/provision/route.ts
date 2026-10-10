@@ -62,6 +62,20 @@ export async function POST(req: NextRequest) {
 
     const result = await tenantProvisioningService.provisionTenant(body, actorWallet);
 
+    try {
+      if (!result.isIdempotentReplay) {
+        const { sendBusinessNotification } = await import('@/lib/discord/business-notifier');
+        await sendBusinessNotification('New Tenant Provisioned (B2C)', {
+          organization: body.organization.name,
+          slug: body.organization.slug,
+          wallet: actorWallet,
+          products: (body.products || []).join(', ')
+        }, 'success');
+      }
+    } catch (e) {
+      console.warn('Non-blocking: Failed to send discord alert for provision', e);
+    }
+
     return NextResponse.json(result, { status: result.isIdempotentReplay ? 200 : 201 });
   } catch (err: any) {
     console.error('[TenantProvisioningAPI] Error:', err?.message || err);

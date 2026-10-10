@@ -85,13 +85,20 @@ const PRODUCTS: ProductOption[] = [
   },
 ];
 
-export function UnifiedOnboardingClient() {
+export interface CommercialLead {
+  id: string;
+  name: string;
+  company: string;
+  crmStage: string;
+}
+
+export function UnifiedOnboardingClient({ commercialLead }: { commercialLead?: CommercialLead | null }) {
   const router = useRouter();
   const account = useActiveAccount();
   const fallbackId = useId();
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
-  const [orgName, setOrgName] = useState('');
+  const [orgName, setOrgName] = useState(commercialLead?.company || '');
   const [orgSlug, setOrgSlug] = useState('');
   const [businessCategory, setBusinessCategory] = useState('technology');
   const [website, setWebsite] = useState('');
@@ -132,7 +139,7 @@ export function UnifiedOnboardingClient() {
   };
 
   const handleProvision = async () => {
-    if (!account?.address) {
+    if (!account?.address && !commercialLead) {
       toast.error('Conecta tu wallet para firmar el aprovisionamiento del tenant.');
       return;
     }
@@ -144,48 +151,73 @@ export function UnifiedOnboardingClient() {
     }
 
     setIsProvisioning(true);
-    const toastId = toast.loading('Aprovisionando ecosistema con Hermes...', { id: 'prov-toast' });
+    const toastId = toast.loading(commercialLead ? 'Generando orden comercial...' : 'Aprovisionando ecosistema con Hermes...', { id: 'prov-toast' });
 
     try {
       const idempotencyKey = `idem_${orgSlug}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 
-      const payload: ProvisioningRequestDTO = {
-        organization: {
-          name: orgName.trim(),
-          slug: orgSlug.trim(),
-          businessCategory,
-          website: website.trim() || undefined,
-          description: description.trim() || undefined,
-        },
-        products: selectedProducts,
-        idempotencyKey,
-        intents: {
-          hermesPriority: selectedProducts.includes('HERMES') ? hermesPriority : undefined,
-          growthPriority: selectedProducts.includes('GROWTH_OS') ? growthPriority : undefined,
-          rwaPriority: selectedProducts.includes('PANDORAS_RWA') ? rwaPriority : undefined,
-        },
-      };
+      if (commercialLead) {
+        // FLUJO COMERCIAL: Crear Orden y esperar pago
+        const payload = {
+          requestedOrgName: orgName.trim(),
+          requestedOrgSlug: orgSlug.trim(),
+          idempotencyKey,
+          products: selectedProducts.map(p => ({
+            productKey: p,
+            metadata: {
+              intent: p === 'HERMES' ? hermesPriority : p === 'GROWTH_OS' ? growthPriority : rwaPriority
+            }
+          }))
+        };
 
-      const res = await fetch('/api/v1/internal/onboarding/provision', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-wallet-address': account.address,
-        },
-        body: JSON.stringify(payload),
-      });
+        const res = await fetch('/api/v1/internal/nexus/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
 
-      const data = await res.json();
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Error al generar la orden comercial');
 
-      if (!res.ok) {
-        throw new Error(data.error || 'Error al aprovisionar la organización');
+        toast.success('Orden creada. Redirigiendo a pago...', { id: 'prov-toast' });
+        router.push(`/nexus/checkout/${data.orderId}`);
+      } else {
+        // FLUJO B2C EXISTENTE: Aprovisionamiento directo
+        const payload: ProvisioningRequestDTO = {
+          organization: {
+            name: orgName.trim(),
+            slug: orgSlug.trim(),
+            businessCategory,
+            website: website.trim() || undefined,
+            description: description.trim() || undefined,
+          },
+          products: selectedProducts,
+          idempotencyKey,
+          intents: {
+            hermesPriority: selectedProducts.includes('HERMES') ? hermesPriority : undefined,
+            growthPriority: selectedProducts.includes('GROWTH_OS') ? growthPriority : undefined,
+            rwaPriority: selectedProducts.includes('PANDORAS_RWA') ? rwaPriority : undefined,
+          },
+        };
+
+        const res = await fetch('/api/v1/internal/onboarding/provision', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-wallet-address': account!.address,
+          },
+          body: JSON.stringify(payload),
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Error al aprovisionar la organización');
+
+        toast.success('¡Ecosistema Soberano Aprovisionado con Éxito!', { id: 'prov-toast' });
+        router.push(data.redirectUrl || `/ecosystem/${orgSlug}`);
       }
-
-      toast.success('¡Ecosistema Soberano Aprovisionado con Éxito!', { id: 'prov-toast' });
-      router.push(data.redirectUrl || `/ecosystem/${orgSlug}`);
     } catch (err: any) {
-      console.error('Provisioning error:', err);
-      toast.error(err.message || 'Fallo durante el aprovisionamiento', { id: 'prov-toast' });
+      console.error('Provisioning/Order error:', err);
+      toast.error(err.message || 'Fallo durante el proceso', { id: 'prov-toast' });
       setIsProvisioning(false);
     }
   };
@@ -204,10 +236,12 @@ export function UnifiedOnboardingClient() {
             <span>Sovereign Tenant Provisioning Engine</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white via-zinc-200 to-zinc-400">
-            Crea tu Ecosistema Soberano
+            {commercialLead ? `Bienvenido, ${commercialLead.name}` : 'Crea tu Ecosistema Soberano'}
           </h1>
           <p className="text-zinc-400 text-sm mt-2 max-w-lg mx-auto">
-            Configura la identidad de tu organización y activa de forma modular las capacidades de inteligencia, crecimiento y tokenomics.
+            {commercialLead 
+              ? 'Hemos preparado esta propuesta de ecosistema descentralizado a tu medida.'
+              : 'Configura la identidad de tu organización y activa de forma modular las capacidades de inteligencia, crecimiento y tokenomics.'}
           </p>
         </div>
 
@@ -639,12 +673,12 @@ export function UnifiedOnboardingClient() {
                     {isProvisioning ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        <span>Aprovisionando...</span>
+                        <span>{commercialLead ? 'Procesando...' : 'Aprovisionando...'}</span>
                       </>
                     ) : (
                       <>
-                        <Sparkles className="w-4 h-4" />
-                        <span>Aprovisionar Ecosistema con Hermes</span>
+                        {commercialLead ? <Wallet className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
+                        <span>{commercialLead ? 'Continuar al Pago' : 'Aprovisionar Ecosistema con Hermes'}</span>
                         <ArrowRight className="w-4 h-4" />
                       </>
                     )}
