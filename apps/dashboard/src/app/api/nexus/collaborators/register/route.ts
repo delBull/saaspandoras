@@ -3,7 +3,7 @@ import { db } from '@saasfly/db';
 import { nexusCollaborators, users, type NexusProvisionStatus } from '@saasfly/db/schema';
 import crypto from 'crypto';
 import { eq } from "@saasfly/db-core";
-import { getNexusAuthContext } from '@saasfly/shared';
+import { getNexusAuthContext, registerRateLimiter } from '@saasfly/shared';
 import { notifyProvisioningRequest } from '@/lib/nexus/provisioning';
 
 const ADMIN_EMAILS = [
@@ -23,6 +23,15 @@ function normalizePhone(raw: string): string {
 
 export async function POST(req: NextRequest) {
   try {
+    // Rate limit: 5 registration attempts per minute per IP
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || '127.0.0.1';
+    if (!(await registerRateLimiter.isAllowed(`nexus-collab-register:ip:${ip}`))) {
+      return NextResponse.json(
+        { error: 'Demasiadas solicitudes de registro. Por favor, intenta de nuevo en un minuto.' },
+        { status: 429 }
+      );
+    }
+
     // Session guard: solo actores autenticados pueden auto-registrarse.
     // Previene que un atacante registre colaboradores arbitrarios con solo conocer email/whatsapp.
     const tokenParam = req.nextUrl.searchParams.get('token') ?? undefined;
@@ -134,7 +143,7 @@ export async function POST(req: NextRequest) {
         status: desiredStatus,
         statusChangedAt: desiredStatus === 'PENDING' ? new Date() : null,
         token: crypto.randomBytes(32).toString('hex'),
-        expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 horas (token de reclamación de vigencia acotada)
         lastAccessAt: new Date(),
       });
 

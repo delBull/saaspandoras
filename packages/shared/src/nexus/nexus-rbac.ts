@@ -7,7 +7,7 @@
  */
 
 import { db } from '@saasfly/db-core';
-import { users, nexusCollaborators, projectCollaborators, type NexusPermissionsOverride, type NexusProvisionStatus } from '@saasfly/db-core/schema';
+import { users, nexusCollaborators, projectCollaborators, projects, type NexusPermissionsOverride, type NexusProvisionStatus } from '@saasfly/db-core/schema';
 import { eq, and, gt } from "@saasfly/db-core";
 import { getAuth, isAdmin } from '@saasfly/auth-sdk';
 
@@ -225,6 +225,54 @@ export function resolveEffectivePermissions(
 }
 
 /**
+ * Resolves canonicalOrgId for a collaborator according to FC-001:
+ * 1. SUPER_ADMIN is always scoped to 'pandoras'.
+ * 2. For project collaborators, joins project_collaborators with projects table.
+ * 3. If request context provides a requested tenant (`x-nexus-tenant` or `x-tenant-id`),
+ *    verifies that the collaborator is assigned to that tenant and scopes to it.
+ * 4. Returns projects.organizationId (canonical UUID), falling back to projects.slug.
+ */
+async function resolveCollaboratorCanonicalOrgId(
+  collaboratorId: number,
+  requestedTenant?: string | null
+): Promise<string | null> {
+  try {
+    const assignedProjects = await db
+      .select({
+        projectId: projectCollaborators.projectId,
+        organizationId: projects.organizationId,
+        slug: projects.slug,
+      })
+      .from(projectCollaborators)
+      .leftJoin(projects, eq(projects.slug, projectCollaborators.projectId))
+      .where(eq(projectCollaborators.collaboratorId, collaboratorId));
+
+    if (!assignedProjects || assignedProjects.length === 0) {
+      return null;
+    }
+
+    if (requestedTenant) {
+      const match = assignedProjects.find(
+        (p) =>
+          p.organizationId === requestedTenant ||
+          p.slug === requestedTenant ||
+          p.projectId === requestedTenant
+      );
+      if (match) {
+        return match.organizationId || match.slug || match.projectId;
+      }
+    }
+
+    // Deterministic selection: first assigned project
+    const primary = assignedProjects[0];
+    return primary?.organizationId || primary?.slug || primary?.projectId || null;
+  } catch (err: any) {
+    console.warn('[NexusRBAC] Error resolving canonicalOrgId:', err);
+    return null;
+  }
+}
+
+/**
  * Resolves current actor's authenticated Nexus role and capability context.
  */
 export async function getNexusAuthContext(
@@ -244,23 +292,23 @@ export async function getNexusAuthContext(
       }
     }
 
-    // Auto-discover surface if UNKNOWN
+    // Auto-discover surface if UNKNOWN (using server-authoritative headers only, fail-closed against spoofable referer)
     let resolvedSurface = surface;
     if (resolvedSurface === 'UNKNOWN') {
-      const invokePath = reqHeaders.get('x-invoke-path') || '';
-      const referer = reqHeaders.get('referer') || '';
-      
-      if (invokePath.startsWith('/api/admin') || referer.includes('/admin')) {
+      const invokePath = reqHeaders.get('x-invoke-path') || reqHeaders.get('next-url') || reqHeaders.get('x-matched-path') || '';
+      const host = reqHeaders.get('x-forwarded-host') || reqHeaders.get('host') || '';
+
+      if (invokePath.startsWith('/api/admin') || invokePath.startsWith('/admin')) {
         resolvedSurface = 'ADMIN';
-      } else if (invokePath.startsWith('/api/nexus') || referer.includes('/nexus')) {
+      } else if (invokePath.startsWith('/api/nexus') || invokePath.startsWith('/nexus') || host.startsWith('nexus.')) {
         resolvedSurface = 'NEXUS';
-      } else if (invokePath.startsWith('/api/academy') || referer.includes('/academy') || referer.includes('academy.pandoras.finance')) {
+      } else if (invokePath.startsWith('/api/academy') || invokePath.startsWith('/academy') || host.startsWith('academy.')) {
         resolvedSurface = 'ACADEMY';
       } else if (reqHeaders.get('x-tma-surface') === 'true') {
         resolvedSurface = 'TMA';
       }
     }
-    
+
     // Override the function argument with the discovered surface
     surface = resolvedSurface;
 
@@ -324,9 +372,9 @@ export async function getNexusAuthContext(
           isAuthenticated: true,
           role: 'SUPER_ADMIN',
           wallet: sessionWallet,
-          email: email || 'admin@pandoras.finance',
-          name: name || 'Marco',
-          whatsappPhone: whatsappPhone || '+523222741987',
+          email: email || process.env.ADMIN_EMAIL || 'admin@pandoras.finance',
+          name: name || process.env.ADMIN_NAME || 'Admin',
+          whatsappPhone: whatsappPhone || process.env.ADMIN_WHATSAPP_PHONE || null,
           canonicalOrgId: 'pandoras',
           surface,
           permissions: resolveEffectivePermissions('SUPER_ADMIN', null, surface),
@@ -383,14 +431,10 @@ export async function getNexusAuthContext(
               collaboratorId = c.id;
               collaboratorStatus = c.status;
 
-              const [projCollab] = await db
-                .select({ projectId: projectCollaborators.projectId })
-                .from(projectCollaborators)
-                .where(eq(projectCollaborators.collaboratorId, c.id))
-                .limit(1);
-              if (projCollab) {
-                canonicalOrgId = projCollab.projectId;
-              }
+              canonicalOrgId = await resolveCollaboratorCanonicalOrgId(
+                c.id,
+                reqHeaders.get('x-nexus-tenant') || reqHeaders.get('x-tenant-id')
+              );
               if (c.status !== 'REJECTED' && c.status !== 'DISABLED') {
                 if (!effectiveRole) {
                   effectiveRole = (c.role ? c.role.toUpperCase() : 'VIEWER') as NexusRole;
@@ -561,18 +605,10 @@ export async function getNexusAuthContext(
         if (role === 'SUPER_ADMIN') {
           canonicalOrgId = 'pandoras';
         } else {
-          try {
-            const [projCollab] = await db
-              .select({ projectId: projectCollaborators.projectId })
-              .from(projectCollaborators)
-              .where(eq(projectCollaborators.collaboratorId, collaborator.id))
-              .limit(1);
-            if (projCollab) {
-              canonicalOrgId = projCollab.projectId;
-            }
-          } catch (err: any) {
-            console.warn('[NexusRBAC] Error resolving canonicalOrgId:', err);
-          }
+          canonicalOrgId = await resolveCollaboratorCanonicalOrgId(
+            collaborator.id,
+            reqHeaders.get('x-nexus-tenant') || reqHeaders.get('x-tenant-id')
+          );
         }
 
         const permissions = resolveEffectivePermissions(role, collaborator.permissions as NexusPermissionsOverride, surface);
@@ -594,12 +630,16 @@ export async function getNexusAuthContext(
         const { verifyAcademyToken } = await import('@saasfly/nexus-deals-sdk');
         const hmac = await verifyAcademyToken(token);
         if (hmac.valid) {
-          const role = hmac.role === 'admin' ? 'ADMIN' : 'VIEWER';
+          // 🛡️ Confinement: Academy tokens can only grant elevated roles strictly within ACADEMY surface.
+          // In NEXUS or ADMIN surfaces, an Academy token must never escalate to ADMIN.
+          const isAcademySurface = surface === 'ACADEMY';
+          const role: NexusRole = (isAcademySurface && hmac.role === 'admin') ? 'ADMIN' : 'VIEWER';
+          const effectiveSurface = isAcademySurface ? 'ACADEMY' : surface;
           return {
             isAuthenticated: true,
             role,
-            surface,
-            permissions: resolveEffectivePermissions(role as NexusRole, {}, surface),
+            surface: effectiveSurface,
+            permissions: resolveEffectivePermissions(role, {}, effectiveSurface),
             email: hmac.email,
             name: hmac.email?.split('@')[0] || 'Sovereign Actor',
             wallet: null

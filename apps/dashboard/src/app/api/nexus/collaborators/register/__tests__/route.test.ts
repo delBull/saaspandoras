@@ -90,6 +90,7 @@ describe('🛡️ P0 Security Suite: /api/nexus/collaborators/register Adversari
     mockAuthContext = { isAuthenticated: false, permissions: {} };
     const req = new NextRequest('http://localhost/api/nexus/collaborators/register', {
       method: 'POST',
+      headers: { 'x-forwarded-for': '10.0.0.1' },
       body: JSON.stringify({
         address: '0x1111111111111111111111111111111111111111',
         name: 'Attacker',
@@ -114,6 +115,7 @@ describe('🛡️ P0 Security Suite: /api/nexus/collaborators/register Adversari
 
     const req = new NextRequest('http://localhost/api/nexus/collaborators/register', {
       method: 'POST',
+      headers: { 'x-forwarded-for': '10.0.0.2' },
       body: JSON.stringify({
         address: '0x1111111111111111111111111111111111111111',
         name: 'Attacker Impersonator',
@@ -154,6 +156,7 @@ describe('🛡️ P0 Security Suite: /api/nexus/collaborators/register Adversari
 
     const req = new NextRequest('http://localhost/api/nexus/collaborators/register', {
       method: 'POST',
+      headers: { 'x-forwarded-for': '10.0.0.3' },
       body: JSON.stringify({
         address: '0x2222222222222222222222222222222222222222',
         name: 'Hijacker',
@@ -181,6 +184,7 @@ describe('🛡️ P0 Security Suite: /api/nexus/collaborators/register Adversari
 
     const req = new NextRequest('http://localhost/api/nexus/collaborators/register', {
       method: 'POST',
+      headers: { 'x-forwarded-for': '10.0.0.4' },
       body: JSON.stringify({
         address: '0x3333333333333333333333333333333333333333',
         name: 'Alice',
@@ -209,6 +213,7 @@ describe('🛡️ P0 Security Suite: /api/nexus/collaborators/register Adversari
 
     const req = new NextRequest('http://localhost/api/nexus/collaborators/register', {
       method: 'POST',
+      headers: { 'x-forwarded-for': '10.0.0.5' },
       body: JSON.stringify({
         address: '0x4444444444444444444444444444444444444444',
         name: 'New Candidate',
@@ -222,6 +227,13 @@ describe('🛡️ P0 Security Suite: /api/nexus/collaborators/register Adversari
     expect(collaboratorInsertCalls.length).toBe(1);
     expect(collaboratorInsertCalls[0].role).toBe('COLLABORATOR');
     expect(collaboratorInsertCalls[0].status).toBe('PENDING'); // Strictly pending approval
+
+    // 🛡️ P1: Token expiration must be bounded to 24 hours (not 365 days)
+    const now = Date.now();
+    const expiresAt = new Date(collaboratorInsertCalls[0].expiresAt).getTime();
+    expect(expiresAt - now).toBeLessThanOrEqual(24 * 60 * 60 * 1000 + 5000);
+    expect(expiresAt - now).toBeGreaterThan(23 * 60 * 60 * 1000);
+
     expect(notifyCalls.length).toBe(1);
   });
 
@@ -237,6 +249,7 @@ describe('🛡️ P0 Security Suite: /api/nexus/collaborators/register Adversari
 
     const req = new NextRequest('http://localhost/api/nexus/collaborators/register', {
       method: 'POST',
+      headers: { 'x-forwarded-for': '10.0.0.6' },
       body: JSON.stringify({
         address: '0x6666666666666666666666666666666666666666',
         name: 'Onboarded Team Member',
@@ -249,5 +262,45 @@ describe('🛡️ P0 Security Suite: /api/nexus/collaborators/register Adversari
     expect(res.status).toBe(200);
     expect(collaboratorInsertCalls.length).toBe(1);
     expect(collaboratorInsertCalls[0].status).toBe('ACTIVE');
+  });
+
+  it('SEC-P1-07: Rate limiter restricts excess registration attempts (returns 429)', async () => {
+    const spammerIp = '198.51.100.99';
+    mockAuthContext = {
+      isAuthenticated: false,
+      permissions: {},
+    };
+
+    // Fire 5 requests to exhaust the limit
+    for (let i = 0; i < 5; i++) {
+      const req = new NextRequest('http://localhost/api/nexus/collaborators/register', {
+        method: 'POST',
+        headers: { 'x-forwarded-for': spammerIp },
+        body: JSON.stringify({
+          address: '0x9999999999999999999999999999999999999999',
+          name: 'Spammer',
+          email: `spam_${i}@example.com`,
+          whatsappPhone: '+5215551234567',
+        }),
+      });
+      await POST(req);
+    }
+
+    // 6th request from the same IP must be rejected with 429 Too Many Requests
+    const reqExceeded = new NextRequest('http://localhost/api/nexus/collaborators/register', {
+      method: 'POST',
+      headers: { 'x-forwarded-for': spammerIp },
+      body: JSON.stringify({
+        address: '0x9999999999999999999999999999999999999999',
+        name: 'Spammer',
+        email: 'spam_blocked@example.com',
+        whatsappPhone: '+5215551234567',
+      }),
+    });
+
+    const resBlocked = await POST(reqExceeded);
+    expect(resBlocked.status).toBe(429);
+    const body = await resBlocked.json();
+    expect(body.error).toContain('Demasiadas solicitudes de registro');
   });
 });
