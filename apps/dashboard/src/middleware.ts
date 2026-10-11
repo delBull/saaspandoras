@@ -213,7 +213,9 @@ export function middleware(request: NextRequest) {
   }
 
   // 2. Admin Route Protection — redirect unauthenticated users or block unauthenticated API calls
-  if (pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) {
+  // Public webhooks under /api/admin (e.g. Resend) are authenticated via cryptographic signature (HMAC)
+  const isPublicAdminWebhook = pathname === "/api/admin/marketing/resend-webhook";
+  if ((pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) && !isPublicAdminWebhook) {
     const token = request.cookies.get('__pbox_sid')?.value ||
       request.cookies.get('auth_token')?.value ||
       request.cookies.get('pandoras_nexus_token')?.value ||
