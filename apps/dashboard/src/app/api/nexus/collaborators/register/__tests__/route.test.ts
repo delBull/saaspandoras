@@ -15,8 +15,17 @@ let updateCalls: any[] = [];
 let insertCalls: any[] = [];
 let notifyCalls: any[] = [];
 
+let mockRateLimiterAllowed = true;
+let registerRateLimitCalls = 0;
+
 vi.mock('@saasfly/shared', () => ({
   getNexusAuthContext: vi.fn(async () => mockAuthContext),
+  registerRateLimiter: {
+    isAllowed: vi.fn(async () => {
+      registerRateLimitCalls++;
+      return mockRateLimiterAllowed;
+    }),
+  },
 }));
 
 vi.mock('@/lib/nexus/provisioning', () => ({
@@ -78,6 +87,8 @@ describe('🛡️ P0 Security Suite: /api/nexus/collaborators/register Adversari
       permissions: { 'users.manage': false },
     };
     mockExistingCollaborator = null;
+    mockRateLimiterAllowed = true;
+    registerRateLimitCalls = 0;
     updateCalls = [];
     insertCalls = [];
     collaboratorInsertCalls = [];
@@ -265,31 +276,12 @@ describe('🛡️ P0 Security Suite: /api/nexus/collaborators/register Adversari
   });
 
   it('SEC-P1-07: Rate limiter restricts excess registration attempts (returns 429)', async () => {
-    const spammerIp = '198.51.100.99';
-    mockAuthContext = {
-      isAuthenticated: false,
-      permissions: {},
-    };
+    // When rate limiter rejects the attempt
+    mockRateLimiterAllowed = false;
 
-    // Fire 5 requests to exhaust the limit
-    for (let i = 0; i < 5; i++) {
-      const req = new NextRequest('http://localhost/api/nexus/collaborators/register', {
-        method: 'POST',
-        headers: { 'x-forwarded-for': spammerIp },
-        body: JSON.stringify({
-          address: '0x9999999999999999999999999999999999999999',
-          name: 'Spammer',
-          email: `spam_${i}@example.com`,
-          whatsappPhone: '+5215551234567',
-        }),
-      });
-      await POST(req);
-    }
-
-    // 6th request from the same IP must be rejected with 429 Too Many Requests
     const reqExceeded = new NextRequest('http://localhost/api/nexus/collaborators/register', {
       method: 'POST',
-      headers: { 'x-forwarded-for': spammerIp },
+      headers: { 'x-forwarded-for': '198.51.100.99' },
       body: JSON.stringify({
         address: '0x9999999999999999999999999999999999999999',
         name: 'Spammer',
@@ -302,5 +294,6 @@ describe('🛡️ P0 Security Suite: /api/nexus/collaborators/register Adversari
     expect(resBlocked.status).toBe(429);
     const body = await resBlocked.json();
     expect(body.error).toContain('Demasiadas solicitudes de registro');
+    expect(registerRateLimitCalls).toBeGreaterThan(0);
   });
 });

@@ -230,6 +230,8 @@ export function resolveEffectivePermissions(
  * 2. For project collaborators, joins project_collaborators with projects table.
  * 3. If request context provides a requested tenant (`x-nexus-tenant` or `x-tenant-id`),
  *    verifies that the collaborator is assigned to that tenant and scopes to it.
+ *    NOTE: This header is strictly an intersection/narrowing selector — it CANNOT expand
+ *    authority beyond the collaborator's existing DB assignments in project_collaborators.
  * 4. Returns projects.organizationId (canonical UUID), falling back to projects.slug.
  */
 async function resolveCollaboratorCanonicalOrgId(
@@ -292,10 +294,10 @@ export async function getNexusAuthContext(
       }
     }
 
-    // Auto-discover surface if UNKNOWN (using server-authoritative headers only, fail-closed against spoofable referer)
+    // Auto-discover surface if UNKNOWN (using server-authoritative headers only, fail-closed against spoofable referer and next-url)
     let resolvedSurface = surface;
     if (resolvedSurface === 'UNKNOWN') {
-      const invokePath = reqHeaders.get('x-invoke-path') || reqHeaders.get('next-url') || reqHeaders.get('x-matched-path') || '';
+      const invokePath = reqHeaders.get('x-invoke-path') || reqHeaders.get('x-matched-path') || '';
       const host = reqHeaders.get('x-forwarded-host') || reqHeaders.get('host') || '';
 
       if (invokePath.startsWith('/api/admin') || invokePath.startsWith('/admin')) {
