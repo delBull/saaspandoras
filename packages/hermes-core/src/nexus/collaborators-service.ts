@@ -13,12 +13,15 @@ import { eq, lt, or, and, sql, gt } from "@saasfly/db-core";
 import { resend } from '@saasfly/shared';
 import crypto from 'crypto';
 
-// Hide next/headers from Webpack static analysis for Client Components
+// Dynamic require for next/headers without triggering direct-eval bundler warning
 let nextHeaders: any;
 if (typeof process !== "undefined" && typeof window === "undefined") {
     try {
-        const mod = eval('require("next/headers")');
-        nextHeaders = mod.headers;
+        const req = (globalThis as any)["__non_webpack_require__"] || (typeof require !== "undefined" ? require : null);
+        if (req) {
+            const mod = req("next/headers");
+            nextHeaders = mod.headers;
+        }
     } catch (e) {
         // Ignore
     }
