@@ -421,7 +421,9 @@ export async function getNexusAuthContext(
             whatsappPhone,
             collaboratorId,
             canonicalOrgId,
-            provisionStatus: (collaboratorStatus || 'ACTIVE') as NexusProvisionStatus,
+            // 🛡️ P0 Fail-Closed: Ausencia de registro en nexus_collaborators NO concede 'ACTIVE'.
+            // Solo SUPER_ADMIN/ADMIN confirmados en users obtienen ACTIVE si no tienen registro previo.
+            provisionStatus: (collaboratorStatus || (effectiveRole === 'SUPER_ADMIN' || effectiveRole === 'ADMIN' ? 'ACTIVE' : 'PENDING')) as NexusProvisionStatus,
             surface,
             permissions: resolveEffectivePermissions(
               effectiveRole, 

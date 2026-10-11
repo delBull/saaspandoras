@@ -6,10 +6,13 @@ import { eq } from "@saasfly/db-core";
 import { getNexusAuthContext } from '@saasfly/shared';
 import { notifyProvisioningRequest } from '@/lib/nexus/provisioning';
 
-const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL || process.env.NEXUS_ADMIN_EMAIL || '')
-  .toLowerCase()
-  .split(',')
-  .map((e) => e.trim());
+const ADMIN_EMAILS = [
+  'admin@pandoras.finance',
+  ...(process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL || process.env.NEXUS_ADMIN_EMAIL || '')
+    .toLowerCase()
+    .split(',')
+    .map((e) => e.trim())
+].filter(Boolean);
 
 // E.164 basic: + seguido de 7-15 digitos
 const E164_REGEX = /^\+?[1-9]\d{6,14}$/;
@@ -50,24 +53,37 @@ export async function POST(req: NextRequest) {
 
     const normalizedEmail = email.toLowerCase().trim();
 
-    // Ownership guard: un actor solo puede completar su propio registro.
-    // users.manage puede registrar en nombre de otros.
-    if (!auth.permissions['users.manage'] && auth.email && auth.email !== normalizedEmail) {
+    // 🛡️ P0 Ownership Guard & Identity Spoofing Protection (Actor !== Target)
+    const canManageUsers = Boolean(auth.permissions['users.manage']);
+    const targetIsAdminEmail = ADMIN_EMAILS.includes(normalizedEmail);
+
+    // 1. Un actor no autorizado JAMÁS puede registrar ni reclamar un email administrativo
+    if (!canManageUsers && targetIsAdminEmail) {
+      const actorIsAdmin = auth.email && ADMIN_EMAILS.includes(auth.email.toLowerCase().trim());
+      if (!actorIsAdmin) {
+        return NextResponse.json(
+          { error: 'No autorizado para reclamar un correo institucional administrativo.' },
+          { status: 403 }
+        );
+      }
+    }
+
+    // 2. Ownership guard fail-closed: Si el actor ya tiene un email verificado en su sesión,
+    // solo puede registrarse para ese mismo email (a menos que tenga users.manage).
+    if (!canManageUsers && auth.email && auth.email.toLowerCase().trim() !== normalizedEmail) {
       return NextResponse.json(
-        { error: 'Solo puedes completar tu propio registro.' },
+        { error: 'Solo puedes completar el registro para tu propio correo verificado.' },
         { status: 403 }
       );
     }
 
-    const isNexusAdmin = ADMIN_EMAILS.includes(normalizedEmail);
-    const role = isNexusAdmin ? 'SUPER_ADMIN' : 'COLLABORATOR';
+    // 3. Determinación de rol: ÚNICAMENTE calculada sobre el actor autenticado, jamás sobre el target
+    const actorRoleIsAdmin = (auth.email && ADMIN_EMAILS.includes(auth.email.toLowerCase().trim())) || auth.role === 'SUPER_ADMIN';
+    const assignedRole = actorRoleIsAdmin ? 'SUPER_ADMIN' : 'COLLABORATOR';
 
-    // Provisioning policy:
-    // - Privileged actors (wallet SUPER_ADMIN/ADMIN or admin email target) → ACTIVE immediately.
-    // - Everything else (self-registration via magic link) → PENDING until an admin approves
-    //   from the admin queue (/admin/collaborators). No auto-grant for new signups.
-    const isPrivilegedActor =
-      auth.permissions['users.manage'] || isNexusAdmin || auth.provisionStatus === 'ACTIVE';
+    // 4. Provisioning policy: Solo un actor que ya tenga users.manage o sea superadmin activo recibe ACTIVE.
+    // Nuevos signups y auto-registros van estrictamente a PENDING.
+    const isPrivilegedActor = canManageUsers || (actorRoleIsAdmin && auth.provisionStatus === 'ACTIVE');
     const desiredStatus: NexusProvisionStatus = isPrivilegedActor ? 'ACTIVE' : 'PENDING';
 
     const [existing] = await db
@@ -77,6 +93,17 @@ export async function POST(req: NextRequest) {
       .limit(1);
 
     if (existing) {
+      // 🛡️ P0 Hijack Guard: Una sesión sin email verificado (ej. wallet recién conectada)
+      // NO puede secuestrar ni actualizar los datos de un colaborador existente a menos que
+      // el actor demuestre control del email o tenga users.manage.
+      const hasEmailOwnershipProof = Boolean(auth.email && auth.email.toLowerCase().trim() === normalizedEmail);
+      if (!canManageUsers && !hasEmailOwnershipProof) {
+        return NextResponse.json(
+          { error: 'Este correo ya pertenece a un colaborador. Se requiere validación previa mediante Magic Link.' },
+          { status: 403 }
+        );
+      }
+
       // Guard: never downgrade an already-approved or already-denied collaborator
       // through a self-registration re-run. PENDING stays PENDING until admin acts.
       const effectiveStatus: NexusProvisionStatus =
@@ -88,22 +115,22 @@ export async function POST(req: NextRequest) {
         name: name.trim(),
         whatsappPhone: normalizedPhone,
         lastAccessAt: new Date(),
-        // Solo sube de rol si actualmente es COLLABORATOR; nunca degrada roles elevados
-        role: existing.role === 'COLLABORATOR' ? role : existing.role,
+        // Solo asciende a SUPER_ADMIN si el actor autenticado tiene esa autoridad
+        role: existing.role === 'COLLABORATOR' && isPrivilegedActor ? assignedRole : existing.role,
         status: effectiveStatus,
         statusChangedAt: existing.status !== effectiveStatus ? new Date() : existing.statusChangedAt,
       }).where(eq(nexusCollaborators.email, normalizedEmail));
 
       // Notify admin queue when a self-registration moves INTO pending (new signup path)
       if (effectiveStatus === 'PENDING' && existing.status !== 'PENDING') {
-        void notifyProvisioningRequest({ name: name.trim(), email: normalizedEmail, whatsappPhone: normalizedPhone, role });
+        void notifyProvisioningRequest({ name: name.trim(), email: normalizedEmail, whatsappPhone: normalizedPhone, role: assignedRole });
       }
     } else {
       await db.insert(nexusCollaborators).values({
         name: name.trim(),
         email: normalizedEmail,
         whatsappPhone: normalizedPhone,
-        role,
+        role: assignedRole,
         status: desiredStatus,
         statusChangedAt: desiredStatus === 'PENDING' ? new Date() : null,
         token: crypto.randomBytes(32).toString('hex'),
@@ -112,7 +139,7 @@ export async function POST(req: NextRequest) {
       });
 
       if (desiredStatus === 'PENDING') {
-        void notifyProvisioningRequest({ name: name.trim(), email: normalizedEmail, whatsappPhone: normalizedPhone, role });
+        void notifyProvisioningRequest({ name: name.trim(), email: normalizedEmail, whatsappPhone: normalizedPhone, role: assignedRole });
       }
     }
 
