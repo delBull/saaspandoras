@@ -55,12 +55,21 @@ export async function requireNexusAdmin(req?: Request | Headers): Promise<boolea
       reqHeaders = await nextHeaders();
     }
 
-    const auth = await getNexusAuthContext(reqHeaders);
-    if (auth.isAuthenticated && (auth.permissions['nexus.manage'] || auth.permissions['users.manage'])) {
-      return true;
+    // 🛡️ Fail-Closed Surface Boundary: Explicitly enforce NEXUS surface context.
+    // Client-injected headers (e.g. x-invoke-path: /api/academy) cannot spoof authority.
+    const auth = await getNexusAuthContext(reqHeaders, null, 'NEXUS');
+    if (!auth.isAuthenticated) {
+      return false;
     }
 
+    // An Academy or TMA surface token can NEVER fulfill requireNexusAdmin
+    if (auth.surface === 'ACADEMY' || auth.surface === 'TMA') {
+      return false;
+    }
 
+    if (auth.permissions['nexus.manage'] || auth.permissions['users.manage']) {
+      return true;
+    }
 
     return false;
   } catch (err) {
@@ -102,7 +111,8 @@ export async function createOrUpdateCollaborator(
   whatsappPhone?: string
 
 ): Promise<{ collaborator: CollaboratorDTO; magicLink: string }> {
-  const token = generateToken();
+  const rawToken = generateToken();
+  const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
   const expiresAt = new Date(Date.now() + TOKEN_EXPIRY_HOURS * 60 * 60 * 1000);
 
   // Provisioning policy: brand-new collaborators default to PENDING so no magic
@@ -115,7 +125,7 @@ export async function createOrUpdateCollaborator(
     .values({
       name,
       email: email.toLowerCase(),
-      token,
+      token: tokenHash,
       role,
       permissions,
       whatsappPhone,
@@ -127,7 +137,7 @@ export async function createOrUpdateCollaborator(
     .onConflictDoUpdate({
       target: nexusCollaborators.email,
       set: {
-        token,
+        token: tokenHash,
         role,
         permissions,
         whatsappPhone,
@@ -142,7 +152,7 @@ export async function createOrUpdateCollaborator(
     throw new Error('Failed to create/update collaborator');
   }
 
-  const magicLink = `${NEXUS_BASE_URL}/nexus?token=${encodeURIComponent(token)}`;
+  const magicLink = `${NEXUS_BASE_URL}/nexus?token=${encodeURIComponent(rawToken)}`;
 
   return {
     collaborator: {
@@ -250,14 +260,27 @@ export async function verifyCollaboratorToken(
   token: string
 ): Promise<CollaboratorDTO | null> {
   const now = new Date();
+  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+  const consumedSentinel = `consumed_${crypto.randomBytes(16).toString('hex')}`;
 
+  // 🛡️ Atomic One-Time Burn: Verifies raw token or SHA-256 hash in reposo.
+  // Rotates token to unguessable consumed sentinel and sets expiresAt to 0 (1970).
+  // Any concurrent or subsequent invocation fails closed immediately (replay impossible).
   const [record] = await db
     .update(nexusCollaborators)
-    .set({ lastAccessAt: now })
+    .set({
+      token: consumedSentinel,
+      expiresAt: new Date(0),
+      lastAccessAt: now,
+    })
     .where(
       and(
-        eq(nexusCollaborators.token, token),
-        gt(nexusCollaborators.expiresAt, now)
+        or(
+          eq(nexusCollaborators.token, token),
+          eq(nexusCollaborators.token, tokenHash)
+        ),
+        gt(nexusCollaborators.expiresAt, now),
+        sql`${nexusCollaborators.token} NOT LIKE 'consumed_%'`
       )
     )
     .returning();

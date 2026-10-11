@@ -8,8 +8,9 @@
 
 import { db } from '@saasfly/db-core';
 import { users, nexusCollaborators, projectCollaborators, projects, type NexusPermissionsOverride, type NexusProvisionStatus } from '@saasfly/db-core/schema';
-import { eq, and, gt } from "@saasfly/db-core";
+import { eq, and, gt, asc, or, sql } from "@saasfly/db-core";
 import { getAuth, isAdmin } from '@saasfly/auth-sdk';
+import crypto from 'crypto';
 
 // Dynamic require for next/headers without triggering direct-eval bundler warning
 let nextHeaders: any;
@@ -203,12 +204,12 @@ export function resolveEffectivePermissions(
   const base = defaultsByRole[role] || defaultsByRole.VIEWER;
   const effective: NexusPermissions = {
     ...base,
-    'users.manage': overrides?.['users.manage'] !== undefined ? overrides['users.manage'] : base['users.manage'],
-    'tenants.manage': overrides?.['tenants.manage'] !== undefined ? overrides['tenants.manage'] : base['tenants.manage'],
+    'users.manage': surface === 'ACADEMY' ? false : (overrides?.['users.manage'] !== undefined ? overrides['users.manage'] : base['users.manage']),
+    'tenants.manage': surface === 'ACADEMY' ? false : (overrides?.['tenants.manage'] !== undefined ? overrides['tenants.manage'] : base['tenants.manage']),
     'finance.manage': overrides?.['finance.manage'] !== undefined ? overrides['finance.manage'] : base['finance.manage'],
     'growth.manage': overrides?.['growth.manage'] !== undefined ? overrides['growth.manage'] : base['growth.manage'],
     'marketing.manage': overrides?.['marketing.manage'] !== undefined ? overrides['marketing.manage'] : base['marketing.manage'],
-    'nexus.manage': overrides?.['nexus.manage'] !== undefined ? overrides['nexus.manage'] : base['nexus.manage'],
+    'nexus.manage': surface === 'ACADEMY' ? false : (overrides?.['nexus.manage'] !== undefined ? overrides['nexus.manage'] : base['nexus.manage']),
     'compliance.manage': overrides?.['compliance.manage'] !== undefined ? overrides['compliance.manage'] : base['compliance.manage'],
     'calendar.manage': overrides?.['calendar.manage'] !== undefined ? overrides['calendar.manage'] : base['calendar.manage'],
     ecosystem: true, // Always accessible to authenticated Nexus members
@@ -228,13 +229,13 @@ export function resolveEffectivePermissions(
  * Resolves canonicalOrgId for a collaborator according to FC-001:
  * 1. SUPER_ADMIN is always scoped to 'pandoras'.
  * 2. For project collaborators, joins project_collaborators with projects table.
- * 3. If request context provides a requested tenant (`x-nexus-tenant` or `x-tenant-id`),
- *    verifies that the collaborator is assigned to that tenant and scopes to it.
- *    NOTE: This header is strictly an intersection/narrowing selector — it CANNOT expand
- *    authority beyond the collaborator's existing DB assignments in project_collaborators.
- * 4. Returns projects.organizationId (canonical UUID), falling back to projects.slug.
+ * 3. If request context provides a requested tenant (`x-nexus-tenant` or `x-tenant-id`):
+ *    - Verifies that the collaborator is assigned to that tenant.
+ *    - If requested tenant is not in the assigned projects, FAILS CLOSED (returns null).
+ *      No arbitrary tenant fallback is permitted.
+ * 4. Returns projects.organizationId (canonical UUID). Never falls back to arbitrary slug (FC-001).
  */
-async function resolveCollaboratorCanonicalOrgId(
+export async function resolveCollaboratorCanonicalOrgId(
   collaboratorId: number,
   requestedTenant?: string | null
 ): Promise<string | null> {
@@ -244,10 +245,12 @@ async function resolveCollaboratorCanonicalOrgId(
         projectId: projectCollaborators.projectId,
         organizationId: projects.organizationId,
         slug: projects.slug,
+        assignedAt: projectCollaborators.assignedAt,
       })
       .from(projectCollaborators)
       .leftJoin(projects, eq(projects.slug, projectCollaborators.projectId))
-      .where(eq(projectCollaborators.collaboratorId, collaboratorId));
+      .where(eq(projectCollaborators.collaboratorId, collaboratorId))
+      .orderBy(asc(projectCollaborators.assignedAt));
 
     if (!assignedProjects || assignedProjects.length === 0) {
       return null;
@@ -260,14 +263,22 @@ async function resolveCollaboratorCanonicalOrgId(
           p.slug === requestedTenant ||
           p.projectId === requestedTenant
       );
-      if (match) {
-        return match.organizationId || match.slug || match.projectId;
+      // 🛡️ Fail-closed: if the client requested an unassigned tenant, DENY (do NOT fall back)
+      if (!match) {
+        return null;
       }
+      return match.organizationId || null;
     }
 
-    // Deterministic selection: first assigned project
+    // 🛡️ Fail-closed: Multiple assignments without explicit tenant selection MUST be rejected
+    // to prevent arbitrary cross-tenant ambiguity or silent defaulting.
+    if (assignedProjects.length > 1) {
+      return null;
+    }
+
+    // Exactly one assigned project: resolve its canonical organizationId UUID
     const primary = assignedProjects[0];
-    return primary?.organizationId || primary?.slug || primary?.projectId || null;
+    return primary?.organizationId || null;
   } catch (err: any) {
     console.warn('[NexusRBAC] Error resolving canonicalOrgId:', err);
     return null;
@@ -433,20 +444,31 @@ export async function getNexusAuthContext(
               collaboratorId = c.id;
               collaboratorStatus = c.status;
 
+              // 🛡️ Fail-closed: Denylisted or rejected collaborator must never authenticate,
+              // even if their historical users.role record remains in database
+              if (c.status === 'REJECTED' || c.status === 'DISABLED') {
+                return {
+                  isAuthenticated: false,
+                  role: null,
+                  surface,
+                  permissions: DEFAULT_EMPTY_PERMISSIONS,
+                  provisionStatus: c.status as NexusProvisionStatus,
+                };
+              }
+
               canonicalOrgId = await resolveCollaboratorCanonicalOrgId(
                 c.id,
                 reqHeaders.get('x-nexus-tenant') || reqHeaders.get('x-tenant-id')
               );
-              if (c.status !== 'REJECTED' && c.status !== 'DISABLED') {
-                if (!effectiveRole) {
-                  effectiveRole = (c.role ? c.role.toUpperCase() : 'VIEWER') as NexusRole;
-                }
-                if (c.permissions) {
-                  collaboratorOverrides = c.permissions as NexusPermissionsOverride;
-                }
-                if (c.whatsappPhone) {
-                  whatsappPhone = c.whatsappPhone;
-                }
+
+              if (!effectiveRole) {
+                effectiveRole = (c.role ? c.role.toUpperCase() : 'VIEWER') as NexusRole;
+              }
+              if (c.permissions) {
+                collaboratorOverrides = c.permissions as NexusPermissionsOverride;
+              }
+              if (c.whatsappPhone) {
+                whatsappPhone = c.whatsappPhone;
               }
               if (!user.name && c.name) {
                 user.name = c.name;
@@ -556,13 +578,18 @@ export async function getNexusAuthContext(
 
     if (token) {
       const now = new Date();
+      const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
       const records = await db
         .select()
         .from(nexusCollaborators)
         .where(
           and(
-            eq(nexusCollaborators.token, token),
-            gt(nexusCollaborators.expiresAt, now)
+            or(
+              eq(nexusCollaborators.token, token),
+              eq(nexusCollaborators.token, tokenHash)
+            ),
+            gt(nexusCollaborators.expiresAt, now),
+            sql`${nexusCollaborators.token} NOT LIKE 'consumed_%'`
           )
         )
         .limit(1);
@@ -583,12 +610,12 @@ export async function getNexusAuthContext(
           };
         }
 
-        // Slide token expiration for active collaborators (30 days) and record access
-        const extendedExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+        // 🛡️ Fixed Token Lifetime: Do NOT slide expiration.
+        // Record access time only without extending token lifetime.
         db.update(nexusCollaborators)
-          .set({ lastAccessAt: now, expiresAt: extendedExpiry })
+          .set({ lastAccessAt: now })
           .where(eq(nexusCollaborators.id, collaborator.id))
-          .catch((err) => console.warn('[NexusRBAC] Notice updating lastAccessAt/expiresAt:', err));
+          .catch((err) => console.warn('[NexusRBAC] Notice updating lastAccessAt:', err));
 
         let role = (collaborator.role as NexusRole) || 'COLLABORATOR';
         const normalizedEmail = (collaborator.email || '').toLowerCase().trim();

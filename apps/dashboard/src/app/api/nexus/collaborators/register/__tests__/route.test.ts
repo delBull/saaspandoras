@@ -20,6 +20,7 @@ let registerRateLimitCalls = 0;
 
 vi.mock('@saasfly/shared', () => ({
   getNexusAuthContext: vi.fn(async () => mockAuthContext),
+  getTrustedClientIp: vi.fn(() => '127.0.0.1'),
   registerRateLimiter: {
     isAllowed: vi.fn(async () => {
       registerRateLimitCalls++;

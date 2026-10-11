@@ -16,7 +16,7 @@ import { notifyProvisioningRequest } from '@/lib/nexus/provisioning';
 import { db } from '@saasfly/db';
 import { marketingLeads } from '@saasfly/db/schema';
 import { eq } from "@saasfly/db-core";
-import { authRateLimiter } from '@saasfly/shared';
+import { authRateLimiter, getTrustedClientIp } from '@saasfly/shared';
 
 function isAllowedOrigin(origin: string | null): boolean {
   if (!origin) return false;
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
   const cors = getCorsHeaders(req);
 
   // Rate limit by IP: 5 requests / min
-  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || '127.0.0.1';
+  const ip = getTrustedClientIp(req.headers);
   if (!(await authRateLimiter.isAllowed(`nexus-collab-request:ip:${ip}`))) {
     return NextResponse.json(
       { error: 'Demasiadas solicitudes. Por favor, intenta de nuevo en un minuto.' },

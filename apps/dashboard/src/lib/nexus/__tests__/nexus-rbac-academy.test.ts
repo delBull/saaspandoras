@@ -50,4 +50,26 @@ describe('🛡️ Nexus RBAC Surface Discovery & Academy Confinement Suite', () 
     expect(academyCtx.role).toBe('ADMIN');
     expect(academyCtx.surface).toBe('ACADEMY');
   });
+
+  it('RBAC-12: Academy admin in ACADEMY surface is denied users.manage and nexus.manage permissions', async () => {
+    const academyHeaders = new Headers({
+      'x-invoke-path': '/api/academy/courses',
+    });
+    const academyCtx = await getNexusAuthContext(academyHeaders, 'valid_academy_admin_token', 'ACADEMY');
+    expect(academyCtx.role).toBe('ADMIN');
+    expect(academyCtx.permissions['users.manage']).toBe(false);
+    expect(academyCtx.permissions['nexus.manage']).toBe(false);
+    expect(academyCtx.permissions['tenants.manage']).toBe(false);
+  });
+
+  it('RBAC-13: requireNexusAdmin strictly rejects Academy admin tokens even with spoofed x-invoke-path headers', async () => {
+    const { requireNexusAdmin } = await import('@saasfly/hermes-core');
+    const spoofedHeaders = new Headers({
+      'x-invoke-path': '/api/academy/bypass',
+      authorization: 'Bearer valid_academy_admin_token',
+    });
+
+    const isGranted = await requireNexusAdmin(spoofedHeaders);
+    expect(isGranted).toBe(false);
+  });
 });

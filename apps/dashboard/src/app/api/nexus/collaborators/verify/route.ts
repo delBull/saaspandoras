@@ -5,14 +5,43 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyCollaboratorToken } from '@saasfly/hermes-core';
+import { authRateLimiter, getTrustedClientIp } from '@saasfly/shared';
+
+function isAllowedOrigin(origin: string | null): boolean {
+  if (!origin) return false;
+  try {
+    const url = new URL(origin);
+    const hostname = url.hostname;
+    if (
+      origin === 'https://pandoras.finance' ||
+      origin === 'https://nexus.pandoras.finance' ||
+      origin === 'https://dash.pandoras.finance' ||
+      origin === 'https://staging.dash.pandoras.finance' ||
+      origin === 'https://staging.pandoras.finance' ||
+      origin === 'https://pandoras.org' ||
+      hostname.endsWith('.pandoras.finance') ||
+      hostname.endsWith('.pandoras.org')
+    ) {
+      return true;
+    }
+    if (process.env.NODE_ENV !== 'production' && (hostname === 'localhost' || hostname === '127.0.0.1')) {
+      return true;
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
 
 function getCorsHeaders(req: NextRequest) {
-  const origin = req.headers.get('origin') || '*';
+  const origin = req.headers.get('origin');
+  const allowed = isAllowedOrigin(origin);
+  const allowOrigin = allowed && origin ? origin : 'https://nexus.pandoras.finance';
   return {
-    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Origin': allowOrigin,
     'Access-Control-Allow-Methods': 'GET, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-wallet-address, x-thirdweb-address, x-user-address',
-    'Access-Control-Allow-Credentials': 'true',
+    ...(allowed ? { 'Access-Control-Allow-Credentials': 'true' } : {}),
   };
 }
 
@@ -22,6 +51,15 @@ export async function OPTIONS(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   const cors = getCorsHeaders(req);
+
+  // Rate limit: 5 token verifications per minute per IP
+  const ip = getTrustedClientIp(req.headers);
+  if (!(await authRateLimiter.isAllowed(`nexus-collab-verify:ip:${ip}`))) {
+    return NextResponse.json(
+      { error: 'Demasiadas solicitudes. Por favor, intenta de nuevo en un minuto.' },
+      { status: 429, headers: cors }
+    );
+  }
   try {
     const { searchParams } = new URL(req.url);
     const token = searchParams.get('token');
