@@ -84,10 +84,10 @@ describe('🔒 RELEASE GATE: Nexus Production Closure Audit Suite', () => {
       expect(ip).toBe('203.0.113.50');
     });
 
-    it('RG-04: Returns 127.0.0.1 fallback safely when no IP headers exist', () => {
-      const headers = new Headers();
+    it('RG-04: Returns partitioned untrusted fingerprint safely when no IP headers exist (anti-collision)', () => {
+      const headers = new Headers({ 'user-agent': 'audit-test-client', 'accept-language': 'es' });
       const ip = getTrustedClientIp(headers);
-      expect(ip).toBe('127.0.0.1');
+      expect(ip).toMatch(/^untrusted_[a-f0-9]{16}$/);
     });
   });
 

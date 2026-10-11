@@ -584,10 +584,7 @@ export async function getNexusAuthContext(
         .from(nexusCollaborators)
         .where(
           and(
-            or(
-              eq(nexusCollaborators.token, token),
-              eq(nexusCollaborators.token, tokenHash)
-            ),
+            eq(nexusCollaborators.token, tokenHash),
             gt(nexusCollaborators.expiresAt, now),
             sql`${nexusCollaborators.token} NOT LIKE 'consumed_%'`
           )
