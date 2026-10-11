@@ -214,9 +214,10 @@ export async function POST(req: NextRequest) {
 
     const response = NextResponse.json({ ok: true, token: tokenParam });
     if (tokenParam) {
+      // 🛡️ Aligned with 24h database token TTL to prevent dead/zombie cookies on client
       response.cookies.set('pandoras_nexus_token', tokenParam, {
         path: '/',
-        maxAge: 30 * 24 * 60 * 60,
+        maxAge: 24 * 60 * 60, // 24 hours
         sameSite: 'lax',
         secure: process.env.NODE_ENV === 'production',
       });
