@@ -51,7 +51,8 @@ export async function approveCollaboratorAction(id: number, roleOverride?: strin
     // Rotate the token so only the JUST-APPROVED state is usable, and craft a
     // fresh magic link to dispatch by email (the collaborator may have self-
     // registered without ever receiving a working link).
-    const token = `nx_${crypto.randomBytes(32).toString("hex")}`;
+    const rawToken = `nx_${crypto.randomBytes(32).toString("hex")}`;
+    const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     await db
@@ -60,7 +61,7 @@ export async function approveCollaboratorAction(id: number, roleOverride?: strin
         role,
         status: "ACTIVE" as NexusProvisionStatus,
         statusChangedAt: new Date(),
-        token,
+        token: tokenHash,
         expiresAt,
       })
       .where(eq(nexusCollaborators.id, id));
@@ -85,7 +86,7 @@ export async function approveCollaboratorAction(id: number, roleOverride?: strin
     // delivery fails — the collaborator can also re-request a link).
     try {
       const base = process.env.NEXT_PUBLIC_NEXUS_URL || "https://nexus.pandoras.finance";
-      const magicLink = `${base}/nexus?token=${encodeURIComponent(token)}`;
+      const magicLink = `${base}/nexus?token=${encodeURIComponent(rawToken)}`;
       const displayName = collaborator.name || collaborator.email.split("@")[0] || "Sovereign Actor";
       const sent = await sendCollaboratorMagicLink(displayName, collaborator.email, magicLink);
       if (!sent.ok) {
@@ -110,6 +111,12 @@ export async function rejectCollaboratorAction(id: number): Promise<AdminActionR
   try {
     await requireAdminOrThrow();
 
+    const [collab] = await db
+      .select({ email: nexusCollaborators.email })
+      .from(nexusCollaborators)
+      .where(eq(nexusCollaborators.id, id))
+      .limit(1);
+
     await db
       .update(nexusCollaborators)
       .set({
@@ -117,6 +124,22 @@ export async function rejectCollaboratorAction(id: number): Promise<AdminActionR
         statusChangedAt: new Date(),
       })
       .where(eq(nexusCollaborators.id, id));
+
+    // 🛡️ Revocación fail-closed: sincronizar democión del usuario vinculado
+    if (collab?.email) {
+      const [linkedUser] = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.email, collab.email.toLowerCase()))
+        .limit(1);
+
+      if (linkedUser) {
+        await db
+          .update(users)
+          .set({ role: "user" as any })
+          .where(eq(users.id, linkedUser.id));
+      }
+    }
 
     revalidatePath("/admin/collaborators");
     return { success: true };

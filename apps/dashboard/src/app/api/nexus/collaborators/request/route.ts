@@ -16,14 +16,43 @@ import { notifyProvisioningRequest } from '@/lib/nexus/provisioning';
 import { db } from '@saasfly/db';
 import { marketingLeads } from '@saasfly/db/schema';
 import { eq } from "@saasfly/db-core";
+import { authRateLimiter, getTrustedClientIp } from '@saasfly/shared';
+
+function isAllowedOrigin(origin: string | null): boolean {
+  if (!origin) return false;
+  try {
+    const url = new URL(origin);
+    const hostname = url.hostname;
+    if (
+      origin === 'https://pandoras.finance' ||
+      origin === 'https://nexus.pandoras.finance' ||
+      origin === 'https://dash.pandoras.finance' ||
+      origin === 'https://staging.dash.pandoras.finance' ||
+      origin === 'https://staging.pandoras.finance' ||
+      origin === 'https://pandoras.org' ||
+      hostname.endsWith('.pandoras.finance') ||
+      hostname.endsWith('.pandoras.org')
+    ) {
+      return true;
+    }
+    if (process.env.NODE_ENV !== 'production' && (hostname === 'localhost' || hostname === '127.0.0.1')) {
+      return true;
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
 
 function getCorsHeaders(req: NextRequest) {
-  const origin = req.headers.get('origin') || '*';
+  const origin = req.headers.get('origin');
+  const allowed = isAllowedOrigin(origin);
+  const allowOrigin = allowed && origin ? origin : 'https://nexus.pandoras.finance';
   return {
-    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Origin': allowOrigin,
     'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-wallet-address, x-thirdweb-address, x-user-address',
-    'Access-Control-Allow-Credentials': 'true',
+    ...(allowed ? { 'Access-Control-Allow-Credentials': 'true' } : {}),
   };
 }
 
@@ -33,6 +62,16 @@ export async function OPTIONS(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const cors = getCorsHeaders(req);
+
+  // Rate limit by IP: 5 requests / min
+  const ip = getTrustedClientIp(req.headers);
+  if (!(await authRateLimiter.isAllowed(`nexus-collab-request:ip:${ip}`))) {
+    return NextResponse.json(
+      { error: 'Demasiadas solicitudes. Por favor, intenta de nuevo en un minuto.' },
+      { status: 429, headers: cors }
+    );
+  }
+
   try {
     const body = await req.json();
     const { name, email, role, permissions, whatsappPhone } = body as {
@@ -51,6 +90,14 @@ export async function POST(req: NextRequest) {
     }
 
     const cleanEmail = email.trim().toLowerCase();
+
+    // Rate limit by email: 5 requests / min
+    if (!(await authRateLimiter.isAllowed(`nexus-collab-request:email:${cleanEmail}`))) {
+      return NextResponse.json(
+        { error: 'Demasiadas solicitudes para este correo. Por favor, intenta de nuevo en un minuto.' },
+        { status: 429, headers: cors }
+      );
+    }
     const cleanName: string = (name && typeof name === 'string' && name.trim()) ? name.trim() : (isNexusAdminEmail(cleanEmail) ? 'Admin' : (cleanEmail.split('@')[0] || 'Collaborator'));
 
     // Check if email already has an existing collaborator record (allows self-renewal)

@@ -163,6 +163,25 @@ export const claimRateLimiter = new RedisRateLimiter(10, 60000); // 10 claims pe
 export const registerRateLimiter = new RedisRateLimiter(5, 60000); // 5 registrations per minute
 
 /**
+ * 🛡️ Resolves trusted client IP in production proxy topology (Cloudflare / Vercel Edge).
+ * Prioritizes cf-connecting-ip (overwritten by Cloudflare Edge), then x-real-ip,
+ * then the last entry in x-forwarded-for (closest to our trusted edge proxy).
+ * Never trusts the first entry in x-forwarded-for which can be spoofed by client.
+ */
+export function getTrustedClientIp(headers: Headers | { get(name: string): string | null }): string {
+  const cfIp = headers.get('cf-connecting-ip')?.trim();
+  if (cfIp) return cfIp;
+  const realIp = headers.get('x-real-ip')?.trim();
+  if (realIp) return realIp;
+  const forwarded = headers.get('x-forwarded-for');
+  if (forwarded) {
+    const parts = forwarded.split(',').map((p) => p.trim()).filter(Boolean);
+    if (parts.length > 0) return parts[parts.length - 1]!;
+  }
+  return '127.0.0.1';
+}
+
+/**
  * Valida estructura básica de request body
  */
 export function validateRequestBody(body: unknown): { isValid: boolean; error?: string } {
