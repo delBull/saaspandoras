@@ -11,14 +11,17 @@ import { users, nexusCollaborators, projectCollaborators, type NexusPermissionsO
 import { eq, and, gt } from "@saasfly/db-core";
 import { getAuth, isAdmin } from '@saasfly/auth-sdk';
 
-// Hide next/headers from Webpack static analysis for Client Components
+// Dynamic require for next/headers without triggering direct-eval bundler warning
 let nextHeaders: any;
 let nextCookies: any;
 if (typeof process !== "undefined" && typeof window === "undefined") {
     try {
-        const mod = eval('require("next/headers")');
-        nextHeaders = mod.headers;
-        nextCookies = mod.cookies;
+        const req = (globalThis as any)["__non_webpack_require__"] || (typeof require !== "undefined" ? require : null);
+        if (req) {
+            const mod = req("next/headers");
+            nextHeaders = mod.headers;
+            nextCookies = mod.cookies;
+        }
     } catch (e) {
         // Ignore
     }
