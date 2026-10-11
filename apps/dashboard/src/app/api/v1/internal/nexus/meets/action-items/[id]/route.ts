@@ -3,7 +3,7 @@ import { db, eq, and } from '@saasfly/db-core';
 import { meetingActionItems } from '@saasfly/db-core/schema';
 import { getNexusAuthContext } from '@saasfly/shared';
 
-export async function PUT(req: NextRequest, context: { params: { id: string } }) {
+export async function PUT(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const authCtx = await getNexusAuthContext();
     if (!authCtx.isAuthenticated || !authCtx.collaboratorId || !authCtx.canonicalOrgId) {

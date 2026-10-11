@@ -62,6 +62,7 @@
   ],
   "globalPassThroughEnv": [
     "NODE_ENV",
+    "NODE_OPTIONS",
     "VERCEL",
     "VERCEL_ENV",
     "VERCEL_URL",

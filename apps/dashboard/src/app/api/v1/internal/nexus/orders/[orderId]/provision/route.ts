@@ -5,7 +5,7 @@ import { TenantProvisioningService, ProvisioningRequestDTO } from '@saasfly/shar
 import * as jose from 'jose';
 import { cookies } from 'next/headers';
 
-export async function POST(req: NextRequest, context: { params: { orderId: string } }) {
+export async function POST(req: NextRequest, context: { params: Promise<{ orderId: string }> }) {
   try {
     const { orderId } = await context.params;
 

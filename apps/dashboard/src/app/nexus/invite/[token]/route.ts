@@ -21,7 +21,7 @@ async function signCommercialSession(leadId: string, jti: string) {
     .sign(secret);
 }
 
-export async function GET(req: NextRequest, context: { params: { token: string } }) {
+export async function GET(req: NextRequest, context: { params: Promise<{ token: string }> }) {
   try {
     // 🛡️ Await params as required by Next.js 15
     const params = await context.params;
