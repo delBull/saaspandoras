@@ -24,13 +24,16 @@ export function getRedis(): Redis | null {
                err.message.includes('ECONNRESET') ||
                err.message.includes('ETIMEDOUT');
       },
-      lazyConnect: true,
       enableOfflineQueue: false,
     });
 
     redis.on('connect', () => {
       redisHealthy = true;
       console.log('✅ Redis connected for rate limiting');
+    });
+
+    redis.on('ready', () => {
+      redisHealthy = true;
     });
 
     redis.on('error', (err: Error) => {
@@ -51,7 +54,7 @@ export function getRedis(): Redis | null {
 }
 
 export function isRedisHealthy(): boolean {
-  return redisHealthy && redis !== null;
+  return redis !== null && (redisHealthy || redis.status === 'ready' || redis.status === 'connect');
 }
 
 export async function closeRedis() {

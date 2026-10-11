@@ -5,6 +5,9 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { removeCollaborator, requireNexusAdmin } from '@saasfly/hermes-core';
+import { db } from '@saasfly/db';
+import { users } from '@saasfly/db/schema';
+import { eq } from "@saasfly/db-core";
 
 function getCorsHeaders(req: NextRequest) {
   const origin = req.headers.get('origin') || '*';
@@ -36,7 +39,23 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    const removed = await removeCollaborator(email.trim().toLowerCase());
+    const cleanEmail = email.trim().toLowerCase();
+
+    // 🛡️ Sincronizar revocación: demoler privilegios del usuario vinculado en users
+    const [linkedUser] = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.email, cleanEmail))
+      .limit(1);
+
+    if (linkedUser) {
+      await db
+        .update(users)
+        .set({ role: 'user' as any })
+        .where(eq(users.id, linkedUser.id));
+    }
+
+    const removed = await removeCollaborator(cleanEmail);
     return NextResponse.json({ ok: true, removed }, { headers: cors });
   } catch (error: any) {
     console.error('[Nexus Collaborators Remove] Error:', error);

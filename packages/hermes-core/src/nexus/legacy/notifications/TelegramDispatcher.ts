@@ -46,7 +46,8 @@ export async function dispatchTelegramNotification(
 
   let finalMessage = message;
   if (deepLinkRef) {
-    const tmaUrl = `https://t.me/nexusPandoras_bot/NexusApp?startapp=${deepLinkRef}`;
+    const botUsername = process.env.NEXT_PUBLIC_NEXUS_TELEGRAM_BOT_USERNAME || 'nexusPandoras_bot';
+    const tmaUrl = `https://t.me/${botUsername}/NexusApp?startapp=${deepLinkRef}`;
     finalMessage += `\n\n[Open in Nexus TMA](${tmaUrl})`;
   }
 
@@ -60,7 +61,8 @@ export async function dispatchTelegramNotification(
 
   // If there's a deep link, we already appended it to the text. We can also add an inline button.
   if (deepLinkRef) {
-    const tmaUrl = `https://t.me/nexusPandoras_bot/NexusApp?startapp=${deepLinkRef}`;
+    const botUsername = process.env.NEXT_PUBLIC_NEXUS_TELEGRAM_BOT_USERNAME || 'nexusPandoras_bot';
+    const tmaUrl = `https://t.me/${botUsername}/NexusApp?startapp=${deepLinkRef}`;
     payload.reply_markup = {
       inline_keyboard: [
         [

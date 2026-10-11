@@ -67,6 +67,8 @@ export * from './auth/hermes-session.types';
 export * from './auth/rate-limiter';
 export * from './auth/session-token.service';
 export * from './auth/telegram-auth-validator';
+export * from './auth/nonce-store.service';
+export * from './auth/cryptographic-proof-verifier';
 export * from './auth/tenant-membership.service';
 export * from './auth/wallet-tenant-membership';
 export * from './auth/workspace-resolver';

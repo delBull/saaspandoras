@@ -163,6 +163,32 @@ export const claimRateLimiter = new RedisRateLimiter(10, 60000); // 10 claims pe
 export const registerRateLimiter = new RedisRateLimiter(5, 60000); // 5 registrations per minute
 
 /**
+ * 🛡️ Resolves trusted client IP in production proxy topology (Cloudflare / Vercel Edge).
+ * Prioritizes cf-connecting-ip (overwritten by Cloudflare Edge), then x-real-ip,
+ * then the last entry in x-forwarded-for (closest to our trusted edge proxy).
+ * Never trusts the first entry in x-forwarded-for which can be spoofed by client.
+ */
+export function getTrustedClientIp(headers: Headers | { get(name: string): string | null }): string {
+  const cfIp = headers.get('cf-connecting-ip')?.trim();
+  if (cfIp) return cfIp;
+  const realIp = headers.get('x-real-ip')?.trim();
+  if (realIp) return realIp;
+  const forwarded = headers.get('x-forwarded-for');
+  if (forwarded) {
+    const parts = forwarded.split(',').map((p) => p.trim()).filter(Boolean);
+    if (parts.length > 0) return parts[parts.length - 1]!;
+  }
+
+  // 🛡️ Edge Fallback: If edge proxy headers are completely absent, generate a partitioned
+  // fingerprint based on request user-agent + accept-language to prevent grouping all untrusted
+  // clients into a single global 127.0.0.1 bucket (preventing accidental denial-of-service).
+  const ua = headers.get('user-agent') || 'anonymous';
+  const lang = headers.get('accept-language') || 'none';
+  const fingerprint = require('crypto').createHash('sha256').update(`${ua}:${lang}`).digest('hex').substring(0, 16);
+  return `untrusted_${fingerprint}`;
+}
+
+/**
  * Valida estructura básica de request body
  */
 export function validateRequestBody(body: unknown): { isValid: boolean; error?: string } {

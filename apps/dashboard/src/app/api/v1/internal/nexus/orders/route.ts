@@ -5,16 +5,7 @@ import * as jose from 'jose';
 import * as crypto from 'crypto';
 import { cookies } from 'next/headers';
 
-// The server-authoritative catalog
-export const COMMERCIAL_CATALOG = {
-  version: 'v1_2026',
-  currency: 'USD',
-  products: {
-    'HERMES': { price: 500.00 },
-    'GROWTH_OS': { price: 300.00 },
-    'PANDORAS_RWA': { price: 1000.00 },
-  }
-};
+import { PRODUCT_REGISTRY } from '@saasfly/shared';
 
 export async function POST(req: NextRequest) {
   try {
@@ -25,10 +16,13 @@ export async function POST(req: NextRequest) {
       return new NextResponse('Unauthorized', { status: 401 });
     }
     
-    const secret = new TextEncoder().encode(process.env.PANDORAS_SECRET_KEY || 'default_dev_secret_do_not_use');
+    if (!process.env.PANDORAS_SECRET_KEY) {
+      return new NextResponse('Internal Server Error: Missing Secret', { status: 500 });
+    }
+    const secret = new TextEncoder().encode(process.env.PANDORAS_SECRET_KEY);
     const { payload } = await jose.jwtVerify(sessionToken, secret);
     
-    if (payload.scope !== 'commercial:read' || !payload.leadId) {
+    if (!payload.scope || typeof payload.scope !== 'string' || !payload.scope.includes('commercial:order_create') || !payload.leadId) {
       return new NextResponse('Forbidden', { status: 403 });
     }
     
@@ -45,17 +39,34 @@ export async function POST(req: NextRequest) {
     let totalAmount = 0;
     const validatedLines: { productKey: string; priceVersion: string; unitPrice: string; metadata: any }[] = [];
     
+    const processedRegistryKeys = new Set<string>();
+    
     for (const p of products) {
-      const catalogItem = COMMERCIAL_CATALOG.products[p.productKey as keyof typeof COMMERCIAL_CATALOG.products];
+      let catalogItem: any = null;
+      let registryKey = '';
+      
+      if (p.productKey === 'PANDORAS_RWA') { catalogItem = PRODUCT_REGISTRY.TOKENIZATION; registryKey = 'TOKENIZATION'; }
+      else if (p.productKey === 'GROWTH_OS') { catalogItem = PRODUCT_REGISTRY.HERMES; registryKey = 'HERMES'; }
+      else if (p.productKey === 'HERMES') { catalogItem = PRODUCT_REGISTRY.HERMES; registryKey = 'HERMES'; }
+
       if (!catalogItem) {
         return new NextResponse(`Invalid product: ${p.productKey}`, { status: 400 });
       }
       
-      totalAmount += catalogItem.price;
+      if (processedRegistryKeys.has(registryKey)) {
+        continue; // deduplicate
+      }
+      processedRegistryKeys.add(registryKey);
+      
+      const plan = p.metadata?.plan || 'starter';
+      const priceObj = catalogItem.pricing[plan] || catalogItem.pricing.starter;
+      const price = priceObj?.price || 0;
+      
+      totalAmount += price;
       validatedLines.push({
         productKey: p.productKey,
-        priceVersion: COMMERCIAL_CATALOG.version,
-        unitPrice: catalogItem.price.toString(),
+        priceVersion: `v3_${plan}`,
+        unitPrice: price.toString(),
         metadata: p.metadata || {}
       });
     }
@@ -65,7 +76,7 @@ export async function POST(req: NextRequest) {
     const result = await db.transaction(async (tx) => {
        const [order] = await tx.insert(commercialOrders).values({
          leadId,
-         currency: COMMERCIAL_CATALOG.currency,
+         currency: 'USD',
          totalAmount: totalAmount.toString(),
          status: 'PENDING_PAYMENT',
          requestedOrgName,
@@ -102,7 +113,7 @@ export async function POST(req: NextRequest) {
         leadId,
         organization: requestedOrgName,
         slug: requestedOrgSlug,
-        totalAmount: `${totalAmount} ${COMMERCIAL_CATALOG.currency}`
+        totalAmount: `${totalAmount} USD`
       }, 'info');
     } catch (e) {
       console.warn('Non-blocking: Failed to send discord alert for order', e);

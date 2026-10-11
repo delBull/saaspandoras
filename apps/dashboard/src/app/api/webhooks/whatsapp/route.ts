@@ -59,6 +59,23 @@ export async function POST(req: NextRequest) {
     }
 
     // 3. Dispatch to HermesRuntime with WHATSAPP Channel Context
+    const { ActorIdentityBindingService } = await import('@saasfly/hermes-core');
+    const clearanceLevel = interlocutor.isBoss
+      ? 'CONFIDENTIAL'
+      : (interlocutor.isCollaborator ? 'TENANT_RESTRICTED' : 'PUBLIC');
+    const boundActorSession = ActorIdentityBindingService.createBoundSession(
+      {
+        actorId: interlocutor.actorId,
+        tenantId: tenantSlug,
+        authProvider: 'PORTAL_INTERNAL',
+        proofSignature: `wa_sig_${Date.now()}_${fromPhone}`,
+        issuedAt: Date.now(),
+        nonce: `wa_nonce_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
+      },
+      clearanceLevel,
+      3600
+    );
+
     const runtime = getDefaultRuntime();
     const runtimeResponse = await runtime.respond({
       organizationId: tenantSlug,
@@ -81,6 +98,7 @@ export async function POST(req: NextRequest) {
         interlocutor,
         canonicalIdentity: interlocutor.canonicalIdentity,
         tenantContext: interlocutor.tenantContext,
+        boundActorSession,
       } as any,
     });
 

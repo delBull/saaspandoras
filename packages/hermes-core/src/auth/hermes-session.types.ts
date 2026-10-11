@@ -91,3 +91,30 @@ export class HermesExpiredInitDataError extends HermesAuthError {
     this.name = 'HermesExpiredInitDataError';
   }
 }
+
+export type HermesAuthenticationErrorCode =
+  | 'REPLAY_DETECTED'
+  | 'PERSISTENCE_ERROR'
+  | 'INVALID_PROOF'
+  | 'CONFIGURATION_ERROR'
+  | 'CHANNEL_VERIFICATION_FAILED'
+  | 'EXPIRED_PROOF'
+  | 'TENANT_UNAUTHORIZED';
+
+export class HermesAuthenticationError extends HermesAuthError {
+  constructor(
+    public readonly authCode: HermesAuthenticationErrorCode,
+    message: string,
+    public readonly details?: unknown,
+    statusCode?: number
+  ) {
+    const status = statusCode ?? (
+      authCode === 'REPLAY_DETECTED' ? 200 :
+      authCode === 'TENANT_UNAUTHORIZED' ? 403 :
+      authCode === 'PERSISTENCE_ERROR' || authCode === 'CONFIGURATION_ERROR' ? 500 : 401
+    );
+    super(`[${authCode}] ${message}`, authCode, status);
+    this.name = 'HermesAuthenticationError';
+  }
+}
+

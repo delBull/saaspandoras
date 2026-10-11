@@ -15,7 +15,7 @@ vi.mock('next/headers', () => ({
 vi.mock('jose', () => ({
   jwtVerify: vi.fn().mockResolvedValue({
     payload: {
-      scope: 'commercial:read',
+      scope: 'commercial:lead_read commercial:order_create',
       leadId: 'lead-123'
     }
   })
@@ -31,6 +31,7 @@ vi.mock('@saasfly/db-core', () => ({
 describe('Commercial Orders API', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    process.env.PANDORAS_SECRET_KEY = 'test-secret-key';
   });
 
   const createRequest = (body: any) => {
@@ -44,6 +45,24 @@ describe('Commercial Orders API', () => {
     const req = createRequest({ requestedOrgName: 'Test' }); // Missing products
     const res = await POST(req);
     expect(res.status).toBe(400);
+  });
+
+  it('rejects if token only has commercial:lead_read scope and lacks commercial:order_create', async () => {
+    const { jwtVerify } = await import('jose');
+    (jwtVerify as any).mockResolvedValueOnce({
+      payload: {
+        scope: 'commercial:lead_read',
+        leadId: 'lead-123'
+      }
+    });
+
+    const req = createRequest({
+      requestedOrgName: 'Test Org',
+      requestedOrgSlug: 'test-org',
+      products: [{ productKey: 'GROWTH_OS' }]
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(403);
   });
 
   it('rejects product not in server catalog (client cannot dictate arbitrary prices)', async () => {
@@ -85,10 +104,10 @@ describe('Commercial Orders API', () => {
     expect(data.success).toBe(true);
     expect(data.orderId).toBe('order-123');
     
-    // Growth OS (300) + Hermes (500) = 800
+    // Growth OS deduplicates with Hermes (Registry key 'HERMES'). Starter plan price = 299.
     // Check what was passed to insert commercialOrders values
     const orderValuesCall = mockTx.values.mock.calls[0]?.[0] as any;
-    expect(orderValuesCall.totalAmount).toBe('800');
+    expect(orderValuesCall.totalAmount).toBe('299');
     expect(orderValuesCall.leadId).toBe('lead-123');
     expect(orderValuesCall.status).toBe('PENDING_PAYMENT');
   });

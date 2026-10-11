@@ -103,6 +103,7 @@ export interface ControlPlaneContext {
   role: ControlPlaneRole;
   permissions: string[];
   sessionId?: string;
+  boundActorSession?: import('../runtime/prompt-hygiene-contract').BoundActorSession;
   identity?: {
     identityId?: string;
     userId?: string;

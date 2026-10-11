@@ -7,10 +7,13 @@ import * as jose from 'jose';
 
 // Helper to sign a lightweight commercial session
 async function signCommercialSession(leadId: string, jti: string) {
-  const secret = new TextEncoder().encode(process.env.PANDORAS_SECRET_KEY || 'default_dev_secret_do_not_use');
+  if (!process.env.PANDORAS_SECRET_KEY) {
+    throw new Error('PANDORAS_SECRET_KEY is not configured');
+  }
+  const secret = new TextEncoder().encode(process.env.PANDORAS_SECRET_KEY);
   const alg = 'HS256';
   
-  return new jose.SignJWT({ leadId, scope: 'commercial:read' })
+  return new jose.SignJWT({ leadId, scope: 'commercial:lead_read commercial:order_create' })
     .setProtectedHeader({ alg })
     .setIssuedAt()
     .setJti(jti)
@@ -18,7 +21,7 @@ async function signCommercialSession(leadId: string, jti: string) {
     .sign(secret);
 }
 
-export async function GET(req: NextRequest, context: { params: { token: string } }) {
+export async function GET(req: NextRequest, context: { params: Promise<{ token: string }> }) {
   try {
     // 🛡️ Await params as required by Next.js 15
     const params = await context.params;

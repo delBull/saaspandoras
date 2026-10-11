@@ -167,7 +167,7 @@ export function QuickCommandModal({
       title: 'Abrir Bot Oficial de S\'Narai en Telegram',
       category: 'Acciones Rápidas',
       icon: ExternalLink,
-      action: () => window.open('https://t.me/snaraiassit_bot', '_blank'),
+      action: () => window.open(`https://t.me/${process.env.NEXT_PUBLIC_ASSISTANT_BOT_USERNAME || 'snaraiassit_bot'}`, '_blank'),
       badge: 'Externo',
     },
     {

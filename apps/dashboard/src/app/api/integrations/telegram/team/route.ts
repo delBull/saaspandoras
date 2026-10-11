@@ -48,7 +48,7 @@ async function handleStartCommand(
   firstName?: string,
   text?: string
 ): Promise<void> {
-  const tmaUrl = process.env.NEXUS_TMA_URL || 'https://nexus.pandoras.finance';
+  const tmaUrl = process.env.NEXUS_TMA_URL || 'https://team.pandoras.finance';
   const dashboardUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://dash.pandoras.finance';
   const name = firstName || 'Operador';
 

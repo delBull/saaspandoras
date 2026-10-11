@@ -251,8 +251,22 @@ export async function POST(
         return NextResponse.json({ success: true, otpReceived: true, body: bodyText });
       }
 
-      const { getDefaultRuntime } = await import('@saasfly/hermes-core');
+      const { getDefaultRuntime, ActorIdentityBindingService } = await import('@saasfly/hermes-core');
       const runtime = getDefaultRuntime();
+      const actorId = `sms_actor_${fromNumber.replace(/\+/g, '')}`;
+      const boundActorSession = ActorIdentityBindingService.createBoundSession(
+        {
+          actorId,
+          tenantId: projectRecord.slug,
+          authProvider: 'PORTAL_INTERNAL',
+          proofSignature: `sms_sig_${Date.now()}_${fromNumber.replace(/\+/g, '')}`,
+          issuedAt: Date.now(),
+          nonce: `sms_nonce_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
+        },
+        'PUBLIC',
+        1800
+      );
+
       const runtimeResponse = await runtime.respond({
         organizationId: projectRecord.slug,
         conversationId: `conv_sms_${projectRecord.slug}_${fromNumber.replace(/\+/g, '')}`,
@@ -263,11 +277,12 @@ export async function POST(
           createdAt: new Date(),
         },
         controlPlaneContext: {
-          actorId: `sms_actor_${fromNumber.replace(/\+/g, '')}`,
+          actorId,
           organizationId: projectRecord.slug,
-          role: 'ADMIN',
-          permissions: ['view_overview', 'view_governance'],
+          role: 'VIEWER',
+          permissions: ['view_overview'],
           sessionId: `sms_sess_${projectRecord.slug}_${Date.now()}`,
+          boundActorSession,
         }
       });
 
@@ -285,7 +300,7 @@ export async function POST(
     return NextResponse.json({ success: true, message: 'No action taken' });
   } catch (err: any) {
     console.error('[SignalWire Adapter Error]:', err);
-    return NextResponse.json({ error: 'SignalWire Adapter Exception', details: err.message }, { status: 500 });
+    return NextResponse.json({ error: 'SignalWire Adapter Exception' }, { status: 500 });
   }
 }
 

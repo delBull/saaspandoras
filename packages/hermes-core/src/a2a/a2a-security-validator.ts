@@ -98,22 +98,15 @@ export class A2ASecurityValidator {
     }
 
     // 4. Nonce Replay Defense — DB-backed (GAP1 fix)
-    //    INSERT the nonce into a2a_nonces. If it already exists → replay attack.
-    //    ON CONFLICT DO NOTHING returns 0 rows → replay detected.
-    try {
-      const { db } = await import('@saasfly/db-core');
-      const { a2aNonces } = await import('@saasfly/db-core');
-      const expiresAt = new Date(now + NONCE_TTL_MS);
-      const inserted = await db.insert(a2aNonces)
-        .values({ nonce: message.nonce, expiresAt })
-        .onConflictDoNothing()
-        .returning();
-      if (inserted.length === 0) {
-        return { valid: false, errorCode: 'NONCE_REPLAY', errorMessage: 'Nonce has already been used' };
-      }
-    } catch (dbErr: any) {
-      // DB unavailable: fail-closed for security
-      console.error('[A2ASecurityValidator] DB nonce check failed:', dbErr?.message);
+    //    Atomically consumes nonce via unified consumeA2aNonce helper.
+    const expiresAt = new Date(now + NONCE_TTL_MS);
+    const { consumeA2aNonce } = await import('../auth/nonce-store.service');
+    const nonceResult = await consumeA2aNonce({ nonceKey: message.nonce, expiresAt });
+    if (nonceResult.status === 'DUPLICATE') {
+      return { valid: false, errorCode: 'NONCE_REPLAY', errorMessage: 'Nonce has already been used' };
+    }
+    if (nonceResult.status === 'ERROR') {
+      console.error('[A2ASecurityValidator] DB nonce check failed:', nonceResult.error);
       return { valid: false, errorCode: 'NONCE_CHECK_FAILED', errorMessage: 'Nonce replay DB check failed' };
     }
 

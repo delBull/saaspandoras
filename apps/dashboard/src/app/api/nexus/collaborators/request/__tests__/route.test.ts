@@ -57,7 +57,10 @@ describe('📧 Nexus Collaborators Request Route (/api/nexus/collaborators/reque
     const req = new NextRequest('http://localhost/api/nexus/collaborators/request', {
       method: 'POST',
       body: JSON.stringify({ whatsappPhone: '+5215551234567' }),
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-forwarded-for': '10.0.1.1',
+      },
     });
 
     const res = await POST(req);
@@ -79,7 +82,10 @@ describe('📧 Nexus Collaborators Request Route (/api/nexus/collaborators/reque
     const req = new NextRequest('http://localhost/api/nexus/collaborators/request', {
       method: 'POST',
       body: JSON.stringify({ email: 'new_operator@pandoras.finance' }),
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-forwarded-for': '10.0.1.2',
+      },
     });
 
     const res = await POST(req);
@@ -103,7 +109,10 @@ describe('📧 Nexus Collaborators Request Route (/api/nexus/collaborators/reque
     const req = new NextRequest('http://localhost/api/nexus/collaborators/request', {
       method: 'POST',
       body: JSON.stringify({ email: 'escuelalibredigital@proton.me' }),
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-forwarded-for': '10.0.1.3',
+      },
     });
 
     const res = await POST(req);
@@ -126,7 +135,10 @@ describe('📧 Nexus Collaborators Request Route (/api/nexus/collaborators/reque
         email: 'collaborator@external.com',
         whatsappPhone: '+5215551122334',
       }),
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-forwarded-for': '10.0.1.4',
+      },
     });
 
     const res = await POST(req);
@@ -154,11 +166,120 @@ describe('📧 Nexus Collaborators Request Route (/api/nexus/collaborators/reque
         whatsappPhone: '+5215559998888',
         role: 'SUPER_ADMIN',
       }),
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-forwarded-for': '10.0.1.5',
+      },
     });
 
     const res = await POST(req);
     expect(res.status).toBe(200);
     expect(createOrUpdateCalls[0].role).toBe('COLLABORATOR');
+  });
+
+  it('REQ-06: Restricts unauthorized CORS origins and disallows credentials for untrusted origins', async () => {
+    mockExistingCollaborator = {
+      id: 1,
+      email: 'member@pandoras.finance',
+      role: 'COLLABORATOR',
+      status: 'ACTIVE',
+    };
+
+    // Untrusted origin: evil.com
+    const untrustedReq = new NextRequest('http://localhost/api/nexus/collaborators/request', {
+      method: 'POST',
+      body: JSON.stringify({ email: 'member@pandoras.finance' }),
+      headers: {
+        'Content-Type': 'application/json',
+        origin: 'https://evil-attacker.com',
+        'x-forwarded-for': '10.0.1.6',
+      },
+    });
+
+    const resUntrusted = await POST(untrustedReq);
+    expect(resUntrusted.headers.get('Access-Control-Allow-Origin')).toBe('https://nexus.pandoras.finance');
+    expect(resUntrusted.headers.get('Access-Control-Allow-Credentials')).toBeNull();
+
+    // Trusted origin: nexus.pandoras.finance
+    const trustedReq = new NextRequest('http://localhost/api/nexus/collaborators/request', {
+      method: 'POST',
+      body: JSON.stringify({ email: 'member@pandoras.finance' }),
+      headers: {
+        'Content-Type': 'application/json',
+        origin: 'https://nexus.pandoras.finance',
+        'x-forwarded-for': '10.0.1.7',
+      },
+    });
+
+    const resTrusted = await POST(trustedReq);
+    expect(resTrusted.headers.get('Access-Control-Allow-Origin')).toBe('https://nexus.pandoras.finance');
+    expect(resTrusted.headers.get('Access-Control-Allow-Credentials')).toBe('true');
+  });
+
+  it('REQ-07: Rate limits spam requests by IP (returns 429)', async () => {
+    const spamIp = '198.51.100.88';
+
+    for (let i = 0; i < 5; i++) {
+      const req = new NextRequest('http://localhost/api/nexus/collaborators/request', {
+        method: 'POST',
+        body: JSON.stringify({}),
+        headers: {
+          'Content-Type': 'application/json',
+          'x-forwarded-for': spamIp,
+        },
+      });
+      await POST(req);
+    }
+
+    const blockedReq = new NextRequest('http://localhost/api/nexus/collaborators/request', {
+      method: 'POST',
+      body: JSON.stringify({ email: 'test@example.com' }),
+      headers: {
+        'Content-Type': 'application/json',
+        'x-forwarded-for': spamIp,
+      },
+    });
+
+    const resBlocked = await POST(blockedReq);
+    expect(resBlocked.status).toBe(429);
+    const body = await resBlocked.json();
+    expect(body.error).toContain('Demasiadas solicitudes');
+  });
+
+  it('REQ-08: Rate limits targeted email requests (returns 429)', async () => {
+    const targetEmail = 'target_bombing@pandoras.finance';
+    mockExistingCollaborator = {
+      id: 99,
+      email: targetEmail,
+      role: 'COLLABORATOR',
+      status: 'ACTIVE',
+    };
+
+    // Even if rotating IPs, repeated requests for same email are blocked
+    for (let i = 0; i < 5; i++) {
+      const req = new NextRequest('http://localhost/api/nexus/collaborators/request', {
+        method: 'POST',
+        body: JSON.stringify({ email: targetEmail }),
+        headers: {
+          'Content-Type': 'application/json',
+          'x-forwarded-for': `192.168.10.${i + 1}`,
+        },
+      });
+      await POST(req);
+    }
+
+    const blockedReq = new NextRequest('http://localhost/api/nexus/collaborators/request', {
+      method: 'POST',
+      body: JSON.stringify({ email: targetEmail }),
+      headers: {
+        'Content-Type': 'application/json',
+        'x-forwarded-for': '192.168.10.99',
+      },
+    });
+
+    const resBlocked = await POST(blockedReq);
+    expect(resBlocked.status).toBe(429);
+    const body = await resBlocked.json();
+    expect(body.error).toContain('Demasiadas solicitudes para este correo');
   });
 });

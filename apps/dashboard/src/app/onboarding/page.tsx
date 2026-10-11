@@ -16,10 +16,13 @@ export default async function UnifiedOnboardingPage() {
 
   if (sessionToken) {
     try {
-      const secret = new TextEncoder().encode(process.env.PANDORAS_SECRET_KEY || 'default_dev_secret_do_not_use');
+      if (!process.env.PANDORAS_SECRET_KEY) {
+        throw new Error('PANDORAS_SECRET_KEY is not configured');
+      }
+      const secret = new TextEncoder().encode(process.env.PANDORAS_SECRET_KEY);
       const { payload } = await jose.jwtVerify(sessionToken, secret);
       
-      if (payload.scope === 'commercial:read' && payload.leadId) {
+      if (payload.scope && typeof payload.scope === 'string' && payload.scope.includes('commercial:lead_read') && payload.leadId) {
         const leadRecord = await db.query.marketingLeads.findFirst({
           where: eq(marketingLeads.id, payload.leadId as string)
         });
