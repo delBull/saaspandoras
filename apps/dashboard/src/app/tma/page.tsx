@@ -227,14 +227,14 @@ export default function HermesTmaPage() {
   }, []);
 
   useEffect(() => {
-    async function waitForSdk(maxMs = 1500): Promise<any> {
+    async function waitForSdk(maxMs = 3500): Promise<any> {
       const start = Date.now();
       while (Date.now() - start < maxMs) {
         const tg = (window as any).Telegram?.WebApp;
-        if (tg) return tg;
+        if (tg && (tg.initData || Date.now() - start > 1000)) return tg;
         await new Promise(r => setTimeout(r, 50));
       }
-      return undefined;
+      return (window as any).Telegram?.WebApp;
     }
 
     async function authenticate() {
@@ -242,7 +242,16 @@ export default function HermesTmaPage() {
       tg?.ready?.();
       tg?.expand?.();
 
-      const initData: string = tg?.initData || '';
+      // Retrieve initData from WebApp or fallback to URL hash/query if launched via direct webview link
+      let initData: string = tg?.initData || '';
+      if (!initData && typeof window !== 'undefined') {
+        const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+        const tgWebAppData = hashParams.get('tgWebAppData');
+        if (tgWebAppData) {
+          initData = tgWebAppData;
+        }
+      }
+
       const searchParams = new URLSearchParams(window.location.search);
       const tenantParam = searchParams.get('tenant') || undefined;
 
