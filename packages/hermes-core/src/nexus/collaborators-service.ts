@@ -263,9 +263,10 @@ export async function verifyCollaboratorToken(
   const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
   const consumedSentinel = `consumed_${crypto.randomBytes(16).toString('hex')}`;
 
-  // 🛡️ Atomic One-Time Burn: Verifies raw token or SHA-256 hash in reposo.
+  // 🛡️ Atomic One-Time Burn: Verifies SHA-256 hash in reposo.
   // Rotates token to unguessable consumed sentinel and sets expiresAt to 0 (1970).
   // Any concurrent or subsequent invocation fails closed immediately (replay impossible).
+  // Also enforces fail-closed if status is REJECTED or DISABLED.
   const [record] = await db
     .update(nexusCollaborators)
     .set({
@@ -275,12 +276,10 @@ export async function verifyCollaboratorToken(
     })
     .where(
       and(
-        or(
-          eq(nexusCollaborators.token, token),
-          eq(nexusCollaborators.token, tokenHash)
-        ),
+        eq(nexusCollaborators.token, tokenHash),
         gt(nexusCollaborators.expiresAt, now),
-        sql`${nexusCollaborators.token} NOT LIKE 'consumed_%'`
+        sql`${nexusCollaborators.token} NOT LIKE 'consumed_%'`,
+        sql`${nexusCollaborators.status} NOT IN ('REJECTED', 'DISABLED')`
       )
     )
     .returning();

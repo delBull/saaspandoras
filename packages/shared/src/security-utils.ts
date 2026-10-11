@@ -178,7 +178,14 @@ export function getTrustedClientIp(headers: Headers | { get(name: string): strin
     const parts = forwarded.split(',').map((p) => p.trim()).filter(Boolean);
     if (parts.length > 0) return parts[parts.length - 1]!;
   }
-  return '127.0.0.1';
+
+  // 🛡️ Edge Fallback: If edge proxy headers are completely absent, generate a partitioned
+  // fingerprint based on request user-agent + accept-language to prevent grouping all untrusted
+  // clients into a single global 127.0.0.1 bucket (preventing accidental denial-of-service).
+  const ua = headers.get('user-agent') || 'anonymous';
+  const lang = headers.get('accept-language') || 'none';
+  const fingerprint = require('crypto').createHash('sha256').update(`${ua}:${lang}`).digest('hex').substring(0, 16);
+  return `untrusted_${fingerprint}`;
 }
 
 /**
