@@ -15,7 +15,7 @@ export class TelegramAuthValidator {
   private maxAgeSeconds: number;
 
   constructor(options: TelegramAuthValidatorOptions = {}) {
-    this.botToken = options.botToken || process.env.TELEGRAM_BOT_TOKEN || '';
+    this.botToken = options.botToken || process.env.TELEGRAM_BOT_TOKEN || process.env.HERMES_TELEGRAM_BOT_TOKEN || '';
     this.maxAgeSeconds = options.maxAgeSeconds ?? 86400; // 24 hours max
   }
 
@@ -29,8 +29,21 @@ export class TelegramAuthValidator {
    * 4. timingSafeEqual(hash, calculated_hash)
    */
   validateInitData(initData: string, overrideBotToken?: string): TelegramAuthIdentity {
-    const token = overrideBotToken || this.botToken;
-    if (!token) {
+    const candidateTokens = (
+      overrideBotToken
+        ? [overrideBotToken]
+        : [
+            this.botToken,
+            process.env.HERMES_TELEGRAM_BOT_TOKEN,
+            process.env.TELEGRAM_BOT_TOKEN,
+            process.env.TELEGRAM_BOT_TOKEN_HQ,
+            process.env.TELEGRAM_TEAM_BOT_TOKEN,
+          ]
+    )
+      .map(t => (t ?? '').trim())
+      .filter((t, idx, arr): t is string => Boolean(t) && arr.indexOf(t) === idx);
+
+    if (candidateTokens.length === 0) {
       throw new HermesInvalidInitDataError('TELEGRAM_BOT_TOKEN is not configured.');
     }
 
@@ -58,26 +71,33 @@ export class TelegramAuthValidator {
       .map(key => `${key}=${params.get(key)}`)
       .join('\n');
 
-    // 2. Derive secret key: HMAC_SHA256("WebAppData", botToken)
-    const secretKey = crypto
-      .createHmac('sha256', 'WebAppData')
-      .update(token)
-      .digest();
-
-    // 3. Compute expected hash
-    const calculatedHash = crypto
-      .createHmac('sha256', secretKey)
-      .update(dataCheckString)
-      .digest('hex');
-
-    // 4. Constant-time comparison
     const hashBuffer = Buffer.from(hash, 'hex');
-    const calculatedBuffer = Buffer.from(calculatedHash, 'hex');
 
-    if (
-      hashBuffer.length !== calculatedBuffer.length ||
-      !crypto.timingSafeEqual(hashBuffer, calculatedBuffer)
-    ) {
+    // 2. Derive secret key & verify HMAC in constant-time across candidate tokens
+    let verified = false;
+    for (const token of candidateTokens) {
+      const secretKey = crypto
+        .createHmac('sha256', 'WebAppData')
+        .update(token)
+        .digest();
+
+      const calculatedHash = crypto
+        .createHmac('sha256', secretKey)
+        .update(dataCheckString)
+        .digest('hex');
+
+      const calculatedBuffer = Buffer.from(calculatedHash, 'hex');
+
+      if (
+        hashBuffer.length === calculatedBuffer.length &&
+        crypto.timingSafeEqual(hashBuffer, calculatedBuffer)
+      ) {
+        verified = true;
+        break;
+      }
+    }
+
+    if (!verified) {
       throw new HermesInvalidInitDataError('Cryptographic signature mismatch (HMAC-SHA256 verification failed).');
     }
 

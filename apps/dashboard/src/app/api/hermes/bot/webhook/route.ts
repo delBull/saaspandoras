@@ -18,31 +18,45 @@ export const maxDuration = 60;
 export async function POST(req: NextRequest) {
   try {
     // 0. Authenticate Webhook Caller (Fail-closed anti-forgery with timing-safe verification)
-    const expectedSecret = process.env.TELEGRAM_WEBHOOK_SECRET || process.env.TELEGRAM_BOT_WEBHOOK_SECRET;
+    const candidateSecrets: { secret: string; tenantHint?: string }[] = [
+      { secret: process.env.TELEGRAM_WEBHOOK_SECRET || '' },
+      { secret: process.env.TELEGRAM_BOT_WEBHOOK_SECRET || '' },
+      { secret: process.env.TELEGRAM_SNARAI_WEBHOOK_SECRET || '', tenantHint: 'snarai' },
+      { secret: process.env.TELEGRAM_TEAM_BOT_WEBHOOK_SECRET || '', tenantHint: 'pandoras' },
+    ].filter(s => !!s.secret);
+
     const incomingSecret = req.headers.get('x-telegram-bot-api-secret-token');
 
     // Strict fail-closed: If secret is not configured, reject requests unconditionally
-    if (!expectedSecret) {
+    if (candidateSecrets.length === 0) {
       console.warn('[Hermes Telegram Webhook] 🚨 TELEGRAM_WEBHOOK_SECRET not configured; rejecting request fail-closed.');
       return NextResponse.json({ ok: false, error: 'Unauthorized: Webhook secret not configured on server' }, { status: 401 });
     }
 
     const { CryptographicProofVerifier } = await import('@saasfly/hermes-core');
-    const verification = CryptographicProofVerifier.verifyTelegramWebhookSecret(
-      {
-        actorId: 'telegram_bot_api',
-        tenantId: 'system',
-        authProvider: 'TELEGRAM_WEBHOOK_SECRET',
-        secretToken: incomingSecret || '',
-        proofSignature: incomingSecret || '',
-        issuedAt: Date.now(),
-        nonce: 'preauth',
-      },
-      expectedSecret
-    );
+    let matchedCandidate: { secret: string; tenantHint?: string } | null = null;
 
-    if (!verification.valid) {
-      console.warn(`[Hermes Telegram Webhook] 🚫 Unauthorized: ${incomingSecret ? 'Invalid' : 'Missing'} X-Telegram-Bot-Api-Secret-Token (${verification.error}).`);
+    for (const cand of candidateSecrets) {
+      const verification = CryptographicProofVerifier.verifyTelegramWebhookSecret(
+        {
+          actorId: 'telegram_bot_api',
+          tenantId: 'system',
+          authProvider: 'TELEGRAM_WEBHOOK_SECRET',
+          secretToken: incomingSecret || '',
+          proofSignature: incomingSecret || '',
+          issuedAt: Date.now(),
+          nonce: 'preauth',
+        },
+        cand.secret
+      );
+      if (verification.valid) {
+        matchedCandidate = cand;
+        break;
+      }
+    }
+
+    if (!matchedCandidate) {
+      console.warn(`[Hermes Telegram Webhook] 🚫 Unauthorized: ${incomingSecret ? 'Invalid' : 'Missing'} X-Telegram-Bot-Api-Secret-Token.`);
       return NextResponse.json({ ok: false, error: 'Unauthorized: Missing or invalid secret token' }, { status: 401 });
     }
 
@@ -89,15 +103,16 @@ export async function POST(req: NextRequest) {
     console.log(`[Hermes Telegram Webhook] 🤖 Update received from ${interlocutor.name} (ID: ${telegramId}) | Boss: ${interlocutor.isBoss}`);
 
     // 2. Resolve Tenant / Organization Scope (Default is Hermes OS / Pandora's Growth OS)
-    // Priority: Query param ?tenant= (whitelabel bot) -> /start <slug> -> interlocutor.tenantSlug -> bindings -> 'pandoras'
+    // Priority: Query param ?tenant= (whitelabel bot) -> matched secret tenantHint -> /start <slug> -> interlocutor.tenantSlug -> bindings -> 'pandoras'
     const urlParamTenant = req.nextUrl?.searchParams?.get('tenant');
-    let tenantSlug = (urlParamTenant || '').toLowerCase();
+    let tenantSlug = (urlParamTenant || matchedCandidate?.tenantHint || '').toLowerCase();
+    const isSnaraiOrigin = urlParamTenant === 'snarai' || matchedCandidate?.tenantHint === 'snarai';
 
     // Parse /start command parameter: /start <tenantSlug> (e.g. /start snarai)
     const startMatch = rawText.match(/^\/start\s+([a-zA-Z0-9_-]+)/i);
     if (startMatch && startMatch[1]) {
       const requestedSlug = startMatch[1].toLowerCase();
-      // Tenant Membership Gate: Validate actor has rights to switch into requestedSlug unless it's default 'pandoras'
+      // Tenant Membership Gate: Validate actor has rights to switch into requestedSlug unless it's default 'pandoras' or public tenant
       if (requestedSlug !== 'pandoras' && !interlocutor.isBoss) {
         try {
           const { HermesTenantMembershipService } = await import('@saasfly/hermes-core');
@@ -106,7 +121,8 @@ export async function POST(req: NextRequest) {
           const hasAccess = authorizedTenants.some(
             t => t.tenantSlug?.toLowerCase() === requestedSlug || t.organizationId.toLowerCase() === requestedSlug
           );
-          if (!hasAccess) {
+          const isPublicTenant = requestedSlug === 'snarai';
+          if (!hasAccess && !isPublicTenant) {
             console.warn(`[Hermes Telegram Webhook] 🔒 Access Denied: Actor ${interlocutor.name} (${telegramId}) is not authorized for tenant '${requestedSlug}'. Retaining current tenant.`);
             return NextResponse.json({
               ok: false,
@@ -159,7 +175,8 @@ export async function POST(req: NextRequest) {
         const hasAccess = authorizedTenants.some(
           t => t.tenantSlug?.toLowerCase() === tenantSlug || t.organizationId.toLowerCase() === tenantSlug
         );
-        if (!hasAccess) {
+        const isPublicTenant = tenantSlug === 'snarai';
+        if (!hasAccess && !isPublicTenant) {
           console.warn(`[Hermes Telegram Webhook] 🔒 Access Denied: Actor ${interlocutor.name} (${telegramId}) is not authorized for tenant '${tenantSlug}'.`);
           return NextResponse.json({
             ok: false,
@@ -190,7 +207,13 @@ export async function POST(req: NextRequest) {
     }
 
     // 3. Resolve Telegram Bot Token for sending response
-    let botToken = process.env.HERMES_TELEGRAM_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN;
+    let botToken: string | undefined;
+
+    // Prioritize dedicated bot token if update originated from S'Narai bot or targets S'Narai bot
+    if (isSnaraiOrigin || (tenantSlug === 'snarai' && !process.env.HERMES_TELEGRAM_BOT_TOKEN)) {
+      botToken = process.env.TELEGRAM_SNARAI_BOT_TOKEN;
+    }
+
     if (!botToken && tenantSlug !== 'pandoras') {
       const proj = await db.query.projects.findFirst({
         where: eq(projects.slug, tenantSlug),
@@ -201,6 +224,14 @@ export async function POST(req: NextRequest) {
         const w2e = proj.w2eConfig as any;
         botToken = trc?.secrets?.telegramBotToken || trc?.telegramBotToken || w2e?.botConfig?.telegramToken;
       }
+    }
+
+    if (!botToken && tenantSlug === 'snarai') {
+      botToken = process.env.TELEGRAM_SNARAI_BOT_TOKEN;
+    }
+
+    if (!botToken) {
+      botToken = process.env.HERMES_TELEGRAM_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN;
     }
 
     if (!botToken) {
@@ -294,7 +325,8 @@ export async function POST(req: NextRequest) {
         authorizedMembership = authorizedTenants.find(
           t => t.organizationId.toLowerCase() === canonicalOrgId.toLowerCase()
         );
-        if (!authorizedMembership) {
+        const isPublicTenant = tenantSlug === 'snarai';
+        if (!authorizedMembership && !isPublicTenant) {
           console.warn(`[Hermes Telegram Webhook] 🔒 Access Denied: Actor ${interlocutor.name} (${telegramId}) is not authorized for canonical organization '${canonicalOrgId}' (slug: '${tenantSlug}').`);
           return NextResponse.json({
             ok: false,
@@ -310,7 +342,7 @@ export async function POST(req: NextRequest) {
     // Authoritative Clearance Level & Role Derivation (Platform Policy & Least Privilege):
     // 1. Boss / Platform Admin: OWNER role, CONFIDENTIAL clearance.
     // 2. Tenant Members: Role derived from verified membership record (ADMIN -> CONFIDENTIAL, OPERATOR -> TENANT_RESTRICTED).
-    // 3. Platform Root ('pandoras') Public Visitors: strictly VIEWER role, PUBLIC clearance (no confidential data leakage).
+    // 3. Platform Root ('pandoras') and Public Tenant Visitors: strictly VIEWER role, PUBLIC clearance (no confidential data leakage).
     let effectiveRole: 'OWNER' | 'OPERATOR' | 'VIEWER' = 'VIEWER';
     let effectiveClearance: 'CONFIDENTIAL' | 'TENANT_RESTRICTED' | 'PUBLIC' = 'PUBLIC';
 
@@ -323,12 +355,15 @@ export async function POST(req: NextRequest) {
     } else if (authorizedMembership) {
       effectiveRole = authorizedMembership.role === 'ADMIN' || authorizedMembership.isOwner ? 'OWNER' : 'OPERATOR';
       effectiveClearance = authorizedMembership.role === 'ADMIN' || authorizedMembership.isOwner ? 'CONFIDENTIAL' : 'TENANT_RESTRICTED';
+    } else {
+      effectiveRole = 'VIEWER';
+      effectiveClearance = 'PUBLIC';
     }
 
     // 5. Dispatch to HermesRuntime with Cognitive Context & Anti-Replay
     const { ActorIdentityBindingService, getActiveNonceStore, HermesAuthenticationError } = await import('@saasfly/hermes-core');
     const updateNonce = String(body.update_id);
-    const verifiedSecret = incomingSecret || expectedSecret;
+    const verifiedSecret = incomingSecret || matchedCandidate?.secret || '';
 
     let boundActorSession;
     try {
@@ -346,7 +381,7 @@ export async function POST(req: NextRequest) {
         3600,
         {
           nonceStore: getActiveNonceStore(),
-          channelVerification: expectedSecret ? { telegramSecret: expectedSecret } : undefined,
+          channelVerification: matchedCandidate?.secret ? { telegramSecret: matchedCandidate.secret } : undefined,
         }
       );
     } catch (bindErr: unknown) {
@@ -457,6 +492,8 @@ export async function POST(req: NextRequest) {
       });
 
       if (!sendRes.ok) {
+        const errorText = await sendRes.text().catch(() => '');
+        console.error(`[Hermes Telegram Webhook] Failed to deliver Telegram message (HTTP ${sendRes.status}):`, errorText);
         // Fallback to plain text if Markdown parsing failed due to unescaped special characters
         delete payload.parse_mode;
         await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {

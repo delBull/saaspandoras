@@ -225,7 +225,12 @@ async function handleShortlink(rawSlug: string, searchParams: URLSearchParams, h
     redirect(redirectUrl);
 
   } catch (error: any) {
-    console.error('Shortlink handling error:', error);
+    if (error.message === 'NEXT_REDIRECT' || error?.digest?.startsWith('NEXT_REDIRECT')) {
+      throw error;
+    }
+    if (error.message !== 'not_found') {
+      console.error('Shortlink handling error:', error);
+    }
     // Re-throw errors to be handled by the page component
     throw error;
   }

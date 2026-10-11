@@ -418,8 +418,13 @@ export class ClaimContractEngine {
     tenantId: string,
     options?: { allowSuperseded?: boolean; targetVersion?: number }
   ): TenantClaimContract | undefined {
-    const key = this.cleanTenant(tenantId);
-    const active = this.registeredContracts.get(key);
+    const key = this.cleanTenant(tenantId || '');
+    let active = this.registeredContracts.get(key);
+
+    // Platform-wide fallback: if not found by specific tenant key, fallback to canonical ecosystem contract
+    if (!active && (key === '' || key === 'generic' || key === 'default' || key === 'system' || !key.includes('snarai'))) {
+      active = PANDORAS_CANONICAL_CLAIM_CONTRACT;
+    }
 
     if (options?.allowSuperseded) {
       if (options.targetVersion) {
@@ -693,8 +698,24 @@ export class ClaimContractEngine {
    * Evaluates the Provenance Intent Tier (Level 0 - 4) of a user prompt or assistant output
    */
   public static determineIntentTier(text: string): ProvenanceIntentTier {
-    const lower = text.toLowerCase();
-    if (/\b(comprar|reservar|firmar|depositar|invertir|transferir|distribuir|liquidar|ejecutar|recompra)\b/i.test(lower)) {
+    const lower = text.toLowerCase().trim();
+
+    // 1. Conversational greetings, introductions & general assistant questions without material actions
+    const isGreetingOrIntro =
+      /^(?:¡?hola|buenos\s+d[ií]as|buenas\s+tardes|buenas\s+noches|saludos|bienvenid[oa]|soy\s+hermes|como\s+asistente|en\s+qu[eé]\s+puedo|¿?en\s+qu[eé]\s+te\s+puedo)\b/i.test(lower);
+    const hasFinancialOrCommercialHardKeyword =
+      /\b(precio[s]?|costo[s]?|\$|\busd\b|rendimiento[s]?|plusval[ií]a[s]?|tasa[s]?|comprar|reservar|invertir|transferir\s+\$|liquidar|departamento[s]?|suite[s]?)\b/i.test(lower);
+
+    if (isGreetingOrIntro && !hasFinancialOrCommercialHardKeyword) {
+      return 'LEVEL_0_CONVERSATIONAL';
+    }
+
+    // 2. Level 4: Material Transactional Actions
+    // Note: 'ejecutar' only triggers Level 4 when modifying financial or contract state
+    if (
+      /\b(comprar|reservar|firmar|depositar|invertir|transferir|distribuir|liquidar|recompra)\b/i.test(lower) ||
+      /\bejecutar\s+(?:orden|compra|pago|transacci[oó]n|fondos|contrato|swap|distribuci[oó]n|retiro|smart\s+contract)\b/i.test(lower)
+    ) {
       return 'LEVEL_4_ACTION';
     }
     if (/\b(rendimiento\w*|plusval[ií]a\w*|roi|tasa\w*|utilidad\w*|dividendo\w*|contrato\w*|garant[ií]\w*|garantizad\w*|asegurad\w*|financier\w*|precio\w*|costo\w*|\$|usd|pesos)\b/i.test(lower)) {
@@ -764,7 +785,7 @@ export class ClaimContractEngine {
     tenantId: string,
     options?: { additionalSources?: string[] }
   ): ClaimCoverageReport {
-    const contract = this.getContract(tenantId);
+    const contract = this.getContract(tenantId) || PANDORAS_CANONICAL_CLAIM_CONTRACT;
     if (!contract || contract.governanceStatus !== 'ACTIVE') {
       return {
         complete: false,
