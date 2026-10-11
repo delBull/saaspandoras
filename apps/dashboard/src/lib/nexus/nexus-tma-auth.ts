@@ -140,8 +140,15 @@ export function verifyTelegramInitData(
   rawInitData: string,
   botToken?: string
 ): URLSearchParams {
-  const token = (botToken ?? process.env.TELEGRAM_TEAM_BOT_TOKEN ?? '').trim();
-  if (!token) {
+  const primaryToken = (botToken ?? process.env.TELEGRAM_TEAM_BOT_TOKEN ?? '').trim();
+  const fallbackTokens = [
+    process.env.TELEGRAM_BOT_TOKEN,
+    process.env.HERMES_TELEGRAM_BOT_TOKEN,
+  ].filter((t): t is string => Boolean(t && t.trim() && t.trim() !== primaryToken));
+
+  const candidateTokens = [primaryToken, ...fallbackTokens].filter(Boolean);
+
+  if (candidateTokens.length === 0) {
     throw new NexusTmaAuthError(
       'TELEGRAM_TEAM_BOT_TOKEN is not configured.',
       'TRANSPORT_NOT_CONFIGURED',
@@ -162,21 +169,28 @@ export function verifyTelegramInitData(
     .map(([k, v]) => `${k}=${v}`)
     .join('\n');
 
-  // Derive secret key: HMAC-SHA256("WebAppData", botToken)
-  const secretKey = createHmac('sha256', 'WebAppData').update(token).digest();
+  let matched = false;
 
-  // Compute expected hash
-  const expectedHash = createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
+  for (const token of candidateTokens) {
+    // Derive secret key: HMAC-SHA256("WebAppData", botToken)
+    const secretKey = createHmac('sha256', 'WebAppData').update(token).digest();
 
-  // Constant-time comparison
-  if (receivedHash.length !== expectedHash.length) {
-    throw new NexusTmaHmacError();
+    // Compute expected hash
+    const expectedHash = createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
+
+    if (receivedHash.length === expectedHash.length) {
+      let mismatch = 0;
+      for (let i = 0; i < receivedHash.length; i++) {
+        mismatch |= receivedHash.charCodeAt(i) ^ expectedHash.charCodeAt(i);
+      }
+      if (mismatch === 0) {
+        matched = true;
+        break;
+      }
+    }
   }
-  let mismatch = 0;
-  for (let i = 0; i < receivedHash.length; i++) {
-    mismatch |= receivedHash.charCodeAt(i) ^ expectedHash.charCodeAt(i);
-  }
-  if (mismatch !== 0) {
+
+  if (!matched) {
     throw new NexusTmaHmacError();
   }
 
