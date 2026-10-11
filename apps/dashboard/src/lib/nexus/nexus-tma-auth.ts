@@ -140,13 +140,17 @@ export function verifyTelegramInitData(
   rawInitData: string,
   botToken?: string
 ): URLSearchParams {
-  const primaryToken = (botToken ?? process.env.TELEGRAM_TEAM_BOT_TOKEN ?? '').trim();
-  const fallbackTokens = [
-    process.env.TELEGRAM_BOT_TOKEN,
+  const candidateTokens = [
+    botToken,
+    process.env.TELEGRAM_TEAM_BOT_TOKEN,
     process.env.HERMES_TELEGRAM_BOT_TOKEN,
-  ].filter((t): t is string => Boolean(t && t.trim() && t.trim() !== primaryToken));
-
-  const candidateTokens = [primaryToken, ...fallbackTokens].filter(Boolean);
+    process.env.TELEGRAM_BOT_TOKEN,
+    process.env.TELEGRAM_BOT_TOKEN_HQ,
+    process.env.TELEGRAM_SNARAI_BOT_TOKEN,
+    process.env.TELEGRAM_SECURITY_BOT_TOKEN,
+  ]
+    .map(t => (t ?? '').trim())
+    .filter((t, idx, arr): t is string => Boolean(t) && arr.indexOf(t) === idx);
 
   if (candidateTokens.length === 0) {
     throw new NexusTmaAuthError(
