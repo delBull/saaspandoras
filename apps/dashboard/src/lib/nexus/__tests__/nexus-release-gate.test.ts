@@ -55,23 +55,23 @@ describe('🔒 RELEASE GATE: Nexus Production Closure Audit Suite', () => {
   // BLOCKER 2: Rate Limiting & Trusted Edge IP Resolution
   // =========================================================================
   describe('🛡️ Blocker 2: Edge IP Resolution & Anti-Spoofing', () => {
-    it('RG-01: Prioritizes cf-connecting-ip over client-manipulated x-forwarded-for', () => {
+    it('RG-01: Prioritizes platform-sealed x-real-ip over spoofed cf-connecting-ip and x-forwarded-for', () => {
       const headers = new Headers({
+        'x-real-ip': '172.16.0.5',
         'cf-connecting-ip': '198.51.100.25',
         'x-forwarded-for': '10.0.0.1, 10.0.0.2',
-        'x-real-ip': '172.16.0.5',
       });
       const ip = getTrustedClientIp(headers);
-      expect(ip).toBe('198.51.100.25');
+      expect(ip).toBe('172.16.0.5');
     });
 
-    it('RG-02: Prioritizes x-real-ip when cf-connecting-ip is absent', () => {
+    it('RG-02: Falls back to cf-connecting-ip when x-real-ip is absent', () => {
       const headers = new Headers({
-        'x-real-ip': '203.0.113.88',
+        'cf-connecting-ip': '198.51.100.25',
         'x-forwarded-for': '1.1.1.1, 2.2.2.2',
       });
       const ip = getTrustedClientIp(headers);
-      expect(ip).toBe('203.0.113.88');
+      expect(ip).toBe('198.51.100.25');
     });
 
     it('RG-03: Never trusts the first entry in x-forwarded-for; resolves the closest proxy IP', () => {

@@ -169,10 +169,13 @@ export const registerRateLimiter = new RedisRateLimiter(5, 60000); // 5 registra
  * Never trusts the first entry in x-forwarded-for which can be spoofed by client.
  */
 export function getTrustedClientIp(headers: Headers | { get(name: string): string | null }): string {
-  const cfIp = headers.get('cf-connecting-ip')?.trim();
-  if (cfIp) return cfIp;
+  // 🛡️ Vercel Edge strictly sets and seals `x-real-ip` from the incoming socket.
+  // Prioritizing x-real-ip prevents attackers from forging `cf-connecting-ip` to bypass rate limits
+  // when Cloudflare proxy is not terminating or actively overwriting the connection.
   const realIp = headers.get('x-real-ip')?.trim();
   if (realIp) return realIp;
+  const cfIp = headers.get('cf-connecting-ip')?.trim();
+  if (cfIp) return cfIp;
   const forwarded = headers.get('x-forwarded-for');
   if (forwarded) {
     const parts = forwarded.split(',').map((p) => p.trim()).filter(Boolean);
