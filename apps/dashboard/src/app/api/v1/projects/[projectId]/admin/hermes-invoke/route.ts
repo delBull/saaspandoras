@@ -37,8 +37,21 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ pro
     const adminExternalId = admin.whatsappPhone || admin.discordUserId || ''; // mock using discordId as TG ID for now
     
     // 3. Dispatch the outbound push message via Hermes Runtime
-    const { getDefaultRuntime } = await import('@saasfly/hermes-core');
+    const { getDefaultRuntime, ActorIdentityBindingService } = await import('@saasfly/hermes-core');
     const runtime = getDefaultRuntime();
+    const actorId = `admin_${adminExternalId}`;
+    const boundActorSession = ActorIdentityBindingService.createBoundSession(
+      {
+        actorId,
+        tenantId: projectId,
+        authProvider: 'PORTAL_INTERNAL',
+        proofSignature: `admin_invoke_sig_${Date.now()}_${admin.id}`,
+        issuedAt: Date.now(),
+        nonce: `admin_invoke_nonce_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
+      },
+      'CONFIDENTIAL',
+      3600
+    );
     
     // We send an "internal" message to Hermes instructing it to message the admin
     const runtimeResponse = await runtime.respond({
@@ -51,12 +64,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ pro
         createdAt: new Date(),
       },
       controlPlaneContext: {
-        actorId: `admin_${adminExternalId}`,
+        actorId,
         organizationId: projectId,
         role: 'ADMIN',
         permissions: ['view_overview', 'view_governance'],
         sessionId: `invoke_sess_${projectId}_${adminExternalId}`,
         channel: adminChannel,
+        boundActorSession,
       }
     });
 

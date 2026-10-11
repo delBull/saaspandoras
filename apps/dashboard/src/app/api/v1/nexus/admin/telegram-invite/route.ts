@@ -79,9 +79,10 @@ export async function POST(req: NextRequest) {
     });
 
     // 4. Return UX response with deep link
+    const botUsername = process.env.NEXT_PUBLIC_NEXUS_TELEGRAM_BOT_USERNAME || 'nexusPandoras_bot';
     return NextResponse.json({
       ok: true,
-      inviteLink: `https://t.me/nexusPandoras_bot?start=${rawToken}`
+      inviteLink: `https://t.me/${botUsername}?start=${rawToken}`
     });
 
   } catch (err: any) {

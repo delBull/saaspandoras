@@ -649,7 +649,7 @@ export default function HermesEnterpriseLandingPage() {
             </div>
             <div className="pt-6">
               <a 
-                href="https://t.me/pandorasHermes_bot" 
+                href={`https://t.me/${process.env.NEXT_PUBLIC_HERMES_TELEGRAM_BOT_USERNAME || 'pandorasHermes_bot'}`} 
                 target="_blank" 
                 rel="noreferrer"
                 className="w-full py-2.5 px-4 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/40 text-purple-300 text-xs font-semibold flex items-center justify-center gap-2 transition"

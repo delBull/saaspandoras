@@ -106,17 +106,26 @@ export async function GET(req: NextRequest) {
       hints: { temperature: 0.2, maxTokens: 400 },
     } as any;
 
-    const runtime = (await import('@saasfly/hermes-core')).getDefaultRuntime();
+    const { getDefaultRuntime, ActorIdentityBindingService } = await import('@saasfly/hermes-core');
+    const runtime = getDefaultRuntime();
+    const actorId = `market_attack_bot_${session.canonicalOrgId}`;
+    const boundActorSession = ActorIdentityBindingService.createInternalSystemSession({
+      actorId,
+      tenantId: 'pandoras',
+      clearanceLevel: 'INTERNAL_OPERATIONAL',
+    });
+
     const response = await runtime.respond({
       organizationId: 'pandoras', // Hermes runs under the pandoras core runtime identity to have clearance
       conversationId: `market_attack_${session.canonicalOrgId}_${Date.now()}`,
       message: { id: `m_${Date.now()}`, role: 'USER', content: 'Diagnostica mi pipeline y sugiere un ajuste táctico.' as any, createdAt: new Date() },
       controlPlaneContext: {
         channel: 'INTERNAL_DASHBOARD',
-        actorId: `market_attack_bot_${session.canonicalOrgId}`,
+        actorId,
         organizationId: 'pandoras',
         role: 'SYSTEM' as any,
         permissions: ['knowledge.read', 'runtime.respond'],
+        boundActorSession,
       } as any,
       // Pass the tenant's real attached data via the runtime's generic context args
       ...reasoningInput,

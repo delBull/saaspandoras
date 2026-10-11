@@ -71,14 +71,29 @@ export async function POST(req: Request) {
     const orgContext = await OrganizationSDK.resolve(integration.canonicalOrgId, 'HERMES');
 
     // Setup strictly limited Public Knowledge Scope
+    const { ActorIdentityBindingService } = await import('@saasfly/hermes-core');
+    const boundActorSession = ActorIdentityBindingService.createBoundSession(
+      {
+        actorId: sessionId,
+        tenantId: orgContext.organizationId,
+        authProvider: 'PORTAL_INTERNAL',
+        proofSignature: `pub_sig_${Date.now()}_${sessionId}`,
+        issuedAt: Date.now(),
+        nonce: `pub_nonce_${Date.now()}_${crypto.randomBytes(6).toString('hex')}`,
+      },
+      'PUBLIC',
+      1800
+    );
+
     const restrictedScope: any = {
       organizationId: orgContext.organizationId,
       actorId: sessionId,
-      role: 'viewer',
+      role: 'VIEWER',
       permissions: [], // Highly restricted
       identity: {
          name: 'Anonymous Public Visitor'
-      }
+      },
+      boundActorSession,
     };
 
     const runtime = getDefaultRuntime();

@@ -452,6 +452,14 @@ export class HermesRuntime implements HermesCognitiveRuntime {
       if (!isSessionValid) {
         throw new Error('[HermesRuntime] Bound Actor Session is invalid or expired.');
       }
+      // H1.1 Hardening: bind the session to the actual requesting actor/tenant so a
+      // valid session minted for another actor/tenant cannot be replayed here.
+      ActorIdentityBindingService.assertSessionMatchesRequest(boundSession, {
+        actorId: controlPlaneContext.actorId,
+        organizationId: controlPlaneContext.organizationId,
+        canonicalTenantId,
+        projectSlug: canonical.projectSlug,
+      });
 
       // Step 2b: Load Conversation Memory (K12-A09, K12-A10)
       const memory = await this.memoryProvider.load({ organizationId, conversationId, controlPlaneContext });

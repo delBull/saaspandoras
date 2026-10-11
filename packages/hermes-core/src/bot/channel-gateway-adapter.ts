@@ -543,6 +543,20 @@ export class ChannelGatewayAdapter {
         const { IdentityResolver } = await import('./identity-resolver');
         const identityId = await IdentityResolver.resolveIdentity(ctx.channel, ctx.externalUserId, ctx.metadata);
         
+        const { ActorIdentityBindingService } = await import('../runtime/prompt-hygiene-contract');
+        const boundActorSession = ActorIdentityBindingService.createBoundSession(
+          {
+            actorId: identityId || userId || ctx.externalUserId,
+            tenantId: projectRecord.slug,
+            authProvider: 'PORTAL_INTERNAL',
+            proofSignature: 'channel_gateway_verified',
+            issuedAt: Date.now(),
+            nonce: `req_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
+          },
+          'CONFIDENTIAL',
+          3600
+        );
+
         const runtimeResponse = await runtime.respond({
           organizationId: projectRecord.slug,
           conversationId: ctx.externalConversationId,
@@ -557,8 +571,9 @@ export class ChannelGatewayAdapter {
             organizationId: projectRecord.slug,
             role: 'VIEWER',
             permissions: [],
-            sessionId: `sess_${ctx.externalConversationId}`,
-            channel: ctx.channel,
+            sessionId: boundActorSession.sessionToken,
+            boundActorSession,
+            channel: ctx.channel as any,
           }
         });
         

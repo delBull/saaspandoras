@@ -10,6 +10,7 @@ import { HermesRuntime, getDefaultRuntime } from '..';
 // @ts-ignore
 import { buildCanonicalWhatsAppConversationId, maskPhoneNumber } from '@saasfly/shared';
 import { TenantAuthorityService } from "../tenants/tenant-authority";
+import { ActorIdentityBindingService } from "../runtime/prompt-hygiene-contract";
 
 export interface OutboundDispatchResult {
   success: boolean;
@@ -220,6 +221,11 @@ export class HermesOutboundDispatcher {
     let generatedOutreachMessage: string;
     try {
       const runtime: HermesRuntime = getDefaultRuntime();
+      const boundActorSession = ActorIdentityBindingService.createInternalSystemSession({
+        actorId: 'hermes_sales_agent',
+        tenantId: canonicalOrgId,
+        clearanceLevel: 'INTERNAL_OPERATIONAL',
+      });
       
       const runtimeResult = await runtime.respond({
         organizationId: canonicalOrgId,
@@ -235,6 +241,7 @@ export class HermesOutboundDispatcher {
           organizationId: canonicalOrgId,
           role: 'SYSTEM',
           permissions: ['crm.outreach', 'knowledge.read'],
+          boundActorSession,
         },
       });
 

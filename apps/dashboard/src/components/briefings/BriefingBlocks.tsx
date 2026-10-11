@@ -142,7 +142,7 @@ export function BlockNextSteps({ data, projectSlug }: { data: any, projectSlug: 
     { title: "Agenda una conversación", action: `https://dash.pandoras.finance/events/${projectSlug}/1` },
     { title: "Explora el Portal", action: `https://${projectSlug}.aztecaz.xyz/portal` },
     { title: "Lee el Whitepaper", action: `https://${projectSlug}.aztecaz.xyz/white-paper` },
-    { title: "Resuelve tus dudas con nuestra IA", action: `https://t.me/${projectSlug}assit_bot` }
+    { title: "Resuelve tus dudas con nuestra IA", action: `https://t.me/${process.env.NEXT_PUBLIC_ASSISTANT_BOT_USERNAME || `${projectSlug}assit_bot`}` }
   ];
 
   return (

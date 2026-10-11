@@ -15,11 +15,9 @@ import { eq } from "@saasfly/db-core";
 import { HumanHandoffProtocol } from '@saasfly/hermes-core';
 import { InteractionRouter } from '@saasfly/hermes-core';
 import { sendWhatsAppMessage } from '@saasfly/shared';
-import { resolveMasterPhoneNumberId } from '@saasfly/shared';
-import { buildCanonicalWhatsAppConversationId, maskPhoneNumber } from '@saasfly/shared';
-import { getDefaultRuntime } from '@saasfly/hermes-core';
+import { resolveMasterPhoneNumberId, buildCanonicalWhatsAppConversationId, maskPhoneNumber } from '@saasfly/shared';
+import { getDefaultRuntime, CommercialCloserService, ActorIdentityBindingService } from '@saasfly/hermes-core';
 import { formatWhatsAppText } from './utils/formatter';
-import { CommercialCloserService } from '@saasfly/hermes-core';
 
 export interface WhatsAppIncomingMessage {
   from: string;
@@ -360,6 +358,22 @@ export class WhatsAppDispatcher {
         const runtime = getDefaultRuntime();
         const conversationId = buildCanonicalWhatsAppConversationId(tenant.slug, phone);
 
+        const clearanceLevel1 = resolvedInterlocutor?.isBoss
+          ? 'CONFIDENTIAL'
+          : (resolvedInterlocutor?.isCollaborator ? 'TENANT_RESTRICTED' : 'PUBLIC');
+        const boundActorSession1 = ActorIdentityBindingService.createBoundSession(
+          {
+            actorId: resolvedActorId,
+            tenantId: tenant.slug,
+            authProvider: 'PORTAL_INTERNAL',
+            proofSignature: `wa_disp_sig_${Date.now()}_${cleanPhone}`,
+            issuedAt: Date.now(),
+            nonce: `wa_disp_nonce_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
+          },
+          clearanceLevel1,
+          3600
+        );
+
         const runtimeResponse = await runtime.respond({
           organizationId: tenant.slug,
           conversationId,
@@ -384,6 +398,7 @@ export class WhatsAppDispatcher {
             interlocutor: resolvedInterlocutor,
             canonicalIdentity: resolvedInterlocutor?.canonicalIdentity,
             tenantContext: resolvedInterlocutor?.tenantContext,
+            boundActorSession: boundActorSession1,
           }
         });
 
@@ -456,6 +471,22 @@ export class WhatsAppDispatcher {
 
       console.log(`🌐 [WhatsAppDispatcher] Routing to Hermes Cognitive Runtime for ${resolvedName} (Boss: ${isBoss}, Collaborator: ${isCollaborator}, Role: ${resolvedRole})`);
 
+      const clearanceLevel2 = isBoss
+        ? 'CONFIDENTIAL'
+        : (isCollaborator ? 'TENANT_RESTRICTED' : 'PUBLIC');
+      const boundActorSession2 = ActorIdentityBindingService.createBoundSession(
+        {
+          actorId: resolvedActorId,
+          tenantId: 'pandoras',
+          authProvider: 'PORTAL_INTERNAL',
+          proofSignature: `wa_pan_sig_${Date.now()}_${cleanPhone}`,
+          issuedAt: Date.now(),
+          nonce: `wa_pan_nonce_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
+        },
+        clearanceLevel2,
+        3600
+      );
+
       const runtimeResponse = await runtime.respond({
         organizationId: 'pandoras',
         conversationId,
@@ -480,6 +511,7 @@ export class WhatsAppDispatcher {
           interlocutor: resolvedInterlocutor,
           canonicalIdentity: resolvedInterlocutor?.canonicalIdentity,
           tenantContext: resolvedInterlocutor?.tenantContext,
+          boundActorSession: boundActorSession2,
         }
       });
 

@@ -10,7 +10,8 @@
   },
   "dependencies": {
     "@saasfly/db-core": "workspace:*",
-    "@saasfly/shared": "workspace:*"
+    "@saasfly/shared": "workspace:*",
+    "ethers": "^5.7.2"
   },
   "devDependencies": {
     "@saasfly/eslint-config": "workspace:*",

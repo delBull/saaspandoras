@@ -116,7 +116,7 @@ export const TelegramLinkCard = () => {
                              <p className="text-[11px] text-zinc-400">
                                 ¿Aún no tienes la app de Pandoras? <br/>
                                 <a 
-                                    href="https://t.me/pandorasAlphaBot" 
+                                    href={`https://t.me/${process.env.NEXT_PUBLIC_ALPHA_BOT_USERNAME || 'PandorasFinance_Bot'}`} 
                                     target="_blank" 
                                     rel="noopener noreferrer"
                                     className="text-blue-400 hover:text-blue-300 underline font-medium"
