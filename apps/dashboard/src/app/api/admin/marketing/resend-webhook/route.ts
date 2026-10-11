@@ -52,57 +52,58 @@ export async function POST(request: NextRequest) {
       console.log(`  ${key}: ${value}`);
     }
 
-    // Check for both possible header formats
+    // Check for both Svix (current Resend standard) and legacy Resend header formats
     if (WEBHOOK_SECRET) {
-      // Try Resend v1 format first (most common)
-      let signature = request.headers.get('resend-signature');
-      let timestamp = request.headers.get('resend-timestamp');
-      let webhookId = request.headers.get('resend-webhook-id');
-
-      // If not found, try alternative formats
-      if (!signature) {
-        signature = request.headers.get('X-Resend-Signature') || request.headers.get('x-resend-signature');
-      }
-      if (!timestamp) {
-        timestamp = request.headers.get('X-Resend-Signature-Timestamp') || request.headers.get('resend-timestamp');
-      }
-      if (!webhookId) {
-        webhookId = request.headers.get('X-Resend-Webhook-Id') || request.headers.get('resend-webhook-id');
-      }
-
-      console.log(`📧 [WEBHOOK-HEADERS] Extracted:`, {
-        hasSignature: !!signature,
-        hasTimestamp: !!timestamp,
-        hasWebhookId: !!webhookId,
-        signaturePreview: signature?.substring(0, 20) + '...',
-        timestamp,
-        webhookId,
-        WEBHOOK_SECRET: WEBHOOK_SECRET ? '***configured***' : 'not configured'
-      });
+      // 1. Extract Svix / Resend headers
+      const signature = request.headers.get('svix-signature') ||
+        request.headers.get('resend-signature') ||
+        request.headers.get('x-resend-signature');
+      const timestamp = request.headers.get('svix-timestamp') ||
+        request.headers.get('resend-timestamp') ||
+        request.headers.get('x-resend-signature-timestamp');
+      const webhookId = request.headers.get('svix-id') ||
+        request.headers.get('resend-webhook-id') ||
+        request.headers.get('x-resend-webhook-id');
 
       if (!signature || !timestamp || !webhookId) {
         console.error('❌ Missing required webhook signature headers');
         return NextResponse.json({ error: 'Missing webhook headers' }, { status: 400 });
       }
 
-      // Create the signed content
+      // 2. Prepare secret key (handle whsec_ prefix with base64 decoding per Svix spec)
+      const cleanSecret = WEBHOOK_SECRET.startsWith('whsec_')
+        ? WEBHOOK_SECRET.substring(6)
+        : WEBHOOK_SECRET;
+
+      let secretBuffer: Buffer;
+      try {
+        secretBuffer = Buffer.from(cleanSecret, 'base64');
+      } catch {
+        secretBuffer = Buffer.from(cleanSecret, 'utf8');
+      }
+
+      // 3. Create the signed content: ${id}.${timestamp}.${body}
       const signedContent = `${webhookId}.${timestamp}.${body}`;
 
-      // Create HMAC SHA256 signature
-      const hmac = crypto.createHmac('sha256', WEBHOOK_SECRET);
-      hmac.update(signedContent, 'utf8');
-      const computedSignature = hmac.digest('base64');
+      // 4. Compute expected HMAC SHA-256 signatures
+      const hmacSvix = crypto.createHmac('sha256', secretBuffer).update(signedContent, 'utf8').digest('base64');
+      const hmacRaw = crypto.createHmac('sha256', WEBHOOK_SECRET).update(signedContent, 'utf8').digest('base64');
 
-      // Compare signatures
-      const isValid = crypto.timingSafeEqual(
-        Buffer.from(computedSignature),
-        Buffer.from(signature)
-      );
+      // 5. Compare signatures (svix-signature may contain multiple "v1,sig" separated by space)
+      const passedSignatures = signature.split(' ').map((s) => s.trim().replace(/^v1,/, ''));
+      const isValid = passedSignatures.some((sig) => {
+        try {
+          return (
+            crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(hmacSvix)) ||
+            crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(hmacRaw))
+          );
+        } catch {
+          return false;
+        }
+      });
 
       if (!isValid) {
         console.error('❌ Invalid webhook signature');
-        console.log('🔐 Expected:', computedSignature);
-        console.log('🔐 Received:', signature);
         return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
       }
 
