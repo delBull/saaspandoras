@@ -11,6 +11,56 @@
 
 import { NonceStore } from './key-distribution-service';
 
+/**
+ * IoredisNonceStore — Railway Redis (REDISS_URL/REDIS_URL) o cualquier Redis TCP.
+ * Atomic anti-replay: `SET key val NX EX ttl` (true solo si la clave no existía).
+ * Fail-closed: si Redis no responde, se DENIEGA el nonce (no abre replay window).
+ */
+export class IoredisNonceStore implements NonceStore {
+  private readonly client: any;
+  private readonly keyPrefix: string;
+  private readonly ttlSeconds: number;
+
+  constructor(redisUrl = process.env.ACADEMY_REDIS_URL || process.env.REDIS_URL, ttlSeconds = 5 * 60) {
+    if (!redisUrl) {
+      throw new Error('[IoredisNonceStore] REDIS_URL / ACADEMY_REDIS_URL is required. Fail-closed: no fallback to memory.');
+    }
+    // Lazy require so pure-client bundles never pull ioredis.
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const Redis = require('ioredis');
+    this.client = new Redis(redisUrl, {
+      lazyConnect: false,
+      maxRetriesPerRequest: 2,
+    });
+    this.client.on('error', (err: Error) => {
+      console.error('[IoredisNonceStore] Redis connection error:', err?.message || err);
+    });
+    this.keyPrefix = 'academy:nonce:';
+    this.ttlSeconds = ttlSeconds;
+  }
+
+  public async registerNonce(nonce: string, timestamp: number): Promise<boolean> {
+    try {
+      const result = await this.client.set(
+        `${this.keyPrefix}${nonce}`,
+        String(timestamp),
+        'EX',
+        this.ttlSeconds,
+        'NX'
+      );
+      return result === 'OK';
+    } catch (err: any) {
+      // Fail-closed: transport failure must never open a replay window.
+      console.error('[IoredisNonceStore] Nonce registration failed, denying (fail-closed):', err?.message || err);
+      return false;
+    }
+  }
+
+  public async disconnect(): Promise<void> {
+    await this.client?.quit?.();
+  }
+}
+
 export class UpstashRestNonceStore implements NonceStore {
   private readonly baseUrl: string;
   private readonly token: string;

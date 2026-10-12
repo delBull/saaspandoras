@@ -17,7 +17,8 @@
     "@saasfly/nexus-deals-sdk": "workspace:*",
     "@saasfly/auth-sdk": "workspace:*",
     "@saasfly/hermes-core": "workspace:*",
-    "@saasfly/shared": "workspace:*"
+    "@saasfly/shared": "workspace:*",
+    "ioredis": "^5.3.2"
   },
   "devDependencies": {
     "@saasfly/eslint-config": "workspace:*",

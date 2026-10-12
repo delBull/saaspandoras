@@ -18,6 +18,7 @@ import {
   EncryptedCourseResourceVault,
   InMemoryNonceStore,
   UpstashRestNonceStore,
+  IoredisNonceStore,
   InMemoryAcademyManifestStore,
   type KeyAccessPolicy,
   type NonceStore,
@@ -33,6 +34,15 @@ const vault = new EncryptedCourseResourceVault();
 const manifestStore: AcademyManifestStore = new InMemoryAcademyManifestStore();
 
 function getNonceStore(): NonceStore {
+  // Preferencia institucional: Railway Redis (TCP) via ioredis.
+  const redisUrl = process.env.ACADEMY_REDIS_URL || process.env.REDIS_URL;
+  if (redisUrl) {
+    try {
+      return new IoredisNonceStore(redisUrl, 5 * 60);
+    } catch (err) {
+      console.warn('[academy/keys] Redis nonce store unavailable (fail-closed to memory, single-instance):', err);
+    }
+  }
   const hasUpstash = !!process.env.UPSTASH_REDIS_REST_URL && !!process.env.UPSTASH_REDIS_REST_TOKEN;
   if (hasUpstash) {
     try {
@@ -46,10 +56,13 @@ function getNonceStore(): NonceStore {
 
 const nonceStore = getNonceStore();
 
-// 🛡️ Fase 2.1: server-authoritative entitlement. The previous pilot stub
-// (any 0x wallet for tenant pandoras/org_*) was a universal key unlock.
-// Entitlement now comes explicitly from the environment until the enrollment
-// store (purchases/candidates) is wired server-side.
+// 🛡️ Fase 2.1: server-authoritative entitlement real.
+// Permisión por CREATIVITY OWNERSHIP: la wallet firmante debe ser el
+// applicant/owner canónico del tenant (projects.applicant_wallet_address),
+// resuelto por canonicalOrgId o slug server-side (FC-001). Los tenants y
+// Pandora's pueden desbloquear sus propios cursos privados sin env lists.
+// La env ACADEMY_PILOT_ENTITLED_WALLETS queda como OVERRIDE opcional (ej. para
+// dar acceso a alumnos beta específicos); vacía = solo ownership governs.
 const PILOT_ENTITLED_WALLETS = new Set(
   (process.env.ACADEMY_PILOT_ENTITLED_WALLETS || '')
     .toLowerCase()
@@ -58,15 +71,35 @@ const PILOT_ENTITLED_WALLETS = new Set(
     .filter(Boolean)
 );
 
+async function isTenantOwnerWallet(tenantId: string, walletAddress: string): Promise<boolean> {
+  if (!tenantId || !walletAddress) return false;
+  try {
+    const { db } = await import('@saasfly/db-core');
+    const { projects } = await import('@saasfly/db-core/schema');
+    const { eq, or, sql: sqlFn } = await import('@saasfly/db-core');
+    const walletLower = walletAddress.toLowerCase();
+    const [project] = await db
+      .select({ applicant: projects.applicantWalletAddress })
+      .from(projects)
+      .where(or(eq(projects.organizationId, tenantId), eq(projects.slug, tenantId)))
+      .limit(1);
+    if (!project?.applicant) return false;
+    return (project.applicant as string).toLowerCase() === walletLower;
+  } catch (err) {
+    console.error('[academy/keys] Tenant ownership lookup failed (fail-closed):', err);
+    return false;
+  }
+}
+
 const serverEntitlementPolicy: KeyAccessPolicy = {
   async isAllowed({ walletAddress, tenantId, resourceId }) {
     if (!walletAddress || !tenantId || !resourceId) return false;
-    // Explicit env allowlist takes precedence (fail-closed when empty)
-    if (PILOT_ENTITLED_WALLETS.size > 0) {
-      return PILOT_ENTITLED_WALLETS.has(walletAddress.toLowerCase());
+    // Optional env override (beta students, consultants) — additive, not required.
+    if (PILOT_ENTITLED_WALLETS.size > 0 && PILOT_ENTITLED_WALLETS.has(walletAddress.toLowerCase())) {
+      return true;
     }
-    // Upstream policy hook: replace with AcademyStore enrollment check.
-    return false;
+    // 🏛️ Canonical permission: creator/owner wallet of the tenant.
+    return isTenantOwnerWallet(tenantId, walletAddress);
   },
 };
 
