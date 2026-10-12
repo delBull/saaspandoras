@@ -46,7 +46,10 @@ export interface EncryptedResourceChunkMetadata {
   byteLength: number;
   iv: string; // base64 12 bytes
   authTag: string; // base64 16 bytes
-  chunkHash: string; // sha256
+  chunkHash: string; // sha256 of ciphertext
+  // Fase 3 (additive): fuente de entrega del ciphertext (IPFS gateway o CDN).
+  // Puede ser override por-chunk o derivarse de gatewayBaseUrl del manifest.
+  gatewayUrl?: string;
 }
 
 export interface EncryptedCourseResourceManifest {
@@ -64,6 +67,9 @@ export interface EncryptedCourseResourceManifest {
   kekKeyId: string;
   ipfsCid: string; // CID of the ciphertext blob in IPFS
   chunks: EncryptedResourceChunkMetadata[];
+  // Fase 3 (additive): base template del gateway para el pipeline de publicación.
+  // El viewer usa `{gatewayBaseUrl}/{resourceId}/{chunkIndex}` si el chunk no trae gatewayUrl.
+  gatewayBaseUrl?: string;
   aadContext: {
     tenantId: string;
     programId: string;
