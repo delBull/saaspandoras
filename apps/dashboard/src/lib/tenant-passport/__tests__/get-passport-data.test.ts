@@ -2,6 +2,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { getTenantPassportData } from '../get-passport-data';
 import { db } from '@saasfly/db-core';
 
+vi.mock('@saasfly/hermes-core', () => ({
+  isWalletAuthorizedForTenant: vi.fn().mockResolvedValue(false),
+}));
+
 vi.mock('@saasfly/db-core', () => {
   const mockSelect = vi.fn();
   const mockFrom = vi.fn();
@@ -138,5 +142,40 @@ describe('Tenant Passport — getTenantPassportData (Fase 2)', () => {
     expect(result.rewardsBlock.rewardsValue).toBe(75.5);
     expect(result.rewardsBlock.rewardsDisplay).toBe('75.50 USDC');
     expect(result.rewardsBlock.canClaim).toBe(true);
+    expect(result.rewardsBlock.claimWired).toBe(false);
+    expect(result.rewardsBlock.scopeNote).toContain('global');
+  });
+
+  it('P0 adversarial: wallet SIN relación con el tenant se resuelve restricted (nunca data de terceros)', async () => {
+    const mockProject = {
+      id: 1,
+      slug: 'snarai',
+      title: "S'Narai Real Estate",
+      tokenPriceUsd: '50',
+      w2eConfig: {},
+    };
+
+    const mockLimit = vi.fn().mockResolvedValue([mockProject]);
+    const mockWhere = vi.fn().mockReturnValue({ limit: mockLimit });
+    const mockFrom = vi.fn().mockReturnValue({ where: mockWhere });
+    (db.select as any).mockReturnValue({ from: mockFrom });
+
+    (db.query.marketingIdentities.findFirst as any).mockResolvedValue(null);
+    (db.query.purchases.findMany as any).mockResolvedValue([]);
+    (db.query.daoMembers.findFirst as any).mockResolvedValue(null);
+    (db.query.userBalances.findFirst as any).mockResolvedValue({
+      walletAddress: '0x4444444444444444444444444444444444444444',
+      usdcBalance: '9999.00',
+      pboxBalance: '0',
+    });
+
+    const forgedWallet = '0x4444444444444444444444444444444444444444';
+    const result = await getTenantPassportData('snarai', forgedWallet);
+
+    expect(result.assetBlock.state).toBe('restricted');
+    expect(result.assetBlock.assets).toEqual([]);
+    expect(result.rewardsBlock.state).toBe('restricted');
+    expect(result.rewardsBlock.rewardsValue).toBeUndefined();
+    expect(result.perksBlock.state).toBe('restricted');
   });
 });

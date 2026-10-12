@@ -37,23 +37,16 @@ export default async function PortalOverviewSubPage({
   // 3. B2C default: Tenant Passport (Fase 1 & Fase 2).
   //    Carga de certificados notarizados, títulos y recompensas reales.
   if (view !== 'b2b') {
+    // 🛡️ P0: la wallet SOLO de la sesión server-verificada (resolvePortalContext).
+    // Cookies (snarai_wallet/pd_wallet) y headers x-wallet son forjables por el
+    // cliente y exponían compras/balances de terceros.
     let callerWallet: string | null = null;
 
-    if (portalCtx.tenant.sessionId.startsWith('wallet_session_')) {
+    if (
+      portalCtx.tenant.sessionId.startsWith('wallet_session_') &&
+      portalCtx.tenant.actorId.startsWith('wallet_')
+    ) {
       callerWallet = portalCtx.tenant.sessionId.replace('wallet_session_', '');
-    }
-
-    if (!callerWallet) {
-      try {
-        const { headers, cookies } = await import('next/headers');
-        const [headerList, cookieStore] = await Promise.all([headers(), cookies()]);
-        callerWallet =
-          headerList.get('x-wallet-address')?.toLowerCase() ||
-          headerList.get('x-thirdweb-address')?.toLowerCase() ||
-          cookieStore.get('snarai_wallet')?.value?.toLowerCase() ||
-          cookieStore.get('pd_wallet')?.value?.toLowerCase() ||
-          null;
-      } catch {}
     }
 
     const { getTenantPassportData } = await import('@/lib/tenant-passport/get-passport-data');

@@ -145,6 +145,7 @@ export async function getTenantPassportData(
     for (const p of userPurchases) {
       const amount = Number(p.amount) || 0;
       const units = Math.max(1, Math.floor(amount / tokenPrice));
+      // Notarizado K25 SOLO con hash real del acuerdo — nunca un pseudo-hash derivado del id.
       const isCertified = p.status === 'completed' && Boolean(p.agreementHash);
       const isPending = p.status === 'on_hold' || p.status === 'processing';
 
@@ -152,7 +153,7 @@ export async function getTenantPassportData(
       totalValueUsd += amount;
 
       const agreementId = p.agreementId || p.id;
-      const agreementHash = p.agreementHash || (isCertified ? `AGR-${p.id.slice(0, 8).toUpperCase()}` : null);
+      const agreementHash = p.agreementHash || null;
       const legalUrl = isCertified
         ? p.legalPortalUrl || `/legal/certificate/${agreementId}?project=${project.slug}&units=${units}`
         : null;
@@ -215,7 +216,8 @@ export async function getTenantPassportData(
           : undefined,
     };
 
-    // 5. Recompensas (userBalances)
+    // 5. Recompensas (userBalances — balance GLOBAL de la cuenta, sin scope de tenant
+    //    en el modelo actual; se etiqueta explícitamente en la UI para no engañar).
     const usdc = Number(userBalance?.usdcBalance || 0);
     const pbox = Number(userBalance?.pboxBalance || 0);
     const rewardsDisplay = `${usdc.toFixed(2)} USDC`;
@@ -227,9 +229,43 @@ export async function getTenantPassportData(
       rewardsDisplay,
       rewardsValue,
       canClaim,
+      claimWired: false,
       currency: 'USDC',
+      scopeNote: 'Balance global de tu cuenta en la plataforma (incluye todos los tenants).',
       votingPower,
     };
+
+    // 6. Defense-in-depth (P0): si la wallet no tiene NINGUNA relación verificable con
+    //    este tenant (ni compras, ni membresía DAO, ni autorización explícita),
+    //    clasificamos como 'restricted' — no data de terceros.
+    let hasTenantRelationship = userPurchases.length > 0 || Boolean(daoMember);
+    if (!hasTenantRelationship) {
+      try {
+        const { isWalletAuthorizedForTenant } = await import('@saasfly/hermes-core');
+        hasTenantRelationship = await isWalletAuthorizedForTenant(normalizedWallet, project.slug);
+      } catch {
+        hasTenantRelationship = false;
+      }
+    }
+
+    if (!hasTenantRelationship) {
+      return {
+        assetBlock: {
+          state: 'restricted',
+          assets: [],
+          message: 'Esta wallet no tiene relación activa con este tenant. Si crees que es un error, contacta al equipo del proyecto.',
+        },
+        rewardsBlock: {
+          state: 'restricted',
+          message: 'Recompensas no visibles para esta wallet en este tenant.',
+        },
+        perksBlock: {
+          state: 'restricted',
+          message: 'Beneficios no visibles para esta wallet en este tenant.',
+        },
+        userWallet: normalizedWallet,
+      };
+    }
 
     // 6. Beneficios y Perks según unidades adquiridas
     const perksBlock = resolvePerksFromConfig(project.w2eConfig, totalUnits);
