@@ -34,10 +34,38 @@ export default async function PortalOverviewSubPage({
     console.warn('[PortalOverviewSubPage] DashApi fallback activated:', err);
   }
 
-  // 3. B2C default: Tenant Passport (Fase 1). Los bloques portan estados
-  //    honestos (available/empty/unavailable) — nunca métricas simuladas.
+  // 3. B2C default: Tenant Passport (Fase 1 & Fase 2).
+  //    Carga de certificados notarizados, títulos y recompensas reales.
   if (view !== 'b2b') {
-    return <TenantPassportView context={portalCtx} overview={overview} />;
+    let callerWallet: string | null = null;
+
+    if (portalCtx.tenant.sessionId.startsWith('wallet_session_')) {
+      callerWallet = portalCtx.tenant.sessionId.replace('wallet_session_', '');
+    }
+
+    if (!callerWallet) {
+      try {
+        const { headers, cookies } = await import('next/headers');
+        const [headerList, cookieStore] = await Promise.all([headers(), cookies()]);
+        callerWallet =
+          headerList.get('x-wallet-address')?.toLowerCase() ||
+          headerList.get('x-thirdweb-address')?.toLowerCase() ||
+          cookieStore.get('snarai_wallet')?.value?.toLowerCase() ||
+          cookieStore.get('pd_wallet')?.value?.toLowerCase() ||
+          null;
+      } catch {}
+    }
+
+    const { getTenantPassportData } = await import('@/lib/tenant-passport/get-passport-data');
+    const passportData = await getTenantPassportData(organizationSlug, callerWallet);
+
+    return (
+      <TenantPassportView
+        context={portalCtx}
+        overview={overview}
+        passportData={passportData}
+      />
+    );
   }
 
   // 4. Legacy B2B console (preserved for operators): resilient fallback kept as-is.

@@ -3,13 +3,17 @@ import { ActivityTimeline } from './ActivityTimeline';
 import { AssetPortfolioBento } from './AssetPortfolioBento';
 import { LoyaltyProgressCard } from './LoyaltyProgressCard';
 import { TenantPassportShell } from './TenantPassportShell';
+import { PerksAndClaimsCard } from './PerksAndClaimsCard';
 import type { PortalContext } from '@/lib/portal/portal-types';
 import type { HermesOverviewView } from '@saasfly/shared';
+import type { TenantPassportData } from '@/lib/tenant-passport/get-passport-data';
 import type {
   ActivityBlock,
   ActivityItemState,
   AssetBlock,
   LoyaltyBlock,
+  PerksBlock,
+  RewardsBlock,
 } from './passport-view';
 
 const ACTIVITY_STATE_MAP = new Set(['completed', 'success', 'confirmed', 'sent']);
@@ -39,26 +43,43 @@ function mapActivity(overview: HermesOverviewView | null): ActivityBlock {
   return { state: 'available', items };
 }
 
-function mapAssets(overview: HermesOverviewView | null): AssetBlock {
-  // Fase 1 honesto: aún no existe fuente de activos conectada al portal B2C.
-  // Los certificados IPFS / holdings se conectan en Fase 2 — nunca se inventan.
+function mapFallbackAssets(overview: HermesOverviewView | null): AssetBlock {
   if (!overview) {
     return { state: 'unavailable', message: 'No pudimos confirmar tus activos en este momento.' };
   }
   return {
     state: 'empty',
-    message: 'Aún no tienes certificados o participaciones visibles en este tenant. Pronto podrás verlos aquí.',
+    message: 'Aún no tienes certificados o participaciones visibles en este tenant.',
   };
 }
 
 interface TenantPassportViewProps {
   context: PortalContext;
   overview: HermesOverviewView | null;
+  passportData?: TenantPassportData | null;
 }
 
-export function TenantPassportView({ context, overview }: TenantPassportViewProps) {
+export function TenantPassportView({
+  context,
+  overview,
+  passportData,
+}: TenantPassportViewProps) {
   const organization = context.organization;
   const isSimulation = organization.isSimulationMode === true;
+
+  const assetBlock = passportData?.assetBlock || mapFallbackAssets(overview);
+  const rewardsBlock: RewardsBlock = passportData?.rewardsBlock || {
+    state: 'available',
+    rewardsDisplay: '0.00 USDC',
+    rewardsValue: 0,
+    canClaim: false,
+    votingPower: 0,
+  };
+  const perksBlock: PerksBlock = passportData?.perksBlock || {
+    state: 'available',
+    currentTier: 'Titular',
+    perks: [],
+  };
 
   return (
     <TenantPassportShell
@@ -102,7 +123,11 @@ export function TenantPassportView({ context, overview }: TenantPassportViewProp
       </div>
 
       <div className="mb-8">
-        <AssetPortfolioBento block={mapAssets(overview)} />
+        <AssetPortfolioBento block={assetBlock} />
+      </div>
+
+      <div className="mb-8">
+        <PerksAndClaimsCard rewardsBlock={rewardsBlock} perksBlock={perksBlock} />
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">

@@ -45,11 +45,6 @@ export default async function RootDashboardPage({ searchParams }: PageProps) {
   const host = headerList.get('x-forwarded-host') || headerList.get('host') || '';
   const isDashHost = host.startsWith('dash.') || host.startsWith('staging.dash.');
 
-  // If accessed via app.pandoras.finance or explicit consumer view query param
-  if (host.startsWith('app.') || params.view === 'consumer') {
-    return <ConsumerHomePage />;
-  }
-
   // 1. Resolve explicit slug from URL or cookies
   let explicitSlug = params.slug;
   let portalSessionSlug: string | undefined;
@@ -96,7 +91,17 @@ export default async function RootDashboardPage({ searchParams }: PageProps) {
     resolvedSlug = (await getDefaultTenantForWallet(callerWallet)) || undefined;
   }
 
-  // 4. If absolutely no slug can be resolved, they have no tenant.
+  // 4. Si se accede vía app.pandoras.finance o vista consumidor:
+  //    Si hay tenant resuelto -> canalizar al Tenant Passport B2C
+  //    Si no hay tenant resuelto -> renderizar ConsumerHomePage
+  if (host.startsWith('app.') || params.view === 'consumer') {
+    if (resolvedSlug) {
+      redirect(`/portal/${resolvedSlug}/overview`);
+    }
+    return <ConsumerHomePage />;
+  }
+
+  // 5. If absolutely no slug can be resolved, they have no tenant.
   if (!resolvedSlug) {
     if (callerWallet) {
       // Authenticated but no tenant -> send to onboarding

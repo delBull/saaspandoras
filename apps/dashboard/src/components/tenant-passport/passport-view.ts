@@ -29,11 +29,49 @@ export interface PassportAsset {
   detail?: string;
   cid?: string | null;
   explorerUrl?: string | null;
+  units?: number;
+  amountUsd?: number;
+  date?: string | Date;
+  agreementHash?: string | null;
+  legalPortalUrl?: string | null;
+  isVirtual?: boolean;
+  votingPower?: number;
+  badge?: string;
 }
 
 export interface AssetBlock {
   state: BlockState;
   assets?: PassportAsset[];
+  totalUnits?: number;
+  totalValueUsd?: number;
+  message?: string;
+}
+
+export interface PerkItem {
+  id: string;
+  title: string;
+  description?: string;
+  unlocked: boolean;
+  minUnits?: number;
+  badge?: string;
+}
+
+export interface PerksBlock {
+  state: BlockState;
+  currentTier?: string;
+  nextTier?: string;
+  perks?: PerkItem[];
+  progressPercentage?: number;
+  message?: string;
+}
+
+export interface RewardsBlock {
+  state: BlockState;
+  rewardsDisplay?: string;
+  rewardsValue?: number;
+  canClaim?: boolean;
+  currency?: string;
+  votingPower?: number;
   message?: string;
 }
 
