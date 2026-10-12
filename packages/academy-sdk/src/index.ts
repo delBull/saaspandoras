@@ -13,3 +13,5 @@ export * from './security/types';
 export * from './snapshots/snapshot-manager';
 export * from './assessment/assessment-engine';
 export * from './events/academy-audit-subscriber';
+export * from './security/encrypted-resource-vault';
+export * from './security/key-distribution-service';
