@@ -207,6 +207,38 @@ const ACADEMY_TRACKS: AcademyTrack[] = [
       { title: "Compilador de Prompts en Capas y Next Best Action", weight: 20, focus: "Inyección de Journeys" },
       { title: "Observabilidad Operativa y Failover Multimodelo", weight: 20, focus: "Resiliencia Zero-Downtime" },
     ]
+  },
+  {
+    id: "prog_sigint_telecom_interception_v1",
+    name: "Curso Magistral: Telecomunicaciones, Redes e Intercepción (SIGINT Master Track)",
+    code: "SIGINT-TELECOM-v1.0",
+    targetRole: "SUPER_ADMIN",
+    level: "Tier 0 · Sovereign Intelligence Clearance (Doctoral)",
+    duration: "12 Módulos Doctorales (~120 min)",
+    modulesCount: 12,
+    passingScore: 95,
+    description: "Tratado doctoral exhaustivo sobre arquitectura de telecomunicaciones, propagación electromagnética, enrutamiento global BGP, señalización celular SS7/Diameter/5G, los 12 vectores de intercepción a nivel cable/radio/software, criptoanálisis de capas y OpSec soberano.",
+    status: "ACTIVE",
+    badgeColor: "border-emerald-500/40 bg-emerald-500/10 text-emerald-400",
+    icon: Radar,
+    createdBy: "SUPER_ADMIN",
+    creatorName: "Super Admin (Sovereign Authority)",
+    isFounderExclusive: true,
+    sharedWith: [],
+    modules: [
+      { title: "Fundamentos Físicos, Ruido y el Principio Rector", weight: 8, focus: "Shannon-Hartley & Frontera Cripto" },
+      { title: "La Pila de Capas y el Fallo de Confianza Descendente", weight: 8, focus: "OSI vs TCP/IP & Encapsulación" },
+      { title: "El Viaje de tu Paquete: Del Router al Cable Submarino", weight: 8, focus: "BGP Hijack & Tapping Óptico" },
+      { title: "El Viaje de tu Llamada: Torres, SIMs y Señalización SS7", weight: 10, focus: "SS7 MAP, Diameter & 5G SBA" },
+      { title: "Anatomía de una Intercepción: Los 12 Puntos Críticos", weight: 12, focus: "Taxonomía Exhaustiva de Vectores" },
+      { title: "El Eslabón Estatal: CALEA, IMSI Catchers y Acceso Telco", weight: 10, focus: "Handover Interfaces HI1/2/3 & StingRay" },
+      { title: "Ataques Concretos: ARP Spoofing, SSLStrip y Downgrade 2G", weight: 12, focus: "Cadenas Ofensivas en Capas" },
+      { title: "Defensa Real: Criptografía, VPNs, Tor, Signal y Blindaje", weight: 12, focus: "Double Ratchet & SPKI Pinning" },
+      { title: "OpSec y Modelo de Amenaza: La Doctrina Antimeta", weight: 10, focus: "Compartimentación & Reglas Cardinales" },
+      { title: "Criptoanálisis Avanzado y Primitivas Post-Cuánticas", weight: 6, focus: "ML-KEM Kyber & Resistencia a Shor" },
+      { title: "Baseband Exploitation, Hardware Implants y TEMPEST", weight: 6, focus: "RTOS DMA & Van Eck Phreaking" },
+      { title: "Redes Soberanas, Mesh Clandestinas y Canales Fuera de Banda", weight: 6, focus: "LoRa CSS & Air-Gap Ultrasonic Bridge" },
+    ]
   }
 ];
 

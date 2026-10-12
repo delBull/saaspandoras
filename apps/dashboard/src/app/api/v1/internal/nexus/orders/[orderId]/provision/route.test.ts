@@ -33,8 +33,10 @@ vi.mock('@saasfly/shared', () => {
   class MockTenantProvisioningService {
     provisionTenant = mockProvisionTenant;
   }
+  const instance = new MockTenantProvisioningService();
   return {
     TenantProvisioningService: MockTenantProvisioningService,
+    tenantProvisioningService: instance,
   };
 });
 

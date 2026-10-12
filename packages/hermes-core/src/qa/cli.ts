@@ -5,7 +5,7 @@
 
 import { HermesQARunner } from './runner/qa-runner';
 
-async function main() {
+export async function main() {
   console.log("================================================================================");
   console.log("🧪 HERMES OS — 34-SCENARIO BEHAVIOR & SECURITY CERTIFICATION SUITE");
   console.log("================================================================================");
@@ -54,7 +54,10 @@ async function main() {
   }
 }
 
-main().catch(err => {
-  console.error("❌ Error ejecutando suite QA:", err);
-  process.exit(1);
-});
+// Only execute when invoked directly as CLI script, never on library import
+if (typeof process !== 'undefined' && process.argv && process.argv[1]?.includes('qa/cli')) {
+  main().catch(err => {
+    console.error("❌ Error ejecutando suite QA:", err);
+    process.exit(1);
+  });
+}

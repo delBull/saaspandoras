@@ -11,4 +11,5 @@ export * from './types';
 export * from './candidates/types';
 export * from './curriculum/program-registry';
 export * from './curriculum/coo-program';
+export * from './curriculum/signals-interception-master-program';
 export * from './rewards/unlocked-perks';

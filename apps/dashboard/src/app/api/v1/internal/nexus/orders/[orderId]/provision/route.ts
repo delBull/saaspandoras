@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, eq } from '@saasfly/db-core';
 import { commercialOrders, commercialOrderLines, projects } from '@saasfly/db-core/schema';
-import { TenantProvisioningService, ProvisioningRequestDTO } from '@saasfly/shared';
+import { tenantProvisioningService, ProvisioningRequestDTO } from '@saasfly/shared';
 import * as jose from 'jose';
 import { cookies } from 'next/headers';
 
@@ -94,8 +94,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ orderI
     };
 
     // Auto-provision
-    const provisionService = new TenantProvisioningService();
-    const result = await provisionService.provisionTenant(provisionReq, walletAddress);
+    const result = await tenantProvisioningService.provisionTenant(provisionReq, walletAddress);
 
     if (result.success) {
       // Find the project ID
