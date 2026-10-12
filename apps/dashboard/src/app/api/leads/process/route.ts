@@ -102,7 +102,7 @@ export async function POST(request: Request) {
         `.trim();
 
         try {
-            await db.insert(projects).values({
+            const [insertedProject] = await db.insert(projects).values({
                 title: projectName,
                 slug: slug,
                 description: fullDescription,
@@ -113,10 +113,33 @@ export async function POST(request: Request) {
                 applicantPhone: contactHandle, // Attempt to use handle as phone if it looks like one
                 integrationDetails: JSON.stringify({ score, suggestedPackage, raw: body }),
                 targetAmount: '0', // Placeholder
-            });
+            }).returning({ id: projects.id });
+
+            // Also persist directly into marketingLeads for unified funnel tracking
+            if (insertedProject?.id) {
+                const { marketingLeads } = await import('@saasfly/db-core/schema');
+                await db.insert(marketingLeads).values({
+                    projectId: insertedProject.id,
+                    scope: 'b2b',
+                    leadType: 'founder',
+                    name: contactHandle || projectName,
+                    email: contactEmail || null,
+                    phoneNumber: contactHandle && contactHandle.match(/^\+?[0-9]{7,15}$/) ? contactHandle : null,
+                    source: 'protocol_application',
+                    status: 'active',
+                    intent: 'explore',
+                    crmStage: 'LEAD',
+                    metadata: { score, suggestedPackage, raw: body },
+                    consent: true,
+                });
+            }
             console.log('✅ Lead saved to DB');
-        } catch (dbError) {
-            console.error('⚠️ DB Error (Non-fatal):', dbError);
+        } catch (dbError: any) {
+            console.error('❌ DB Error (Fatal persistence failure):', dbError);
+            return NextResponse.json(
+                { success: false, error: 'Failed to persist lead record: ' + (dbError?.message || 'Database error') },
+                { status: 500 }
+            );
         }
 
         try {

@@ -37,7 +37,7 @@ import {
   ExecutiveToolSchema,
 } from './executive-tools';
 import { db } from "@saasfly/db-core";
-import { projects, installedProducts, administrators, privatePaymentLinks, nexusCollaborators, users } from "@saasfly/db-core";
+import { projects, installedProducts, administrators, privatePaymentLinks, nexusCollaborators, users, commercialOrders } from "@saasfly/db-core";
 import { eq, and, inArray, or, ilike } from "@saasfly/db-core";
 import { PlatformAuditLedgerService } from '../../admin/platform-audit-ledger.service';
 import { paymentOrchestrator } from '../../payments/core/orchestrator';
@@ -284,6 +284,29 @@ export function registerExecutiveTools(executor: HermesToolExecutor): void {
     } catch (e: any) {
       console.error('[ExecutiveTools] Orchestrator dispatch failed (admin manual follow-up needed):', e?.message);
       throw new Error(`Settlement dispatch failed: ${e?.message}`);
+    }
+
+    // P0 Money Loop: Transition linked commercial order to PAID
+    const linkedOrderId = metadata.orderId;
+    const linkedLeadId = metadata.leadId;
+    if (linkedOrderId || linkedLeadId) {
+      try {
+        const orderFilter = linkedOrderId
+          ? eq(commercialOrders.id, linkedOrderId)
+          : and(eq(commercialOrders.leadId, linkedLeadId), eq(commercialOrders.status, 'PENDING_PAYMENT'));
+
+        await db
+          .update(commercialOrders)
+          .set({
+            status: 'PAID',
+            verifiedBy: `executive:${String((context as any)?.actorId || 'executive_channel')}`,
+            verifiedAt: new Date(),
+            updatedAt: new Date(),
+          })
+          .where(orderFilter);
+      } catch (orderErr) {
+        console.error('[ExecutiveTools] Failed to update commercial order to PAID:', orderErr);
+      }
     }
 
     PlatformAuditLedgerService.recordEntry({

@@ -350,15 +350,21 @@ export async function listCollaborators(canonicalOrgId: string): Promise<Collabo
 export async function updateCollaboratorPermissions(
   email: string,
   role: string,
-  permissions: NexusPermissionsOverride
+  permissions: NexusPermissionsOverride,
+  canonicalOrgId?: string
 ): Promise<{ success: boolean; collaborator?: CollaboratorDTO }> {
+  const cleanEmail = email.toLowerCase().trim();
+  const whereClause = canonicalOrgId
+    ? and(eq(nexusCollaborators.email, cleanEmail), eq(nexusCollaborators.canonicalOrgId, canonicalOrgId))
+    : eq(nexusCollaborators.email, cleanEmail);
+
   const [record] = await db
     .update(nexusCollaborators)
     .set({
       role,
       permissions,
     })
-    .where(eq(nexusCollaborators.email, email.toLowerCase()))
+    .where(whereClause)
     .returning();
 
   if (!record) {
@@ -385,10 +391,15 @@ export async function updateCollaboratorPermissions(
 /**
  * Remove a collaborator by email.
  */
-export async function removeCollaborator(email: string): Promise<boolean> {
+export async function removeCollaborator(email: string, canonicalOrgId?: string): Promise<boolean> {
+  const cleanEmail = email.toLowerCase().trim();
+  const whereClause = canonicalOrgId
+    ? and(eq(nexusCollaborators.email, cleanEmail), eq(nexusCollaborators.canonicalOrgId, canonicalOrgId))
+    : eq(nexusCollaborators.email, cleanEmail);
+
   const result = await db
     .delete(nexusCollaborators)
-    .where(eq(nexusCollaborators.email, email.toLowerCase()))
+    .where(whereClause)
     .execute();
 
   return (result?.rowCount ?? 0) > 0;

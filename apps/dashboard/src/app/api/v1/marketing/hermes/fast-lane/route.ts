@@ -3,9 +3,15 @@ import { db } from '@saasfly/db';
 import { purchases, users } from '@saasfly/db/schema';
 import { eq } from "@saasfly/db-core";
 import crypto from 'crypto';
+import { checkRateLimit, clientIpFromHeaders } from '@saasfly/hermes-core';
 
 export async function POST(req: Request) {
     try {
+        // Rate limiting: unauthenticated lead-intake surface (previously wide open)
+        const ipHeaders = new Headers(req.headers);
+        if (!checkRateLimit(`fast-lane:${clientIpFromHeaders(ipHeaders)}`, 10, 60_000)) {
+            return NextResponse.json({ error: 'Too Many Requests', code: 'RATE_LIMITED' }, { status: 429, headers: { 'Retry-After': '60' } });
+        }
         const body = await req.json();
         const { email, name, amount, leadId, projectId, tier } = body;
 

@@ -59,6 +59,7 @@ export async function POST(request: NextRequest) {
     };
 
     // 🧬 Save to Unified Database (Neon/Railway) via Drizzle
+    let dbSaved = false;
     try {
       await db.insert(newsletterSubscribers).values({
         email: subscriberData.email,
@@ -69,9 +70,18 @@ export async function POST(request: NextRequest) {
         metadata: subscriberData.metadata,
         isConfirmed: false
       }).onConflictDoNothing(); // Prevent errors on double-submission
-    } catch (dbError) {
+      dbSaved = true;
+    } catch (dbError: any) {
       console.error('Unified Database save failed:', dbError);
-      // Continue with email sending even if DB fails to maintain conversion
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'DATABASE_ERROR',
+          message: 'Error al registrar suscripción en la base de datos.',
+          database_saved: false
+        },
+        { status: 500 }
+      );
     }
 
     // Send email via unified email engine

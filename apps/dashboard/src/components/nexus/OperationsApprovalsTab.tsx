@@ -73,7 +73,16 @@ export function OperationsApprovalsTab() {
       .finally(() => setLoading(false));
   }, []);
 
-  const handleAction = (id: string, action: 'APPROVED' | 'REJECTED') => {
+  const handleAction = async (id: string, action: 'APPROVED' | 'REJECTED') => {
+    try {
+      await fetch('/api/nexus/approvals', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, action }),
+      });
+    } catch (e) {
+      console.error('[Approvals] Action failed:', e);
+    }
     setApprovals(prev => prev.map(app => app.id === id ? { ...app, status: action } : app));
   };
 

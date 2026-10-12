@@ -170,7 +170,8 @@ export class KeyDistributionService {
     const expectedMessage = KeyDistributionService.buildChallengeMessage(challenge);
     let recoveredAddress: string;
     try {
-      const verifyFn = (ethers as any).verifyMessage || (ethers as any).utils?.verifyMessage;
+      const ethersAny = ethers as any;
+      const verifyFn = ethersAny.utils?.verifyMessage || ethersAny.verifyMessage;
       recoveredAddress = verifyFn(expectedMessage, challenge.signature);
     } catch {
       return { allowed: false, reason: 'Cryptographic signature verification failed.' };

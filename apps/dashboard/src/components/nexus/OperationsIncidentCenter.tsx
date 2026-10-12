@@ -108,7 +108,16 @@ export function OperationsIncidentCenter() {
     }
   };
 
-  const updateStatus = (id: string, status: Incident['status']) => {
+  const updateStatus = async (id: string, status: Incident['status']) => {
+    try {
+      await fetch('/api/nexus/incidents', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, status }),
+      });
+    } catch (e) {
+      console.error('[Incidents] Update failed:', e);
+    }
     setIncidents(prev => prev.map(inc => inc.id === id ? { ...inc, status } : inc));
   };
 

@@ -51,14 +51,27 @@ export async function POST(req: NextRequest, context: { params: Promise<{ orderI
       return new NextResponse('Unauthorized to provision this order', { status: 403 });
     }
 
-    if (order.status !== 'PENDING_PAYMENT') {
-      return new NextResponse('Order is not in pending state', { status: 400 });
+    if (order.status !== 'PAID' && order.status !== 'PROVISIONING') {
+      return new NextResponse(
+        `Payment required. Order must be settled (status: PAID) before provisioning. Current status: ${order.status}`,
+        { status: 402 }
+      );
     }
 
-    // Since this is B2B autoProvision, ensure amount is 0 (or we trust the golden link)
-    if (Number(order.totalAmount) > 0) {
-      // In a real system we'd verify the PaymentIntent here
-      return new NextResponse('Payment required. Only $0 orders can be auto-provisioned', { status: 402 });
+    // Fail-closed against $0 or unsettled bypass
+    if (Number(order.totalAmount) <= 0) {
+      return new NextResponse('Invalid order total: zero-cost auto-provisioning is strictly prohibited.', { status: 400 });
+    }
+
+    // Bridge: Move PAID order into PROVISIONING state
+    if (order.status === 'PAID') {
+      await db
+        .update(commercialOrders)
+        .set({
+          status: 'PROVISIONING',
+          updatedAt: new Date(),
+        })
+        .where(eq(commercialOrders.id, orderId));
     }
 
     // Load lines to reconstruct products

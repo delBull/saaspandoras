@@ -5,23 +5,8 @@ import { eq, and, or } from "@saasfly/db-core";
 import crypto from 'crypto';
 import { IdentityResolver } from '@saasfly/shared';
 import { IdentityService } from '@/lib/marketing/identity-service';
+import { checkRateLimit, clientIpFromHeaders } from "@saasfly/hermes-core";
 
-// In-memory rate limiting (Replace with Redis in production)
-const rateLimitCache = new Map<string, { count: number, resetTime: number }>();
-
-function checkRateLimit(ip: string, policy: { requestsPerMinute: number }): boolean {
-  const now = Date.now();
-  const limitInfo = rateLimitCache.get(ip);
-  if (!limitInfo || now > limitInfo.resetTime) {
-    rateLimitCache.set(ip, { count: 1, resetTime: now + 60000 });
-    return true;
-  }
-  if (limitInfo.count >= policy.requestsPerMinute) {
-    return false;
-  }
-  limitInfo.count++;
-  return true;
-}
 
 export async function POST(req: Request) {
   try {
@@ -53,9 +38,9 @@ export async function POST(req: Request) {
     }
 
     // 3. Rate Limiting Check
-    const ip = req.headers.get('x-forwarded-for') || 'unknown';
+    const ip = clientIpFromHeaders(req.headers);
     const policy = integration.rateLimitPolicy as { requestsPerMinute: number };
-    if (!checkRateLimit(ip, policy)) {
+    if (!checkRateLimit(ip, 20, 60_000)) {
       return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
     }
 

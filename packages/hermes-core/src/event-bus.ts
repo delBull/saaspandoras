@@ -162,3 +162,75 @@ HermesEventBus.on('AppointmentCreated', async (event) => {
   console.log(`[EventBus] Appointment scheduled for Project ${event.projectId}:`, event.payload);
 });
 
+// Proactive Follow-up Listener for Qualified Leads
+HermesEventBus.on('LeadQualified', async (event) => {
+  try {
+    const { leadId, email, name, phone, reason } = event.payload || {};
+    const { db } = await import('@saasfly/db-core');
+    const { marketingLeads, projects } = await import('@saasfly/db-core/schema');
+    const { eq } = await import('@saasfly/db-core');
+
+    let targetEmail = email;
+    let targetName = name;
+    let leadRecord: any = null;
+    const lookupId = event.chatId || leadId;
+
+    if (lookupId) {
+      const [found] = await db
+        .select()
+        .from(marketingLeads)
+        .where(eq(marketingLeads.id, lookupId))
+        .limit(1);
+      leadRecord = found;
+      if (found) {
+        targetEmail = targetEmail || found.email;
+        targetName = targetName || found.name;
+      }
+    }
+
+    const [project] = await db
+      .select({
+        id: projects.id,
+        title: projects.title,
+        slug: projects.slug,
+        organizationId: projects.organizationId,
+      })
+      .from(projects)
+      .where(eq(projects.id, event.projectId))
+      .limit(1);
+
+    const projectTitle = project?.title || 'Pandoras Growth OS';
+
+    // 1. Dispatch follow-up email if email exists
+    if (targetEmail) {
+      const { sendEmail } = await import('@saasfly/shared');
+      const actionUrl = project?.slug 
+        ? `https://dash.pandoras.finance/ecosystem/${project.slug}`
+        : 'https://dash.pandoras.finance';
+
+      await sendEmail({
+        from: 'Hermes Growth OS <hermes@pandoras.finance>',
+        to: [targetEmail],
+        subject: `Bienvenido a ${projectTitle} — Siguientes pasos para tu activación`,
+        text: `Hola ${targetName || 'futuro partner'},\n\nHemos calificado tu interés en ${projectTitle}. Puedes continuar tu onboarding y revisar tu propuesta en el siguiente enlace:\n${actionUrl}\n\nEquipo Hermes & Pandoras`,
+        html: `<p>Hola <strong>${targetName || 'futuro partner'}</strong>,</p><p>Hemos calificado tu interés en <strong>${projectTitle}</strong>.</p><p>Puedes continuar tu onboarding y revisar tu propuesta en el siguiente enlace:</p><p><a href="${actionUrl}">${actionUrl}</a></p><p>— Equipo Hermes & Pandoras</p>`,
+      });
+    }
+
+    // 2. Dispatch Notification to Operators if organization exists
+    if (project?.organizationId) {
+      const { HermesNotificationDispatcher } = await import('./notifications/notification-dispatcher');
+      const dispatcher = new HermesNotificationDispatcher();
+      await dispatcher.dispatchHumanEscalation(project.organizationId, projectTitle, {
+        chatId: event.chatId,
+        reason: `Lead Calificado (${reason || 'calificación automática'}): ${targetName || targetEmail || 'Lead'}`,
+        summary: `Lead ID: ${lookupId} | Email: ${targetEmail || 'N/A'} | Tel: ${phone || leadRecord?.phoneNumber || 'N/A'}`,
+        conversationId: event.payload?.conversationId,
+        customerName: targetName,
+      });
+    }
+  } catch (err: any) {
+    console.error('[EventBus LeadQualified Error]:', err?.message || err);
+  }
+});
+

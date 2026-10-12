@@ -93,10 +93,11 @@ export async function POST(req: NextRequest) {
 
     // Cryptographically bind the session as required by HermesRuntime Hardening (Fase A - P0)
     const crypto = await import('crypto');
+    const orgId = auth.canonicalOrgId || 'pandoras';
     const boundActorSession = ActorIdentityBindingService.createBoundSession(
       {
         actorId,
-        tenantId: 'pandoras',
+        tenantId: orgId,
         authProvider: 'PORTAL_INTERNAL',
         proofSignature: crypto.randomBytes(32).toString('hex'),
         issuedAt: Math.floor(Date.now() / 1000),
@@ -109,7 +110,7 @@ export async function POST(req: NextRequest) {
     const controlPlaneContext: any = {
       channel: 'INTERNAL_DASHBOARD', // K27.6: authoritative ceiling source (CONFIDENTIAL)
       actorId,
-      organizationId: 'pandoras',
+      organizationId: orgId,
       role: isBoss ? 'OWNER' : (validatedRole as any),
       permissions: [
         'knowledge.read',
@@ -149,7 +150,7 @@ export async function POST(req: NextRequest) {
     const conversationId = body.conversationId || `nexus_terminal_${actorId.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
 
     const runtimeResponse = await runtime.respond({
-      organizationId: 'pandoras',
+      organizationId: orgId,
       conversationId,
       message: runtimeMessage,
       controlPlaneContext,

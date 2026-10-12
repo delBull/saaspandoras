@@ -1,11 +1,12 @@
 import { redirect } from 'next/navigation';
 import { db, eq } from '@saasfly/db-core';
-import { commercialOrders } from '@saasfly/db-core/schema';
+import { commercialOrders, privatePaymentLinks } from '@saasfly/db-core/schema';
+import { sql } from '@saasfly/db-core';
 import { cookies } from 'next/headers';
 import * as jose from 'jose';
 import CheckoutClient from './CheckoutClient';
 
-export default async function CheckoutPage({ params }: { params: { orderId: string } }) {
+export default async function CheckoutPage({ params }: { params: Promise<{ orderId: string }> }) {
   const { orderId } = await params;
   const cookieStore = await cookies();
   const sessionToken = cookieStore.get('commercial_session')?.value;
@@ -44,5 +45,12 @@ export default async function CheckoutPage({ params }: { params: { orderId: stri
     redirect('/'); // IDOR protection
   }
 
-  return <CheckoutClient order={order} />;
+  // Fetch linked payment intent if active
+  const [paymentIntent] = await db
+    .select({ id: privatePaymentLinks.id })
+    .from(privatePaymentLinks)
+    .where(sql`${privatePaymentLinks.metadata}->>'orderId' = ${orderId}`)
+    .limit(1);
+
+  return <CheckoutClient order={order} paymentIntentId={paymentIntent?.id} />;
 }

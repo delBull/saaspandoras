@@ -277,7 +277,7 @@ export async function sendWaitlistSequenceEmail(context: {
       if (isProd) {
           throw new Error('[Growth Engine] CRITICAL: RESEND_API_KEY is missing');
       }
-      return { success: true, mocked: true };
+      return { success: false, error: 'NOT_CONFIGURED: RESEND_API_KEY is missing (email delivery skipped, no mock)', mocked: false };
   }
 
   const emailData = intentMap?.[context.step] || {
@@ -357,7 +357,7 @@ export async function sendGenesisWelcomeEmail(context: {
       if (isProd) {
           throw new Error('[Growth Engine] CRITICAL: RESEND_API_KEY is missing');
       }
-      return { success: true, mocked: true };
+      return { success: false, error: 'NOT_CONFIGURED: RESEND_API_KEY is missing (email delivery skipped, no mock)', mocked: false };
   }
 
   const emailData = intentMap?.['GENESIS'] || {
@@ -420,7 +420,7 @@ export async function sendB2BFollowupEmail(context: {
       if (isProd) {
           throw new Error('[Growth Engine] CRITICAL: RESEND_API_KEY is missing');
       }
-      return { success: true, mocked: true };
+      return { success: false, error: 'NOT_CONFIGURED: RESEND_API_KEY is missing (email delivery skipped, no mock)', mocked: false };
   }
 
   try {
@@ -468,7 +468,7 @@ export async function sendB2BWelcomeEmail(context: {
       if (isProd) {
           throw new Error('[Growth Engine] CRITICAL: RESEND_API_KEY is missing');
       }
-      return { success: true, mocked: true };
+      return { success: false, error: 'NOT_CONFIGURED: RESEND_API_KEY is missing (email delivery skipped, no mock)', mocked: false };
   }
 
   // Personalization Logic
@@ -534,8 +534,8 @@ export async function sendExploreWelcomeEmail(context: {
       if (isProd) {
           throw new Error('[Growth Engine] CRITICAL: RESEND_API_KEY is missing in production environment');
       }
-      console.warn('[Growth Engine] RESEND_API_KEY not configured. Mocking email send.');
-      return { success: true, mocked: true };
+      console.warn('[Growth Engine] RESEND_API_KEY not configured. Cannot send email.');
+      return { success: false, status: 'NOT_CONFIGURED', error: 'RESEND_API_KEY is not configured in this environment' };
   }
 
   try {
@@ -594,8 +594,8 @@ export async function sendInvestWelcomeEmail(context: {
       if (isProd) {
           throw new Error('[Growth Engine] CRITICAL: RESEND_API_KEY is missing in production environment');
       }
-      console.warn('[Growth Engine] RESEND_API_KEY not configured. Mocking email send.');
-      return { success: true, mocked: true };
+      console.warn('[Growth Engine] RESEND_API_KEY not configured. Cannot send email.');
+      return { success: false, status: 'NOT_CONFIGURED', error: 'RESEND_API_KEY is not configured in this environment' };
   }
 
   try {
@@ -652,7 +652,7 @@ export async function sendCallReminderEmail(context: {
       if (isProd) {
           throw new Error('[Growth Engine] CRITICAL: RESEND_API_KEY is missing');
       }
-      return { success: true, mocked: true };
+      return { success: false, error: 'NOT_CONFIGURED: RESEND_API_KEY is missing (email delivery skipped, no mock)', mocked: false };
   }
 
   try {
@@ -705,7 +705,7 @@ export async function sendBookingConfirmedEmail(context: {
       if (isProd) {
           throw new Error('[Growth Engine] CRITICAL: RESEND_API_KEY is missing');
       }
-      return { success: true, mocked: true };
+      return { success: false, error: 'NOT_CONFIGURED: RESEND_API_KEY is missing (email delivery skipped, no mock)', mocked: false };
   }
 
   try {
@@ -752,7 +752,7 @@ export async function sendNoShowRecoveryEmail(context: {
       if (isProd) {
           throw new Error('[Growth Engine] CRITICAL: RESEND_API_KEY is missing');
       }
-      return { success: true, mocked: true };
+      return { success: false, error: 'NOT_CONFIGURED: RESEND_API_KEY is missing (email delivery skipped, no mock)', mocked: false };
   }
 
   try {
@@ -800,7 +800,7 @@ export async function sendEducationalNurtureEmail(context: {
       if (isProd) {
           throw new Error('[Growth Engine] CRITICAL: RESEND_API_KEY is missing');
       }
-      return { success: true, mocked: true };
+      return { success: false, error: 'NOT_CONFIGURED: RESEND_API_KEY is missing (email delivery skipped, no mock)', mocked: false };
   }
 
   try {
@@ -850,7 +850,7 @@ export async function sendVIPConciergeEmail(context: {
       if (isProd) {
           throw new Error('[Growth Engine] CRITICAL: RESEND_API_KEY is missing');
       }
-      return { success: true, mocked: true };
+      return { success: false, error: 'NOT_CONFIGURED: RESEND_API_KEY is missing (email delivery skipped, no mock)', mocked: false };
   }
 
   const subject = "Atención Prioritaria - Tu solicitud fue recibida";
@@ -914,7 +914,7 @@ export async function sendPostPurchaseSuccessEmail(context: {
       if (isProd) {
           throw new Error('[Growth Engine] CRITICAL: RESEND_API_KEY is missing');
       }
-      return { success: true, mocked: true };
+      return { success: false, error: 'NOT_CONFIGURED: RESEND_API_KEY is missing (email delivery skipped, no mock)', mocked: false };
   }
 
   const emailData = intentMap?.['POST_PURCHASE'] || {
@@ -987,7 +987,7 @@ export async function sendFastLaneSuccessEmail(context: {
       if (isProd) {
           throw new Error('[Growth Engine] CRITICAL: RESEND_API_KEY is missing');
       }
-      return { success: true, mocked: true };
+      return { success: false, error: 'NOT_CONFIGURED: RESEND_API_KEY is missing (email delivery skipped, no mock)', mocked: false };
   }
 
   const subject = `Intención de Participación (Fast-Lane) Recibida en ${projectName}`;
@@ -1038,7 +1038,7 @@ export async function sendCheckoutRecoveryEmail(context: {
 
   if (!apiKey) {
       if (isProd) throw new Error('[Growth Engine] CRITICAL: RESEND_API_KEY is missing');
-      return { success: true, mocked: true };
+      return { success: false, error: 'NOT_CONFIGURED: RESEND_API_KEY is missing (email delivery skipped, no mock)', mocked: false };
   }
 
   const dashboardBase = isProd ? 'https://dash.pandoras.finance' : 'https://staging.dash.pandoras.finance';

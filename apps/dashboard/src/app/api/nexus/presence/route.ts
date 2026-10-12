@@ -15,6 +15,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const orgId = auth.canonicalOrgId || 'pandoras';
     const presenceData = await db
       .select({
         id: nexusPresence.id,
@@ -29,6 +30,7 @@ export async function GET() {
       })
       .from(nexusPresence)
       .innerJoin(nexusCollaborators, eq(nexusPresence.collaboratorId, nexusCollaborators.id))
+      .where(eq(nexusCollaborators.canonicalOrgId, orgId))
       .orderBy(desc(nexusPresence.lastSeenAt));
 
     return NextResponse.json({ presence: presenceData });

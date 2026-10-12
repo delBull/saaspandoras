@@ -6,23 +6,8 @@ import crypto from 'crypto';
 import { HermesRuntime, getDefaultRuntime } from '@saasfly/hermes-core';
 import { OrganizationSDK } from '@saasfly/shared';
 import { ControlPlaneContext } from '@saasfly/hermes-core';
+import { checkRateLimit, clientIpFromHeaders } from "@saasfly/hermes-core";
 
-// In-memory rate limiting (Replace with Redis in production)
-const rateLimitCache = new Map<string, { count: number, resetTime: number }>();
-
-function checkRateLimit(ip: string, policy: { requestsPerMinute: number }): boolean {
-  const now = Date.now();
-  const limitInfo = rateLimitCache.get(ip);
-  if (!limitInfo || now > limitInfo.resetTime) {
-    rateLimitCache.set(ip, { count: 1, resetTime: now + 60000 });
-    return true;
-  }
-  if (limitInfo.count >= policy.requestsPerMinute) {
-    return false;
-  }
-  limitInfo.count++;
-  return true;
-}
 
 export async function POST(req: Request) {
   try {
@@ -54,9 +39,9 @@ export async function POST(req: Request) {
     }
 
     // Rate Limiting Check
-    const ip = req.headers.get('x-forwarded-for') || 'unknown';
+    const ip = clientIpFromHeaders(req.headers);
     const policy = integration.rateLimitPolicy as { requestsPerMinute: number };
-    if (!checkRateLimit(ip, policy)) {
+    if (!checkRateLimit(ip, 20, 60_000)) {
       return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
     }
 
@@ -109,9 +94,91 @@ export async function POST(req: Request) {
       controlPlaneContext: restrictedScope,
     });
 
+    // Resolve project and persist prospect to marketingLeads (Funnel Capture)
+    let persistedLeadId: string | null = null;
+    try {
+      const { projects, marketingLeads } = await import('@saasfly/db/schema');
+      let targetProjectId: number | null = null;
+      
+      const [project] = await db
+        .select({ id: projects.id })
+        .from(projects)
+        .where(eq(projects.organizationId, integration.canonicalOrgId))
+        .limit(1);
+
+      if (project) {
+        targetProjectId = project.id;
+      } else {
+        const cleanSlug = integration.canonicalOrgId.replace(/^org_/, '');
+        const [projectBySlug] = await db
+          .select({ id: projects.id })
+          .from(projects)
+          .where(eq(projects.slug, cleanSlug))
+          .limit(1);
+        if (projectBySlug) targetProjectId = projectBySlug.id;
+      }
+
+      if (targetProjectId) {
+        const leadsInProject = await db
+          .select()
+          .from(marketingLeads)
+          .where(eq(marketingLeads.projectId, targetProjectId))
+          .limit(50);
+
+        const existingLead = leadsInProject.find(
+          (l) => l.fingerprint === sessionId || (body.email && l.email === body.email)
+        );
+
+        if (existingLead) {
+          persistedLeadId = existingLead.id;
+          await db
+            .update(marketingLeads)
+            .set({
+              name: body.name || existingLead.name,
+              email: body.email || existingLead.email,
+              phoneNumber: body.phone || body.phoneNumber || existingLead.phoneNumber,
+              lastEngagementAt: new Date(),
+              updatedAt: new Date(),
+            })
+            .where(eq(marketingLeads.id, existingLead.id));
+        } else {
+          const [insertedLead] = await db
+            .insert(marketingLeads)
+            .values({
+              projectId: targetProjectId,
+              scope: 'b2b',
+              leadType: 'visitor_chat',
+              fingerprint: sessionId,
+              email: body.email || null,
+              name: body.name || null,
+              phoneNumber: body.phone || body.phoneNumber || null,
+              source: 'public_hermes_chat',
+              status: 'active',
+              intent: 'explore',
+              crmStage: 'LEAD',
+              metadata: {
+                sessionId,
+                originIp: ip,
+                firstMessage: message.slice(0, 300),
+                ...(body.metadata || {}),
+              },
+              consent: !!body.consent,
+            })
+            .returning({ id: marketingLeads.id });
+
+          if (insertedLead) {
+            persistedLeadId = insertedLead.id;
+          }
+        }
+      }
+    } catch (leadPersistErr) {
+      console.warn('[PublicHermesChat] Non-blocking lead persistence warning:', leadPersistErr);
+    }
+
     return NextResponse.json({
       success: true,
       sessionId,
+      leadId: persistedLeadId,
       reply: response.content
     });
 

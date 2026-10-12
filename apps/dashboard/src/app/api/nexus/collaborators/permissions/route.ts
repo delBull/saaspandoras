@@ -49,10 +49,15 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
+    const { getNexusAuthContext } = await import('@saasfly/shared');
+    const auth = await getNexusAuthContext(req.headers);
+    const orgId = auth.canonicalOrgId || 'pandoras';
+
     const result = await updateCollaboratorPermissions(
       email.trim().toLowerCase(),
       role.toUpperCase(),
-      permissions || {}
+      permissions || {},
+      orgId
     );
 
     if (!result.success || !result.collaborator) {

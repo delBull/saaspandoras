@@ -1,5 +1,5 @@
 import { db } from '@saasfly/db-core';
-import { eq } from "@saasfly/db-core";
+import { eq, and } from "@saasfly/db-core";
 import { nexusCollaborators } from '@saasfly/db-core/schema';
 import { NexusTeamTransport } from '@saasfly/hermes-core';
 import { NexusActionDispatcher, ActionPayload } from '@saasfly/hermes-core';
@@ -25,9 +25,13 @@ export class NexusTeamNotificationDispatcher {
     actionConfig?: { actionType: string; targetResource: string; payload: ActionPayload; approveText?: string; rejectText?: string; canonicalOrgId?: string }
   ): Promise<void> {
     try {
-      // 1. Fetch eligible collaborators
+      // 1. Fetch eligible collaborators (scoped to canonicalOrgId if specified)
+      const whereClause = actionConfig?.canonicalOrgId
+        ? and(eq(nexusCollaborators.status, 'ACTIVE'), eq(nexusCollaborators.canonicalOrgId, actionConfig.canonicalOrgId))
+        : eq(nexusCollaborators.status, 'ACTIVE');
+
       const collaborators = await db.query.nexusCollaborators.findMany({
-        where: eq(nexusCollaborators.status, 'ACTIVE'),
+        where: whereClause,
       });
 
       const eligibleCollaborators = collaborators.filter((c: any) => {

@@ -33,6 +33,26 @@ export async function GET(req: NextRequest) {
 
     const signerRoomIds = signerRows.map((s) => s.roomId);
 
+    const { getNexusAuthContext } = await import('@saasfly/shared');
+    const { and } = await import('@saasfly/db-core');
+    const { nexusCollaborators } = await import('@saasfly/db/schema');
+    const auth = await getNexusAuthContext(req.headers);
+    const orgId = auth.canonicalOrgId || 'pandoras';
+
+    // Ensure target collaborator belongs to caller's canonicalOrgId
+    const [targetCollab] = await db
+      .select({ id: nexusCollaborators.id })
+      .from(nexusCollaborators)
+      .where(and(
+        eq(nexusCollaborators.email, normalizedEmail),
+        eq(nexusCollaborators.canonicalOrgId, orgId)
+      ))
+      .limit(1);
+
+    if (!targetCollab && auth.role !== 'SUPER_ADMIN') {
+      return NextResponse.json({ error: 'Collaborator not found in this organization scope' }, { status: 404 });
+    }
+
     // Also find rooms where email appears as counterparty
     const counterpartyRooms = await db.query.nexusDealRooms.findMany({
       where: ilike(nexusDealRooms.counterparty, `%${normalizedEmail}%`),

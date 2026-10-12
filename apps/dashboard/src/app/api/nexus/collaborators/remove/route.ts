@@ -55,7 +55,11 @@ export async function DELETE(req: NextRequest) {
         .where(eq(users.id, linkedUser.id));
     }
 
-    const removed = await removeCollaborator(cleanEmail);
+    const { getNexusAuthContext } = await import('@saasfly/shared');
+    const auth = await getNexusAuthContext(req.headers);
+    const orgId = auth.canonicalOrgId || 'pandoras';
+
+    const removed = await removeCollaborator(cleanEmail, orgId);
     return NextResponse.json({ ok: true, removed }, { headers: cors });
   } catch (error: any) {
     console.error('[Nexus Collaborators Remove] Error:', error);
