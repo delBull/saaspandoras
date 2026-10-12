@@ -36,7 +36,41 @@ export interface AcademyModule {
   description: string;
   weightPercentage: number; // Sums to 100% across modules
   requiredKnowledgeDocs: string[]; // Doc references e.g. ['IOM_v1.0', 'LIBRO_0_CONSTITUTION']
+  encryptedResources?: EncryptedCourseResourceManifest[];
   assessments: AcademyAssessment[];
+}
+
+export interface EncryptedResourceChunkMetadata {
+  chunkIndex: number;
+  totalChunks: number;
+  byteLength: number;
+  iv: string; // base64 12 bytes
+  authTag: string; // base64 16 bytes
+  chunkHash: string; // sha256
+}
+
+export interface EncryptedCourseResourceManifest {
+  resourceId: string;
+  tenantId: string;
+  programId: string;
+  moduleId: string;
+  title: string;
+  mediaType: 'video/mp4' | 'application/pdf' | 'text/markdown' | 'application/json';
+  totalBytes: number;
+  contentHash: string; // sha256 of plaintext
+  encryptedDek: string; // base64 wrapped DEK with KEK
+  dekIv: string; // base64 12 bytes
+  dekAuthTag: string; // base64 16 bytes
+  kekKeyId: string;
+  ipfsCid: string; // CID of the ciphertext blob in IPFS
+  chunks: EncryptedResourceChunkMetadata[];
+  aadContext: {
+    tenantId: string;
+    programId: string;
+    moduleId: string;
+    version: number;
+  };
+  createdAt: string;
 }
 
 export interface RubricCriterion {
