@@ -187,10 +187,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       ok: true,
       unlocked: false,
-      sent: true,
+      sent: emailSent,
       role: resolvedRole,
       email: targetEmail,
-      message: `Enlace mágico enviado a ${targetEmail}`
+      directLink: link,
+      emailDeliveryFailed: !emailSent,
+      message: emailSent
+        ? `Enlace mágico enviado a ${targetEmail}`
+        : `No se pudo enviar el correo porque falta RESEND_API_KEY en este proyecto de Vercel. Puedes usar el enlace directo generado.`
     });
   } catch (err: any) {
     console.error("[Academy Unlock API Error]:", err);
