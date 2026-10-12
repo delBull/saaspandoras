@@ -2,9 +2,12 @@ import { NextResponse } from 'next/server';
 import { db } from '@saasfly/db';
 import { nexusDealRooms, nexusDealSigners, nexusDealAuditEvents } from '@saasfly/db/schema';
 import { eq, inArray, and } from "@saasfly/db-core";
-import { resend } from '@saasfly/shared';
-
-import NexusDealReminder from '@/emails/NexusDealReminder';
+import {
+  sendEmail,
+  renderEmailAsync,
+  resolveEmailBranding,
+  NexusDealEmailTemplate,
+} from '@saasfly/shared';
 
 export const maxDuration = 300; 
 export const dynamic = 'force-dynamic';
@@ -55,20 +58,40 @@ export async function GET(request: Request) {
 
       // If more than 3 days have passed
       if (timeSinceLast >= THREE_DAYS_MS) {
+        const roomTitle = room.company || room.counterparty;
+        const branding = await resolveEmailBranding({
+          explicitBrand: {
+            name: "Pandoras Nexus",
+            accentColor: "#f59e0b",
+            isPandorasPlatform: true,
+          },
+        });
+
         // Send email to all pending signers concurrently
         const emailPromises = room.signers
           .filter(signer => signer.email)
-          .map(signer => {
+          .map(async (signer) => {
             const roomUrl = `https://dash.pandoras.finance/nexus/deals/${room.publicId}`;
-            return resend.emails.send({
+            const rendered = await renderEmailAsync({
+              template: NexusDealEmailTemplate,
+              props: {
+                branding,
+                dealKindLabel: "Propuesta de Acuerdo",
+                counterparty: roomTitle,
+                recipientName: signer.signatureName || signer.email,
+                type: "reminder",
+                actionUrl: roomUrl,
+                actionText: "Abrir Propuesta en Nexus →",
+                noticeText: "Te recordamos que esta propuesta sigue pendiente de revisión y firma en el Deal Room. Si tienes dudas o ajustes, puedes dejar comentarios directamente en el documento.",
+              },
+            });
+
+            return sendEmail({
               from: 'Pandoras Nexus <nexus@pandoras.finance>',
               to: [signer.email!],
-              subject: `Recordatorio: Propuesta pendiente de revisión - ${room.company || room.counterparty}`,
-              react: NexusDealReminder({
-                signerName: signer.signatureName || signer.email,
-                roomTitle: room.company || room.counterparty,
-                roomUrl,
-              }),
+              subject: `Recordatorio: Propuesta pendiente de revisión - ${roomTitle}`,
+              html: rendered.html,
+              text: rendered.text,
             });
           });
 

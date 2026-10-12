@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { IntegrationKeyService } from '@/lib/integrations/auth';
-import { resend, FROM_EMAIL } from '@saasfly/shared';
+import { sendEmail, FROM_EMAIL } from '@saasfly/shared';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,21 +25,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields (to, subject, html)' }, { status: 400 });
     }
 
-    // Usar la instancia de Resend de Pandoras para enviar el correo del proyecto externo
-    const { data, error } = await resend.emails.send({
+    // Usar la función unificada de envío de Pandoras para el correo del proyecto externo
+    const result = await sendEmail({
       from: `${fromName} <${FROM_EMAIL}>`,
       to: [to],
       subject: subject,
       html: html,
     });
 
-    if (error) {
-      console.error('[Growth OS] ❌ Error sending external email:', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+    if (!result.success) {
+      console.error('[Growth OS] ❌ Error sending external email:', result.error);
+      return NextResponse.json({ error: result.error }, { status: 500 });
     }
 
     console.info(`[Growth OS] 📧 External email sent successfully to ${to} for project ${client.name}`);
-    return NextResponse.json({ success: true, id: data?.id });
+    return NextResponse.json({ success: true, id: result.id });
 
   } catch (error: any) {
     console.error('[Growth OS] ❌ External Email API error:', error);

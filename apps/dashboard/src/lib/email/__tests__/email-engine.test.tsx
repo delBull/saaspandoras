@@ -141,5 +141,71 @@ describe("📧 Email Engine & Templates Suite", () => {
       expect(html).toContain("Update Payment");
       expect(html).toContain("Billing");
     });
+
+    it("renders MagicLinkEmailTemplate with security warning and magic URL", async () => {
+      const branding = {
+        name: "Pandora's Growth OS",
+        isPandorasPlatform: true,
+        accentColor: "#F59E0B",
+      };
+
+      const { html } = await renderEmailAsync({
+        template: (await import("../templates/identity/MagicLinkEmailTemplate")).MagicLinkEmailTemplate,
+        props: {
+          branding,
+          magicUrl: "https://dash.pandoras.finance/api/auth/verify?token=abc-123",
+          portalName: "Sovereign Sign Portal",
+        },
+      });
+
+      expect(html).toContain("Sovereign Sign Portal");
+      expect(html).toContain("INGRESAR A MI PORTAL");
+      expect(html).toContain("expira en 15 minutos");
+      expect(html).toContain("enlace de autenticaci");
+    });
+
+    it("renders ClientActivationTemplate with onboarding steps", async () => {
+      const branding = {
+        name: "Pandora's Growth OS",
+        isPandorasPlatform: true,
+        accentColor: "#10b981",
+      };
+
+      const { html } = await renderEmailAsync({
+        template: (await import("../templates/clients/ClientActivationTemplate")).ClientActivationTemplate,
+        props: {
+          branding,
+          name: "Alejandro Founder",
+          projectName: "Nexus Corp",
+          dashboardLink: "https://dash.pandoras.finance",
+        },
+      });
+
+      expect(html).toContain("Alejandro Founder");
+      expect(html).toContain("Nexus Corp");
+      expect(html).toContain("Arquitecto de Soluciones");
+      expect(html).toContain("Ir a mi Dashboard");
+    });
+
+    it("renders ProtocolApplicationTemplate with review information", async () => {
+      const branding = {
+        name: "Pandora's Growth OS",
+        isPandorasPlatform: true,
+        accentColor: "#00F0FF",
+      };
+
+      const { html } = await renderEmailAsync({
+        template: (await import("../templates/leads/ProtocolApplicationTemplate")).ProtocolApplicationTemplate,
+        props: {
+          branding,
+          name: "Sofia Lead",
+        },
+      });
+
+      expect(html).toContain("Sofia Lead");
+      expect(html).toContain("Paso Siguiente");
+      expect(html).toContain("Recibimos tu aplicaci");
+      expect(html).toContain("llamada estrat");
+    });
   });
 });

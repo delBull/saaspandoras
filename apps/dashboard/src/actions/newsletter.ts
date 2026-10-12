@@ -2,7 +2,7 @@
 
 import { ProjectRepository } from "@/lib/domain/project-repository";
 import { revalidatePath } from "next/cache";
-import { resend, FROM_EMAIL } from '@saasfly/shared';
+import { sendEmail, resolveEmailBranding, FROM_EMAIL } from '@saasfly/shared';
 
 /* ─── Types ─── */
 
@@ -194,7 +194,7 @@ export async function addSubscriber(
                     .replace(/\{\{name\}\}/g, subscriber.name || 'Suscriptor')
                     .replace(/\{\{project\}\}/g, project.title);
 
-                await resend.emails.send({
+                await sendEmail({
                     from: FROM_EMAIL,
                     to: subscriber.email,
                     subject: tpl.subject,
@@ -271,13 +271,17 @@ export async function sendCampaign(
                     .replace(/\{\{name\}\}/g, sub.name || 'Suscriptor')
                     .replace(/\{\{project\}\}/g, project.title);
 
-                await resend.emails.send({
+                const sendResult = await sendEmail({
                     from: FROM_EMAIL,
                     to: sub.email,
                     subject: data.subject.replace(/\{\{project\}\}/g, project.title),
                     html: personalHtml,
                 });
-                sentCount++;
+                if (sendResult.success) {
+                    sentCount++;
+                } else {
+                    failCount++;
+                }
             } catch (e) {
                 console.error(`[Newsletter] Failed to send to ${sub.email}:`, e);
                 failCount++;

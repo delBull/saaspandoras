@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { resend, FROM_EMAIL } from '@saasfly/shared';
+import { sendEmail, FROM_EMAIL } from '@saasfly/shared';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'RESEND_API_KEY is missing in this environment' }, { status: 500 });
     }
 
-    const { data, error } = await resend.emails.send({
+    const result = await sendEmail({
       from: FROM_EMAIL,
       to: [to],
       subject: 'Growth OS Diagnostic: Resend Connection Test',
@@ -31,12 +31,12 @@ export async function POST(req: NextRequest) {
       `,
     });
 
-    if (error) {
-      console.error('[DIAGNOSTIC] ❌ Resend Error:', error);
-      return NextResponse.json({ success: false, error }, { status: 500 });
+    if (!result.success) {
+      console.error('[DIAGNOSTIC] ❌ Resend Error:', result.error);
+      return NextResponse.json({ success: false, error: result.error }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, data });
+    return NextResponse.json({ success: true, data: { id: result.id } });
   } catch (err) {
     console.error('[DIAGNOSTIC] ❌ System Error:', err);
     return NextResponse.json({ error: err instanceof Error ? err.message : 'Unknown error' }, { status: 500 });

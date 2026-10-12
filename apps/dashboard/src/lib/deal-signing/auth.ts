@@ -1,7 +1,10 @@
 import { NextRequest } from 'next/server';
 import { SignJWT, jwtVerify } from 'jose';
-import { resend } from '@saasfly/shared';
 import { SUPER_ADMIN_WALLET } from '@saasfly/auth-sdk';
+import { sendEmail } from '@/lib/email/client';
+import { resolveEmailBranding } from '@/lib/email/engine/branding';
+import { renderEmailAsync } from '@/lib/email/engine/render-email';
+import { MagicLinkEmailTemplate } from '@/lib/email/templates/identity/MagicLinkEmailTemplate';
 
 /**
  * Resolve the Sovereign Sign JWT secret lazily.
@@ -164,12 +167,27 @@ export class SovereignAuthService {
   }
 
   /**
-   * Sends the branded Magic Link email via Resend
+   * Sends the branded Magic Link email via EmailEngine
    */
   public static async sendMagicLinkEmail(params: { to: string; magicUrl: string }): Promise<void> {
     const { to, magicUrl } = params;
 
-    const html = `<!DOCTYPE html>
+    let html: string;
+    try {
+      const branding = await resolveEmailBranding();
+      const rendered = await renderEmailAsync({
+        template: MagicLinkEmailTemplate,
+        props: {
+          branding,
+          magicUrl,
+          portalName: "Sovereign Sign Portal",
+          expirationMinutes: 15,
+        }
+      });
+      html = rendered.html.replace(/&#x27;/g, "'").replace(/&amp;/g, "&");
+    } catch (renderError) {
+      console.warn("⚠️ [SovereignAuth] Engine render failed, using deterministic fallback:", renderError);
+      html = `<!DOCTYPE html>
 <html lang="es">
 <head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Pandora's Sovereign Sign</title></head>
 <body style="margin:0;padding:0;background-color:#08080C;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
@@ -202,23 +220,19 @@ export class SovereignAuthService {
             </p>
           </td>
         </tr>
-        <tr>
-          <td style="background:#080810;padding:14px 28px;border-top:1px solid rgba(255,255,255,0.05);text-align:center;">
-            <div style="font-size:10px;color:rgba(255,255,255,0.3);font-family:monospace;">Pandora's Sovereign Fabric &bull; Zero Platform Dependency</div>
-          </td>
-        </tr>
       </table>
     </td></tr>
   </table>
 </body>
 </html>`;
+    }
 
     if (process.env.NODE_ENV !== 'production' && !process.env.RESEND_API_KEY) {
       console.log(`ℹ️ [SovereignAuth] Dev Magic Link for ${to}: ${magicUrl}`);
       return;
     }
 
-    await resend.emails.send({
+    await sendEmail({
       from: FROM_EMAIL,
       to,
       subject: "Tu Enlace de Acceso — Pandora's Sovereign Sign",

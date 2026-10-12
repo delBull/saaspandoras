@@ -1,4 +1,4 @@
-import { resend } from "@saasfly/shared";
+import { sendEmail } from "@saasfly/shared";
 
 const FROM = process.env.RESEND_FROM_EMAIL ?? "Pandora's Group <hello@pandoras.finance>";
 
@@ -59,7 +59,7 @@ export async function sendDealMagicLink(input: {
 </body>
 </html>`;
 
-  return resend.emails.send({ from: FROM, to, subject: `Pandora's — ${dealKindLabel} · ${counterparty}`, html });
+  return sendEmail({ from: FROM, to, subject: `Pandora's — ${dealKindLabel} · ${counterparty}`, html });
 }
 
 /**
@@ -127,7 +127,7 @@ export async function sendNdaConfirmationEmail(input: {
 </body>
 </html>`;
 
-  return resend.emails.send({
+  return sendEmail({
     from: FROM,
     to,
     subject: `Pandora's — NDA Firmado · ${ndaVersion} · ${roomLabel}`,
@@ -237,7 +237,7 @@ export async function sendDealSignedEmail(input: {
 </body>
 </html>`;
 
-  return resend.emails.send({
+  return sendEmail({
     from: FROM,
     to,
     subject: `${enteredIntoForce ? "Documento en vigor" : "Firma registrada"} · ${dealKindLabel} · ${counterparty}`,
@@ -317,7 +317,7 @@ export async function sendDealAvailableEmail(input: {
 </body>
 </html>`;
 
-  return resend.emails.send({
+  return sendEmail({
     from: FROM,
     to,
     subject: `${dealKindLabel} listo para revisión · ${publicId} · ${counterparty}`,
@@ -373,6 +373,6 @@ export async function sendDealCancelledEmail(input: {
 </body>
 </html>`;
 
-  return resend.emails.send({ from: FROM, to, subject: `Pandora's — Negociación Cancelada · ${publicId}`, html });
+  return sendEmail({ from: FROM, to, subject: `Pandora's — Negociación Cancelada · ${publicId}`, html });
 }
 

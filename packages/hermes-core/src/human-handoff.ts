@@ -2,8 +2,13 @@ import { Redis } from 'ioredis';
 import { db } from '@saasfly/db-core';
 import { projects, hermesConversations } from '@saasfly/db-core/schema';
 import { eq, and } from "@saasfly/db-core";
-// @ts-ignore
-import { sendWhatsAppMessage } from '@saasfly/shared';
+import {
+  sendWhatsAppMessage,
+  sendEmail,
+  renderEmailAsync,
+  resolveEmailBranding,
+  HermesNotificationTemplate,
+} from '@saasfly/shared';
 
 const redis = process.env.REDIS_URL ? new Redis(process.env.REDIS_URL, { maxRetriesPerRequest: 1 }) : null;
 
@@ -188,36 +193,38 @@ export class HumanHandoffProtocol {
 
         case 'email': {
           const targetEmail = alertConfig.email;
-          if (targetEmail && process.env.RESEND_API_KEY) {
-            const res = await fetch('https://api.resend.com/emails', {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
-                'Content-Type': 'application/json',
-              },
-              signal: AbortSignal.timeout(5000),
-              body: JSON.stringify({
-                from: "Hermes Alert <noreply@dash.pandoras.finance>",
-                to: [targetEmail],
-                subject: alertTitle,
-                html: `
-                  <div style="font-family: sans-serif; padding: 20px; color: #111;">
-                    <h2 style="color: #ef4444;">🚨 Intervención Humana Requerida</h2>
-                    <p>Hermes ha pausado la respuesta automática para atender a un cliente que requiere asistencia humana directa.</p>
-                    <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
-                      <tr><td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">Organización</td><td style="padding: 8px; border: 1px solid #ddd;">${escapeHtml(tenantTitle)}</td></tr>
-                      <tr><td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">Cliente</td><td style="padding: 8px; border: 1px solid #ddd;">${escapeHtml(chatId)}</td></tr>
-                      <tr><td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">Motivo</td><td style="padding: 8px; border: 1px solid #ddd;">${safeReason}</td></tr>
-                      <tr><td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">Mensaje</td><td style="padding: 8px; border: 1px solid #ddd;">${safeLastMessage}</td></tr>
-                    </table>
-                  </div>
-                `,
-              }),
+          if (targetEmail) {
+            const branding = await resolveEmailBranding({
+              tenantId: projectId,
             });
-            alertSent = res.ok;
+
+            const rendered = await renderEmailAsync({
+              template: HermesNotificationTemplate,
+              props: {
+                branding,
+                title: alertTitle,
+                recipientName: tenantTitle || "Equipo de Operaciones",
+                message: `Hermes ha pausado la respuesta automática para atender a un cliente que requiere asistencia humana directa.\n\nCliente: ${chatId}\nMotivo: ${safeReason}\nÚltimo mensaje: "${safeLastMessage}"`,
+                badge: "Intervención Humana Requerida",
+                type: "danger",
+                ctaText: "Acceder a la Consola de Operaciones →",
+                ctaUrl: "https://dash.pandoras.finance/conversations",
+              },
+            });
+
+            const emailResult = await sendEmail({
+              to: [targetEmail],
+              from: "Hermes Alert <noreply@dash.pandoras.finance>",
+              subject: alertTitle,
+              html: rendered.html,
+              text: rendered.text,
+            });
+
+            alertSent = emailResult.success;
           }
           break;
         }
+
       }
     } catch (dispatchErr) {
       console.error(`[HumanHandoff] Error dispatching alert to channel ${channel}:`, dispatchErr);
