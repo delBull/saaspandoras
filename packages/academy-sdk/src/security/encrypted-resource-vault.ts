@@ -25,6 +25,7 @@ export interface ResourceEncryptionOptions {
   mediaType: 'video/mp4' | 'application/pdf' | 'text/markdown' | 'application/json';
   version?: number;
   chunkSize?: number; // Default 1MB (1024 * 1024 bytes)
+  chunkGatewayBase?: string; // Fase 3: base de entrega (pipeline la usa al publicar)
 }
 
 export interface EncryptedPayloadBundle {
@@ -155,6 +156,9 @@ export class EncryptedCourseResourceVault {
         iv: chunkIv.toString('base64'),
         authTag: chunkAuthTag.toString('base64'),
         chunkHash: crypto.createHash('sha256').update(cipherChunk).digest('hex'),
+        ...(options.chunkGatewayBase
+          ? { gatewayUrl: `${options.chunkGatewayBase.replace(/\/$/, '')}/${options.resourceId}/${i}` }
+          : {}),
       });
     }
 
@@ -179,6 +183,7 @@ export class EncryptedCourseResourceVault {
       kekKeyId,
       ipfsCid: syntheticCid,
       chunks: chunksMetadata,
+      ...(options.chunkGatewayBase ? { gatewayBaseUrl: options.chunkGatewayBase.replace(/\/$/, '') } : {}),
       aadContext: {
         tenantId: options.tenantId,
         programId: options.programId,

@@ -40,7 +40,16 @@ export interface KeyChallengeVerificationResult {
   resourceId?: string;
 }
 
-export class InMemoryNonceStore {
+/**
+ * Pluggable anti-replay store. registerNonce MUST be atomic (true = consumed,
+ * false = replay/duplicate or expired). Persisted implementations (e.g. Redis
+ * SET NX) are REQUIRED for multi-instance serverless deployments.
+ */
+export interface NonceStore {
+  registerNonce(nonce: string, timestamp: number): boolean | Promise<boolean>;
+}
+
+export class InMemoryNonceStore implements NonceStore {
   private usedNonces = new Map<string, number>();
   private readonly maxAgeMs: number;
 
@@ -75,15 +84,42 @@ export class InMemoryNonceStore {
   }
 }
 
+/**
+ * 🛡️ Fase 2.1: Signature MUST be validated BEFORE consuming the nonce, so a
+ * failed signature (or a probing attacker) can never DoS-burn a victim's nonce.
+ * (This invariant is enforced inside authorizeAndDeliverKey below.)
+ */
+
+/**
+ * 📦 Fase 2.1: server-side manifest registry. The key endpoint NEVER accepts
+ * manifests from the request body — manifests are loaded by resourceId from
+ * the trusted store (client-controlled crypto material is never unwrapped).
+ */
+export interface AcademyManifestStore {
+  getByResourceId(resourceId: string): Promise<EncryptedCourseResourceManifest | null>;
+}
+
+export class InMemoryAcademyManifestStore implements AcademyManifestStore {
+  private manifests = new Map<string, EncryptedCourseResourceManifest>();
+
+  public register(manifest: EncryptedCourseResourceManifest): void {
+    this.manifests.set(manifest.resourceId, manifest);
+  }
+
+  public async getByResourceId(resourceId: string): Promise<EncryptedCourseResourceManifest | null> {
+    return this.manifests.get(resourceId) || null;
+  }
+}
+
 export class KeyDistributionService {
   private vault: EncryptedCourseResourceVault;
-  private nonceStore: InMemoryNonceStore;
+  private nonceStore: NonceStore;
   private accessPolicy: KeyAccessPolicy;
 
   constructor(
     vault: EncryptedCourseResourceVault,
     accessPolicy: KeyAccessPolicy,
-    nonceStore?: InMemoryNonceStore
+    nonceStore?: NonceStore
   ) {
     this.vault = vault;
     this.accessPolicy = accessPolicy;
@@ -129,13 +165,8 @@ export class KeyDistributionService {
       return { allowed: false, reason: 'Challenge parameters do not match resource manifest.' };
     }
 
-    // 2. Nonce & Anti-Replay Verification
-    const nonceValid = this.nonceStore.registerNonce(challenge.nonce, challenge.timestamp);
-    if (!nonceValid) {
-      return { allowed: false, reason: 'Nonce is expired or has already been used (replay protection).' };
-    }
-
-    // 3. Signature Verification (EIP-191 personal_sign standard)
+    // 2. 🔑 Signature Verification (EIP-191) — BEFORE nonce consumption (Fase 2.1):
+    // a bad/forged signature must never burn the (possibly victim's) nonce.
     const expectedMessage = KeyDistributionService.buildChallengeMessage(challenge);
     let recoveredAddress: string;
     try {
@@ -147,6 +178,14 @@ export class KeyDistributionService {
 
     if (recoveredAddress.toLowerCase() !== challenge.walletAddress.toLowerCase()) {
       return { allowed: false, reason: 'Recovered signer address does not match requested wallet.' };
+    }
+
+    // 3. Nonce & Anti-Replay Verification (signature-backed consumption)
+    const nonceResult = await Promise.resolve(
+      this.nonceStore.registerNonce(challenge.nonce, challenge.timestamp)
+    );
+    if (!nonceResult) {
+      return { allowed: false, reason: 'Nonce is expired or has already been used (replay protection).' };
     }
 
     // 4. Access Policy Evaluation (Whitelist / Token Gate / Enrollment)

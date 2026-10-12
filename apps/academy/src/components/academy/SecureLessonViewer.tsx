@@ -29,6 +29,7 @@ export function SecureLessonViewer({
   onSignChallenge,
 }: SecureLessonViewerProps) {
   const [decryptedText, setDecryptedText] = useState<string | null>(null);
+  const [decryptedBlobUrl, setDecryptedBlobUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [watermarkTime, setWatermarkTime] = useState<string>('');
@@ -48,6 +49,7 @@ export function SecureLessonViewer({
         activeBlobUrlRef.current = null;
       }
       setDecryptedText(null);
+      setDecryptedBlobUrl(null);
     };
   }, []);
 
@@ -84,7 +86,7 @@ export function SecureLessonViewer({
       // 2. Request signature from user's wallet
       const signature = await onSignChallenge(challengeMessage);
 
-      // 3. Request DEK from server-authoritative API
+      // 3. Request DEK from server-authoritative API (manifest is NEVER sent — server loads it by resourceId)
       const response = await fetch(`/api/academy/keys/${manifest.resourceId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -95,7 +97,6 @@ export function SecureLessonViewer({
           nonce,
           timestamp,
           signature,
-          manifest,
         }),
       });
 
@@ -109,7 +110,7 @@ export function SecureLessonViewer({
         throw new Error('El servidor no retornó la llave criptográfica requerida.');
       }
 
-      // 4. Client-side ephemeral Web Crypto decryption
+      // 4. Client-side ephemeral Web Crypto decryption of the REAL ciphertext chunks
       const dekBytes = Uint8Array.from(atob(unwrappedDekBase64), c => c.charCodeAt(0));
       const cryptoKey = await window.crypto.subtle.importKey(
         'raw',
@@ -118,11 +119,99 @@ export function SecureLessonViewer({
         false,
         ['decrypt']
       );
+      dekBytes.fill(0); // zeroize raw copy AFTER import (key is now non-extractable)
 
-      // For demonstration of markdown/text payload: in real stream it iterates chunks
-      const sampleDecrypted = `### Lección Protegida Desbloqueada con Éxito\n\n**Título:** ${manifest.title}\n**CID Anclado:** \`${manifest.ipfsCid}\`\n**Protocolo:** AES-256-GCM + Sovereign Envelope\n\nEste contenido reside únicamente en la memoria RAM volátil de tu navegador. Al cerrar la ventana o cambiar de módulo, las llaves son purgadas automáticamente.`;
-      
-      setDecryptedText(sampleDecrypted);
+      const base64ToBytes = (b64: string): Uint8Array =>
+        Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+
+      const resolveChunkUrl = (index: number): string => {
+        const perChunk = manifest.chunks[index]?.gatewayUrl;
+        if (perChunk) return perChunk;
+        if (manifest.gatewayBaseUrl) {
+          return `${manifest.gatewayBaseUrl}/${manifest.resourceId}/${index}`;
+        }
+        throw new Error(
+          'Recurso sin fuente binaria conectada: el distribuidor aún no publicó los chunks cifrados en el gateway.'
+        );
+      };
+
+      const decryptChunks = async (): Promise<Uint8Array> => {
+        const parts: Uint8Array[] = [];
+        const totalBytes = manifest.chunks.reduce((acc, c) => acc + c.byteLength, 0);
+
+        for (let i = 0; i < manifest.chunks.length; i++) {
+          const meta = manifest.chunks[i];
+          if (!meta) {
+            throw new Error(`Chunk ${i}: metadata ausente en el manifest.`);
+          }
+
+          const fetchRes = await fetch(resolveChunkUrl(i));
+          if (!fetchRes.ok) {
+            throw new Error(`No se pudo descargar el chunk ${i} del gateway (HTTP ${fetchRes.status}).`);
+          }
+          const cipherBytes = new Uint8Array(await fetchRes.arrayBuffer());
+          if (cipherBytes.length !== meta.byteLength) {
+            throw new Error(`Chunk ${i}: tamaño alterado (esperado ${meta.byteLength}, recibido ${cipherBytes.length}).`);
+          }
+
+          // Ciphertext integrity (sha256 of ciphertext must match stored chunkHash)
+          const ctHash = await window.crypto.subtle.digest('SHA-256', cipherBytes);
+          if (Array.from(new Uint8Array(ctHash)).map(b => b.toString(16).padStart(2, '0')).join('') !== meta.chunkHash) {
+            throw new Error(`Chunk ${i}: hash del ciphertext no coincide (integridad comprometida).`);
+          }
+
+          // WebCrypto AES-GCM requires authTag appended to ciphertext; AAD binds tenant:program:module:version:chunk
+          const tagBytes = base64ToBytes(meta.authTag);
+          const cipherWithTag = new Uint8Array(cipherBytes.length + tagBytes.length);
+          cipherWithTag.set(cipherBytes, 0);
+          cipherWithTag.set(tagBytes, cipherBytes.length);
+
+          const aadString = `${manifest.aadContext.tenantId}:${manifest.aadContext.programId}:${manifest.aadContext.moduleId}:${manifest.aadContext.version}:chunk_${i}`;
+          const plainChunk = await window.crypto.subtle.decrypt(
+            {
+              name: 'AES-GCM',
+              iv: base64ToBytes(meta.iv),
+              additionalData: new TextEncoder().encode(aadString),
+              tagLength: 128,
+            },
+            cryptoKey,
+            cipherWithTag
+          );
+          parts.push(new Uint8Array(plainChunk));
+        }
+
+        const assembled = new Uint8Array(totalBytes);
+        let offset = 0;
+        for (const part of parts) {
+          assembled.set(part, offset);
+          offset += part.length;
+        }
+
+        // Final integrity: plaintext hash must match manifest.contentHash
+        const fullHash = await window.crypto.subtle.digest('SHA-256', assembled);
+        const fullHashHex = Array.from(new Uint8Array(fullHash)).map(b => b.toString(16).padStart(2, '0')).join('');
+        if (fullHashHex !== manifest.contentHash) {
+          throw new Error('El hash del contenido descifrado no coincide con el manifesto (manipulación detectada).');
+        }
+        return assembled;
+      };
+
+      const plaintextBytes = await decryptChunks();
+
+      if (manifest.mediaType === 'text/markdown' || manifest.mediaType === 'application/json') {
+        const text = new TextDecoder('utf-8').decode(plaintextBytes);
+        setDecryptedText(text);
+      } else {
+        // binary media (video/pdf): render via ephemeral blob URL (revoked on unmount)
+        const mimeType = manifest.mediaType === 'video/mp4' ? 'video/mp4' : 'application/pdf';
+        const blob = new Blob([plaintextBytes as unknown as BlobPart], { type: mimeType });
+        if (activeBlobUrlRef.current) URL.revokeObjectURL(activeBlobUrlRef.current);
+        activeBlobUrlRef.current = URL.createObjectURL(blob);
+        setDecryptedBlobUrl(activeBlobUrlRef.current);
+        setDecryptedText(null);
+      }
+
+      dekBytes.fill(0); // defense-in-depth (importKey already copies internally)
     } catch (err: any) {
       setErrorMessage(err?.message || 'Error al autenticar y descifrar el recurso.');
     } finally {
@@ -169,6 +258,25 @@ export function SecureLessonViewer({
           <AlertTriangle className="h-4 w-4 shrink-0 text-rose-400" />
           <span>{errorMessage}</span>
         </div>
+      )}
+
+      {decryptedBlobUrl && !decryptedText && (
+        manifest.mediaType === 'video/mp4' ? (
+          <div className="relative z-10 mt-2 rounded-lg bg-slate-900/50 p-3 ring-1 ring-slate-800">
+            <video src={decryptedBlobUrl} controls className="w-full rounded" />
+          </div>
+        ) : (
+          <div className="relative z-10 mt-2 rounded-lg bg-slate-900/50 p-4 ring-1 ring-slate-800">
+            <a
+              href={decryptedBlobUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs font-semibold text-emerald-300 underline-offset-4 hover:underline"
+            >
+              Abrir documento descifrado (PDF) — solo memoria de sesión
+            </a>
+          </div>
+        )
       )}
 
       {decryptedText ? (
