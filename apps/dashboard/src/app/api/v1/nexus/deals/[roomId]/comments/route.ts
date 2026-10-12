@@ -2,8 +2,12 @@ import { NextResponse } from 'next/server';
 import { db } from '@saasfly/db';
 import { nexusDealComments, nexusDealRooms, nexusDealSigners } from '@saasfly/db/schema';
 import { eq } from "@saasfly/db-core";
-import { resend } from '@saasfly/shared';
-import NexusDealComment from '@/emails/NexusDealComment';
+import {
+  sendEmail,
+  renderEmailAsync,
+  resolveEmailBranding,
+  NexusDealEmailTemplate,
+} from '@saasfly/shared';
 import { validateDealRoomAccess } from '@/lib/admin-auth';
 import { canUserAccessDeal } from '@saasfly/nexus-deals-sdk';
 
@@ -65,37 +69,67 @@ export async function POST(
       
       const roomUrl = `https://dash.pandoras.finance/nexus/deals/${room.publicId}`; // Adjust if actual path differs
 
+      const branding = await resolveEmailBranding({
+        explicitBrand: {
+          name: "Pandoras Nexus",
+          accentColor: "#f59e0b",
+          isPandorasPlatform: true,
+        },
+      });
+
+      const roomTitle = room.company || room.counterparty;
+
       if (isInternal) {
         // Notify signers
         for (const signer of room.signers) {
           if (signer.email) {
-            await resend.emails.send({
+            const rendered = await renderEmailAsync({
+              template: NexusDealEmailTemplate,
+              props: {
+                branding,
+                dealKindLabel: "Deal Room",
+                counterparty: roomTitle,
+                recipientName: signer.signatureName || signer.email,
+                type: "comment",
+                commentPreview: content,
+                actionUrl: roomUrl,
+                actionText: "Ver y Responder en Nexus →",
+                noticeText: `${author} ha agregado una nota o consulta en la sala de negociación.`,
+              },
+            });
+
+            await sendEmail({
               from: 'Pandoras Nexus <nexus@pandoras.finance>',
               to: [signer.email],
-              subject: `Nuevo mensaje en el Deal Room: ${room.company || room.counterparty}`,
-              react: NexusDealComment({
-                recipientName: signer.signatureName || signer.email,
-                authorName: author,
-                roomTitle: room.company || room.counterparty,
-                commentPreview: content,
-                roomUrl,
-              }),
+              subject: `Nuevo mensaje en el Deal Room: ${roomTitle}`,
+              html: rendered.html,
+              text: rendered.text,
             });
           }
         }
       } else {
         // Notify Pandoras internal
-        await resend.emails.send({
+        const rendered = await renderEmailAsync({
+          template: NexusDealEmailTemplate,
+          props: {
+            branding,
+            dealKindLabel: "Deal Room",
+            counterparty: roomTitle,
+            recipientName: "Marco",
+            type: "comment",
+            commentPreview: content,
+            actionUrl: roomUrl,
+            actionText: "Ver y Responder en Nexus →",
+            noticeText: `${author} ha dejado una consulta institucional en el Deal Room.`,
+          },
+        });
+
+        await sendEmail({
           from: 'Pandoras Nexus <nexus@pandoras.finance>',
           to: ['marco@pandoras.org'], // Default internal contact
-          subject: `Nuevo mensaje en el Deal Room: ${room.company || room.counterparty}`,
-          react: NexusDealComment({
-            recipientName: 'Marco',
-            authorName: author,
-            roomTitle: room.company || room.counterparty,
-            commentPreview: content,
-            roomUrl,
-          }),
+          subject: `Nuevo mensaje en el Deal Room: ${roomTitle}`,
+          html: rendered.html,
+          text: rendered.text,
         });
       }
     }

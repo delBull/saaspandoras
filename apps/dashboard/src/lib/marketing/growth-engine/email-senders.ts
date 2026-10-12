@@ -1,4 +1,4 @@
-import { resend, FROM_EMAIL } from '@saasfly/shared';
+import { sendEmail, FROM_EMAIL } from '@saasfly/shared';
 import ExploreStep1Email from '@/emails/explore/step1';
 import InvestStep1Email from '@/emails/invest/step1';
 import B2BWelcomeEmail from '@/emails/b2b-welcome';
@@ -298,7 +298,7 @@ export async function sendWaitlistSequenceEmail(context: {
     : `https://dash.pandoras.finance/accessv2?project=pandoras${queryParam}`;
 
   try {
-    const data = await resend.emails.send({
+    const data = await sendEmail({
       from: `${projectName} <${FROM_EMAIL}>`,
       to: [context.to],
       subject: emailData.subject,
@@ -369,7 +369,7 @@ export async function sendGenesisWelcomeEmail(context: {
   const body = emailData.body.replace(/{projectName}/g, projectName);
 
   try {
-    const data = await resend.emails.send({
+    const data = await sendEmail({
       from: `${projectName} <${FROM_EMAIL}>`,
       to: [context.to],
       subject,
@@ -424,7 +424,7 @@ export async function sendB2BFollowupEmail(context: {
   }
 
   try {
-    const data = await resend.emails.send({
+    const data = await sendEmail({
       from: `Pandora <${FROM_EMAIL}>`,
       to: [context.to],
       subject: `¿Seguimos adelante con ${context.projectName}?`,
@@ -484,7 +484,7 @@ export async function sendB2BWelcomeEmail(context: {
   }
 
   try {
-    const data = await resend.emails.send({
+    const data = await sendEmail({
       from: `Pandora <${FROM_EMAIL}>`,
       to: [context.to],
       subject: `Confirmación de Solicitud: ${context.projectName}`,
@@ -539,7 +539,7 @@ export async function sendExploreWelcomeEmail(context: {
   }
 
   try {
-    const data = await resend.emails.send({
+    const data = await sendEmail({
       from: `${projectName} <${FROM_EMAIL}>`,
       to: [context.to],
       subject: `Acceso rápido: Entendiendo ${projectName}`,
@@ -599,7 +599,7 @@ export async function sendInvestWelcomeEmail(context: {
   }
 
   try {
-    const data = await resend.emails.send({
+    const data = await sendEmail({
       from: `${projectName} <${FROM_EMAIL}>`,
       to: [context.to],
       subject: `Tu interés en ${projectName} - Siguientes Pasos`,
@@ -656,7 +656,7 @@ export async function sendCallReminderEmail(context: {
   }
 
   try {
-    const data = await resend.emails.send({
+    const data = await sendEmail({
       from: `Pandora <${FROM_EMAIL}>`,
       to: [context.to],
       subject: context.type === 'D-0' ? "¡Hoy nos vemos!" : `Recordatorio de sesión: ${context.meetingDate}`,
@@ -709,7 +709,7 @@ export async function sendBookingConfirmedEmail(context: {
   }
 
   try {
-    const data = await resend.emails.send({
+    const data = await sendEmail({
       from: `Pandora <${FROM_EMAIL}>`,
       to: [context.to],
       subject: "Sesión confirmada: Preparemos tu protocolo",
@@ -756,7 +756,7 @@ export async function sendNoShowRecoveryEmail(context: {
   }
 
   try {
-    const data = await resend.emails.send({
+    const data = await sendEmail({
       from: `Pandora <${FROM_EMAIL}>`,
       to: [context.to],
       subject: "Te extrañamos en la sesión - ¿Agendamos de nuevo?",
@@ -804,7 +804,7 @@ export async function sendEducationalNurtureEmail(context: {
   }
 
   try {
-    const data = await resend.emails.send({
+    const data = await sendEmail({
       from: `Pandora <${FROM_EMAIL}>`,
       to: [context.to],
       subject: `Evolucionando ${context.projectName}`,
@@ -859,7 +859,7 @@ export async function sendVIPConciergeEmail(context: {
     : `Hemos recibido tu solicitud de acceso VIP para ${projectName}.\n\nTu perfil ha sido catalogado como de alta prioridad y ha sido asignado directamente a uno de nuestros directores.\n\nEn breve te contactaremos personalmente por WhatsApp o llamada para darte seguimiento uno a uno.\n\nNo requieres hacer nada más por el momento.\n\n— Equipo ${projectName}`;
 
   try {
-    const data = await resend.emails.send({
+    const data = await sendEmail({
       from: `${projectName} <${FROM_EMAIL}>`,
       to: [context.to],
       subject,
@@ -929,7 +929,7 @@ export async function sendPostPurchaseSuccessEmail(context: {
   const ctaUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://dash.pandoras.finance'}/projects/${projectSlug || 'default'}/dao`;
 
   try {
-    const data = await resend.emails.send({
+    const data = await sendEmail({
       from: `${projectName} <${FROM_EMAIL}>`,
       to: [context.to],
       subject,
@@ -993,7 +993,7 @@ export async function sendFastLaneSuccessEmail(context: {
   const subject = `Intención de Participación (Fast-Lane) Recibida en ${projectName}`;
 
   try {
-    const data = await resend.emails.send({
+    const data = await sendEmail({
       from: `${projectName} <${FROM_EMAIL}>`,
       to: [context.to],
       subject,
@@ -1052,7 +1052,7 @@ export async function sendCheckoutRecoveryEmail(context: {
   const ctaUrl = `${dashboardBase}/pay/${context.projectSlug}/default`;
 
   try {
-    const data = await resend.emails.send({
+    const data = await sendEmail({
       from: `${context.projectName} <${FROM_EMAIL}>`,
       to: [context.to],
       subject,

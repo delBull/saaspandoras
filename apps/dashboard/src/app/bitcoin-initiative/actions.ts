@@ -1,10 +1,5 @@
 'use server';
 
-import { Resend } from 'resend';
-
-const resendApiKey = process.env.RESEND_API_KEY;
-const resend = resendApiKey ? new Resend(resendApiKey) : null;
-
 export async function submitPartnershipContact(formData: FormData) {
   const name = formData.get('name') as string;
   const email = formData.get('email') as string;
@@ -49,23 +44,24 @@ export async function submitPartnershipContact(formData: FormData) {
       return { success: false, message: 'Fallo al enviar la notificación.' };
     }
 
-    // Send Resend Email to User
-    if (resend && email) {
+    // Send Resend Email to User (via unified Email Engine — platform profile)
+    if (email) {
       try {
-        await resend.emails.send({
+        const { renderEmailAsync } = await import('@/lib/email/engine/render-email');
+        const { resolveEmailBranding } = await import('@/lib/email/engine/branding');
+        const { sendEmail } = await import('@/lib/email/client');
+        const { BitcoinInitiativeWelcomeTemplate } = await import('@/lib/email/templates/campaigns/BitcoinInitiativeWelcomeTemplate');
+
+        const branding = await resolveEmailBranding();
+        const rendered = await renderEmailAsync({
+          template: BitcoinInitiativeWelcomeTemplate,
+          props: { branding, name: name || '', },
+        });
+        await sendEmail({
           from: 'Pandoras Initiative <noreply@pandoras.finance>',
           to: email,
           subject: 'Bienvenido a Pandoras Bitcoin Real Estate Initiative',
-          html: `
-            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #1a1a1a;">
-              <h2 style="color: #F7931A;">Iniciativa Pandoras Bitcoin</h2>
-              <p>Hola ${name},</p>
-              <p>Hemos recibido tu solicitud de contacto para explorar oportunidades de colaboración estratégica con tu comunidad.</p>
-              <p>En Pandoras estamos construyendo el primer puente institucional entre el capital Bitcoin y los activos del mundo real (Real World Assets). Pronto un miembro de nuestro equipo se pondrá en contacto contigo para agendar una sesión introductoria.</p>
-              <p>Mientras tanto, te invitamos a explorar a profundidad nuestro <a href="https://dash.pandoras.finance/bitcoin-initiative/brief" style="color: #F7931A; font-weight: bold; text-decoration: none;">Partnership Brief</a> que detalla nuestra visión, los activos génesis como S'Narai Bucerías y el roadmap de integración de Bitcoin.</p>
-              <p>Atentamente,<br/><strong>El Equipo de Pandoras</strong></p>
-            </div>
-          `
+          html: rendered.html,
         });
       } catch (emailErr) {
         console.error('[BitcoinInitiative] Failed to send resend email:', emailErr);

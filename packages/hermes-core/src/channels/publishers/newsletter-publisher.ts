@@ -9,6 +9,13 @@
  * 1. Sender Provider is decoupled from Audience Provider.
  * 2. Never exposes API keys or recipient PII in public receipt.
  * 3. Requires verifiable transmission receipt; fails closed if transport rejects.
+ *
+ * 📌 DOCUMENTED EXCEPTION — NOT routed through @saasfly/shared email-engine.
+ * This is an INFRASTRUCTURE PROVIDER (broadcast bridge), not a template mailer:
+ * - API key arrives per-invocation (multi-tenant provider keys); env-key sendEmail
+ *   cannot represent that model without changing its contract.
+ * - Payload is caller-provided broadcast HTML targeting resolved audience lists.
+ * Re-evaluate before engine unification if per-tenant provider keys change.
  */
 
 import type {

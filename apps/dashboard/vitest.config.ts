@@ -1,7 +1,9 @@
 import { defineConfig } from 'vitest/config';
-import path from 'path';
 
 export default defineConfig({
+  oxc: {
+    jsx: { runtime: 'automatic', importSource: 'react' },
+  },
   test: {
     globals: true,
     environment: 'node',
@@ -10,10 +12,10 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
-      '~': path.resolve(__dirname, './src'),
+      '@': new URL('./src', import.meta.url).pathname,
+      '~': new URL('./src', import.meta.url).pathname,
       // @saasfly/db/schema is not exported by the package — redirect to db-core
-      '@saasfly/db/schema': path.resolve(__dirname, '../../packages/db-core/src/schema.ts'),
+      '@saasfly/db/schema': new URL('../../packages/db-core/src/schema.ts', import.meta.url).pathname,
     },
   },
 });

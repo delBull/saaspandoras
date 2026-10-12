@@ -121,25 +121,36 @@ export async function POST(request: Request) {
 
         try {
             // 3. Send Email
-            if (RESEND_API_KEY && contactEmail) {
+            if (contactEmail) {
                 try {
-                    const { render } = await import('@react-email/render');
-                    const ProtocolApplicationEmail = (await import('@/emails/protocol-application')).default;
+                    const { sendEmail } = await import('@/lib/email/client');
+                    const { resolveEmailBranding } = await import('@/lib/email/engine/branding');
+                    const { renderEmailAsync } = await import('@/lib/email/engine/render-email');
+                    const { ProtocolApplicationTemplate } = await import('@/lib/email/templates/leads/ProtocolApplicationTemplate');
 
-                    const html = await render(ProtocolApplicationEmail({ name: contactHandle || 'Futuro Creador' }));
+                    let html: string;
+                    try {
+                        const branding = await resolveEmailBranding();
+                        const rendered = await renderEmailAsync({
+                            template: ProtocolApplicationTemplate,
+                            props: {
+                                branding,
+                                name: contactHandle || 'Futuro Creador',
+                            }
+                        });
+                        html = rendered.html.replace(/&#x27;/g, "'").replace(/&amp;/g, "&");
+                    } catch (renderError) {
+                        console.warn('⚠️ [LeadsProcess] Engine render failed, using legacy fallback:', renderError);
+                        const { render } = await import('@react-email/render');
+                        const ProtocolApplicationEmail = (await import('@/emails/protocol-application')).default;
+                        html = await render(ProtocolApplicationEmail({ name: contactHandle || 'Futuro Creador' }));
+                    }
 
-                    await fetch('https://api.resend.com/emails', {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${RESEND_API_KEY}`,
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            from: FROM_EMAIL,
-                            to: [contactEmail],
-                            subject: 'Gracias por aplicar a Pandora’s W2E — paso siguiente',
-                            html: html,
-                        }),
+                    await sendEmail({
+                        from: FROM_EMAIL,
+                        to: [contactEmail],
+                        subject: 'Gracias por aplicar a Pandora’s W2E — paso siguiente',
+                        html,
                     });
                     console.log('📧 Email sent successfully');
                 } catch (emailError) {

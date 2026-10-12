@@ -1,5 +1,10 @@
 
 import { sendEmail } from "./client";
+import { renderEmailAsync } from "./engine/render-email";
+import { BookingConfirmedTemplate } from "./templates/bookings/BookingConfirmedTemplate";
+import { BookingReminderTemplate } from "./templates/bookings/BookingReminderTemplate";
+
+import { BookingPendingTemplate } from "./templates/bookings/BookingPendingTemplate";
 
 export interface SchedulerBrandIdentity {
     name: string;
@@ -55,10 +60,31 @@ export async function sendBookingPendingEmail(
         ? `<div style="font-size: 12px; color: #71717a; text-align: center;">Pandora's Growth OS • Sovereign Capital & Growth Infrastructure</div>`
         : `<div style="font-size: 12px; color: #52525b; text-align: center;">${brandName} • Gestión de Citas<br><span style="font-size: 11px; color: #a1a1aa; display: inline-block; margin-top: 6px;">Coordinado mediante <strong>Pandora's Growth OS</strong> • Infraestructura Soberana</span></div>`;
 
-    await sendEmail({
-        to,
-        subject,
-        html: `
+    let html: string;
+    try {
+        const branding = {
+            name: brandName,
+            isPandorasPlatform: isPandoras,
+            accentColor: isPandoras ? '#e4c875' : '#d4a853',
+            logoUrl: data.brand?.logoUrl,
+        };
+
+        const rendered = await renderEmailAsync({
+            template: BookingPendingTemplate,
+            props: {
+                branding,
+                name: data.name,
+                dateStr: data.date,
+                timeStr: data.time,
+                brandName,
+            }
+        });
+        html = rendered.html
+            .replace(/&#x27;/g, "'")
+            .replace(/&amp;/g, "&");
+    } catch (renderError) {
+        console.warn("⚠️ [scheduler-mailer] Pending render via EmailEngine failed, executing safe fallback:", renderError);
+        html = `
             <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #0c0d12; border-radius: 12px; border: 1px solid #27272a; overflow: hidden; color: #f4f4f5;">
                 <div style="background: #18181b; padding: 28px 24px; text-align: center; border-bottom: 1px solid #27272a;">
                     <h2 style="margin: 0; color: #ffffff; font-size: 20px; letter-spacing: -0.02em;">${headerTitle}</h2>
@@ -84,7 +110,13 @@ export async function sendBookingPendingEmail(
                     ${footerHtml}
                 </div>
             </div>
-        `
+        `;
+    }
+
+    await sendEmail({
+        to,
+        subject,
+        html,
     });
 }
 
@@ -123,10 +155,33 @@ export async function sendBookingConfirmedEmail(to: string, data: {
 
     const icsBase64 = Buffer.from(icsContent).toString('base64');
 
-    await sendEmail({
-        to,
-        subject,
-        html: `
+    let html: string;
+    try {
+        const branding = {
+            name: brandName,
+            isPandorasPlatform: isPandoras,
+            accentColor: isPandoras ? '#e4c875' : '#d4a853',
+            logoUrl: data.brand?.logoUrl,
+        };
+
+        const rendered = await renderEmailAsync({
+            template: BookingConfirmedTemplate,
+            props: {
+                branding,
+                name: data.name,
+                dateStr,
+                timeStr,
+                meetingLink: data.meetingLink,
+                brandName,
+            }
+        });
+        // Unescape HTML entities for exact backwards-compatibility with existing consumers & tests
+        html = rendered.html
+            .replace(/&#x27;/g, "'")
+            .replace(/&amp;/g, "&");
+    } catch (renderError) {
+        console.warn("⚠️ [scheduler-mailer] Render via EmailEngine failed, executing safe fallback:", renderError);
+        html = `
             <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #0c0d12; border-radius: 12px; border: 1px solid #27272a; overflow: hidden; color: #f4f4f5;">
                 <div style="background: #18181b; padding: 28px 24px; text-align: center; border-bottom: 1px solid #27272a;">
                     <h2 style="margin: 0; color: #e4c875; font-size: 22px; letter-spacing: -0.02em;">${headerTitle}</h2>
@@ -159,7 +214,13 @@ export async function sendBookingConfirmedEmail(to: string, data: {
                     ${footerHtml}
                 </div>
             </div>
-        `,
+        `;
+    }
+
+    await sendEmail({
+        to,
+        subject,
+        html,
         attachments: [
             {
                 filename: 'invite.ics',
@@ -202,10 +263,33 @@ export async function sendBookingReminderEmail(to: string, data: {
     });
     const icsBase64 = Buffer.from(icsContent).toString('base64');
 
-    await sendEmail({
-        to,
-        subject,
-        html: `
+    let html: string;
+    try {
+        const branding = {
+            name: brandName,
+            isPandorasPlatform: isPandoras,
+            accentColor: isPandoras ? '#e4c875' : '#d4a853',
+            logoUrl: data.brand?.logoUrl,
+        };
+
+        const rendered = await renderEmailAsync({
+            template: BookingReminderTemplate,
+            props: {
+                branding,
+                name: data.name,
+                dateStr,
+                timeStr,
+                reminderText,
+                meetingLink: data.meetingLink,
+                brandName,
+            }
+        });
+        html = rendered.html
+            .replace(/&#x27;/g, "'")
+            .replace(/&amp;/g, "&");
+    } catch (renderError) {
+        console.warn("⚠️ [scheduler-mailer] Reminder render failed, executing safe fallback:", renderError);
+        html = `
             <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #0c0d12; border-radius: 12px; border: 1px solid #27272a; overflow: hidden; color: #f4f4f5;">
                 <div style="background: #18181b; padding: 28px 24px; text-align: center; border-bottom: 1px solid #27272a;">
                     <h2 style="margin: 0; color: #e4c875; font-size: 20px; letter-spacing: -0.02em;">⏰ Recordatorio de Sesión</h2>
@@ -232,7 +316,13 @@ export async function sendBookingReminderEmail(to: string, data: {
                     ${footerHtml}
                 </div>
             </div>
-        `,
+        `;
+    }
+
+    await sendEmail({
+        to,
+        subject,
+        html,
         attachments: [
             {
                 filename: 'invite.ics',

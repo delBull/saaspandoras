@@ -13,24 +13,15 @@
  * envuelto en try/catch no-bloqueante).
  */
 
-import { resend } from "../resend";
+import { resolveEmailBranding } from "../email-engine/branding";
+import { renderEmailAsync } from "../email-engine/render-email";
+import { HermesNotificationTemplate } from "../email-engine/templates/hermes/HermesNotificationTemplate";
+import { sendEmail } from "../email-engine/send";
 
 const BRAND = "Pandora's Growth OS";
 const DEFAULT_FALLBACK_EMAIL = 'marco@pandoras.finance';
 
 type ProvisionAction = 'PLAN_UPGRADE' | 'FULL_ACCESS';
-
-function baseLayout(title: string, bodyLines: string[]): string {
-    return `
-        <div style="font-family: sans-serif; padding: 40px; background-color: #f4f4f5;">
-            <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 40px; border-radius: 8px;">
-                <h2 style="color: #0f172a;">${title}</h2>
-                ${bodyLines.map(l => `<p style="color: #334155;">${l}</p>`).join('\n')}
-                <p style="color: #94a3b8; font-size: 12px; margin-top: 24px;">— ${BRAND} · Core Engine</p>
-            </div>
-        </div>
-    `;
-}
 
 function familiesLabel(families?: string[]): string {
     if (!families || families.length === 0) return 'Todas las verticales';
@@ -65,39 +56,67 @@ export async function sendTenantProvisionEmail(
 
     try {
         let subject = '';
-        let html = '';
+        let details: string[] = [];
 
         if (action === 'FULL_ACCESS') {
             const via = opts?.approvedVia === 'APPROVAL_WALL'
                 ? 'aprobado desde el Muro de Aprobaciones'
                 : 'Pase Directo de Super Admin';
             subject = `🔓 Full Access activado: ${tenantName}`;
-            html = baseLayout('🔓 Organización Provisionada — Full Access', [
-                `Tenant: <strong>${tenantName}</strong>`,
-                `Método: ${via}`,
-                `Verticales activadas: <strong>${familiesLabel(opts?.families)}</strong>`,
-                `Plan: <strong>enterprise</strong>${opts?.billingExempt !== false ? ' · <em>sin cobro (billing exempt)</em>' : ''}`,
-                opts?.requestedBy ? `Ejecutado por: <code>${opts.requestedBy}</code>` : '',
-            ].filter(Boolean));
+            details = [
+                `Tenant: ${tenantName}`,
+                `Método de Aprobación: ${via}`,
+                `Verticales Activadas: ${familiesLabel(opts?.families)}`,
+                `Nivel de Acceso: enterprise${opts?.billingExempt !== false ? ' · sin cobro (billing exempt)' : ''}`,
+                ...(opts?.requestedBy ? [`Ejecutado por: ${opts.requestedBy}`] : []),
+            ];
         } else {
             // PLAN_UPGRADE clásico — reconocer targeting por vertical
             const target = opts?.productFamily
-                ? `aplicado a la vertical <strong>${opts.productFamily}</strong>`
-                : 'aplicado a <strong>todas las verticales provisionadas</strong>';
+                ? `aplicado a la vertical ${opts.productFamily}`
+                : 'aplicado a todas las verticales provisionadas';
             subject = `📈 Plan actualizado: ${tenantName} → ${planOrAction.toUpperCase()}`;
-            html = baseLayout('📈 Upgrade Comercial Ejecutado', [
-                `Tenant: <strong>${tenantName}</strong>`,
-                `Nuevo plan: <strong>${planOrAction.toUpperCase()}</strong> ${target}`,
-                opts?.requestedBy ? `Ejecutado por: <code>${opts.requestedBy}</code>` : '',
-                'Los módulos y capacidades correspondientes al plan ya están activos en el ecosistema del tenant.',
-            ].filter(Boolean));
+            details = [
+                `Tenant: ${tenantName}`,
+                `Nuevo Plan Asignado: ${planOrAction.toUpperCase()} (${target})`,
+                ...(opts?.requestedBy ? [`Ejecutado por: ${opts.requestedBy}`] : []),
+                'Los módulos y capacidades correspondientes ya están activos en el ecosistema del tenant.',
+            ];
         }
 
-        const { data, error } = await resend.emails.send({ from: "Pandoras Growth OS <system@pandoras.finance>", to: [to], subject, html });
-        if (error) {
-            return { success: false, error: error.message };
+        const branding = await resolveEmailBranding({
+            explicitBrand: {
+                name: BRAND,
+                isPandorasPlatform: true,
+            },
+        });
+
+        const rendered = await renderEmailAsync({
+            template: HermesNotificationTemplate,
+            props: {
+                branding,
+                title: subject,
+                recipientName: tenantName,
+                message: details.join('\n\n'),
+                badge: action === 'FULL_ACCESS' ? 'Full Access Activo' : 'Upgrade Plan',
+                type: 'success',
+                ctaText: 'Ir a mi Panel de Control →',
+                ctaUrl: 'https://dash.pandoras.finance',
+            },
+        });
+
+        const sendResult = await sendEmail({
+            from: "Pandoras Growth OS <system@pandoras.finance>",
+            to: [to],
+            subject,
+            html: rendered.html,
+            text: rendered.text,
+        });
+
+        if (!sendResult.success) {
+            return { success: false, error: sendResult.error };
         }
-        return { success: true, id: data?.id, action };
+        return { success: true, id: sendResult.id, action };
     } catch (error: any) {
         // Email es notificación — fallo jamás revierte la provisión.
         console.error("[Tenant Mailer Error]:", error?.message || error);

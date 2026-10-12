@@ -74,53 +74,29 @@ export async function POST(request: NextRequest) {
       // Continue with email sending even if DB fails to maintain conversion
     }
 
-    // Send email via Resend with React Email template
-    if (RESEND_API_KEY && contactEmail) {
+    // Send email via unified email engine
+    if (contactEmail) {
       try {
-        // Import React Email render function from correct package
-        const { render } = await import('@react-email/render');
+        const { renderEmailAsync, sendEmail, resolveEmailBranding } = await import('@saasfly/shared');
         const PandorasWelcomeEmail = (await import('@/emails/creator-email')).default;
 
-        // Render the React Email to HTML (render is async in @react-email/render)
-        const html = await render(
-          PandorasWelcomeEmail({
+        const branding = await resolveEmailBranding();
+        const rendered = await renderEmailAsync({
+          template: PandorasWelcomeEmail as any,
+          props: {
             email: contactEmail,
             name: name,
             source: source,
-          })
-        );
+          },
+        });
 
-        console.log('HTML render result type:', typeof html);
-        console.log('HTML render result (first 200 chars):', html.substring(0, 200));
-
-        // Validate that we got a valid HTML string
-        if (!html || typeof html !== 'string' || html.trim().length === 0) {
-          console.error('Email render failed - empty or invalid HTML');
-          throw new Error('Failed to render email HTML');
-        }
-
-        const emailData = {
+        await sendEmail({
           from: FROM_EMAIL,
           to: [contactEmail],
           subject: '¡Bienvenido a Pandora\'s - La Evolución del Creador!',
-          html: html,
-          tags: [{ name: 'audience', value: 'newsletter_generic' }]
-        };
-
-        const emailResponse = await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${RESEND_API_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(emailData),
+          html: rendered.html,
+          text: rendered.text,
         });
-
-        if (!emailResponse.ok) {
-          const error = await emailResponse.text();
-          console.error('Resend error:', error);
-          throw new Error('Failed to send email via Resend');
-        }
       } catch (emailError) {
         console.error('Email sending failed:', emailError);
         // Continue even if email fails

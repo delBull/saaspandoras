@@ -5,7 +5,7 @@
  * Server-only — never import from client components.
  */
 
-import { resend } from '@saasfly/shared';
+import { sendEmail as sharedSendEmail } from '@saasfly/shared';
 
 interface SendEmailOptions {
   to: string;
@@ -15,14 +15,14 @@ interface SendEmailOptions {
 }
 
 export async function sendEmail(opts: SendEmailOptions): Promise<void> {
-  const result = await resend.emails.send({
+  const result = await sharedSendEmail({
     from: opts.from,
     to: opts.to,
     subject: opts.subject,
     html: opts.html,
   });
 
-  if ('error' in result && result.error) {
-    throw new Error(`[Academy Email] Resend error: ${JSON.stringify(result.error)}`);
+  if (!result.success) {
+    throw new Error(`[Academy Email] Send error: ${result.error}`);
   }
 }

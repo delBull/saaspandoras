@@ -2,6 +2,9 @@ import { db } from "@saasfly/db-core";
 import { projects } from "@saasfly/db-core";
 import { eq } from "@saasfly/db-core";
 import { sendEmail } from "./client";
+import { resolveEmailBranding } from "./engine/branding";
+import { renderEmailAsync } from "./engine/render-email";
+import { AmbassadorWelcomeTemplate } from "./templates/ambassadors/AmbassadorWelcomeTemplate";
 
 export interface AmbassadorWelcomeProps {
     ambassadorName: string;
@@ -29,53 +32,78 @@ export async function sendAmbassadorWelcomeEmail({
         
         const subject = `¡Bienvenido como ${roleName} oficial de ${projectName}! 🚀`;
         
-        const htmlContent = `
-            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f4f4f5; padding: 40px 0;">
-                <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);">
-                    <div style="background-color: ${bgColor}; padding: 40px 20px; text-align: center;">
-                        <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600;">${projectName}</h1>
-                        <p style="color: #94a3b8; margin-top: 10px; font-size: 16px;">Programa de ${roleName}s Oficial</p>
-                    </div>
-                    
-                    <div style="padding: 40px 30px;">
-                        <p style="font-size: 16px; color: #334155; line-height: 1.6; margin-bottom: 24px;">
-                            Hola <strong>${ambassadorName}</strong>,
-                        </p>
-                        
-                        <p style="font-size: 16px; color: #334155; line-height: 1.6; margin-bottom: 24px;">
-                            Tu registro como ${roleName} oficial de <strong>${projectName}</strong> ha sido confirmado exitosamente. Bienvenido a nuestro equipo de socios comerciales.
-                        </p>
-                        
-                        <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 24px; text-align: center; margin-bottom: 30px;">
-                            <p style="font-size: 14px; color: #64748b; margin: 0 0 8px 0; text-transform: uppercase; letter-spacing: 0.05em;">Tu Código Oficial de Referido</p>
-                            <div style="font-size: 24px; font-family: monospace; font-weight: 700; color: #0f172a; letter-spacing: 0.1em;">
-                                ${referralCode}
-                            </div>
-                        </div>
-                        
-                        <p style="font-size: 16px; color: #334155; line-height: 1.6; margin-bottom: 24px;">
-                            En los próximos días recibirás más información sobre los detalles operativos, herramientas disponibles y los siguientes pasos para comenzar a operar. Nuestro equipo estará en contacto contigo para resolver cualquier duda.
-                        </p>
-                        
-                        <p style="font-size: 16px; color: #334155; line-height: 1.6; margin-bottom: 30px;">
-                            Comparte tu código con tus clientes y prospectos para que puedan registrarse en la plataforma.
-                        </p>
+        let htmlContent: string;
+        try {
+            const branding = await resolveEmailBranding({
+                tenantSlug: origin,
+                explicitBrand: {
+                    name: projectName,
+                    accentColor: primaryColor,
+                    isPandorasPlatform: origin === "pandoras" || !brandConfig.name,
+                }
+            });
 
-                        ${brandConfig.hubUrl || origin === 'snarai' ? `
-                        <div style="text-align: center; margin-bottom: 30px;">
-                            <a href="${hubUrl}" style="background-color: ${primaryColor}; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; display: inline-block;">Acceder al Hub Comercial (Gestores)</a>
+            const rendered = await renderEmailAsync({
+                template: AmbassadorWelcomeTemplate,
+                props: {
+                    branding,
+                    ambassadorName,
+                    referralCode,
+                    roleName,
+                    hubUrl,
+                }
+            });
+            htmlContent = rendered.html.replace(/&#x27;/g, "'").replace(/&amp;/g, "&");
+        } catch (renderError) {
+            console.warn("⚠️ [Ambassador Mailer] Engine render failed, using deterministic fallback:", renderError);
+            htmlContent = `
+                <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f4f4f5; padding: 40px 0;">
+                    <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);">
+                        <div style="background-color: ${bgColor}; padding: 40px 20px; text-align: center;">
+                            <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600;">${projectName}</h1>
+                            <p style="color: #94a3b8; margin-top: 10px; font-size: 16px;">Programa de ${roleName}s Oficial</p>
                         </div>
-                        ` : ''}
                         
-                        <div style="border-top: 1px solid #e2e8f0; padding-top: 24px; text-align: center;">
-                            <p style="font-size: 14px; color: #64748b; margin: 0;">
-                                ${projectName} &copy; ${new Date().getFullYear()}
+                        <div style="padding: 40px 30px;">
+                            <p style="font-size: 16px; color: #334155; line-height: 1.6; margin-bottom: 24px;">
+                                Hola <strong>${ambassadorName}</strong>,
                             </p>
+                            
+                            <p style="font-size: 16px; color: #334155; line-height: 1.6; margin-bottom: 24px;">
+                                Tu registro como ${roleName} oficial de <strong>${projectName}</strong> ha sido confirmado exitosamente. Bienvenido a nuestro equipo de socios comerciales.
+                            </p>
+                            
+                            <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 24px; text-align: center; margin-bottom: 30px;">
+                                <p style="font-size: 14px; color: #64748b; margin: 0 0 8px 0; text-transform: uppercase; letter-spacing: 0.05em;">Tu Código Oficial de Referido</p>
+                                <div style="font-size: 24px; font-family: monospace; font-weight: 700; color: #0f172a; letter-spacing: 0.1em;">
+                                    ${referralCode}
+                                </div>
+                            </div>
+                            
+                            <p style="font-size: 16px; color: #334155; line-height: 1.6; margin-bottom: 24px;">
+                                En los próximos días recibirás más información sobre los detalles operativos, herramientas disponibles y los siguientes pasos para comenzar a operar. Nuestro equipo estará en contacto contigo para resolver cualquier duda.
+                            </p>
+                            
+                            <p style="font-size: 16px; color: #334155; line-height: 1.6; margin-bottom: 30px;">
+                                Comparte tu código con tus clientes y prospectos para que puedan registrarse en la plataforma.
+                            </p>
+
+                            ${brandConfig.hubUrl || origin === 'snarai' ? `
+                            <div style="text-align: center; margin-bottom: 30px;">
+                                <a href="${hubUrl}" style="background-color: ${primaryColor}; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; display: inline-block;">Acceder al Hub Comercial (Gestores)</a>
+                            </div>
+                            ` : ''}
+                            
+                            <div style="border-top: 1px solid #e2e8f0; padding-top: 24px; text-align: center;">
+                                <p style="font-size: 14px; color: #64748b; margin: 0;">
+                                    ${projectName} &copy; ${new Date().getFullYear()}
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        `;
+            `;
+        }
 
         console.log(`[Ambassador Mailer] Sending welcome email to ${ambassadorEmail}`);
         

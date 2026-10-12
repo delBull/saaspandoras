@@ -27,29 +27,47 @@ export async function activateClient(projectId: number, method: string, amount: 
 
     // 2. Send Welcome Email
     try {
-      const RESEND_API_KEY = process.env.RESEND_API_KEY;
-      if (RESEND_API_KEY && project.applicantEmail) {
-        const { render } = await import('@react-email/render');
-        const WelcomeEmail = (await import('@/emails/welcome-active-client')).default;
+      if (project.applicantEmail) {
+        const { sendEmail } = await import('@/lib/email/client');
+        const { resolveEmailBranding } = await import('@/lib/email/engine/branding');
+        const { renderEmailAsync } = await import('@/lib/email/engine/render-email');
+        const { ClientActivationTemplate } = await import('@/lib/email/templates/clients/ClientActivationTemplate');
 
-        const html = await render(WelcomeEmail({
-          name: project.applicantName || 'Founder',
-          projectName: project.title,
-          dashboardLink: 'https://dash.pandoras.finance/'
-        }));
+        let html: string;
+        try {
+          const branding = await resolveEmailBranding({
+            tenantSlug: project.slug,
+            explicitBrand: {
+              name: project.title,
+            }
+          });
 
-        await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${RESEND_API_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            from: 'Onboarding <onboarding@pandoras.finance>',
-            to: [project.applicantEmail],
-            subject: '¡Bienvenido a Pandora’s! Tu lugar está asegurado 🚀',
-            html: html,
-          }),
+          const rendered = await renderEmailAsync({
+            template: ClientActivationTemplate,
+            props: {
+              branding,
+              name: project.applicantName || 'Founder',
+              projectName: project.title,
+              dashboardLink: 'https://dash.pandoras.finance/',
+            }
+          });
+          html = rendered.html.replace(/&#x27;/g, "'").replace(/&amp;/g, "&");
+        } catch (renderErr) {
+          console.warn('⚠️ [activateClient] Engine render failed, using legacy fallback:', renderErr);
+          const { render } = await import('@react-email/render');
+          const WelcomeEmail = (await import('@/emails/welcome-active-client')).default;
+          html = await render(WelcomeEmail({
+            name: project.applicantName || 'Founder',
+            projectName: project.title,
+            dashboardLink: 'https://dash.pandoras.finance/'
+          }));
+        }
+
+        await sendEmail({
+          from: 'Onboarding <onboarding@pandoras.finance>',
+          to: [project.applicantEmail],
+          subject: '¡Bienvenido a Pandora’s! Tu lugar está asegurado 🚀',
+          html,
         });
         console.log('📧 Welcome Email sent.');
       }

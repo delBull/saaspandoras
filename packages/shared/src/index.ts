@@ -70,3 +70,5 @@ export * from './whatsapp/utils/client';
 export * from './whatsapp/utils/client';
 export * from './channels/whatsapp/whatsapp-provider';
 export * from './channels/whatsapp/signalwire-service';
+export * from './email-engine';
+export * from './email-components';
