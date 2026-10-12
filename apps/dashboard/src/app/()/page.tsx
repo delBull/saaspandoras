@@ -76,10 +76,9 @@ export default async function RootDashboardPage({ searchParams }: PageProps) {
   const { getAuth, isAdmin } = await import('@saasfly/auth-sdk');
   const authResult = await getAuth(headerList).catch(() => ({ session: null }));
 
+  // 🛡️ Fail-closed: callerWallet SOLO de sesión criptográficamente verificada
   const callerWallet =
-    (authResult as any).session?.address?.toLowerCase() ||
-    headerList.get('x-wallet-address')?.toLowerCase() ||
-    headerList.get('x-thirdweb-address')?.toLowerCase();
+    (authResult as any).session?.address?.toLowerCase() || null;
 
   const userIsAdmin = callerWallet ? await isAdmin(callerWallet) : false;
 
