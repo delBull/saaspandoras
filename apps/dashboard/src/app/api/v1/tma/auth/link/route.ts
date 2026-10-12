@@ -113,22 +113,26 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 2. Extract and Validate Telegram Identity
+    // 2. Extract and Validate Telegram Identity (multi-bot token cascade, same as Hermes TMA auth)
     const rawInitData = initData || req.headers.get('x-telegram-init-data') || '';
-    const botToken = process.env.TELEGRAM_BOT_TOKEN || process.env.BOT_TOKEN;
+    const botToken = process.env.TELEGRAM_BOT_TOKEN
+      || process.env.BOT_TOKEN
+      || process.env.HERMES_TELEGRAM_BOT_TOKEN
+      || process.env.TELEGRAM_TEAM_BOT_TOKEN
+      || process.env.TELEGRAM_BOT_TOKEN_HQ;
 
+    // 🛡️ Fail-closed: initData MUST be verified with a bot token HMAC.
+    // The previous "fallback parser" trusted unverified initData when no token
+    // was configured, allowing identity spoofing in the wallet binding flow.
+    if (rawInitData && !botToken) {
+      return NextResponse.json(
+        { error: 'Server configuration error: no Telegram bot token configured; initData cannot be verified cryptographically' },
+        { status: 500, headers: corsHeaders }
+      );
+    }
     let tgUser: any = null;
     if (botToken && rawInitData) {
       tgUser = parseTelegramInitData(rawInitData, botToken);
-    }
-
-    // Fallback parser if botToken is missing in dev environment
-    if (!tgUser && rawInitData) {
-      try {
-        const p = new URLSearchParams(rawInitData);
-        const userStr = p.get('user');
-        if (userStr) tgUser = JSON.parse(userStr);
-      } catch {}
     }
 
     if (!tgUser || !tgUser.id) {
