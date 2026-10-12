@@ -15,3 +15,4 @@ export * from './assessment/assessment-engine';
 export * from './events/academy-audit-subscriber';
 export * from './security/encrypted-resource-vault';
 export * from './security/key-distribution-service';
+export * from './security/nonce-stores';

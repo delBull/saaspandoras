@@ -186,4 +186,37 @@ describe('Pandora\'s Academy — Key Distribution Service (Phase 2)', () => {
     expect(result.allowed).toBe(false);
     expect(result.reason).toContain('do not match resource manifest');
   });
+
+  it('SEC-14 (Fase 2.1): invalid signature does NOT burn the nonce — same nonce works after correct signature', async () => {
+    const timestamp = Date.now();
+    const nonce = 'nonce_sec14_reuse';
+    const challenge = {
+      walletAddress: authorizedWallet.address,
+      resourceId: manifest.resourceId,
+      tenantId: manifest.tenantId,
+      programId: manifest.programId,
+      nonce,
+      timestamp,
+    };
+
+    // 1. Forged signature for THIS nonce -> rejected, nonce untouched
+    const forged = await authorizedWallet.signMessage(
+      KeyDistributionService.buildChallengeMessage({ ...challenge, nonce: nonce + '_tampered' })
+    );
+    const first = await keyService.authorizeAndDeliverKey(
+      { ...challenge, signature: forged }, manifest
+    );
+    expect(first.allowed).toBe(false);
+    expect(first.reason).toContain('Recovered signer address does not match');
+
+    // 2. Correct signature for the SAME nonce still succeeds (nonce was never burned)
+    const valid = await authorizedWallet.signMessage(
+      KeyDistributionService.buildChallengeMessage(challenge)
+    );
+    const second = await keyService.authorizeAndDeliverKey(
+      { ...challenge, signature: valid }, manifest
+    );
+    expect(second.allowed).toBe(true);
+    expect(second.unwrappedDekBase64).toBeDefined();
+  });
 });
