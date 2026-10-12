@@ -87,42 +87,37 @@ export async function POST(req: NextRequest) {
 
     let client;
     if (!apiKey && isInternalDashboard) {
-      console.error(`[Growth OS] Internal Origin Bypass Detected. Origin: ${requestOrigin}`);
-      // Use the core Pandora project for internal dashboard leads
-      // Try by ID 3 first (Pandoras Access) then fallback to slug
-      client = await db.query.integrationClients.findFirst({
-        where: or(
-          eq(integrationClients.projectId, autoDiscoveredProjectId || 3),
-          eq(integrationClients.name, autoDiscoveredProjectId === 2 ? 'Narai Real Estate' : 'Pandoras Protocol')
-        )
-      });
-      
-      console.info(`[Growth OS] Internal Dashboard Lead bypass for Origin: ${requestOrigin}. Client found: ${!!client}`);
-    } else if (apiKey) {
-      client = await IntegrationKeyService.validateKey(apiKey);
-    }
-
-    if (!client) {
-      // Fallback: If it's internal dashboard and no integration client exists, 
-      // check if the main project exists at least.
-      if (isInternalDashboard) {
-        const mainProject = await db.query.projects.findFirst({
-          where: (projects, { or, ilike }) => or(
-            ilike(projects.slug, 'pandoras-protocol'),
-            ilike(projects.slug, 'pandoras_access')
-          )
+      console.info(`[Growth OS] Internal Origin Request. Origin: ${requestOrigin}`);
+      // If autoDiscoveredProjectId exists, find its client or fallback to project
+      if (autoDiscoveredProjectId) {
+        client = await db.query.integrationClients.findFirst({
+          where: eq(integrationClients.projectId, autoDiscoveredProjectId)
         });
-        
+      }
+
+      if (!client) {
+        const targetProjectId = autoDiscoveredProjectId;
+        const mainProject = targetProjectId
+          ? await db.query.projects.findFirst({ where: eq(projects.id, targetProjectId) })
+          : await db.query.projects.findFirst({
+              where: (p, { or, ilike }) => or(
+                ilike(p.slug, 'pandoras'),
+                ilike(p.slug, 'pandoras-protocol'),
+                ilike(p.slug, 'snarai')
+              )
+            });
+
         if (mainProject) {
-          // Construct a virtual client for the internal logic
           client = {
             projectId: mainProject.id,
-            name: 'Internal Dashboard (Legacy Fallback)',
+            name: `${mainProject.title} (Internal Origin)`,
             environment: 'production'
           } as any;
-          console.info(`[Growth OS] Using Virtual Internal Client for Project: ${mainProject.slug}`);
+          console.info(`[Growth OS] Resolved Internal Client for Project: ${mainProject.slug} (ID: ${mainProject.id})`);
         }
       }
+    } else if (apiKey) {
+      client = await IntegrationKeyService.validateKey(apiKey);
     }
 
     if (!client) {
@@ -306,7 +301,7 @@ export async function POST(req: NextRequest) {
     // --- REFINED ECOSYSTEM SEPARATION (Phase 2.1) ---
     // Core Pandora projects: pandoras_access
     // Everything else: 'client' protocol
-    const isCorePandora = projectContext.slug === 'pandoras_access';
+    const isCorePandora = ['pandoras', 'pandoras_access', 'pandoras-protocol'].includes(projectContext.slug);
     const ownerContext = isCorePandora ? 'pandora' : 'client';
     const leadType = scope === 'b2b' ? 'founder_prospect' : 'user_prospect';
 

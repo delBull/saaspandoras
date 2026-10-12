@@ -10,6 +10,10 @@ export type HermesEventType =
   | 'LeadQualified'
   | 'AppointmentCreated'
   | 'PaymentGenerated'
+  | 'PaymentSettled'
+  | 'OrderCreated'
+  | 'OrderPaid'
+  | 'TenantProvisioned'
   | 'KnowledgeUpdated'
   | 'CustomerEscalated'
   | 'PortalActivated';
@@ -231,6 +235,45 @@ HermesEventBus.on('LeadQualified', async (event) => {
     }
   } catch (err: any) {
     console.error('[EventBus LeadQualified Error]:', err?.message || err);
+  }
+});
+
+// Commercial Funnel Listeners
+HermesEventBus.on('OrderPaid', async (event) => {
+  try {
+    const { orderId, amount, currency, organization } = event.payload || {};
+    console.info(`[HermesEventBus] 💰 Order Paid: ${orderId} (${amount} ${currency}) for ${organization}`);
+
+    const discordWebhook = process.env.DISCORD_WEBHOOK_PANDORAS_ALERTS || process.env.DISCORD_PAYMENTS_WEBHOOK;
+    if (discordWebhook) {
+      await fetch(discordWebhook, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          embeds: [{
+            title: '💰 Orden Comercial Pagada',
+            color: 0x10b981,
+            fields: [
+              { name: 'Orden', value: String(orderId), inline: true },
+              { name: 'Monto', value: `${amount} ${currency}`, inline: true },
+              { name: 'Organización', value: String(organization || 'Pandoras'), inline: true },
+            ],
+            timestamp: event.timestamp
+          }]
+        })
+      }).catch(e => console.error('[EventBus Discord Error]:', e));
+    }
+  } catch (err: any) {
+    console.error('[EventBus OrderPaid Error]:', err?.message || err);
+  }
+});
+
+HermesEventBus.on('TenantProvisioned', async (event) => {
+  try {
+    const { organizationSlug, leadId } = event.payload || {};
+    console.info(`[HermesEventBus] 🚀 Tenant Provisioned: ${organizationSlug} (Lead: ${leadId})`);
+  } catch (err: any) {
+    console.error('[EventBus TenantProvisioned Error]:', err?.message || err);
   }
 });
 

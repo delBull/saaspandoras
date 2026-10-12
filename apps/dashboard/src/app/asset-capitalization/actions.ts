@@ -11,29 +11,22 @@ export async function submitAssetCapitalizationLead(formData: FormData) {
   }
 
   try {
-    // 1. Guardar en Growth OS DB (vía API centralizada)
-    const apiBase = process.env.PANDORAS_API_URL || 'https://dash.pandoras.finance/api/v1';
-    const apiKey = process.env.PANDORAS_SECRET_KEY || process.env.NEXT_PUBLIC_PANDORAS_PUBLIC_KEY;
-    
-    if (apiKey) {
-      await fetch(`${apiBase}/marketing/leads/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey
-        },
-        body: JSON.stringify({
-          projectId: 'pandoras_capital',
-          email: email,
-          metadata: {
-            name: name,
-            assetType: assetType,
-            message: message,
-            source: 'asset_capitalization_playbook',
-            tags: ['institutional', assetType]
-          }
-        })
-      }).catch(err => console.error('[AssetCapitalization] DB Sync Error:', err));
+    // 1. Persistir el lead en Growth OS via el mecanismo canónico de ingesta.
+    //    (Identidad canónica resuelta server-side → project 'pandoras'; consent requerido).
+    const { captureInstitutionalLead } = await import('@/lib/marketing/capture-institutional-lead');
+    const capture = await captureInstitutionalLead({
+      email,
+      name,
+      assetType,
+      message,
+      source: 'asset_capitalization_playbook',
+      tags: ['asset-capitalization', ...(assetType ? [assetType] : [])],
+    });
+    if (!capture.ok) {
+      // Honest, non-blocking: Discord + email still notify the team, but we log loudly.
+      console.error(
+        `[AssetCapitalization] Lead persistence FAILED (${capture.error}). Inquiry for ${email} was NOT persisted to CRM.`,
+      );
     }
 
     // 2. Notificación Interna a Discord

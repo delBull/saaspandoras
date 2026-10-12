@@ -40,9 +40,7 @@ const nextConfig = {
   experimental: {
     // Enable Next.js 15 memory optimizations during production build
     webpackMemoryOptimizations: true,
-    // Limit CPU/worker concurrency to 1 to prevent memory multiplication on container builds (Vercel 8GB OOM fix)
-    cpus: 1,
-    webpackBuildWorker: false,
+    webpackBuildWorker: true,
     // Fix Next.js 14+ barrel file imports for client components
     optimizePackageImports: [
       '@saasfly/shared',

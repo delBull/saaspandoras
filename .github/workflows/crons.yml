@@ -46,7 +46,17 @@ jobs:
         run: |
           curl -s -o /dev/null -w "%{http_code}" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-            "https://pandoras.finance/api/cron/marketing"
+            "https://dash.pandoras.finance/api/cron/marketing"
+
+  marketing-nurture:
+    if: github.event.schedule == '*/15 * * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call marketing-nurture
+        run: |
+          curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "https://dash.pandoras.finance/api/admin/marketing/cron/process-nurture"
 
   scheduling-reminders:
     if: github.event.schedule == '*/15 * * * *'
@@ -56,7 +66,27 @@ jobs:
         run: |
           curl -s -o /dev/null -w "%{http_code}" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-            "https://pandoras.finance/api/cron/scheduling-reminders"
+            "https://dash.pandoras.finance/api/cron/scheduling-reminders"
+
+  agenda-followups:
+    if: github.event.schedule == '*/15 * * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call agenda-followups
+        run: |
+          curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "https://dash.pandoras.finance/api/cron/sovereign-agenda-followups"
+
+  nexus-cron:
+    if: github.event.schedule == '*/15 * * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call nexus-cron
+        run: |
+          curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "https://dash.pandoras.finance/api/cron/nexus"
 
   gas-check:
     if: github.event.schedule == '*/30 * * * *'
@@ -66,7 +96,7 @@ jobs:
         run: |
           curl -s -o /dev/null -w "%{http_code}" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-            "https://pandoras.finance/api/cron/gas-check"
+            "https://dash.pandoras.finance/api/cron/gas-check"
 
   reconcile-withdrawals:
     if: github.event.schedule == '0 */6 * * *'
@@ -76,7 +106,7 @@ jobs:
         run: |
           curl -s -o /dev/null -w "%{http_code}" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-            "https://pandoras.finance/api/cron/reconcile-withdrawals"
+            "https://dash.pandoras.finance/api/cron/reconcile-withdrawals"
 
   hermes-workflows:
     if: github.event.schedule == '*/30 * * * *'

@@ -100,10 +100,26 @@ export async function POST(req: NextRequest, context: { params: Promise<{ orderI
     if (result.success) {
       // Find the project ID
       const [project] = await db
-        .select({ id: projects.id })
+        .select({ id: projects.id, slug: projects.slug })
         .from(projects)
         .where(eq(projects.slug, result.organizationSlug))
         .limit(1);
+
+      if (project) {
+        // P0-3: Wire ProvisioningEngine so the tenant receives full Hermes runtime & channels
+        try {
+          const { ProvisioningEngine } = await import('@/lib/platform/provisioning-engine');
+          const primaryProduct = productsToInstall[0] || 'GROWTH_OS';
+          await ProvisioningEngine.provision({
+            leadId: order.leadId,
+            product: primaryProduct as any,
+            plan: 'growth',
+            existingProjectId: project.id,
+          });
+        } catch (engineErr: any) {
+          console.warn('[Provisioning] ProvisioningEngine non-blocking warning:', engineErr?.message || engineErr);
+        }
+      }
 
       await db
         .update(commercialOrders)
@@ -116,6 +132,24 @@ export async function POST(req: NextRequest, context: { params: Promise<{ orderI
         })
         .where(eq(commercialOrders.id, orderId));
       
+      // 🛰️ Publish tenant provisioned to Hermes Event Bus (Batch D)
+      try {
+        const { HermesEventBus } = await import('@saasfly/hermes-core');
+        await HermesEventBus.emit(
+          'TenantProvisioned',
+          Number(project?.id) || 0,
+          'pandoras_commerce',
+          {
+            orderId,
+            organizationSlug: result.organizationSlug,
+            leadId: order.leadId,
+            walletAddress,
+          }
+        );
+      } catch (busErr) {
+        console.error('[Provisioning] HermesEventBus publish failed (non-blocking):', busErr);
+      }
+
       return NextResponse.json({ success: true, organizationSlug: result.organizationSlug });
     } else {
       return new NextResponse('Provisioning failed', { status: 500 });

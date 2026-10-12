@@ -107,6 +107,13 @@ export async function POST(req: NextRequest) {
        }
 
        // Create associated privatePaymentLinks intent for On-Chain / Wire settlement
+       // 🛡️ Vertical derivado del/los products de la ORDEN (no del cliente):
+       const orderVertical = validatedLines.some(l => l.productKey === 'HERMES')
+         ? 'HERMES_OS'
+         : validatedLines.some(l => ['TOKENIZATION', 'MEDIA_CO', 'NFT_LAB'].includes(l.productKey))
+           ? 'RWA'
+           : 'GROWTH_OS';
+
        const [intent] = await tx.insert(privatePaymentLinks).values({
          title: `Workspace Activation: ${requestedOrgName}`,
          description: `Commercial order ${order.id} for organization ${requestedOrgSlug}`,
@@ -121,7 +128,7 @@ export async function POST(req: NextRequest) {
            requestedOrgSlug,
            requestedOrgName,
            context: 'CommercialOrder',
-           vertical: 'GROWTH_OS',
+           vertical: orderVertical,
            productId: 'COMMERCIAL_ORDER'
          }
        }).returning({ id: privatePaymentLinks.id });
@@ -131,6 +138,21 @@ export async function POST(req: NextRequest) {
     
     if (!result) {
        return new NextResponse('Idempotent request already processed', { status: 409 });
+    }
+
+    // 🛰️ Publish OrderCreated to Hermes Event Bus (Batch D)
+    try {
+      const { HermesEventBus } = await import('@saasfly/hermes-core');
+      await HermesEventBus.emit('OrderCreated', 0, 'pandoras_commerce', {
+        orderId: result.id,
+        leadId,
+        requestedOrgSlug,
+        requestedOrgName,
+        vertical: (typeof result as any)?.vertical || null,
+        totalAmount,
+      });
+    } catch (busErr) {
+      console.error('[Orders] HermesEventBus publish failed (non-blocking):', busErr);
     }
     
     try {

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@saasfly/db-core";
-import { transactions, purchases, daoMembers, integrationClients } from "@saasfly/db-core";
+import { transactions, purchases, daoMembers, integrationClients, projects } from "@saasfly/db-core";
 import { sendPaymentNotification } from "@/lib/discord/notifier";
 import { WebhookService } from "@/lib/integrations/webhook-service";
 import { eq, sql } from "@saasfly/db-core";
@@ -243,11 +243,16 @@ export async function POST(req: Request) {
                             console.log(`📡 [THIRDWEB_WEBHOOK] Notified Edge API of completed purchase: ${purchaseId}`);
                         }
 
-                        // 🏛️ DAO Membership Sync
+                        // 🏛️ DAO Membership Sync (Homogenized: proportional to units purchased)
                         try {
                             const wallet = purchase.userId.toLowerCase();
                             const projectId = purchase.projectId;
-                            const count = 1;
+                            const projectRecord = await db.query.projects.findFirst({
+                                where: eq(projects.id, projectId),
+                                columns: { tokenPriceUsd: true }
+                            });
+                            const tokenPrice = Number(projectRecord?.tokenPriceUsd || 50);
+                            const count = Math.max(1, Math.floor(Number(purchase.amount) / (tokenPrice > 0 ? tokenPrice : 50)));
 
                             await db.insert(daoMembers)
                                 .values({
@@ -266,7 +271,7 @@ export async function POST(req: Request) {
                                         lastActiveAt: new Date(),
                                     }
                                 });
-                            console.log(`🏛️ [THIRDWEB_WEBHOOK] DAO member synchronized for wallet ${wallet} in project ${projectId}`);
+                            console.log(`🏛️ [THIRDWEB_WEBHOOK] DAO member synchronized with ${count} units for wallet ${wallet} in project ${projectId}`);
                         } catch (daoError: any) {
                             console.error("❌ [THIRDWEB_WEBHOOK] Failed to sync DAO member:", daoError.message);
                         }

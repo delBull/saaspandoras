@@ -981,5 +981,50 @@ export function registerNftTools(executor: HermesToolExecutor): void {
       summary: `Wallet ${normalizedWallet} holds ${activeTokens.length} active token(s) across ${new Set(activeTokens.map(t => t.collectionId)).size} collection(s).`,
     };
   });
+
+  // ── rwa_create_purchase_intent ──────────────────────────────────────────
+  executor.registerHandler('rwa_create_purchase_intent', async (params, context) => {
+    const { projectSlug, amount, buyerEmail } = (params || {}) as any;
+    const [project] = await db.select({ id: projects.id, title: projects.title, slug: projects.slug })
+      .from(projects)
+      .where(eq(projects.slug, String(projectSlug)))
+      .limit(1);
+
+    if (!project) {
+      return { success: false, error: `Proyecto ${projectSlug} no encontrado.` };
+    }
+
+    const randomSuffix = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const purchaseId = `${project.slug.toUpperCase()}-${randomSuffix}`;
+    const checkoutUrl = `https://dash.pandoras.finance/ecosystem/${project.slug}?intent=${purchaseId}&amount=${amount}`;
+
+    return {
+      success: true,
+      purchaseId,
+      project: project.title,
+      amount,
+      buyerEmail,
+      checkoutUrl,
+      summary: `Intención de compra ${purchaseId} generada para ${project.title}. Enlace de checkout: ${checkoutUrl}`,
+    };
+  });
+
+  // ── rwa_show_passport ───────────────────────────────────────────────────
+  executor.registerHandler('rwa_show_passport', async (params, context) => {
+    const { walletOrEmail, projectSlug } = (params || {}) as any;
+    const isWallet = String(walletOrEmail || '').startsWith('0x');
+    const passportUrl = isWallet
+      ? `https://dash.pandoras.finance/legal/certificate/global-${walletOrEmail}?project=${projectSlug}`
+      : `https://dash.pandoras.finance/portal?email=${encodeURIComponent(walletOrEmail)}&project=${projectSlug}`;
+
+    return {
+      success: true,
+      walletOrEmail,
+      projectSlug,
+      passportUrl,
+      summary: `Pasaporte legal para ${walletOrEmail}: ${passportUrl}`,
+    };
+  });
 }
+
 

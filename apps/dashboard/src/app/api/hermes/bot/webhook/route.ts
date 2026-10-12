@@ -265,6 +265,49 @@ export async function POST(req: NextRequest) {
         console.warn('[Hermes Telegram Webhook] Non-blocking escalation audit error:', auditErr);
       }
 
+      // 3.6 Queue the escalation into the closer queue (TMA HITL) via the canonical
+      // EscalationService: pauses the conversation, inserts a PENDING hermesEscalations
+      // row, and dispatches nexusActionRequests + team notifications to eligible closers.
+      try {
+        const { EscalationService } = await import('@saasfly/hermes-core');
+
+        // Resolve canonical org for conversation correlation (best-effort; slug is the FK).
+        let canonicalOrgForConv = tenantSlug;
+        try {
+          const { OrganizationSDK } = await import('@saasfly/shared');
+          const org = await OrganizationSDK.resolve(tenantSlug, 'HERMES');
+          if (org?.organizationId) canonicalOrgForConv = org.organizationId;
+        } catch {
+          // keep slug-based fallback conversation id
+        }
+
+        const escalationConversationId = `conv_tg_${telegramId}_${canonicalOrgForConv}`;
+
+        // Deduplicate: never open a second PENDING escalation for an already-queued conversation.
+        const pendingEscalations = await EscalationService.getEscalations(tenantSlug, 'PENDING');
+        const alreadyQueued = pendingEscalations.some(
+          (esc: any) => esc.conversationId === escalationConversationId,
+        );
+
+        if (!alreadyQueued) {
+          await EscalationService.triggerEscalation({
+            organizationId: tenantSlug,
+            conversationId: escalationConversationId,
+            actorId: interlocutor.actorId,
+            channel: 'TELEGRAM',
+            reason: 'USER_REQUEST',
+            notes: JSON.stringify({
+              source: isEscalateCallback ? 'inline_button' : 'intent_detected',
+              telegramId,
+              userName: interlocutor.name,
+              excerpt: (rawText || '').slice(0, 300),
+            }),
+          });
+        }
+      } catch (queueErr) {
+        console.warn('[Hermes Telegram Webhook] Non-blocking escalation queue error:', queueErr);
+      }
+
       if (botToken) {
         if (callbackQuery?.id) {
           await fetch(`https://api.telegram.org/bot${botToken}/answerCallbackQuery`, {
