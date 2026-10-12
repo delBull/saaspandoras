@@ -107,6 +107,8 @@ export interface KnowledgeDocumentRef {
   contentHash: string;
   summary: string;
   fullContent: string;
+  encryptedResourceId?: string;
+  ipfsCid?: string;
 }
 
 export interface AcademyKnowledgeSnapshot {
