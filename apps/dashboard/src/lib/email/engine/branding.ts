@@ -61,17 +61,18 @@ export async function resolveEmailBranding(options?: {
     const runtimeConfig = (project.tenantRuntimeConfig || {}) as Record<string, any>;
     const brandConfig = runtimeConfig.brandConfig || {};
 
-    const isSnarai = project.slug === 'snarai';
-    const fallbackName = isSnarai ? "S'Narai" : (project.title || "Pandora's Growth OS");
-    const fallbackColor = isSnarai ? emailTheme.colors.accentEmerald : emailTheme.colors.accentDefault;
+    // Fallbacks genéricos derivados del proyecto canónico — NUNCA special-casing
+    // por slug de tenant (cada tenant debe configurar su propia marca en DB).
+    const fallbackName = project.title || "Pandora's Growth OS";
+    const fallbackColor = emailTheme.colors.accentDefault;
 
     return {
       tenantId: String(project.id),
       name: brandConfig.companyName || brandConfig.name || fallbackName,
-      logoUrl: brandConfig.logoUrl || project.logoUrl || (isSnarai ? "https://snarai.com/logo.png" : undefined),
+      logoUrl: brandConfig.logoUrl || project.logoUrl || undefined,
       accentColor: brandConfig.primaryColor || brandConfig.color || fallbackColor,
       supportEmail: brandConfig.supportEmail || PANDORAS_DEFAULT_BRANDING.supportEmail,
-      isPandorasPlatform: project.slug === 'pandoras' || !brandConfig.name,
+      isPandorasPlatform: project.slug === 'pandoras',
       legalUrls: {
         terms: brandConfig.termsUrl || `https://dash.pandoras.finance/legal/terms/${project.slug}`,
         privacy: brandConfig.privacyUrl || `https://dash.pandoras.finance/legal/privacy/${project.slug}`,
