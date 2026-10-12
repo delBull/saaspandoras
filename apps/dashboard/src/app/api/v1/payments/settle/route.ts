@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@saasfly/db-core";
-import { privatePaymentLinks, projects } from "@saasfly/db-core";
+import { privatePaymentLinks, projects, commercialOrders, and } from "@saasfly/db-core";
 import { eq } from "@saasfly/db-core";
 import { paymentOrchestrator } from "@saasfly/hermes-core";
 import { PaymentSettlementEvent } from "@saasfly/hermes-core";
@@ -100,8 +100,18 @@ export async function POST(req: NextRequest) {
     const linkChainId = link.networkChainId || 11155111;
     const tokenAddress = link.settlementToken || (linkChainId === 11155111 ? "0x036CbD53842c5426634e7929541eC2318f3dCF7e" : "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"); // USDC Sepolia / Base
     const destinationWallet = link.destinationWallet;
-    
-    const verification = await verifyOnChainSettlement(String(txHash), Number(linkChainId), destinationWallet, tokenAddress, Number(amount || link.amount));
+
+    // 🛡️ P0 Money Loop guard: the verified amount is ALWAYS the link's own amount
+    // (= order total set at intent creation). A client-supplied body amount would
+    // let a $1 real transfer settle a $299 order (partial-payment arbitrage).
+    const expectedAmount = Number(link.amount);
+    const bodyAmount = Number(amount);
+    if (Number.isFinite(bodyAmount) && Number.isFinite(expectedAmount) && expectedAmount > 0 && bodyAmount < expectedAmount) {
+      return NextResponse.json({ error: "INSUFFICIENT_PAYMENT", reason: `Body amount ${bodyAmount} < owed amount ${expectedAmount}` }, { status: 400 });
+    }
+    const verifiedAmount = Number.isFinite(expectedAmount) && expectedAmount > 0 ? expectedAmount : Number(amount || link.amount);
+
+    const verification = await verifyOnChainSettlement(String(txHash), Number(linkChainId), destinationWallet, tokenAddress, verifiedAmount);
     if (!verification.ok) {
       return NextResponse.json({ error: "SETTLEMENT_VERIFICATION_FAILED", reason: verification.reason }, { status: 400 });
     }
@@ -111,6 +121,45 @@ export async function POST(req: NextRequest) {
       .update(privatePaymentLinks)
       .set({ status: "completed" })
       .where(eq(privatePaymentLinks.id, linkId));
+
+    // 3.1 Commercial Orders Bridge (P0 Money Loop):
+    // If the payment link was generated for a Commercial Order, transition the order to PAID.
+    const linkMetadata = (link.metadata as any) || {};
+    const linkedOrderId = linkMetadata.orderId;
+    const linkedLeadId = linkMetadata.leadId;
+
+    if (linkedOrderId || linkedLeadId) {
+      try {
+        const orderFilter = linkedOrderId
+          ? eq(commercialOrders.id, linkedOrderId)
+          : and(eq(commercialOrders.leadId, linkedLeadId), eq(commercialOrders.status, 'PENDING_PAYMENT'));
+
+        const updatedOrders = await db
+          .update(commercialOrders)
+          .set({
+            status: 'PAID',
+            verifiedBy: `onchain:${txHash}`,
+            verifiedAt: new Date(),
+            updatedAt: new Date(),
+          })
+          .where(orderFilter)
+          .returning({ id: commercialOrders.id, requestedOrgName: commercialOrders.requestedOrgName });
+
+        if (updatedOrders.length > 0) {
+          const { sendBusinessNotification } = await import('@/lib/discord/business-notifier');
+          for (const ord of updatedOrders) {
+            await sendBusinessNotification('Commercial Order PAID (On-Chain Settlement)', {
+              orderId: ord.id,
+              organization: ord.requestedOrgName,
+              txHash,
+              amount: `${amount || link.amount} ${currency || link.currency}`
+            }, 'success').catch((e) => console.warn('Non-blocking: Failed to alert discord for paid order', e));
+          }
+        }
+      } catch (orderUpdateErr) {
+        console.error('[Payments Settle API] Error transitioning commercial order to PAID:', orderUpdateErr);
+      }
+    }
 
     // 3. Dispatch to Hermes Payment Orchestrator
     // P0-14: organizationId is SERVER-AUTHORITATIVE — derived from the creator

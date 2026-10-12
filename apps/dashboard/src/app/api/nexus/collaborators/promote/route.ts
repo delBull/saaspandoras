@@ -31,13 +31,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Email required' }, { status: 400, headers: cors });
     }
 
+    const { getNexusAuthContext } = await import('@saasfly/shared');
+    const { and } = await import('@saasfly/db-core');
+    const auth = await getNexusAuthContext(req.headers);
+    const orgId = auth.canonicalOrgId || 'pandoras';
+
     const [updated] = await db.update(nexusCollaborators)
       .set({ role: 'ADMIN' })
-      .where(eq(nexusCollaborators.email, email.toLowerCase()))
+      .where(and(
+        eq(nexusCollaborators.email, email.toLowerCase()),
+        eq(nexusCollaborators.canonicalOrgId, orgId)
+      ))
       .returning({ id: nexusCollaborators.id, email: nexusCollaborators.email, role: nexusCollaborators.role });
 
     if (!updated) {
-      return NextResponse.json({ error: 'Collaborator not found' }, { status: 404, headers: cors });
+      return NextResponse.json({ error: 'Collaborator not found in this organization' }, { status: 404, headers: cors });
     }
 
     return NextResponse.json({ ok: true, updated }, { headers: cors });

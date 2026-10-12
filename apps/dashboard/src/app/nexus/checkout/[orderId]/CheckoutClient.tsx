@@ -5,7 +5,9 @@ import { useRouter } from 'next/navigation';
 import { useActiveAccount } from 'thirdweb/react';
 import { toast } from 'sonner';
 
-export default function CheckoutClient({ order }: { order: any }) {
+import { HermesUnifiedCheckout } from '@/components/payments/HermesUnifiedCheckout';
+
+export default function CheckoutClient({ order, paymentIntentId }: { order: any; paymentIntentId?: string }) {
   const account = useActiveAccount();
   const router = useRouter();
   const [isActivating, setIsActivating] = useState(false);
@@ -59,12 +61,15 @@ export default function CheckoutClient({ order }: { order: any }) {
           </div>
         </div>
 
-        {order.status !== 'PENDING_PAYMENT' ? (
+        {order.status === 'PROVISIONED' ? (
           <div className="text-center p-4 bg-emerald-500/10 text-emerald-400 rounded-lg">
-            This order has already been processed ({order.status}).
+            This workspace has been successfully provisioned.
           </div>
-        ) : (
+        ) : order.status === 'PAID' ? (
           <div className="space-y-4">
+            <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-lg text-sm text-center">
+              Payment confirmed! You can now activate your organization workspace.
+            </div>
             {!account ? (
               <div className="p-4 bg-amber-500/10 text-amber-400 rounded-lg text-sm text-center">
                 Please connect your wallet using the portal header to activate your workspace.
@@ -72,12 +77,23 @@ export default function CheckoutClient({ order }: { order: any }) {
             ) : (
               <button
                 onClick={handleActivate}
-                disabled={isActivating || Number(order.totalAmount) > 0}
+                disabled={isActivating}
                 className="w-full py-3 px-4 bg-white text-black font-semibold rounded-lg shadow hover:bg-zinc-200 transition disabled:opacity-50"
               >
-                {isActivating ? 'Activating...' : (Number(order.totalAmount) > 0 ? 'Payment Gateway Required' : 'Activate Workspace')}
+                {isActivating ? 'Activating Workspace...' : 'Activate Workspace'}
               </button>
             )}
+          </div>
+        ) : (
+          <div className="space-y-6">
+            <div className="p-4 bg-amber-500/10 text-amber-400 rounded-lg text-sm text-center">
+              This order is awaiting payment settlement (status: {order.status}). You can settle on-chain via USDC or report a wire/SPEI transfer.
+            </div>
+            {paymentIntentId ? (
+              <div className="mt-4">
+                <HermesUnifiedCheckout intentId={paymentIntentId} />
+              </div>
+            ) : null}
           </div>
         )}
       </div>

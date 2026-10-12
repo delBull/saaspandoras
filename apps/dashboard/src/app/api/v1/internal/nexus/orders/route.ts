@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@saasfly/db-core';
-import { commercialOrders, commercialOrderLines } from '@saasfly/db-core/schema';
+import { commercialOrders, commercialOrderLines, privatePaymentLinks } from '@saasfly/db-core/schema';
 import * as jose from 'jose';
 import * as crypto from 'crypto';
 import { cookies } from 'next/headers';
@@ -60,7 +60,10 @@ export async function POST(req: NextRequest) {
       
       const plan = p.metadata?.plan || 'starter';
       const priceObj = catalogItem.pricing[plan] || catalogItem.pricing.starter;
-      const price = priceObj?.price || 0;
+      if (!priceObj || typeof priceObj.price !== 'number' || priceObj.price <= 0) {
+        return new NextResponse(`Pricing unavailable or invalid for product: ${p.productKey}`, { status: 400 });
+      }
+      const price = priceObj.price;
       
       totalAmount += price;
       validatedLines.push({
@@ -73,6 +76,9 @@ export async function POST(req: NextRequest) {
     
     const idempotencyKey = body.idempotencyKey || crypto.randomUUID();
     
+    const PANDORAS_TREASURY_WALLET = process.env.NEXT_PUBLIC_PANDORAS_TREASURY_WALLET || "0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9";
+    const networkChainId = process.env.NODE_ENV === "production" ? 8453 : 11155111;
+
     const result = await db.transaction(async (tx) => {
        const [order] = await tx.insert(commercialOrders).values({
          leadId,
@@ -99,8 +105,28 @@ export async function POST(req: NextRequest) {
            metadata: line.metadata
          });
        }
+
+       // Create associated privatePaymentLinks intent for On-Chain / Wire settlement
+       const [intent] = await tx.insert(privatePaymentLinks).values({
+         title: `Workspace Activation: ${requestedOrgName}`,
+         description: `Commercial order ${order.id} for organization ${requestedOrgSlug}`,
+         amount: totalAmount.toString(),
+         currency: 'USD',
+         destinationWallet: PANDORAS_TREASURY_WALLET.toLowerCase(),
+         networkChainId,
+         status: 'active',
+         metadata: {
+           orderId: order.id,
+           leadId,
+           requestedOrgSlug,
+           requestedOrgName,
+           context: 'CommercialOrder',
+           vertical: 'GROWTH_OS',
+           productId: 'COMMERCIAL_ORDER'
+         }
+       }).returning({ id: privatePaymentLinks.id });
        
-       return order;
+       return { ...order, intentId: intent?.id };
     });
     
     if (!result) {
@@ -119,7 +145,7 @@ export async function POST(req: NextRequest) {
       console.warn('Non-blocking: Failed to send discord alert for order', e);
     }
     
-    return NextResponse.json({ success: true, orderId: result.id, status: 'PENDING_PAYMENT' });
+    return NextResponse.json({ success: true, orderId: result.id, intentId: result.intentId, status: 'PENDING_PAYMENT' });
     
   } catch (error: any) {
     console.error('[Commercial Hub] Order creation error:', error);

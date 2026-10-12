@@ -89,10 +89,11 @@ export async function validateDealRoomAccess(
 ): Promise<{ session?: AdminSession; errorResponse?: NextResponse }> {
   // Check unified context
   const auth = await getNexusAuthContext(request.headers);
+  const isSuperOrAdmin = auth.role === "SUPER_ADMIN" || auth.role === "ADMIN";
   const hasDealRoomPermission = Boolean(auth.permissions?.dealRoom);
-  const isAuthorizedRole = ["SUPER_ADMIN", "ADMIN", "MARKETING", "MANAGER", "OPERATOR"].includes(auth.role || '');
   
-  if (auth.isAuthenticated && (isAuthorizedRole || hasDealRoomPermission)) {
+  // Strict RBAC: Only SuperAdmin/Admin OR collaborators with explicit dealRoom capability
+  if (auth.isAuthenticated && (isSuperOrAdmin || hasDealRoomPermission)) {
     const primaryId = auth.email || auth.wallet || (auth.collaboratorId ? `collab_${auth.collaboratorId}` : "nexus-user");
     return {
       session: {

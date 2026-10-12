@@ -63,7 +63,7 @@ export default function NexusSettingsPage({ isUserAdmin = false, userRole = "OPE
 
   const loadAlerts = async () => {
     try {
-      const res = await fetch("/api/v1/nexus/broadcasts");
+      const res = await fetch("/api/nexus/broadcasts?all=true");
       const data = await res.json();
       if (data.success && data.broadcasts) {
         setAlertHistory(data.broadcasts);

@@ -57,9 +57,11 @@ export async function POST(req: NextRequest) {
     if (!alreadyPending) {
       // Para entornos reales, obtendríamos el número del Boss desde su perfil.
       const bossPhone = process.env.BOSS_WHATSAPP_PHONE || process.env.MARCO_PHONE || "+521234567890";
-      const resolvedTenantId = (link.metadata as any)?.tenantId || 'Desconocido';
+      const linkMeta = (link.metadata as any) || {};
+      const resolvedTenantId = linkMeta.requestedOrgName || linkMeta.requestedOrgSlug || linkMeta.tenantId || 'Desconocido';
+      const orderContext = linkMeta.orderId ? `\n_Orden Comercial:_ ${linkMeta.orderId}` : '';
 
-      const notifMessage = `🛎️ *Alerta de Pago (Wire/SPEI)*\n\nEl tenant *${resolvedTenantId}* ha reportado un pago vía transferencia bancaria por *${amount || link.amount} ${currency || link.currency}*.\n\n_Concepto:_ ${link.title}\n\nPara liquidarlo y activar su producto automáticamente, responde a Hermes:\n*"Aprueba el pago ${link.id}"*`;
+      const notifMessage = `🛎️ *Alerta de Pago (Wire/SPEI)*\n\nEl cliente/tenant *${resolvedTenantId}* ha reportado un pago vía transferencia bancaria por *${amount || link.amount} ${currency || link.currency}*.\n\n_Concepto:_ ${link.title}${orderContext}\n\nPara liquidarlo y activar su producto automáticamente, responde a Hermes:\n*"Aprueba el pago ${link.id}"*`;
 
       try {
         if (bossPhone && bossPhone !== "+521234567890") {
