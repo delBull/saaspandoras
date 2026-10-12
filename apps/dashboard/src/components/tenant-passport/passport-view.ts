@@ -70,7 +70,9 @@ export interface RewardsBlock {
   rewardsDisplay?: string;
   rewardsValue?: number;
   canClaim?: boolean;
+  claimWired?: boolean;
   currency?: string;
+  scopeNote?: string;
   votingPower?: number;
   message?: string;
 }

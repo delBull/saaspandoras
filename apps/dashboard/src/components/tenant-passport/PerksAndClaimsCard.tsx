@@ -54,6 +54,20 @@ export function PerksAndClaimsCard({
           </span>
         </div>
 
+        {rewardsBlock.state === 'restricted' || rewardsBlock.state === 'unavailable' ? (
+          <div className="mb-6 rounded-2xl border border-white/5 bg-black/30 p-5">
+            <div className="flex items-center gap-2 text-sm text-zinc-400">
+              {rewardsBlock.state === 'restricted' ? <Lock className="h-4 w-4 text-zinc-500" /> : <Coins className="h-4 w-4 text-zinc-500" />}
+              <span>
+                {rewardsBlock.message ||
+                  (rewardsBlock.state === 'restricted'
+                    ? 'Recompensas no visibles para esta wallet en este tenant.'
+                    : 'Recompensas no disponibles en este momento.')}
+              </span>
+            </div>
+          </div>
+        ) : (
+        <>
         <div className="mb-6 rounded-2xl border border-white/5 bg-black/30 p-5">
           <p className="text-xs text-zinc-400">Utilidades acumuladas en wallet</p>
           <div className="mt-1 flex items-baseline gap-2">
@@ -74,24 +88,32 @@ export function PerksAndClaimsCard({
 
         <div className="flex items-center justify-between gap-4">
           <p className="text-xs text-zinc-400 leading-relaxed">
-            {rewardsBlock.canClaim
-              ? 'Tienes dividendos disponibles para ser retirados directamente a tu wallet.'
-              : 'Los rendimientos se acreditan automáticamente tras los cierres periódicos del tenant.'}
+            {rewardsBlock.claimWired
+              ? rewardsBlock.canClaim
+                ? 'Tienes dividendos disponibles para ser retirados directamente a tu wallet.'
+                : 'Los rendimientos se acreditan automáticamente tras los cierres periódicos del tenant.'
+              : 'El canje de rendimientos se habilitará cuando la liquidación activa del tenant esté operativa (Fase 3).'}
           </p>
 
           <button
             type="button"
-            disabled={!rewardsBlock.canClaim}
-            className={`inline-flex shrink-0 items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-semibold transition ${
-              rewardsBlock.canClaim
+            disabled={true}
+            className={
+              'inline-flex shrink-0 items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-semibold transition ' +
+              (rewardsBlock.claimWired && rewardsBlock.canClaim
                 ? 'bg-emerald-400 text-black hover:bg-emerald-300 active:scale-[0.98]'
-                : 'cursor-not-allowed border border-white/10 bg-white/5 text-zinc-500'
-            }`}
+                : 'cursor-not-allowed border border-white/10 bg-white/5 text-zinc-500')
+            }
           >
-            <span>Reclamar</span>
+            <span>{rewardsBlock.claimWired && rewardsBlock.canClaim ? 'Reclamar' : 'Próximamente'}</span>
             <ArrowUpRight className="h-3.5 w-3.5" />
           </button>
         </div>
+        {rewardsBlock.scopeNote && rewardsBlock.state === 'available' && (
+          <p className="mt-3 text-[11px] text-zinc-600">{rewardsBlock.scopeNote}</p>
+        )}
+        </>
+        )}
       </motion.article>
 
       {/* 2. Card de Beneficios y Utilidades (Perks) */}

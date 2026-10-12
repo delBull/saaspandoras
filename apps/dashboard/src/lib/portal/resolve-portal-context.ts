@@ -57,8 +57,9 @@ export async function resolvePortalContext(
     try {
       const reqHeaders = await headers();
       const auth = await getAuth(reqHeaders);
-      const callerWallet = auth.session?.address?.toLowerCase() ||
-        (auth.isVerified ? (reqHeaders.get('x-wallet-address')?.toLowerCase() || reqHeaders.get('x-thirdweb-address')?.toLowerCase()) : null);
+      // 🛡️ Fail-closed (P0): la identidad wallet SOLO del session token verificado.
+      // Los headers x-wallet-address / x-thirdweb-address son del cliente y son forjables.
+      const callerWallet = auth.session?.address?.toLowerCase() || null;
 
       if (callerWallet) {
         const isUserAdmin = await isAdmin(callerWallet);
