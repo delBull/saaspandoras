@@ -85,14 +85,14 @@ export default function SigintMasterCoursePage() {
       const isSuperAdminWallet = storedWallet && SUPER_ADMIN_WALLETS.some((w) => w && storedWallet.includes(w));
       const hasUnlock = Boolean(unlock && (unlock.includes('admin') || unlock.includes('pandoras') || unlock.length > 20));
 
-      if (isSuperAdminWallet || hasUnlock || process.env.NODE_ENV === 'development') {
+      if (isSuperAdminWallet || hasUnlock) {
         setIsAdminAuthorized(true);
       } else {
-        // Fallback: request authorization check via API
-        setIsAdminAuthorized(true); // Permissive preview for founder terminal
+        // Enforce strict lock: must authenticate as superadmin or have valid unlock
+        setIsAdminAuthorized(false);
       }
     } catch {
-      setIsAdminAuthorized(true);
+      setIsAdminAuthorized(false);
     }
   }, []);
 
@@ -298,6 +298,39 @@ export default function SigintMasterCoursePage() {
       realWorldCase: 'Catálogo de implantes ANT de la NSA (Cottonmouth, Ragemaster) y ataques Van Eck Phreaking.'
     }
   ];
+
+  if (isAdminAuthorized === null) {
+    return (
+      <div className="min-h-screen bg-[#07090E] flex items-center justify-center text-emerald-400 font-mono text-sm">
+        <Radio className="w-5 h-5 animate-spin mr-3" /> VERIFICANDO CLEARANCE DE SUPERADMIN...
+      </div>
+    );
+  }
+
+  if (isAdminAuthorized === false) {
+    return (
+      <div className="min-h-screen bg-[#07090E] flex flex-col items-center justify-center px-4 text-center">
+        <div className="w-16 h-16 rounded-2xl border border-red-500/30 bg-red-950/20 flex items-center justify-center mb-6 shadow-2xl shadow-red-950/50">
+          <Lock className="w-8 h-8 text-red-400" />
+        </div>
+        <div className="text-xs font-mono text-red-400 uppercase tracking-widest mb-2">
+          ACCESO DENEGADO · CLASIFICACIÓN TOP SECRET
+        </div>
+        <h1 className="text-2xl font-bold text-white mb-3">
+          Sovereign Clearance Requerido
+        </h1>
+        <p className="text-slate-400 text-sm max-w-md mb-8">
+          Este programa doctoral de intercepción de señales (SIGINT) está restringido exclusivamente a la llave de SuperAdmin de Pandora&apos;s Protocol.
+        </p>
+        <Link
+          href="/console"
+          className="px-6 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-sm font-semibold transition-all shadow-lg shadow-purple-900/30"
+        >
+          Autenticarse en Consola de Control →
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#07090E] text-slate-100 font-sans selection:bg-emerald-500/30 selection:text-emerald-300">

@@ -13,10 +13,12 @@ import { sendEmail } from "@/lib/email/client";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://dash.pandoras.finance";
+const BASE_URL = process.env.NEXT_PUBLIC_ACADEMY_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "https://academy.pandoras.finance";
 const ADMIN_EMAILS = [
   (process.env.NEXUS_ADMIN_EMAIL ?? "").toLowerCase(),
-  (process.env.ADMIN_EMAIL ?? "").toLowerCase()
+  (process.env.ADMIN_EMAIL ?? "").toLowerCase(),
+  ...(process.env.ADMIN_EMAILS ? process.env.ADMIN_EMAILS.split(',').map(e => e.trim().toLowerCase()) : []),
+  "admin@pandoras.finance",
 ].filter(Boolean);
 
 const MANAGER_EMAILS = [
@@ -110,7 +112,7 @@ export async function POST(req: NextRequest) {
 
     // 4. Generate signed Academy token (24h validity)
     const token = await generateAcademyToken(targetEmail, resolvedRole);
-    const link = `${BASE_URL}/admin/academy?unlock=${encodeURIComponent(token)}`;
+    const link = `${BASE_URL}/console?unlock=${encodeURIComponent(token)}`;
 
     // 5. Send Magic Link via Email (Resend)
     let emailSent = false;

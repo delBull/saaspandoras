@@ -478,6 +478,15 @@ export default function AcademyPublicLanding() {
             <a href="https://pandoras.finance" target="_blank" rel="noopener noreferrer" className="hover:text-zinc-300">
               Pandoras.finance
             </a>
+            <span className="text-zinc-700">·</span>
+            <Link 
+              href="/console" 
+              className="inline-flex items-center gap-1.5 text-zinc-600 hover:text-purple-400/90 transition-colors py-0.5 px-1.5 rounded hover:bg-white/[0.03]"
+              title="Sovereign Control Plane"
+            >
+              <Lock className="w-3 h-3 opacity-60" />
+              <span className="text-[11px] tracking-wider uppercase">Console</span>
+            </Link>
           </div>
         </footer>
 

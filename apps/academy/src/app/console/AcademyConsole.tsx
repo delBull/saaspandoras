@@ -863,6 +863,15 @@ export default function AcademyConsole({
                       COMPARTIR ({selectedTrack.sharedWith.length})
                     </button>
                   )}
+                  {selectedTrack.id === 'sigint_signals_interception' && (
+                    <Link
+                      href={unlockToken ? `/sigint-master?unlock=${encodeURIComponent(unlockToken)}` : '/sigint-master'}
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-xs font-mono uppercase tracking-wider transition-colors cursor-pointer shadow-lg shadow-emerald-950/40"
+                    >
+                      <Sparkles className="w-4 h-4" />
+                      ABRIR PORTAL DOCTORAL SIGINT →
+                    </Link>
+                  )}
                   <button
                     onClick={() => {
                       setNewCandidateRole(selectedTrack.targetRole);
