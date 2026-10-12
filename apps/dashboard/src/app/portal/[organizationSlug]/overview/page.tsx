@@ -2,12 +2,20 @@ import React from 'react';
 import { notFound } from 'next/navigation';
 import { tryResolvePortalContext } from '@/lib/portal/resolve-portal-context';
 import { OverviewDashboard } from '@/components/hermes-portal/overview/OverviewDashboard';
+import { TenantPassportView } from '@/components/tenant-passport/TenantPassportView';
 import { DashApi } from '@/lib/dash-api';
 import type { HermesOverviewView } from '@saasfly/shared';
 
-export default async function PortalOverviewSubPage({ params }: { params: Promise<{ organizationSlug: string }> }) {
+export default async function PortalOverviewSubPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ organizationSlug: string }>;
+  searchParams: Promise<{ view?: string }>;
+}) {
   const { organizationSlug } = await params;
-  
+  const { view } = await searchParams;
+
   // 1. Verify auth context (Fail-Closed: null → clean 404)
   const portalCtx = await tryResolvePortalContext(organizationSlug);
   if (!portalCtx) {
@@ -26,7 +34,13 @@ export default async function PortalOverviewSubPage({ params }: { params: Promis
     console.warn('[PortalOverviewSubPage] DashApi fallback activated:', err);
   }
 
-  // 3. Resilient fallback: ensure OverviewDashboard never renders "System unavailable"
+  // 3. B2C default: Tenant Passport (Fase 1). Los bloques portan estados
+  //    honestos (available/empty/unavailable) — nunca métricas simuladas.
+  if (view !== 'b2b') {
+    return <TenantPassportView context={portalCtx} overview={overview} />;
+  }
+
+  // 4. Legacy B2B console (preserved for operators): resilient fallback kept as-is.
   if (!overview) {
     overview = {
       organization: {
