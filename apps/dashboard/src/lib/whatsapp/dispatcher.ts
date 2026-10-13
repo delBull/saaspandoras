@@ -16,7 +16,7 @@ import { HumanHandoffProtocol } from '@saasfly/hermes-core';
 import { InteractionRouter } from '@saasfly/hermes-core';
 import { sendWhatsAppMessage } from '@saasfly/shared';
 import { resolveMasterPhoneNumberId, buildCanonicalWhatsAppConversationId, maskPhoneNumber } from '@saasfly/shared';
-import { getDefaultRuntime, CommercialCloserService, ActorIdentityBindingService } from '@saasfly/hermes-core';
+import { getDefaultRuntime, CommercialCloserService, ActorIdentityBindingService, getActiveNonceStore } from '@saasfly/hermes-core';
 import { formatWhatsAppText } from './utils/formatter';
 
 export interface WhatsAppIncomingMessage {
@@ -53,6 +53,24 @@ export interface WhatsAppWebhookPayload {
   }>;
 }
 
+/**
+ * Cryptographic evidence captured by the /api/whatsapp/simple route (raw request body +
+ * Meta HMAC header). Required so the runtime can build a VERIFIED bound session via
+ * createBoundSessionAsync() (WHATSAPP_CLOUD_WEBHOOK) — synchronous unverified session
+ * creation is strictly forbidden in production (HermesAuthenticationError).
+ */
+export interface DispatchChannelEvidence {
+  rawBody?: string;
+  hubSignature?: string;
+  appSecret?: string;
+}
+
+/**
+ * Raised when the NonceStore reports the Meta message id was already consumed.
+ * The caller must ACK without sending any fallback (Meta silently retries webhooks).
+ */
+export class WhatsAppReplayDetectedError extends Error {}
+
 // In-memory message deduplication cache (10 minutes TTL)
 const processedMessageIds = new Map<string, number>();
 
@@ -88,6 +106,73 @@ export class WhatsAppDispatcher {
    */
   static resetDeduplicationForTesting(): void {
     processedMessageIds.clear();
+  }
+
+  /**
+   * Builds a VERIFIED bound actor session for the WhatsApp channel.
+   *
+   * Constitution (HERMES_AUTH): synchronous unverified session creation is forbidden in
+   * production. All sessions MUST be created via createBoundSessionAsync() with cryptographic
+   * channel verification — Meta signs the webhook with X-Hub-Signature-256 (WHATSAPP_CLOUD_WEBHOOK).
+   * The Meta message id acts as the anti-replay nonce (deduplicated upstream too).
+   */
+  private static async createVerifiedBoundSession(
+    actorId: string,
+    tenantId: string,
+    messageId: string,
+    clearanceLevel: 'PUBLIC' | 'TENANT_RESTRICTED' | 'CONFIDENTIAL',
+    evidence: DispatchChannelEvidence
+  ) {
+    const proof = {
+      actorId,
+      tenantId,
+      authProvider: 'WHATSAPP_CLOUD_WEBHOOK' as const,
+      rawBody: evidence.rawBody,
+      hubSignature: evidence.hubSignature,
+      proofSignature: evidence.hubSignature || `wa_disp_sig_${Date.now()}_${actorId}`,
+      issuedAt: Date.now(),
+      nonce: messageId,
+    };
+
+        if (proof.rawBody && proof.hubSignature && evidence.appSecret) {
+      try {
+        return await ActorIdentityBindingService.createBoundSessionAsync(
+          proof as any,
+          clearanceLevel,
+          3600,
+          {
+            nonceStore: getActiveNonceStore(),
+            channelVerification: { metaAppSecret: evidence.appSecret },
+          }
+        );
+      } catch (err: any) {
+        if (err?.authCode === 'REPLAY_DETECTED' || (err?.message && String(err.message).toLowerCase().includes('replay'))) {
+          throw new WhatsAppReplayDetectedError(err?.message || 'WhatsApp replay detected');
+        }
+        throw err;
+      }
+    }
+
+    // Explicit non-production convenience ONLY: unverified sync creation (throws in prod).
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn('[WhatsAppDispatcher] DEV-only unverified session creation (no crypto evidence available).');
+      return ActorIdentityBindingService.createBoundSession(
+        {
+          actorId,
+          tenantId,
+          authProvider: 'PORTAL_INTERNAL',
+          proofSignature: proof.proofSignature,
+          issuedAt: proof.issuedAt,
+          nonce: proof.nonce,
+        } as any,
+        clearanceLevel,
+        3600
+      );
+    }
+
+    throw new Error(
+      'CONFIGURATION_ERROR: WhatsApp channel evidence (rawBody + X-Hub-Signature-256 + WhatsApp app secret) is required to create a verified WhatsApp session in production.'
+    );
   }
   /**
    * Resolves whether a phoneNumberId belongs to Pandora's Master or a provisioned Tenant.
@@ -164,7 +249,7 @@ export class WhatsAppDispatcher {
   /**
    * Main dispatch entrypoint
    */
-  static async dispatch(payload: WhatsAppWebhookPayload): Promise<{ status: string; handled: boolean; target: 'tenant_cognitive' | 'pandoras_acquisition' | 'boss_executive_runtime' | 'hermes_cognitive_runtime' | 'unrecognized'; response?: string }> {
+  static async dispatch(payload: WhatsAppWebhookPayload, channelEvidence: DispatchChannelEvidence = {}): Promise<{ status: string; handled: boolean; target: 'tenant_cognitive' | 'pandoras_acquisition' | 'boss_executive_runtime' | 'hermes_cognitive_runtime' | 'unrecognized'; response?: string }> {
     const changes = payload.entry?.[0]?.changes?.[0]?.value;
     const messages = changes?.messages;
 
@@ -361,18 +446,22 @@ export class WhatsAppDispatcher {
         const clearanceLevel1 = resolvedInterlocutor?.isBoss
           ? 'CONFIDENTIAL'
           : (resolvedInterlocutor?.isCollaborator ? 'TENANT_RESTRICTED' : 'PUBLIC');
-        const boundActorSession1 = ActorIdentityBindingService.createBoundSession(
-          {
-            actorId: resolvedActorId,
-            tenantId: tenant.slug,
-            authProvider: 'PORTAL_INTERNAL',
-            proofSignature: `wa_disp_sig_${Date.now()}_${cleanPhone}`,
-            issuedAt: Date.now(),
-            nonce: `wa_disp_nonce_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
-          },
-          clearanceLevel1,
-          3600
-        );
+        let boundActorSession1;
+        try {
+          boundActorSession1 = await this.createVerifiedBoundSession(
+            resolvedActorId,
+            tenant.slug,
+            messageId,
+            clearanceLevel1,
+            channelEvidence
+          );
+        } catch (bindErr) {
+          if (bindErr instanceof WhatsAppReplayDetectedError) {
+            console.log(`⚡ [WhatsAppDispatcher] Nonce replay for Meta message ${messageId}, ignoring (ACK without reply).`);
+            return { status: 'duplicate_ignored', handled: true, target: 'tenant_cognitive' };
+          }
+          throw bindErr;
+        }
 
         const runtimeResponse = await runtime.respond({
           organizationId: tenant.slug,
@@ -474,18 +563,22 @@ export class WhatsAppDispatcher {
       const clearanceLevel2 = isBoss
         ? 'CONFIDENTIAL'
         : (isCollaborator ? 'TENANT_RESTRICTED' : 'PUBLIC');
-      const boundActorSession2 = ActorIdentityBindingService.createBoundSession(
-        {
-          actorId: resolvedActorId,
-          tenantId: 'pandoras',
-          authProvider: 'PORTAL_INTERNAL',
-          proofSignature: `wa_pan_sig_${Date.now()}_${cleanPhone}`,
-          issuedAt: Date.now(),
-          nonce: `wa_pan_nonce_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
-        },
-        clearanceLevel2,
-        3600
-      );
+      let boundActorSession2;
+      try {
+        boundActorSession2 = await this.createVerifiedBoundSession(
+          resolvedActorId,
+          'pandoras',
+          messageId,
+          clearanceLevel2,
+          channelEvidence
+        );
+      } catch (bindErr) {
+        if (bindErr instanceof WhatsAppReplayDetectedError) {
+          console.log(`⚡ [WhatsAppDispatcher] Nonce replay for Meta message ${messageId}, ignoring (ACK without reply).`);
+          return { status: 'duplicate_ignored', handled: true, target: 'hermes_cognitive_runtime' };
+        }
+        throw bindErr;
+      }
 
       const runtimeResponse = await runtime.respond({
         organizationId: 'pandoras',

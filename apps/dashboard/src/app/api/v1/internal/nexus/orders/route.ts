@@ -48,6 +48,7 @@ export async function POST(req: NextRequest) {
       if (p.productKey === 'PANDORAS_RWA') { catalogItem = PRODUCT_REGISTRY.TOKENIZATION; registryKey = 'TOKENIZATION'; }
       else if (p.productKey === 'GROWTH_OS') { catalogItem = PRODUCT_REGISTRY.HERMES; registryKey = 'HERMES'; }
       else if (p.productKey === 'HERMES') { catalogItem = PRODUCT_REGISTRY.HERMES; registryKey = 'HERMES'; }
+      else if (p.productKey === 'DEV_ACCESS') { catalogItem = PRODUCT_REGISTRY.DEV_ACCESS; registryKey = 'DEV_ACCESS'; }
 
       if (!catalogItem) {
         return new NextResponse(`Invalid product: ${p.productKey}`, { status: 400 });

@@ -98,3 +98,6 @@ apps/dashboard/.env*.prod
 
 # accidental bun cache dir
 /~/
+
+# Temporary Tracking Docs
+DEV_ACCESS_TRACKING.md

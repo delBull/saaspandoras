@@ -518,10 +518,14 @@ export async function POST(req: NextRequest) {
 
     // 7. Deliver Response to Telegram Chat
     if (botToken && replyContent) {
+      // Balance check for legacy Markdown entities. Unbalanced entities (a stray `_`, `*`,
+      // `[` or backtick from LLM output) make Telegram reject with HTTP 400
+      // ("can't parse entities"; see incident 2026-10-13 20:05:42). Send plain instead.
+      const canUseMarkdown = hasBalancedLegacyMarkdownEntities(replyContent);
       const payload: Record<string, any> = {
         chat_id: chatId,
         text: replyContent,
-        parse_mode: 'Markdown',
+        ...(canUseMarkdown ? { parse_mode: 'Markdown' } : {}),
       };
 
       if (inlineKeyboard.length > 0) {
@@ -554,6 +558,24 @@ export async function POST(req: NextRequest) {
     // Return 200 to Telegram so it doesn't DDoS with retry loops on internal errors
     return NextResponse.json({ ok: false, error: error?.message || 'Internal processing error' });
   }
+}
+
+/**
+ * Conservative sanity check for Telegram legacy Markdown entities.
+ *
+ * Returns false when the text contains an entity that cannot possibly balance
+ * (odd number of `_`, `*`, `` ` ``, or `[` without a matching `](` link).
+ * Such text is delivered as plain text instead of triggering Telegram HTTP 400.
+ */
+function hasBalancedLegacyMarkdownEntities(text: string): boolean {
+  const countOf = (ch: string): number => (text.match(new RegExp(`\\${ch}`, 'g')) || []).length;
+  if (countOf('_') % 2 !== 0) return false;
+  if (countOf('*') % 2 !== 0) return false;
+  if (countOf('`') % 2 !== 0) return false;
+  const openBrackets = countOf('[');
+  const closedLinks = (text.match(/\]\(/g) || []).length;
+  if (openBrackets !== closedLinks) return false;
+  return true;
 }
 
 export async function GET() {

@@ -25,6 +25,7 @@ export async function sendWebhook(
 
         const response = await fetch(url, {
             method: 'POST',
+            redirect: 'error', // Anti-SSRF: Refuse HTTP redirects to prevent bypass to internal/cloud metadata IPs
             headers: {
                 'Content-Type': 'application/json',
                 'x-core-signature': signature,

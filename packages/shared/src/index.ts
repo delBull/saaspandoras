@@ -72,3 +72,4 @@ export * from './channels/whatsapp/whatsapp-provider';
 export * from './channels/whatsapp/signalwire-service';
 export * from './email-engine';
 export * from './email-components';
+export * from './sdk/pandoras-client';

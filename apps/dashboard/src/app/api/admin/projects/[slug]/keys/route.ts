@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@saasfly/db-core";
-import { projects as projectsSchema, integrationClients } from "@saasfly/db-core";
-import { eq, and, isNull, like } from "@saasfly/db-core";
+import { projects as projectsSchema, integrationClients, installedProducts } from "@saasfly/db-core";
+import { eq, and, isNull, like, inArray } from "@saasfly/db-core";
 import { getAuth, isAdmin } from "@saasfly/auth-sdk";
 import { headers } from "next/headers";
 import { IntegrationKeyService } from "@/lib/integrations/auth";
@@ -29,12 +29,12 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     if (isId) {
         project = await db.query.projects.findFirst({
             where: eq(projectsSchema.id, projectIdRaw),
-            columns: { id: true, applicantWalletAddress: true }
+            columns: { id: true, applicantWalletAddress: true, isSimulationMode: true }
         });
     } else {
         project = await db.query.projects.findFirst({
             where: eq(projectsSchema.slug, slug),
-            columns: { id: true, applicantWalletAddress: true }
+            columns: { id: true, applicantWalletAddress: true, isSimulationMode: true }
         });
     }
 
@@ -49,6 +49,18 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     if (!userIsAdmin && !isOwner) {
         return NextResponse.json({ message: "No autorizado" }, { status: 403 });
     }
+
+    // Check DEV_ACCESS commercial entitlement
+    const entitlement = await db.query.installedProducts.findFirst({
+        where: and(
+            eq(installedProducts.projectId, project.id),
+            eq(installedProducts.productFamily, "DEVELOPER"),
+            eq(installedProducts.product, "DEV_ACCESS"),
+            inArray(installedProducts.plan, ["starter", "growth", "enterprise"]),
+            inArray(installedProducts.status, ["trial", "active"])
+        ),
+        columns: { id: true, plan: true, status: true }
+    });
 
     // Determine Environment
     const env = (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_APP_URL?.includes('staging')) ? 'staging' : 'production';
@@ -75,12 +87,21 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
         )
     });
 
+    const activeClient = secretClient || publicClient;
+
     return NextResponse.json({
         projectId: project.id,
         slug: slug,
         environment: env,
+        isSimulationMode: project.isSimulationMode ?? true,
+        hasLiveEntitlement: !!entitlement,
+        entitlementPlan: entitlement?.plan || null,
+        clientId: activeClient?.id || null,
         publicKey: publicClient ? publicClient.keyFingerprint : null,
         secretKey: secretClient ? secretClient.keyFingerprint : null,
+        callbackUrl: activeClient?.callbackUrl || null,
+        callbackSecretHash: activeClient?.callbackSecretHash ? "whsec_••••••••••••••••••••••••••••••••" : null,
+        hasWebhookSecret: !!activeClient?.callbackSecretHash,
         hasKeys: !!publicClient || !!secretClient
     });
 
@@ -132,12 +153,29 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
         
         const env = (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_APP_URL?.includes('staging')) ? 'staging' : 'production';
     
+        // Comprobar si el tenant tiene entitlement Enterprise para conceder hermes_a2a
+        const entitlement = await db.query.installedProducts.findFirst({
+            where: and(
+                eq(installedProducts.projectId, project.id),
+                eq(installedProducts.productFamily, "DEVELOPER"),
+                eq(installedProducts.product, "DEV_ACCESS"),
+                eq(installedProducts.plan, "enterprise"),
+                inArray(installedProducts.status, ["trial", "active"])
+            ),
+            columns: { id: true, plan: true }
+        });
+
+        const permissions = ["read", "deploy", "events:write"];
+        if (entitlement) {
+            permissions.push("hermes_a2a");
+        }
+
         const publicResult = await IntegrationKeyService.ensureKeyForProject(
             project.id, 
             env, 
             `Client: ${project.title} (Public)`,
             'public',
-            { forceRotate: rotate }
+            { forceRotate: rotate, permissions }
         );
 
         const secretResult = await IntegrationKeyService.ensureKeyForProject(
@@ -145,7 +183,7 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
             env, 
             `Client: ${project.title} (Secret)`,
             'secret',
-            { forceRotate: rotate }
+            { forceRotate: rotate, permissions }
         );
     
         return NextResponse.json({

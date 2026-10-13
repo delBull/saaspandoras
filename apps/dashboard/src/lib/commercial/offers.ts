@@ -23,7 +23,7 @@ export interface CommercialOffer {
   tier?: 'TIER_1' | 'TIER_2' | 'TIER_3';
   fulfillmentType: FulfillmentType;
   defaultMethods: ('crypto' | 'wire')[];
-  category: 'growth_os' | 'infrastructure' | 'media';
+  category: 'growth_os' | 'infrastructure' | 'media' | 'developer';
   isActive: boolean;
 }
 
@@ -129,6 +129,37 @@ export const COMMERCIAL_OFFERS: Record<string, CommercialOffer> = {
     fulfillmentType: 'sow_protocol',
     defaultMethods: ['crypto', 'wire'],
     category: 'infrastructure',
+    isActive: true,
+  },
+
+  // ── DEV ACCESS & API INTEGRATION ─────────────────────────────────────────
+  dev_access_starter_monthly: {
+    id: 'dev_access_starter_monthly',
+    title: "Dev Access — Starter Plan (Mensual)",
+    shortDescription: "Acceso headless vía APIs y Webhooks para sistemas externos.",
+    fullDescription: "Licencia de integración para desarrolladores: ingestión de eventos en tiempo real, webhooks salientes autenticados con HMAC, hasta 50,000 eventos/mes y credenciales sandbox.",
+    amount: '99.00',
+    currency: 'USD',
+    productKey: 'DEV_ACCESS',
+    planKey: 'starter',
+    fulfillmentType: 'saas_provision',
+    defaultMethods: ['crypto', 'wire'],
+    category: 'developer',
+    isActive: true,
+  },
+
+  dev_access_growth_monthly: {
+    id: 'dev_access_growth_monthly',
+    title: "Dev Access — Growth Plan (Mensual)",
+    shortDescription: "Alto rendimiento de eventos, pasarelas de pago y soporte técnico prioritario.",
+    fullDescription: "Licencia avanzada para desarrolladores: ingestión de eventos ilimitada, webhooks con baja latencia, APIs de checkout y comercio descentralizado, y soporte técnico para integraciones.",
+    amount: '199.00',
+    currency: 'USD',
+    productKey: 'DEV_ACCESS',
+    planKey: 'growth',
+    fulfillmentType: 'saas_provision',
+    defaultMethods: ['crypto', 'wire'],
+    category: 'developer',
     isActive: true,
   },
 };

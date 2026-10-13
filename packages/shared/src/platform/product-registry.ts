@@ -197,6 +197,46 @@ export const PRODUCT_REGISTRY = {
     },
   },
 
+  /**
+   * DEV_ACCESS — Headless Developer & API Integration Package.
+   * Tailored for technical teams leveraging Pandora's Growth OS via APIs & Webhooks
+   * directly within their own systems without mandatory dashboard adoption.
+   */
+  DEV_ACCESS: {
+    family: 'DEVELOPER',
+    displayName: "Pandora's Dev Access & APIs",
+    crmPipeline: ['Lead', 'Qualified', 'Sandbox', 'Active Developer', 'Scale'],
+    capabilities: {
+      api_access:     { default: true,  plans: ['sandbox', 'starter', 'growth', 'enterprise'] },
+      webhooks:       { default: true,  plans: ['sandbox', 'starter', 'growth', 'enterprise'] },
+      events_spine:   { default: true,  plans: ['sandbox', 'starter', 'growth', 'enterprise'] },
+      leads_ingest:   { default: true,  plans: ['sandbox', 'starter', 'growth', 'enterprise'] },
+      commerce_api:   { default: false, plans: ['growth', 'enterprise'] },
+      hermes_a2a:     { default: false, plans: ['enterprise'] },
+    },
+    connectors: {
+      webhook_dispatcher: { default: true,  plans: ['sandbox', 'starter', 'growth', 'enterprise'] },
+      api_keys:           { default: true,  plans: ['sandbox', 'starter', 'growth', 'enterprise'] },
+      crypto_gateway:     { default: false, plans: ['growth', 'enterprise'] },
+    },
+    portalModules: ['api_keys', 'webhooks', 'logs', 'usage', 'docs'],
+    onboardingSteps: [
+      'create_sandbox_key',
+      'verify_webhook_endpoint',
+      'send_first_event',
+    ],
+    runtimeProfile: {
+      requiredIntegrations: ['webhook_dispatcher'],
+      healthChecks: ['api_ping', 'webhook_dispatcher_healthy'],
+    },
+    pricing: {
+      sandbox:    { price: 0,   currency: 'USD', period: 'trial'  },
+      starter:    { price: 99,  currency: 'USD', period: 'month'  },
+      growth:     { price: 199, currency: 'USD', period: 'month'  },
+      enterprise: { price: null, currency: 'USD', period: 'custom' },
+    },
+  },
+
 } as const satisfies Record<string, ProductDef>;
 
 // ── Helpers ──────────────────────────────────────────────────────────────────

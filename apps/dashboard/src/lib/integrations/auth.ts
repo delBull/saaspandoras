@@ -97,7 +97,7 @@ export class IntegrationKeyService {
         env: 'staging' | 'production', 
         clientName?: string,
         type: 'public' | 'secret' = 'public',
-        options: { forceRotate?: boolean } = {}
+        options: { forceRotate?: boolean; permissions?: string[] } = {}
     ) {
         const prefix = type === 'public' ? 'pk_%' : 'sk_%';
 
@@ -131,6 +131,7 @@ export class IntegrationKeyService {
         const { key, hash, fingerprint } = this.generateKey(env, type);
 
         // 3. Save to DB
+        const permissionsToGrant = options.permissions || ['read', 'deploy', 'events:write'];
         const [inserted] = await db.insert(integrationClients).values({
             name: clientName || `Project ${projectId} - ${env}`,
             projectId,
@@ -138,7 +139,7 @@ export class IntegrationKeyService {
             apiKeyHash: hash,
             keyFingerprint: fingerprint,
             isActive: true,
-            permissions: ['read', 'deploy'] // Default permissions
+            permissions: permissionsToGrant
         }).returning();
 
         if (!inserted) {
