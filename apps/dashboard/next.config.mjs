@@ -20,6 +20,9 @@ const nextConfig = {
     'canvas',
     'puppeteer',
     'playwright',
+    'pg',
+    'pg-native',
+    'ioredis',
   ],
 
   // Turbopack ignores the webpack `resolve.fallback` below; stub Node builtins for the browser only.
@@ -40,11 +43,13 @@ const nextConfig = {
   experimental: {
     // Enable Next.js 15 memory optimizations during production build
     webpackMemoryOptimizations: true,
-    // Limit CPU/worker concurrency to 1 to prevent memory multiplication on container builds (Vercel 8GB OOM fix)
-    cpus: 1,
-    webpackBuildWorker: false,
-    // Fix Next.js 14+ barrel file imports for client components
+    webpackBuildWorker: true,
+    // Fix Next.js 14+ barrel file imports for client and icon libraries
     optimizePackageImports: [
+      'lucide-react',
+      'framer-motion',
+      'date-fns',
+      '@radix-ui/react-icons',
       '@saasfly/shared',
       '@saasfly/db-core',
       '@saasfly/hermes-core',

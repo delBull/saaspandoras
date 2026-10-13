@@ -265,6 +265,49 @@ export async function POST(req: NextRequest) {
         console.warn('[Hermes Telegram Webhook] Non-blocking escalation audit error:', auditErr);
       }
 
+      // 3.6 Queue the escalation into the closer queue (TMA HITL) via the canonical
+      // EscalationService: pauses the conversation, inserts a PENDING hermesEscalations
+      // row, and dispatches nexusActionRequests + team notifications to eligible closers.
+      try {
+        const { EscalationService } = await import('@saasfly/hermes-core');
+
+        // Resolve canonical org for conversation correlation (best-effort; slug is the FK).
+        let canonicalOrgForConv = tenantSlug;
+        try {
+          const { OrganizationSDK } = await import('@saasfly/shared');
+          const org = await OrganizationSDK.resolve(tenantSlug, 'HERMES');
+          if (org?.organizationId) canonicalOrgForConv = org.organizationId;
+        } catch {
+          // keep slug-based fallback conversation id
+        }
+
+        const escalationConversationId = `conv_tg_${telegramId}_${canonicalOrgForConv}`;
+
+        // Deduplicate: never open a second PENDING escalation for an already-queued conversation.
+        const pendingEscalations = await EscalationService.getEscalations(tenantSlug, 'PENDING');
+        const alreadyQueued = pendingEscalations.some(
+          (esc: any) => esc.conversationId === escalationConversationId,
+        );
+
+        if (!alreadyQueued) {
+          await EscalationService.triggerEscalation({
+            organizationId: tenantSlug,
+            conversationId: escalationConversationId,
+            actorId: interlocutor.actorId,
+            channel: 'TELEGRAM',
+            reason: 'USER_REQUEST',
+            notes: JSON.stringify({
+              source: isEscalateCallback ? 'inline_button' : 'intent_detected',
+              telegramId,
+              userName: interlocutor.name,
+              excerpt: (rawText || '').slice(0, 300),
+            }),
+          });
+        }
+      } catch (queueErr) {
+        console.warn('[Hermes Telegram Webhook] Non-blocking escalation queue error:', queueErr);
+      }
+
       if (botToken) {
         if (callbackQuery?.id) {
           await fetch(`https://api.telegram.org/bot${botToken}/answerCallbackQuery`, {
@@ -475,10 +518,14 @@ export async function POST(req: NextRequest) {
 
     // 7. Deliver Response to Telegram Chat
     if (botToken && replyContent) {
+      // Balance check for legacy Markdown entities. Unbalanced entities (a stray `_`, `*`,
+      // `[` or backtick from LLM output) make Telegram reject with HTTP 400
+      // ("can't parse entities"; see incident 2026-10-13 20:05:42). Send plain instead.
+      const canUseMarkdown = hasBalancedLegacyMarkdownEntities(replyContent);
       const payload: Record<string, any> = {
         chat_id: chatId,
         text: replyContent,
-        parse_mode: 'Markdown',
+        ...(canUseMarkdown ? { parse_mode: 'Markdown' } : {}),
       };
 
       if (inlineKeyboard.length > 0) {
@@ -511,6 +558,24 @@ export async function POST(req: NextRequest) {
     // Return 200 to Telegram so it doesn't DDoS with retry loops on internal errors
     return NextResponse.json({ ok: false, error: error?.message || 'Internal processing error' });
   }
+}
+
+/**
+ * Conservative sanity check for Telegram legacy Markdown entities.
+ *
+ * Returns false when the text contains an entity that cannot possibly balance
+ * (odd number of `_`, `*`, `` ` ``, or `[` without a matching `](` link).
+ * Such text is delivered as plain text instead of triggering Telegram HTTP 400.
+ */
+function hasBalancedLegacyMarkdownEntities(text: string): boolean {
+  const countOf = (ch: string): number => (text.match(new RegExp(`\\${ch}`, 'g')) || []).length;
+  if (countOf('_') % 2 !== 0) return false;
+  if (countOf('*') % 2 !== 0) return false;
+  if (countOf('`') % 2 !== 0) return false;
+  const openBrackets = countOf('[');
+  const closedLinks = (text.match(/\]\(/g) || []).length;
+  if (openBrackets !== closedLinks) return false;
+  return true;
 }
 
 export async function GET() {

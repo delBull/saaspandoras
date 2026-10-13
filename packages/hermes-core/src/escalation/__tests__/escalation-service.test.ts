@@ -13,10 +13,14 @@ vi.mock('@saasfly/db-core', () => {
       update: mockUpdate,
       select: mockSelect,
     },
+    eq: vi.fn(),
+    and: vi.fn(),
+    desc: vi.fn(),
+    sql: vi.fn(),
   };
 });
 
-describe.skip('Hermes OS Sprint 1 — Human-in-the-Loop Operator Inbox Service', () => {
+describe('Hermes OS Sprint 1 — Human-in-the-Loop Operator Inbox Service', () => {
   const tenantId = 'snarai';
   const conversationId = 'conv_telegram_123';
 

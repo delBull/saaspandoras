@@ -224,6 +224,9 @@ export class TenantProvisioningService {
         } else if (productKey === 'PANDORAS_RWA') {
           productFamily = 'CAPITAL';
           productRecordName = 'TOKENIZATION';
+        } else if (productKey === 'DEV_ACCESS') {
+          productFamily = 'DEVELOPER';
+          productRecordName = 'DEV_ACCESS';
         } else {
           productFamily = 'GROWTH_OS';
           productRecordName = 'GROWTH_OS';

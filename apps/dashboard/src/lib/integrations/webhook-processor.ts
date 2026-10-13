@@ -71,6 +71,15 @@ export class WebhookProcessor {
             return;
         }
 
+        // 🛡️ SSRF Guard: Validate destination URL against internal/metadata/private IP ranges
+        const { validateWebhookDestinationUrl } = await import("./url-validator");
+        const urlValidation = await validateWebhookDestinationUrl(client.callbackUrl);
+        if (!urlValidation.isValid) {
+            console.error(`🛑 Webhook Blocked: SSRF attempt or invalid URL on client ${client.id}: ${urlValidation.error}`);
+            await this.markAsFailed(event.id, `SSRF Blocked: ${urlValidation.error}`, 403);
+            return;
+        }
+
         try {
             console.log(`🚀 Sending event ${event.event} to ${client.callbackUrl}`);
 

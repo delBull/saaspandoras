@@ -3,6 +3,7 @@ export * from './candidates/candidate-store';
 export * from './candidates/types';
 export * from './curriculum/program-registry';
 export * from './curriculum/coo-program';
+export * from './curriculum/signals-interception-master-program';
 export * from './curriculum/knowledge-sources';
 export * from './rewards/unlocked-perks';
 export * from './rewards/server-blueprints';

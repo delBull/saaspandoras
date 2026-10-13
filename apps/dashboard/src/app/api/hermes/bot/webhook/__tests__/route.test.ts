@@ -24,6 +24,10 @@ vi.mock('@saasfly/hermes-core', async (importOriginal) => {
         content: 'Hola Boss, recibido.',
       }),
     }),
+    EscalationService: {
+      getEscalations: vi.fn().mockResolvedValue([]),
+      triggerEscalation: vi.fn().mockResolvedValue({ id: 'esc_test_1', conversationId: 'conv_test' }),
+    },
   };
 });
 
@@ -397,6 +401,41 @@ describe('Piloto #1 — Hermes Telegram Webhook (/api/hermes/bot/webhook)', () =
           permissions: ['runtime.respond'],
         }),
       })
+    );
+  });
+
+  it('Prueba K: Solicitud de atención humana encola la escalación via EscalationService (cola de closers HITL)', async () => {
+    const { EscalationService } = await import('@saasfly/hermes-core');
+
+    const req = new NextRequest('http://localhost/api/hermes/bot/webhook', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-telegram-bot-api-secret-token': SECRET,
+      },
+      body: JSON.stringify({
+        update_id: 1010,
+        message: {
+          message_id: 10,
+          from: { id: 123456, first_name: 'David' },
+          chat: { id: 123456 },
+          text: 'Quiero hablar con un asesor humano por favor',
+        },
+      }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+
+    expect(EscalationService.getEscalations).toHaveBeenCalledWith('pandoras', 'PENDING');
+    expect(EscalationService.triggerEscalation).toHaveBeenCalledTimes(1);
+    expect(EscalationService.triggerEscalation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        organizationId: 'pandoras',
+        channel: 'TELEGRAM',
+        reason: 'USER_REQUEST',
+        actorId: 'tg_123456',
+      }),
     );
   });
 });

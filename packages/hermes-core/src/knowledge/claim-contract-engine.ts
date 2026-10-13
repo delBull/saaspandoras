@@ -1149,7 +1149,35 @@ export class ClaimContractEngine {
     }
 
     if (matchedClaims.length === 0) {
-      return null;
+      // Honest Fallback: return receipt marked with empty claims & incomplete coverage instead of null
+      const tier = options?.explicitTier || this.determineIntentTier(text);
+      const reqs = TIER_REQUIREMENTS[tier];
+      const canonicalText = this.normalizeCanonicalPayload(text);
+      const responseHash = crypto.createHash('sha256').update(canonicalText, 'utf8').digest('hex');
+      const nonce = crypto.randomBytes(16).toString('hex');
+      const policyVersion = options?.policyVersion || 'v1.0.4-k26.1';
+      const proofHash = crypto.createHash('sha256').update(`${tenantId}:${responseHash}:unbacked:${nonce}`, 'utf8').digest('hex');
+
+      return {
+        receiptId: `rec_${Date.now()}_${proofHash.substring(0, 8)}`,
+        tenantId,
+        agentId: `hermes-${tenantId}`,
+        conversationId: options?.conversationId,
+        responseHash,
+        provenanceTier: tier,
+        provenanceRequired: reqs.provenanceRequired,
+        claimAuthorizationRequired: reqs.claimAuthorizationRequired,
+        agentAttestationRequired: reqs.agentAttestationRequired,
+        signatureRequired: reqs.signatureRequired,
+        coverage: { complete: false, unsupportedSegments: [text], matchedClaimsCount: 0 },
+        claims: [],
+        matchedClaimIds: [],
+        policyVersion,
+        proofHash,
+        agentWalletAddress: agentSigner.getPublicAddress(),
+        verifiedAt: new Date().toISOString(),
+        nonce,
+      };
     }
 
     const tier = options?.explicitTier || this.determineIntentTier(text);

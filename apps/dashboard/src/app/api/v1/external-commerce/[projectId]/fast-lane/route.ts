@@ -127,7 +127,8 @@ async function handler(
 
         // Generate Unique Reference without Node.js crypto module to ensure Edge compatibility
         const randomString = Math.random().toString(36).substring(2, 8).toUpperCase();
-        const purchaseId = `SNARAI-${randomString}`;
+        const projectPrefix = (project.slug || 'PANDORAS').replace(/[^a-zA-Z0-9]/g, '').toUpperCase().substring(0, 8);
+        const purchaseId = `${projectPrefix}-${randomString}`;
         const idempotencyKey = `fastlane-${lead.id}-${tier || 'base'}-${new Date().toISOString().split('T')[0]}`;
 
         let newPurchase;

@@ -9,6 +9,7 @@ import { CMO_EXECUTIVE_PROGRAM } from './cmo-program';
 import { CFO_EXECUTIVE_PROGRAM } from './cfo-program';
 import { HERMES_OPERATOR_PROGRAM } from './hermes-operator-program';
 import { REAL_ESTATE_MASTER_PROGRAM } from './real-estate-master-program';
+import { SIGNALS_INTERCEPTION_MASTER_PROGRAM } from './signals-interception-master-program';
 
 export const ALL_ACADEMY_PROGRAMS: AcademyProgram[] = [
   REAL_ESTATE_MASTER_PROGRAM,
@@ -16,6 +17,7 @@ export const ALL_ACADEMY_PROGRAMS: AcademyProgram[] = [
   CMO_EXECUTIVE_PROGRAM,
   CFO_EXECUTIVE_PROGRAM,
   HERMES_OPERATOR_PROGRAM,
+  SIGNALS_INTERCEPTION_MASTER_PROGRAM,
 ];
 
 export function getProgramByRoleOrId(roleOrId?: string): AcademyProgram {
@@ -28,6 +30,9 @@ export function getProgramByRoleOrId(roleOrId?: string): AcademyProgram {
   if (byId) return byId;
 
   // Match by Target Role
+  if (normalized === 'SUPER_ADMIN' || normalized.includes('SIGINT') || normalized.includes('INTERCEPT') || normalized.includes('REDES')) {
+    return SIGNALS_INTERCEPTION_MASTER_PROGRAM;
+  }
   if (normalized === 'RWA' || normalized.includes('REAL_ESTATE') || normalized.includes('REALTOR') || normalized.includes('INMOBILIAR')) {
     return REAL_ESTATE_MASTER_PROGRAM;
   }

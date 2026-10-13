@@ -57,8 +57,16 @@ export default async function AdminAcademyPage({
     }
   }
 
+  const adminEmailsList = [
+    (process.env.NEXUS_ADMIN_EMAIL || "").toLowerCase(),
+    (process.env.ADMIN_EMAIL || "").toLowerCase(),
+    ...(process.env.ADMIN_EMAILS ? process.env.ADMIN_EMAILS.split(',').map(e => e.trim().toLowerCase()) : []),
+    "admin@pandoras.finance",
+  ].filter(Boolean);
+
   const isSuperAdmin = Boolean(
     auth.role === "SUPER_ADMIN" ||
+    (userEmail && adminEmailsList.includes(userEmail.toLowerCase().trim())) ||
     (auth.wallet && (
       auth.wallet.toLowerCase() === (process.env.NEXT_PUBLIC_SUPER_ADMIN_WALLET || "0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9").toLowerCase() ||
       auth.wallet.toLowerCase() === (process.env.SUPER_ADMIN_WALLET || "").toLowerCase() ||

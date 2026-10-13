@@ -1,4 +1,4 @@
-export type OnboardingProductKey = 'HERMES' | 'GROWTH_OS' | 'PANDORAS_RWA';
+export type OnboardingProductKey = 'HERMES' | 'GROWTH_OS' | 'PANDORAS_RWA' | 'DEV_ACCESS';
 
 export interface ProvisioningRequestDTO {
   organization: {

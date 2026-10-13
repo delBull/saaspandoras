@@ -14,6 +14,7 @@ export async function POST(request: NextRequest) {
     const appSecret = (process.env.WHATSAPP_APP_SECRET || process.env.META_APP_SECRET || '').trim();
 
     // 1. Cyber Security: Verify HMAC signature (Strict Fail-Closed)
+    let signature: string | null = null;
     if (!appSecret) {
       if (process.env.NODE_ENV === 'production') {
         console.error('❌ [SIMPLE-WHATSAPP] WHATSAPP_APP_SECRET missing in production.');
@@ -24,7 +25,7 @@ export async function POST(request: NextRequest) {
       }
       console.warn('⚠️ [SIMPLE-WHATSAPP] Non-production environment missing WHATSAPP_APP_SECRET. Proceeding constrained.');
     } else {
-      const signature = request.headers.get('x-hub-signature-256');
+      signature = request.headers.get('x-hub-signature-256');
       if (!signature) {
         console.warn('🔒 [SIMPLE-WHATSAPP] Cabecera X-Hub-Signature-256 ausente.');
         return NextResponse.json({ status: 'unauthorized', error: 'Missing x-hub-signature-256 header' }, { status: 401 });
@@ -49,7 +50,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ status: 'ignored' });
     }
 
-    const result = await WhatsAppDispatcher.dispatch(payload);
+    const result = await WhatsAppDispatcher.dispatch(payload, {
+      rawBody,
+      hubSignature: signature || undefined,
+      appSecret: appSecret || undefined,
+    });
     return NextResponse.json(result);
 
   } catch (error) {

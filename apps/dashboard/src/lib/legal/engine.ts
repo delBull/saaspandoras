@@ -87,11 +87,8 @@ export class LegalEngine {
       // 4. Unique Agreement ID (Human Readable)
       const agreementId = `AG-${project.slug.toUpperCase().substring(0, 3)}-${tokenId.padStart(5, '0')}`;
       
-      // We assume the portal is in the project's site under /portal (or /cert)
-      const runtimeConfig = (project.tenantRuntimeConfig as any) || {};
-      const brandConfig = runtimeConfig.brandConfig || {};
-      const baseUrl = project.website || brandConfig.website || `https://${project.slug}.aztecaz.xyz`;
-      const legalPortalUrl = `${baseUrl}/portal?wallet=${walletAddress}&cert=${agreementId}`;
+      // Canonical Certificate URL
+      const legalPortalUrl = `/legal/certificate/${agreementId}?project=${project.slug}&units=${purchase.amount || 1}`;
 
       // 6. Update Database
       await db.update(purchases)

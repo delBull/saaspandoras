@@ -175,8 +175,10 @@ export async function POST(req: NextRequest) {
         .limit(1);
       if (creatorProject) organizationId = creatorProject.organizationId;
     }
-    // Vertical also server-authoritative: derive from the creator's project only.
-    const vertical = 'GROWTH_OS';
+    // Vertical also server-authoritative: derive from order or payment link metadata, default to 'GROWTH_OS'.
+    const rawVertical = (linkMetadata?.vertical || 'GROWTH_OS').toUpperCase();
+    const allowedVerticals = ['GROWTH_OS', 'HERMES_OS', 'RWA'];
+    const vertical = allowedVerticals.includes(rawVertical) ? rawVertical : 'GROWTH_OS';
     const tenantId = organizationId;
 
     const settlementEvent: PaymentSettlementEvent = {
@@ -203,6 +205,32 @@ export async function POST(req: NextRequest) {
       console.error("[Payments API] Orchestrator failed to process settlement:", orchestratorError);
       // We don't fail the HTTP request if orchestrator throws, but we log heavily.
       // A retry DLQ should handle this in production.
+    }
+
+    // 🛰️ Publish to Hermes Event Bus so the omnichannel brain reacts (Batch D)
+    try {
+      const { HermesEventBus } = await import('@saasfly/hermes-core');
+      const settlePayload = {
+        linkId: link.id,
+        orderId: (linkMetadata as any)?.orderId || null,
+        leadId: (linkMetadata as any)?.leadId || null,
+        vertical,
+        organizationId: tenantId,
+        amount: settlementEvent.amount,
+        currency: settlementEvent.currency,
+        provider: 'THIRDWEB',
+        txHash,
+      };
+      await HermesEventBus.emit('PaymentSettled', Number((link as any).projectId) || 0, 'pandoras_commerce', settlePayload);
+      const linkedOrderIdAny = settlePayload.orderId;
+      if (linkedOrderIdAny) {
+        await HermesEventBus.emit('OrderPaid', Number((link as any).projectId) || 0, 'pandoras_commerce', {
+          ...settlePayload,
+          organization: settlePayload.organizationId,
+        });
+      }
+    } catch (busErr) {
+      console.error('[Payments Settle] HermesEventBus publish failed (non-blocking):', busErr);
     }
 
     return NextResponse.json({ success: true, eventId: settlementEvent.eventId });

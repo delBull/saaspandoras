@@ -5,7 +5,7 @@
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
-    "build": "cross-env NODE_OPTIONS=\"--max-old-space-size=6144\" next build",
+    "build": "cross-env NODE_OPTIONS=\"--max-old-space-size=4608\" next build",
     "clean": "git clean -xdf .next .turbo node_modules",
     "dev": "next dev --turbo",
     "dev:staging": "dotenv -e .env.staging -- next dev --turbo",

@@ -2,35 +2,53 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@saasfly/db-core";
 import { platformEvents } from "@saasfly/db-core";
 import { eq } from "@saasfly/db-core";
-import { IntegrationKeyService } from "@/lib/integrations/auth";
 import { platformEventSchema } from "@/lib/integrations/events-schema";
 import { IdentityService } from "@/lib/integrations/identity";
 import { JourneyTriggerService } from "@/lib/journeys/journey-trigger";
 import { HermesCognitiveLayer } from "@saasfly/hermes-core";
 import { executionOS } from "@/lib/hermes/composition";
 import { OutboxProcessor } from "@/lib/execution/outbox-processor";
+import { QuotaMeteringService } from "@/lib/integrations/quota-metering";
+import { integrationGuard } from "@/lib/integrations/guard";
 export async function POST(req: NextRequest) {
   try {
-    // 1. Authentication
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return NextResponse.json({ error: "Missing or invalid Authorization header" }, { status: 401 });
+    // 1. Authentication + Capability Check (fail-closed)
+    // Requirement: 'events:write' (legacy fallback 'lead:write' handled inside the guard)
+    const guard = await integrationGuard(req, { requiredCapability: "events:write" });
+
+    if (!guard.ok) {
+      return NextResponse.json({ error: guard.error }, { status: guard.status });
     }
 
-    const token = authHeader.split(" ")[1] || "";
-    const client = await IntegrationKeyService.validateKey(token);
+    const { client } = guard;
 
-    if (!client) {
-      return NextResponse.json({ error: "Unauthorized or invalid integration key" }, { status: 401 });
+    // 1.5 Metering & Quota Evaluation (Phase 3 Fail-Closed Gate)
+    const quotaResult = await QuotaMeteringService.checkEventQuota({
+      clientId: client.id,
+      projectId: client.projectId,
+      environment: client.environment as "staging" | "production",
+    });
+
+    if (!quotaResult.allowed) {
+      return NextResponse.json({
+        error: quotaResult.quotaType === "rate_limit" ? "TOO_MANY_REQUESTS" : "MONTHLY_QUOTA_EXCEEDED",
+        message: quotaResult.reason,
+        limit: quotaResult.limit,
+        remaining: 0,
+        retryAfter: quotaResult.retryAfterSeconds,
+      }, {
+        status: 429,
+        headers: {
+          "Retry-After": String(quotaResult.retryAfterSeconds),
+          "X-RateLimit-Limit": String(quotaResult.limit),
+          "X-RateLimit-Remaining": "0",
+          "X-RateLimit-Reset": String(Math.ceil(quotaResult.resetMs / 1000)),
+        }
+      });
     }
 
     // Check scope for generic events
-    const permissions = Array.isArray(client.permissions) ? (client.permissions as string[]) : [];
-    if (!permissions.includes("events:write") && !permissions.includes("lead:write")) {
-      // Temporarily allowing lead:write as fallback while transitioning scopes
-      // In strict mode, we might require events:write specifically.
-      console.warn(`[Gateway] Client ${client.id} missing strict 'events:write' scope.`);
-    }
+    // NOTE: capability enforcement moved to integrationGuard (fail-closed) above.
 
     // 2. Parse and Validate Payload
     const body = await req.json();
@@ -46,13 +64,20 @@ export async function POST(req: NextRequest) {
     const event = parseResult.data;
 
     // 3. Tenant Authorization Check (INV-009)
-    // The integration key corresponds to a specific project or org natively.
-    // If the client requests a project, we ensure it matches what they are authorized for.
-    if (event.projectId && event.projectId !== client.projectId?.toString() && client.projectId !== null) {
-      // Assuming S'Narai uses slug based projectId in the event vs numeric in DB.
-      // For now, if the client has a specific project lock, we enforce it.
-      // This can be expanded based on the full Multi-Tenant Domain Pack implementation.
-      console.warn(`[Gateway] Tenant Scope Mismatch: Requested ${event.projectId}, Client authorized for ${client.projectId}`);
+    // The integration key corresponds to a specific project natively.
+    // Enforce fail-closed resource scoping: rejecting any mismatch before writing or side-effects.
+    if (client.projectId !== null && client.projectId !== undefined) {
+      const authorizedProjectIdStr = client.projectId.toString();
+      if (event.projectId && event.projectId !== authorizedProjectIdStr) {
+        return NextResponse.json({
+          error: "FORBIDDEN_RESOURCE_SCOPE",
+          message: `The integration key is bound to project ID ${client.projectId} and cannot publish events for project ${event.projectId}.`
+        }, { status: 403 });
+      }
+      // If event didn't explicitly declare projectId, bind it server-side to the authorized client's project
+      if (!event.projectId) {
+        event.projectId = authorizedProjectIdStr;
+      }
     }
 
     // 4. Idempotency Check (INV-010)

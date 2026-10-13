@@ -1,0 +1,480 @@
+openapi: 3.1.0
+info:
+  title: "Pandora's Growth OS — Dev Access & API Integration"
+  version: "1.0.0"
+  description: >
+    Especificación canónica para la integración de sistemas externos y equipos de ingeniería
+    con el Event Spine, Webhooks y CRM de Pandora's Growth OS sin requerir adopción del Dashboard.
+servers:
+  - url: https://dash.pandoras.finance/api/v1
+    description: Entorno de Producción
+  - url: https://staging.dash.pandoras.finance/api/v1
+    description: Entorno Staging / Sandbox
+
+security:
+  - ApiKeyAuth: []
+
+paths:
+  /integrations/events:
+    post:
+      summary: Ingestión de eventos en tiempo real hacia el Event Spine
+      description: >
+        Registra eventos de negocio (lead.new, deal.stage_changed, user.subscribed, etc.)
+        en el Event Spine multitenant con aislamiento criptográfico y resolución de identidad canónica.
+      operationId: postIntegrationEvent
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: false
+          schema:
+            type: string
+          description: Clave de idempotencia única para prevenir duplicación ante reintentos.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IntegrationEventPayload'
+      responses:
+        '200':
+          description: Evento aceptado e ingestión confirmada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntegrationEventSuccessResponse'
+        '400':
+          description: Formato de evento inválido o tipo de evento no soportado.
+        '401':
+          description: Credencial API ausente o inválida.
+        '403':
+          description: FORBIDDEN_RESOURCE_SCOPE - El projectId del evento no coincide con la API key autorizada.
+        '429':
+          description: Límite de tasa o cuota mensual excedida.
+
+  /leads/status:
+    get:
+      summary: Consulta de estado de prospecto / lead
+      description: Recupera el estado actual en el CRM y el historial de journeys para un lead del tenant.
+      operationId: getLeadStatus
+      parameters:
+        - name: leadId
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Identificador del lead en Pandora's.
+        - name: email
+          in: query
+          required: false
+          schema:
+            type: string
+            format: email
+          description: Correo electrónico del lead.
+      responses:
+        '200':
+          description: Estado del lead recuperado exitosamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeadStatusResponse'
+        '401':
+          description: Credencial API ausente o inválida.
+        '404':
+          description: Lead no encontrado en el scope del tenant.
+
+  /webhooks/test:
+    post:
+      summary: Verificación y ping de destino de webhook
+      description: >
+        Dispara un evento de prueba hacia la URL de webhook configurada por el desarrollador
+        previo paso por el filtro de seguridad Anti-SSRF.
+      operationId: testWebhookEndpoint
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - targetUrl
+              properties:
+                targetUrl:
+                  type: string
+                  format: uri
+                  description: URL HTTPS pública del endpoint receptor.
+      responses:
+        '200':
+          description: Ping entregado exitosamente al endpoint remoto.
+        '400':
+          description: URL inválida, bloqueada por Anti-SSRF o rechazo de red.
+        '401':
+          description: Credencial API ausente o inválida.
+
+  /dev/webhooks/config:
+    post:
+      summary: Configuración de URL receptora de Webhooks y rotación de HMAC Secret
+      description: >
+        Permite al propietario del proyecto o Superadmin configurar la callbackUrl pública
+        (previa validación Anti-SSRF) y solicitar la rotación del secreto de firma HMAC (whsec_...).
+      operationId: postDevWebhooksConfig
+      security:
+        - CookieAuth: []
+        - SuperadminAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                projectId:
+                  type: integer
+                  description: ID del proyecto
+                callbackUrl:
+                  type: string
+                  format: uri
+                  description: URL HTTPS pública receptora
+                rotateSecret:
+                  type: boolean
+                  default: false
+                  description: Indica si se debe regenerar el secreto de firma HMAC
+      responses:
+        '200':
+          description: Configuración actualizada exitosamente.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  callbackUrl:
+                    type: string
+                  rawSecret:
+                    type: string
+                    description: Secreto HMAC solo visible al rotar (whsec_...)
+        '400':
+          description: URL inválida o bloqueada por filtro Anti-SSRF.
+        '401':
+          description: Sesión no autenticada.
+        '403':
+          description: No autorizado (solo el dueño del proyecto o Superadmin).
+
+  /dev/logs:
+    get:
+      summary: Historial paginado de entregas de webhooks y eventos
+      description: >
+        Devuelve el log de ejecuciones de webhooks con estados HTTP, latencias y fallos,
+        aislado estrictamente al cliente autenticado.
+      operationId: getDevLogs
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 50
+            maximum: 50
+          description: Número máximo de registros a retornar.
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+          description: Desplazamiento para paginación.
+      responses:
+        '200':
+          description: Historial de logs recuperado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DevLogsResponse'
+        '401':
+          description: Credencial API ausente o inválida.
+
+  /dev/usage:
+    get:
+      summary: Métricas de cuota y rate limits en tiempo real
+      description: >
+        Consulta el estado de la cuota mensual de eventos y la ventana deslizante
+        de rate limiting asignada según el plan contratado.
+      operationId: getDevUsage
+      responses:
+        '200':
+          description: Métricas de consumo obtenidas exitosamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DevUsageResponse'
+        '401':
+          description: Credencial API ausente o inválida.
+
+  /hermes/a2a/chat:
+    post:
+      summary: Hermes Agent-to-Agent (A2A) Gateway Soberano
+      description: >
+        Interfaz A2A para interacción directa con el agente cognitivo Hermes
+        respaldado soberanamente por Ollama en infraestructura propia,
+        aislado por scope de tenant y protegido por la capability hermes_a2a.
+      operationId: postHermesA2AChat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HermesA2AChatRequest'
+      responses:
+        '200':
+          description: Respuesta generada por el agente soberano.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HermesA2AChatResponse'
+        '400':
+          description: Payload estructurado inválido o messages vacío.
+        '401':
+          description: Credencial API ausente o inválida.
+        '403':
+          description: Falta capability hermes_a2a en la clave o plan no elegible.
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: API_KEY (sk_test_... o sk_live_...)
+    CookieAuth:
+      type: apiKey
+      in: cookie
+      name: session
+      description: Sesión autenticada vía web/wallet para consola /developers
+    SuperadminAuth:
+      type: http
+      scheme: bearer
+      description: Token con capability de superadmin de plataforma
+
+  headers:
+    XCoreSignature:
+      description: Firma criptográfica HMAC-SHA256 hex calculada sobre el raw body usando el callback secret (whsec_...)
+      schema:
+        type: string
+        example: "a8f5b2..."
+    XCoreEventId:
+      description: Identificador único del evento emitido
+      schema:
+        type: string
+        example: "evt_101_1728800000"
+    XCoreVersion:
+      description: Versión del payload de webhook
+      schema:
+        type: string
+        example: "v1"
+    XCoreTimestamp:
+      description: Timestamp unix de emisión
+      schema:
+        type: string
+        example: "1728800000"
+
+  schemas:
+    IntegrationEventPayload:
+      type: object
+      required:
+        - eventType
+        - payload
+      properties:
+        eventType:
+          type: string
+          example: "lead.new"
+          description: Tipo canónico del evento.
+        projectId:
+          type: integer
+          description: ID de proyecto del tenant (opcional en request, inyectado autoritativamente por el servidor).
+        payload:
+          type: object
+          description: Datos estructurados del evento.
+          properties:
+            email:
+              type: string
+              format: email
+            name:
+              type: string
+            phone:
+              type: string
+            source:
+              type: string
+              example: "external_crm"
+            metadata:
+              type: object
+              additionalProperties: true
+        timestamp:
+          type: string
+          format: date-time
+
+    IntegrationEventSuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        eventId:
+          type: string
+          example: "evt_101_1728800000"
+        canonicalId:
+          type: string
+          example: "canon_usr_9981"
+        status:
+          type: string
+          example: "INGESTED"
+
+    LeadStatusResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        lead:
+          type: object
+          properties:
+            id:
+              type: string
+            email:
+              type: string
+            stage:
+              type: string
+              example: "Qualified"
+            score:
+              type: integer
+              example: 85
+            createdAt:
+              type: string
+              format: date-time
+
+    DevLogsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        logs:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              event:
+                type: string
+                example: "lead.new"
+              status:
+                type: string
+                example: "sent"
+              attempts:
+                type: integer
+                example: 1
+              lastError:
+                type: string
+                nullable: true
+              createdAt:
+                type: string
+                format: date-time
+              updatedAt:
+                type: string
+                format: date-time
+        pagination:
+          type: object
+          properties:
+            limit:
+              type: integer
+              example: 50
+            offset:
+              type: integer
+              example: 0
+            total:
+              type: integer
+              example: 12
+
+    DevUsageResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        metrics:
+          type: object
+          properties:
+            plan:
+              type: string
+              example: "starter"
+            monthly:
+              type: object
+              properties:
+                used:
+                  type: integer
+                  example: 1200
+                limit:
+                  type: integer
+                  example: 50000
+                percentage:
+                  type: number
+                  example: 2.4
+                resetDate:
+                  type: string
+                  format: date-time
+            rateLimit:
+              type: object
+              properties:
+                current:
+                  type: integer
+                  example: 4
+                limit:
+                  type: integer
+                  example: 300
+                remaining:
+                  type: integer
+                  example: 296
+                windowMs:
+                  type: integer
+                  example: 60000
+
+    HermesA2AChatRequest:
+      type: object
+      required:
+        - messages
+      properties:
+        messages:
+          type: array
+          items:
+            type: object
+            required:
+              - role
+              - content
+            properties:
+              role:
+                type: string
+                enum: [system, user, assistant]
+              content:
+                type: string
+        contextScope:
+          type: object
+          additionalProperties: true
+        toolsAllowed:
+          type: array
+          items:
+            type: string
+
+    HermesA2AChatResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        response:
+          type: string
+          example: "Analizando métricas del deal: el lead califica para etapa Proposal."
+        model:
+          type: string
+          example: "llama3.1"
+        runtime:
+          type: string
+          example: "ollama_sovereign"

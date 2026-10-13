@@ -15,24 +15,51 @@ export class WebhookService {
     /**
      * Queue a webhook event to be sent.
      *
-     * If clientId === 'system', it broadcasts to ALL active integration clients
-     * that have a callbackUrl configured (e.g., Bull's Lab).
-     *
-     * This prevents FK violations and supports broadcast-style emission.
+     * Invariant: Events are tenant-scoped by default to prevent cross-tenant data leakage.
+     * If clientId === 'system', a targetProjectId or projectScope must be evaluated,
+     * delivering only to clients owning that specific project.
      */
-    static async queueEvent(clientId: string, event: string, payload: any) {
+    static async queueEvent(
+        clientId: string,
+        event: string,
+        payload: any,
+        options: { projectId?: number; isPlatformBroadcast?: boolean } = {}
+    ) {
         if (clientId === 'system') {
-            // Broadcast: find all active clients with a callback URL
+            // Resolve tenant scope from explicit option, top-level payload, or nested data
+            // (real callers pass `data.project_id` nested; scoping MUST NOT degrade to a global broadcast)
+            const targetProjectIdRaw =
+                options.projectId ??
+                payload?.projectId ??
+                payload?.data?.project_id ??
+                payload?.data?.projectId;
+
+            const numericProjectId = targetProjectIdRaw !== undefined && targetProjectIdRaw !== null && targetProjectIdRaw !== ''
+                ? Number(targetProjectIdRaw)
+                : NaN;
+
+            const tenantScope = Number.isNaN(numericProjectId)
+                ? undefined
+                : eq(integrationClients.projectId, numericProjectId);
+
+            if (!tenantScope) {
+                // No concrete tenant scope for a 'system' broadcast — refuse to fan out to all tenants.
+                console.warn(`[WebhookService] Refusing un-scoped 'system' broadcast for event '${event}': no projectId available.`);
+                return;
+            }
+
+            // Only broadcast to clients belonging to the specified project
             const activeClients = await db.query.integrationClients.findMany({
                 where: and(
                     eq(integrationClients.isActive, true),
-                    isNotNull(integrationClients.callbackUrl)
+                    isNotNull(integrationClients.callbackUrl),
+                    tenantScope
                 ),
-                columns: { id: true },
+                columns: { id: true, projectId: true },
             });
 
             if (activeClients.length === 0) {
-                // No clients registered yet — silently skip
+                // No authorized clients registered for this project scope — skip silently
                 return;
             }
 

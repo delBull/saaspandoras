@@ -315,6 +315,32 @@ async function handler(
               }
             );
             
+            // P0-4: Auto-certify purchase and emit purchase.completed event to outbox
+            try {
+                const { LegalEngine } = await import('@/lib/legal/engine');
+                const pseudoTokenId = purchase.tokenId || String(purchase.id || Date.now()).slice(-6);
+                await LegalEngine.certifyPurchase(purchase.purchaseId || String(purchase.id), pseudoTokenId);
+
+                const { outboxEvents } = await import('@saasfly/db-core');
+                await db.insert(outboxEvents).values({
+                    aggregateType: 'purchase',
+                    aggregateId: purchase.purchaseId || String(purchase.id),
+                    eventType: 'purchase.completed',
+                    organizationId: `org_${project.organizationId || project.slug}`,
+                    payload: {
+                        purchaseId: purchase.purchaseId || String(purchase.id),
+                        projectId: projectIdNum,
+                        buyerWallet: targetWallet || purchase.userId,
+                        recipientWallet: targetWallet || purchase.userId,
+                        amount: purchase.amount,
+                        currency: purchase.currency || 'USD',
+                    },
+                    status: 'pending',
+                });
+            } catch (certifyErr) {
+                console.warn('[PurchasesApprove] LegalEngine certification / outbox event non-blocking warning:', certifyErr);
+            }
+
             // Try generating a marketing event if there's a lead attached to this user
             if (targetWallet || purchase.userId) {
                 const shadowUser = await db.query.users.findFirst({

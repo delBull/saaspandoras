@@ -309,6 +309,50 @@ export const CancelPlanTool: ExecutiveToolSchema = {
   authorizedRoles: ['OWNER'],
 };
 
+export const RwaCreatePurchaseIntentTool: ExecutiveToolSchema = {
+  name: 'rwa_create_purchase_intent',
+  description: 'Crea una intención o reserva de compra para una oportunidad fraccionada RWA (S\'Narai u otro tenant).',
+  parameters: {
+    type: 'object',
+    properties: {
+      projectSlug: {
+        type: 'string',
+        description: 'Slug del proyecto (ej. snarai)',
+      },
+      amount: {
+        type: 'number',
+        description: 'Monto de la inversión o tokens solicitados',
+      },
+      buyerEmail: {
+        type: 'string',
+        description: 'Correo electrónico del comprador',
+      },
+    },
+    required: ['projectSlug', 'amount', 'buyerEmail'],
+  },
+  authorizedRoles: ['OWNER', 'OPERATOR', 'SALES', 'VIEWER'],
+};
+
+export const RwaShowPassportTool: ExecutiveToolSchema = {
+  name: 'rwa_show_passport',
+  description: 'Obtiene el enlace al pasaporte de inversionista o certificado legal de un usuario/wallet.',
+  parameters: {
+    type: 'object',
+    properties: {
+      walletOrEmail: {
+        type: 'string',
+        description: 'Dirección de wallet o correo electrónico del inversionista',
+      },
+      projectSlug: {
+        type: 'string',
+        description: 'Slug del proyecto para verificar participaciones',
+      },
+    },
+    required: ['walletOrEmail', 'projectSlug'],
+  },
+  authorizedRoles: ['OWNER', 'OPERATOR', 'SALES', 'VIEWER'],
+};
+
 export const ExecutiveToolsRegistry = [
   ActivateTenantTool,
   AssignAdminTool,
@@ -331,4 +375,7 @@ export const ExecutiveToolsRegistry = [
   AuditSchemaTool,
   ConfirmPlanTool,
   CancelPlanTool,
+  RwaCreatePurchaseIntentTool,
+  RwaShowPassportTool,
 ];
+

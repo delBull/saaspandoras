@@ -10,6 +10,8 @@ export default function AcademyAccessGate() {
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [sentEmail, setSentEmail] = useState("");
+  const [directLink, setDirectLink] = useState<string | null>(null);
+  const [emailDeliveryFailed, setEmailDeliveryFailed] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -61,6 +63,10 @@ export default function AcademyAccessGate() {
           return;
         }
         setSentEmail(data.email || email.trim() || "tu correo registrado");
+        if (data.directLink) {
+          setDirectLink(data.directLink);
+        }
+        setEmailDeliveryFailed(Boolean(data.emailDeliveryFailed));
         setSent(true);
       } else {
         setError(data.error ?? "No se pudo procesar la solicitud.");
@@ -142,16 +148,36 @@ export default function AcademyAccessGate() {
             <div className="w-10 h-10 rounded-full bg-purple-500/20 text-purple-300 mx-auto flex items-center justify-center mb-3">
               <CheckCircle2 className="w-5 h-5" />
             </div>
-            <p className="text-purple-200 text-sm font-medium mb-1">Enlace Mágico Enviado</p>
-            <p className="text-zinc-400 text-xs leading-relaxed mb-4">
-              Hemos enviado un enlace de acceso seguro a <strong className="text-white">{sentEmail}</strong>.
+            <p className="text-purple-200 text-sm font-medium mb-1">
+              {emailDeliveryFailed ? "Enlace de Acceso Generado" : "Enlace Mágico Enviado"}
             </p>
-            <button
-              onClick={() => setSent(false)}
-              className="text-xs text-purple-400 hover:text-purple-300 underline font-light"
-            >
-              Intentar con otro correo
-            </button>
+            <p className="text-zinc-400 text-xs leading-relaxed mb-4">
+              {emailDeliveryFailed ? (
+                <>
+                  El servicio de correo en este entorno no tiene configurado <code className="text-purple-300 font-mono">RESEND_API_KEY</code>. Puedes entrar directamente con este enlace de sesión única:
+                </>
+              ) : (
+                <>Hemos enviado un enlace de acceso seguro a <strong className="text-white">{sentEmail}</strong>.</>
+              )}
+            </p>
+
+            {directLink && (
+              <a
+                href={directLink}
+                className="mb-4 inline-flex items-center justify-center gap-2 w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl px-4 py-3 text-xs font-semibold tracking-wider uppercase transition-all shadow-lg shadow-purple-900/30"
+              >
+                <span>Acceder a la Consola Directamente →</span>
+              </a>
+            )}
+
+            <div>
+              <button
+                onClick={() => setSent(false)}
+                className="text-xs text-purple-400 hover:text-purple-300 underline font-light"
+              >
+                Intentar con otro correo
+              </button>
+            </div>
           </motion.div>
         )}
 
