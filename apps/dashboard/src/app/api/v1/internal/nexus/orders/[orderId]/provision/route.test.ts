@@ -38,6 +38,7 @@ vi.mock('@saasfly/shared', () => {
     TenantProvisioningService: MockTenantProvisioningService,
     tenantProvisioningService: instance,
   };
+
 });
 
 // Mock DB

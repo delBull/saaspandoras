@@ -2,14 +2,13 @@ name: Cron Jobs
 
 on:
   schedule:
-    - cron: '*/5 * * * *'
-    - cron: '*/15 * * * *'
-    - cron: '*/30 * * * *'
-    - cron: '0 */6 * * *'
+    - cron: '*/30 * * * *'  # Webhooks and fast background jobs (cada 30 min en vez de cada 5 min)
+    - cron: '0 */2 * * *'   # Marketing, agendas, reminders y nexus (cada 2 horas en vez de cada 15 min)
+    - cron: '0 */6 * * *'   # Gas checks, workflows pesados y reconciliaciones (cada 6 horas)
 
 jobs:
   dispatch-webhooks:
-    if: github.event.schedule == '*/5 * * * *'
+    if: github.event.schedule == '*/30 * * * *'
     runs-on: ubuntu-latest
     steps:
       - name: Call dispatch-webhooks
@@ -19,7 +18,7 @@ jobs:
             "https://pandoras.finance/api/cron/dispatch-webhooks"
 
   process-approvals:
-    if: github.event.schedule == '*/5 * * * *'
+    if: github.event.schedule == '*/30 * * * *'
     runs-on: ubuntu-latest
     steps:
       - name: Call process-approvals
@@ -29,7 +28,7 @@ jobs:
             "https://pandoras.finance/api/cron/process-approvals"
 
   process-webhooks:
-    if: github.event.schedule == '*/5 * * * *'
+    if: github.event.schedule == '*/30 * * * *'
     runs-on: ubuntu-latest
     steps:
       - name: Call process-webhooks
@@ -39,7 +38,7 @@ jobs:
             "https://pandoras.finance/api/cron/process-webhooks"
 
   marketing:
-    if: github.event.schedule == '*/15 * * * *'
+    if: github.event.schedule == '0 */2 * * *'
     runs-on: ubuntu-latest
     steps:
       - name: Call marketing
@@ -49,7 +48,7 @@ jobs:
             "https://dash.pandoras.finance/api/cron/marketing"
 
   marketing-nurture:
-    if: github.event.schedule == '*/15 * * * *'
+    if: github.event.schedule == '0 */2 * * *'
     runs-on: ubuntu-latest
     steps:
       - name: Call marketing-nurture
@@ -59,7 +58,7 @@ jobs:
             "https://dash.pandoras.finance/api/admin/marketing/cron/process-nurture"
 
   scheduling-reminders:
-    if: github.event.schedule == '*/15 * * * *'
+    if: github.event.schedule == '0 */2 * * *'
     runs-on: ubuntu-latest
     steps:
       - name: Call scheduling-reminders
@@ -69,7 +68,7 @@ jobs:
             "https://dash.pandoras.finance/api/cron/scheduling-reminders"
 
   agenda-followups:
-    if: github.event.schedule == '*/15 * * * *'
+    if: github.event.schedule == '0 */2 * * *'
     runs-on: ubuntu-latest
     steps:
       - name: Call agenda-followups
@@ -79,7 +78,7 @@ jobs:
             "https://dash.pandoras.finance/api/cron/sovereign-agenda-followups"
 
   nexus-cron:
-    if: github.event.schedule == '*/15 * * * *'
+    if: github.event.schedule == '0 */2 * * *'
     runs-on: ubuntu-latest
     steps:
       - name: Call nexus-cron
@@ -89,7 +88,7 @@ jobs:
             "https://dash.pandoras.finance/api/cron/nexus"
 
   gas-check:
-    if: github.event.schedule == '*/30 * * * *'
+    if: github.event.schedule == '0 */6 * * *'
     runs-on: ubuntu-latest
     steps:
       - name: Call gas-check
@@ -109,7 +108,7 @@ jobs:
             "https://dash.pandoras.finance/api/cron/reconcile-withdrawals"
 
   hermes-workflows:
-    if: github.event.schedule == '*/30 * * * *'
+    if: github.event.schedule == '0 */6 * * *'
     runs-on: ubuntu-latest
     steps:
       - name: Call hermes-workflows

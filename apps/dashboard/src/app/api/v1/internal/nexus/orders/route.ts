@@ -133,6 +133,7 @@ export async function POST(req: NextRequest) {
            productId: 'COMMERCIAL_ORDER'
          }
        }).returning({ id: privatePaymentLinks.id });
+
        
        return { ...order, intentId: intent?.id };
     });

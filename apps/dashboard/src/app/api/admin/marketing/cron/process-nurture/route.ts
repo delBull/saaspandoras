@@ -22,9 +22,19 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(req: NextRequest) {
   try {
-    // 1. Authorization
-    const cronSecret = req.headers.get('x-cron-secret');
-    const isSystemCron = cronSecret && cronSecret === process.env.CRON_SECRET;
+    // 1. Authorization (x-cron-secret, Bearer Authorization, or query param)
+    const cronSecretHeader = req.headers.get('x-cron-secret');
+    const authHeader = req.headers.get('authorization');
+    const querySecret = req.nextUrl.searchParams.get('secret');
+    const envSecret = process.env.CRON_SECRET;
+
+    const isSystemCron = Boolean(
+      envSecret && (
+        cronSecretHeader === envSecret ||
+        authHeader === `Bearer ${envSecret}` ||
+        querySecret === envSecret
+      )
+    );
     
     if (!isSystemCron) {
         const { session } = await getAuth(await headers());
