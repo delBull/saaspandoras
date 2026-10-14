@@ -283,12 +283,12 @@ export class HermesRuntime implements HermesCognitiveRuntime {
         const filteredKnowledge = [];
         
         const rawInterlocutor = (controlPlaneContext as any).interlocutor || controlPlaneContext.identity;
-        const hasExecutivePrivilege = (rawInterlocutor as any)?.isBoss || (controlPlaneContext as any).role === 'OWNER' || (rawInterlocutor as any)?.executivePrivilege;
+        const hasExecutivePrivilege = Boolean((rawInterlocutor as any)?.isBoss || (rawInterlocutor as any)?.executivePrivilege);
 
         for (const k of effectiveContext.knowledge) {
           try {
             // Resolve required clearance from item metadata, defaulting to PUBLIC if unset.
-            const itemClearance = (k as any).classification || (k as any).governance?.visibility || 'PUBLIC';
+            const itemClearance = (k as any).classification || (k as any).governance?.visibility || (k as any).visibility || 'PUBLIC';
             
             if (hasExecutivePrivilege) {
                filteredKnowledge.push(k);

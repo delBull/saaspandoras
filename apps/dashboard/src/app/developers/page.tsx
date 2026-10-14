@@ -1293,7 +1293,7 @@ console.log("Historial de entregas:", logs);`
       />
 
       {/* Floating Action Button for Mobile-First & Desktop Quick Access */}
-      <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-2">
+      <div className={`fixed bottom-6 right-6 max-sm:bottom-[calc(1rem+env(safe-area-inset-bottom))] max-sm:right-4 z-40 flex flex-col items-end gap-2 ${hermesDrawerOpen ? 'max-sm:hidden' : ''}`}>
         <button
           onClick={() => setHermesDrawerOpen(!hermesDrawerOpen)}
           className="group relative flex items-center gap-3 px-4 py-3 sm:px-5 sm:py-3.5 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white rounded-full shadow-2xl shadow-indigo-500/30 border border-white/20 transition-all hover:scale-105 active:scale-95"

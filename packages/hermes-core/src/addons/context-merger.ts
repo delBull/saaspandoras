@@ -452,7 +452,9 @@ export class CognitiveContextBuilder {
     // ── Build Team Directory (Identity Resolution & Contacts) ──
     let directoryFact: any = null;
     try {
-      const collabs = await db.select().from(nexusCollaborators);
+      // Tenant isolation: the global Nexus collaborator directory is platform-scoped data.
+      // Never build it for third-party tenants (e.g. snarai), even for a Boss actor.
+      const collabs = isPandorasCore ? await db.select().from(nexusCollaborators) : [];
       if (collabs.length > 0) {
         const lines = collabs.map(c => `- ${c.name} (Rol: ${c.role}, WhatsApp: ${c.whatsappPhone || 'No registrado'}, Discord: ${c.discordUserId || 'No vinculado'})`);
         directoryFact = {

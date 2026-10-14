@@ -221,6 +221,40 @@ describe('Hermes Omnichannel Identity & Boss Executive Authority Suite', () => {
       // Knowledge at CONFIDENTIAL classification must be retained for the Boss
       expect(reasoningContext.activeKnowledge.some(k => k.id === 'fact_confidential')).toBe(true);
     });
+
+    describe('3b. tenant_team_directory (INTERNAL_OPERATIONAL) over WHATSAPP', () => {
+      const msg: RuntimeMessage = { id: 'm_dir', role: 'USER', content: 'colaboradores?', createdAt: new Date() };
+      const directory = {
+        id: 'tenant_team_directory',
+        key: 'directorio_equipo',
+        content: 'Directorio oficial',
+        status: 'ACTIVE',
+        dimension: 'identity',
+        visibility: 'INTERNAL_OPERATIONAL',
+      };
+      const build = (core: any): any => ({ core, knowledge: [directory], activeCapabilities: [] });
+
+      it('Boss on WHATSAPP receives the directory', () => {
+        const { reasoningContext } = CognitiveContextAdapter.adapt(
+          build({ tenantId: 'pandoras', channel: 'WHATSAPP', role: 'USER', identity: { isBoss: true, role: 'FOUNDER_BOSS', name: 'Marco' } }),
+          [], msg);
+        expect(reasoningContext.activeKnowledge.some(k => k.id === 'tenant_team_directory')).toBe(true);
+      });
+
+      it('non-boss lead on WHATSAPP does NOT receive the directory', () => {
+        const { reasoningContext } = CognitiveContextAdapter.adapt(
+          build({ tenantId: 'pandoras', channel: 'WHATSAPP', role: 'USER', identity: { isBoss: false } }),
+          [], msg);
+        expect(reasoningContext.activeKnowledge.some(k => k.id === 'tenant_team_directory')).toBe(false);
+      });
+
+      it('third-party tenant OWNER does NOT receive the directory', () => {
+        const { reasoningContext } = CognitiveContextAdapter.adapt(
+          build({ tenantId: 'snarai', channel: 'WHATSAPP', role: 'OWNER', identity: { isBoss: false } }),
+          [], msg);
+        expect(reasoningContext.activeKnowledge.some(k => k.id === 'tenant_team_directory')).toBe(false);
+      });
+    });
   });
 
   describe('4. Granular RBAC, Boundaries & Roles for Ecosystem Scaling', () => {
