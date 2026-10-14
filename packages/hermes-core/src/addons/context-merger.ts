@@ -456,7 +456,7 @@ export class CognitiveContextBuilder {
       // Never build it for third-party tenants (e.g. snarai), even for a Boss actor.
       const collabs = isPandorasCore ? await db.select().from(nexusCollaborators) : [];
       if (collabs.length > 0) {
-        const lines = collabs.map(c => `- ${c.name} (Rol: ${c.role}, WhatsApp: ${c.whatsappPhone || 'No registrado'}, Discord: ${c.discordUserId || 'No vinculado'})`);
+        const lines = collabs.map(c => `- ${c.name} (Rol: ${c.role}, Email: ${c.email}, WhatsApp: ${c.whatsappPhone || 'No registrado'}, Discord: ${c.discordUserId || 'No vinculado'})`);
         directoryFact = {
           id: 'tenant_team_directory',
           key: 'directorio_equipo',
