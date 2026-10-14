@@ -3,14 +3,14 @@ import { NextResponse } from 'next/server';
 import { MarketingEngine } from '@/lib/marketing/engine';
 
 export async function GET(req: NextRequest) {
-    // 1. Authenticate Cron (Bearer token or URL secret param)
+    // 1. Authenticate Cron (Bearer token, x-cron-secret or URL secret param)
     const authHeader = req.headers.get('authorization');
+    const xCronSecret = req.headers.get('x-cron-secret');
     const urlSecret = req.nextUrl.searchParams.get('secret');
     const cronSecret = process.env.CRON_SECRET;
 
     const isAuthorized = 
-        (cronSecret && authHeader === `Bearer ${cronSecret}`) ||
-        (cronSecret && urlSecret === cronSecret) ||
+        (cronSecret && (authHeader === `Bearer ${cronSecret}` || xCronSecret === cronSecret || urlSecret === cronSecret)) ||
         process.env.NODE_ENV !== 'production';
 
     if (!isAuthorized) {

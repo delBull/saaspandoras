@@ -473,6 +473,7 @@ export class WhatsAppDispatcher {
             createdAt: new Date(),
           },
           controlPlaneContext: {
+            channel: 'WHATSAPP',
             actorId: resolvedActorId,
             organizationId: tenant.slug,
             role: resolvedRole as any,
@@ -590,6 +591,7 @@ export class WhatsAppDispatcher {
           createdAt: new Date(),
         },
         controlPlaneContext: {
+          channel: 'WHATSAPP',
           actorId: resolvedActorId,
           organizationId: 'pandoras',
           role: isBoss ? 'OWNER' : (resolvedRole as any),

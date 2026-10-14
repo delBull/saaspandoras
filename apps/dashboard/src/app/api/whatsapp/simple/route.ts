@@ -46,8 +46,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Verificar que es un mensaje de WhatsApp válido
-    if (!payload.entry?.[0]?.changes) {
+    const changeValue = payload.entry?.[0]?.changes?.[0]?.value;
+    if (!changeValue) {
       return NextResponse.json({ status: 'ignored' });
+    }
+
+    // ⚡ FAST PATH: Si es solo un webhook de estado de entrega de Meta (sent/delivered/read), responder inmediatamente sin invocar el runtime
+    if (!changeValue.messages || changeValue.messages.length === 0) {
+      if (changeValue.statuses && changeValue.statuses.length > 0) {
+        return NextResponse.json({ status: 'status_ack', handled: true });
+      }
+      return NextResponse.json({ status: 'no_messages', handled: false });
     }
 
     const result = await WhatsAppDispatcher.dispatch(payload, {

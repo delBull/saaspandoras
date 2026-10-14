@@ -63,8 +63,18 @@ export interface ConversationContext {
 import { isUuid } from '@saasfly/shared';
 
 export class CognitiveContextBuilder {
-  static async buildEffectiveContext(tenantId: string, contactId: string): Promise<ConversationContext> {
+  static async buildEffectiveContext(tenantId: string, contactId: string, inputContext?: { channel?: string; role?: string; permissions?: string[]; identity?: any; interlocutor?: any }): Promise<ConversationContext> {
     const coreContext = await this.buildCoreSecurityContext(tenantId);
+    if (inputContext) {
+      if (inputContext.channel) (coreContext as any).channel = inputContext.channel;
+      if (inputContext.role) (coreContext as any).role = inputContext.role;
+      if (inputContext.permissions) (coreContext as any).permissions = inputContext.permissions;
+      if (inputContext.identity) (coreContext as any).identity = inputContext.identity;
+      if (inputContext.interlocutor) (coreContext as any).interlocutor = inputContext.interlocutor;
+      if (inputContext.identity?.isBoss || inputContext.interlocutor?.isBoss) {
+        (coreContext as any).clearance = 'CONFIDENTIAL';
+      }
+    }
     
     // Resolve project identifiers for multi-tenant resilience with org_ normalization
     const cleanSlug = tenantId.replace(/^org_/, '').trim();
@@ -487,6 +497,23 @@ Capacidades autorizadas:
         status: 'ACTIVE',
         dimension: 'capabilities',
         visibility: 'INTERNAL_OPERATIONAL',
+      },
+      {
+        id: 'pandoras_developer_suite_overview',
+        key: 'pandoras_developer_suite_doctrina',
+        content: `SUITE DE DESARROLLADORES Y BIFURCACIÓN DE ONBOARDING:
+1. Hub de Desarrolladores Oficial: https://dash.pandoras.finance/developers (también accesible en /developers).
+2. Bifurcación Inteligente de Prospectos y Leads:
+   - Si el interlocutor es un inversionista, comprador o cliente final: guíalo al Portal Inversor o al Deal Room del proyecto (ej. https://snarai.com o /portal).
+   - Si el interlocutor es un desarrollador, agencia, CTO o equipo técnico que busca integrar APIs, SDKs o Webhooks: invítalo de inmediato a la Consola de Desarrolladores en https://dash.pandoras.finance/developers y preséntale la suite:
+     * Sandbox Keys automáticas (pk_grow_test_...) para pruebas seguras.
+     * Webhook Processor con verificación HMAC SHA-256 en header X-Pandoras-Signature.
+     * Hermes A2A (Agent-to-Agent) Interface en /api/v1/hermes/a2a/chat para orquestar bots.
+     * Ingestión de eventos en /api/v1/integrations/events y SDK @pandoras/sdk.
+     * Hermes Drawer Copilot integrado directamente en la consola web para asistirlos en vivo.`,
+        status: 'ACTIVE',
+        dimension: 'developers',
+        visibility: 'PUBLIC',
       },
     ] : [];
 

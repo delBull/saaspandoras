@@ -208,9 +208,17 @@ export class HermesRuntime implements HermesCognitiveRuntime {
       await ClaimContractEngine.getOrLoadContract(canonicalTenantId).catch(() => undefined);
 
       // Step 2: Load Effective Cognitive Context (DB layer)
+      const rawInterlocutorInit = (controlPlaneContext as any).interlocutor || controlPlaneContext.identity;
       const effectiveContext = await CognitiveContextBuilder.buildEffectiveContext(
         canonicalTenantId,
         controlPlaneContext.actorId,
+        {
+          channel: (controlPlaneContext as any).channel,
+          role: (controlPlaneContext as any).role,
+          permissions: (controlPlaneContext as any).permissions,
+          identity: (controlPlaneContext as any).identity,
+          interlocutor: rawInterlocutorInit,
+        }
       );
 
       // --- PROSPECT INTELLIGENCE INJECTION (P1-P5) ---

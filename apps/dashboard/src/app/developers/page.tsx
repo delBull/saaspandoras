@@ -21,12 +21,15 @@ import {
   RefreshCw,
   Shield,
   Activity,
-  LineChart
+  LineChart,
+  Sparkles,
+  Bot
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getDashboardDomain } from '@saasfly/shared';
 import { toast } from 'sonner';
+import { HermesAmbientDrawer } from '@/components/hermes-portal/HermesAmbientDrawer';
 
 interface Project {
   id: number;
@@ -49,9 +52,17 @@ export default function DevelopersPage() {
   const [showBetaModal, setShowBetaModal] = useState(false);
   const [discordHandle, setDiscordHandle] = useState('');
   const [submittingBeta, setSubmittingBeta] = useState(false);
+  const [hermesDrawerOpen, setHermesDrawerOpen] = useState(false);
 
   useEffect(() => {
     fetchProjects();
+    // Check if user came from WhatsApp or external link requesting Hermes Copilot
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('hermes') === 'open' || params.get('ref')?.startsWith('wa') || params.get('assistant') === 'true') {
+        setHermesDrawerOpen(true);
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -529,6 +540,16 @@ console.log("Historial de entregas:", logs);`
             <p className="max-w-2xl text-xl text-zinc-400 font-light leading-relaxed">
               Integra la infraestructura definitiva de Pandoras con fragmentos de código dinámicos.
             </p>
+            <div className="flex flex-wrap items-center gap-3 pt-2">
+              <Button
+                onClick={() => setHermesDrawerOpen(true)}
+                className="h-11 px-5 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white font-bold shadow-lg shadow-indigo-500/20 hover:opacity-90 flex items-center gap-2"
+              >
+                <Sparkles className="w-4 h-4" />
+                <span>Hermes Dev Copilot</span>
+                <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-white/20">Omnipresente</span>
+              </Button>
+            </div>
           </motion.div>
 
           {/* Project Selector - Premium Style */}
@@ -1262,6 +1283,32 @@ console.log("Historial de entregas:", logs);`
           </div>
         )}
       </AnimatePresence>
+
+      {/* Hermes Omnipresente Ambient Drawer */}
+      <HermesAmbientDrawer
+        isOpen={hermesDrawerOpen}
+        onClose={() => setHermesDrawerOpen(false)}
+        organizationSlug={selectedProject?.slug || 'pandoras'}
+        organizationName={selectedProject?.title || "Pandora's Growth OS"}
+      />
+
+      {/* Floating Action Button for Mobile-First & Desktop Quick Access */}
+      <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-2">
+        <button
+          onClick={() => setHermesDrawerOpen(!hermesDrawerOpen)}
+          className="group relative flex items-center gap-3 px-4 py-3 sm:px-5 sm:py-3.5 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white rounded-full shadow-2xl shadow-indigo-500/30 border border-white/20 transition-all hover:scale-105 active:scale-95"
+          aria-label="Abrir Hermes Dev Copilot"
+        >
+          <div className="relative">
+            <Bot className="w-5 h-5 text-white animate-pulse" />
+            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-zinc-900" />
+          </div>
+          <span className="text-xs sm:text-sm font-bold tracking-wide">Hermes Copilot</span>
+          <span className="hidden sm:inline-block text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-white/20">
+            Omnipresente
+          </span>
+        </button>
+      </div>
 
       </div>
     </div>

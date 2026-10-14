@@ -76,24 +76,28 @@ export default async function middleware(
   req: NextRequest,
   event: NextFetchEvent,
 ) {
-  // Check if current path requires skipping middleware
+  const pathname = req.nextUrl.pathname;
+
+  // 1. Instant Edge bypass for static and public landing routes (0ms CPU)
   if (
-    req.nextUrl.pathname.startsWith("/api/auth") ||
-    req.nextUrl.pathname.includes("/api/auth/callback") ||
+    pathname === "/" ||
+    pathname.startsWith("/v2") ||
+    pathname.startsWith("/v3") ||
+    pathname.startsWith("/institutional-book") ||
+    pathname.startsWith("/libros") ||
     isNoNeedProcess(req)
   ) {
+    if (pathname === "/") {
+      return NextResponse.redirect(new URL("/v3", req.url));
+    }
     return NextResponse.next();
   }
 
-
-  // ── /v2 is the new root ──────────────────────────────────────────────────
-  const pathname = req.nextUrl.pathname;
-  if (pathname === "/") {
-    return NextResponse.redirect(new URL("/v3", req.url));
-  }
-  // All /v2, /v3 and static public routes are fully public — no auth, no locale injection
-  // /libros/* has its own server-side HMAC magic link gate — let it through
-  if (pathname.startsWith("/v2") || pathname.startsWith("/v3") || pathname.startsWith("/institutional-book") || pathname.startsWith("/libros")) {
+  // 2. Check if current path requires skipping middleware
+  if (
+    pathname.startsWith("/api/auth") ||
+    pathname.includes("/api/auth/callback")
+  ) {
     return NextResponse.next();
   }
 
