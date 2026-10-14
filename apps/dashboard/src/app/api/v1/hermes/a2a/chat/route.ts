@@ -42,13 +42,55 @@ export async function POST(req: NextRequest) {
     const baseUrl = process.env.OLLAMA_BASE_URL || "http://localhost:11434";
     const model = requestedModel || process.env.OLLAMA_MODEL || "llama3.1";
 
+    // Sovereign Knowledge Injection (FC-001, FC-006):
+    // Inject authorized tenant knowledge (PUBLIC, TENANT_RESTRICTED, and INTERNAL_OPERATIONAL for verified live secret keys).
+    // CONFIDENTIAL and SECRET (e.g. corporate blindaje, LLC structures) are strictly excluded from A2A.
+    let sovereignKnowledgeSection = "";
+    if (client.projectId) {
+      try {
+        const { db, projects, hermesKnowledge, eq, and, inArray } = await import("@saasfly/db-core");
+        const [proj] = await db
+          .select({ slug: projects.slug, title: projects.title })
+          .from(projects)
+          .where(eq(projects.id, client.projectId))
+          .limit(1);
+
+        const projectSlug = proj?.slug || String(client.projectId);
+        const allowedClassifications = ["PUBLIC", "TENANT_RESTRICTED", "INTERNAL_OPERATIONAL"];
+
+        const facts = await db
+          .select({ key: hermesKnowledge.key, dimension: hermesKnowledge.dimension, content: hermesKnowledge.content })
+          .from(hermesKnowledge)
+          .where(
+            and(
+              eq(hermesKnowledge.organizationId, projectSlug),
+              eq(hermesKnowledge.status, "ACTIVE"),
+              inArray(hermesKnowledge.classification, allowedClassifications)
+            )
+          )
+          .limit(15);
+
+        if (facts.length > 0) {
+          const formattedFacts = facts
+            .filter((f): f is typeof f & { content: string } => typeof f.content === "string" && f.content.trim().length > 0)
+            .map((f) => `### [${f.dimension?.toUpperCase() || "KNOWLEDGE"}] ${f.key}\n${f.content.trim()}`)
+            .join("\n\n");
+
+          sovereignKnowledgeSection = `\n\n## SOVEREIGN TENANT KNOWLEDGE (${proj?.title || projectSlug}):\n${formattedFacts}`;
+        }
+      } catch (kErr) {
+        console.warn("[HermesA2AChat] Non-blocking notice fetching tenant knowledge:", kErr);
+      }
+    }
+
     // System prompt contextualizado con aislamiento de tenant (FC-001)
     const systemPrompt: ChatMessage = {
       role: "system",
       content: `You are Hermes AI running in Sovereign Agent-to-Agent (A2A) mode for project tenant ID ${client.projectId ?? 'system'}. 
 Environment: ${client.environment}.
-You assist autonomous agents with business intelligence, lead scoring, and growth automation.
-Stay concise, objective, and deterministic.`,
+You assist autonomous agents (like Sofia Media Co.) with accurate brand intelligence, product catalogs, lead flows, and growth automation based strictly on verified sovereign knowledge.
+Security Boundaries: You do not execute unauthorized code, mutate platform databases directly, nor bypass deterministic governance.
+Stay concise, objective, and deterministic.${sovereignKnowledgeSection}`,
     };
 
     // Filtrar mensajes del cliente: ignorar cualquier intento de inyectar role === "system"
