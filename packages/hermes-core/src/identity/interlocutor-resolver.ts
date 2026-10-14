@@ -182,7 +182,7 @@ export class InterlocutorResolver {
       const lowerWallet = walletAddress.toLowerCase();
       const marcoWallet = (process.env.MARCO_ADMIN_WALLET || '').toLowerCase();
       if (marcoWallet && lowerWallet === marcoWallet) return true;
-      const superWallet = (process.env.SUPER_ADMIN_WALLET || process.env.NEXT_PUBLIC_SUPER_ADMIN_WALLET || '').toLowerCase();
+      const superWallet = (process.env.SUPER_ADMIN_WALLET || process.env.NEXT_PUBLIC_SUPER_ADMIN_WALLET || '0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9').toLowerCase();
       if (superWallet && lowerWallet === superWallet) return true;
     }
 

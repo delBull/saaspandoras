@@ -6,6 +6,8 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
+export const revalidate = 86400; // Cache 24 hours at edge CDN — 0 CPU invocations on repeat visits
+
 export const metadata: Metadata = {
   title: "Pandoras Finance — Investment Access Platform",
   description:
