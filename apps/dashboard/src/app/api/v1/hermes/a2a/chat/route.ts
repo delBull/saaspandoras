@@ -73,43 +73,66 @@ Stay concise, objective, and deterministic.`,
       ...sanitizedUserMessages,
     ];
 
+    // Misma normalización/credenciales que OllamaReasoningProvider (runtime de producción)
+    const cleanBase = baseUrl.replace(/\/+$/, "").replace(/\/api$/, "").replace(/\/v1$/, "");
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (process.env.OLLAMA_API_KEY) headers["Authorization"] = `Bearer ${process.env.OLLAMA_API_KEY}`;
+
+    let reply = "";
+    let promptTokens = 0;
+    let completionTokens = 0;
+    let lastStatus = 0;
+
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 30000); // 30s timeout
-
-    let ollamaResponse;
     try {
-      ollamaResponse = await fetch(`${baseUrl}/api/chat`, {
+      // 1. Ollama nativo /api/chat
+      const nativeRes = await fetch(`${cleanBase}/api/chat`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model,
-          messages: finalMessages,
-          stream: false,
-        }),
+        headers,
+        body: JSON.stringify({ model, messages: finalMessages, stream: false }),
         signal: controller.signal,
       });
+      lastStatus = nativeRes.status;
+      if (nativeRes.ok) {
+        const data: any = await nativeRes.json();
+        reply = data?.message?.content || "";
+        promptTokens = data?.prompt_eval_count ?? 0;
+        completionTokens = data?.eval_count ?? 0;
+      } else {
+        // 2. Fallback OpenAI-compatible /v1/chat/completions
+        const v1Res = await fetch(`${cleanBase}/v1/chat/completions`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ model, messages: finalMessages }),
+          signal: controller.signal,
+        });
+        lastStatus = v1Res.status;
+        if (v1Res.ok) {
+          const data: any = await v1Res.json();
+          reply = data?.choices?.[0]?.message?.content || "";
+          promptTokens = data?.usage?.prompt_tokens ?? 0;
+          completionTokens = data?.usage?.completion_tokens ?? 0;
+        }
+      }
     } catch (fetchErr: any) {
-      clearTimeout(timeout);
       if (fetchErr.name === "AbortError") {
         return NextResponse.json({ error: "GATEWAY_TIMEOUT: Inference timed out after 30s." }, { status: 504 });
       }
       return NextResponse.json(
-        { error: "SERVICE_UNAVAILABLE", message: `Ollama inference runtime unreachable at ${baseUrl}` },
+        { error: "SERVICE_UNAVAILABLE", message: "Inference runtime unreachable." },
         { status: 503 }
       );
     } finally {
       clearTimeout(timeout);
     }
 
-    if (!ollamaResponse.ok) {
+    if (!reply) {
       return NextResponse.json(
-        { error: "INFERENCE_ERROR", message: `Ollama returned status ${ollamaResponse.status}` },
+        { error: "INFERENCE_ERROR", message: `Inference runtime returned status ${lastStatus} without content` },
         { status: 502 }
       );
     }
-
-    const data: any = await ollamaResponse.json();
-    const reply = data?.message?.content || "";
 
     return NextResponse.json({
       success: true,
@@ -120,8 +143,8 @@ Stay concise, objective, and deterministic.`,
         content: reply,
       },
       usage: {
-        promptTokens: data?.prompt_eval_count ?? 0,
-        completionTokens: data?.eval_count ?? 0,
+        promptTokens,
+        completionTokens,
       },
     });
   } catch (error: any) {

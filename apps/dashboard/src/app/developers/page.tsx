@@ -1293,7 +1293,42 @@ console.log("Historial de entregas:", logs);`
       />
 
       {/* Floating Action Button for Mobile-First & Desktop Quick Access */}
-      <div className={`fixed bottom-6 right-6 max-sm:bottom-[calc(1rem+env(safe-area-inset-bottom))] max-sm:right-4 z-40 flex flex-col items-end gap-2 ${hermesDrawerOpen ? 'max-sm:hidden' : ''}`}>
+      {/* Mobile bottom dock (sm:hidden): quick access Keys / Webhooks / Hermes */}
+      <div className="sm:hidden h-24" aria-hidden="true" />
+      <nav
+        aria-label="Acceso rápido desarrolladores"
+        className={`sm:hidden fixed inset-x-3 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-40 flex items-stretch gap-1 rounded-2xl border border-white/10 bg-zinc-900/90 p-1.5 shadow-2xl shadow-black/50 backdrop-blur-xl ${hermesDrawerOpen ? 'hidden' : ''}`}
+      >
+        <button
+          type="button"
+          onClick={() => { setActiveTab('api'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+          aria-pressed={activeTab === 'api'}
+          className={`flex-1 flex flex-col items-center justify-center gap-1 rounded-xl py-2 text-[11px] font-semibold transition-colors active:scale-95 ${activeTab === 'api' ? 'bg-indigo-500/15 text-indigo-300' : 'text-zinc-400'}`}
+        >
+          <Lock className="w-5 h-5" />
+          Keys
+        </button>
+        <button
+          type="button"
+          onClick={() => { setActiveTab('webhooks'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+          aria-pressed={activeTab === 'webhooks'}
+          className={`flex-1 flex flex-col items-center justify-center gap-1 rounded-xl py-2 text-[11px] font-semibold transition-colors active:scale-95 ${activeTab === 'webhooks' ? 'bg-indigo-500/15 text-indigo-300' : 'text-zinc-400'}`}
+        >
+          <Zap className="w-5 h-5" />
+          Webhooks
+        </button>
+        <button
+          type="button"
+          onClick={() => setHermesDrawerOpen(true)}
+          aria-label="Abrir Hermes Dev Copilot"
+          className="flex-[1.4] flex flex-col items-center justify-center gap-1 rounded-xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 py-2 text-[11px] font-bold text-white active:scale-95"
+        >
+          <Bot className="w-5 h-5" />
+          Hermes Copilot
+        </button>
+      </nav>
+
+      <div className="max-sm:hidden fixed bottom-6 right-6 z-40 flex flex-col items-end gap-2">
         <button
           onClick={() => setHermesDrawerOpen(!hermesDrawerOpen)}
           className="group relative flex items-center gap-3 px-4 py-3 sm:px-5 sm:py-3.5 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white rounded-full shadow-2xl shadow-indigo-500/30 border border-white/20 transition-all hover:scale-105 active:scale-95"
