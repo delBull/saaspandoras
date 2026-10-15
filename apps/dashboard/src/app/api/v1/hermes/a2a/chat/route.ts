@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { integrationGuard } from "@/lib/integrations/guard";
+import { checkTenantRateLimit, buildRateLimitHeaders } from "@saasfly/hermes-core";
+import { enforceA2AEnvironment } from "@/lib/integrations/a2a-env";
 
 export const runtime = "nodejs";
 
@@ -28,6 +30,21 @@ export async function POST(req: NextRequest) {
     }
 
     const { client } = guardResult;
+
+    // H5: Environment allowlist enforcement + tenant-scoped rate limiting (anti-abuse).
+    const envCheck = enforceA2AEnvironment(req, client.environment);
+    if (!envCheck.ok) {
+      return NextResponse.json({ error: envCheck.error }, { status: envCheck.status });
+    }
+    const rl = checkTenantRateLimit(String(client.projectId ?? client.id), 30, 60_000);
+    const rlHeaders = buildRateLimitHeaders(rl);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: "RATE_LIMIT_EXCEEDED", retryAfter: rl.retryAfterSeconds },
+        { status: 429, headers: rlHeaders }
+      );
+    }
+
     const body = await req.json().catch(() => ({}));
     const { messages, model: requestedModel } = body;
 

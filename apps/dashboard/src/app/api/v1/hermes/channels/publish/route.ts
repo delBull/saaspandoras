@@ -15,6 +15,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { resolveDemandSession } from '@/app/api/v1/hermes/demand/route';
 import { CapabilityGrantService } from '@saasfly/hermes-core';
 import { directChannelPublisher } from '@saasfly/hermes-core';
+import { checkTenantRateLimit, buildRateLimitHeaders } from '@saasfly/hermes-core';
+import { enforceA2AEnvironment } from '@/lib/integrations/a2a-env';
 import type { PublicationPayload } from '@saasfly/hermes-core';
 
 export const dynamic = 'force-dynamic';
@@ -26,6 +28,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { ok: false, error: 'Authentication required.' },
         { status: 401 }
+      );
+    }
+
+    // H5: Environment allowlist enforcement (integration-key sessions).
+    const envCheck = enforceA2AEnvironment(req, session.environment);
+    if (!envCheck.ok) {
+      return NextResponse.json({ ok: false, error: envCheck.error }, { status: envCheck.status });
+    }
+
+    // H5: Tenant-scoped rate limiting (anti-abuse). Publishing has real external side effects.
+    const rl = checkTenantRateLimit(session.canonicalOrgId, 20, 60_000);
+    const rlHeaders = buildRateLimitHeaders(rl);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { ok: false, error: 'RATE_LIMIT_EXCEEDED', message: 'Límite de publicaciones por minuto excedido para este tenant.', retryAfter: rl.retryAfterSeconds },
+        { status: 429, headers: rlHeaders }
       );
     }
 
@@ -64,6 +82,19 @@ export async function POST(req: NextRequest) {
       integrationId,
       typedPayload
     );
+
+    // H4: Tamper-evident audit trail for the publish action (actor + tenant scoped).
+    const { SecurityAuditLogger } = await import('@saasfly/hermes-core');
+    await SecurityAuditLogger.logEvent({
+      organizationId: session.canonicalOrgId,
+      actorId: session.actorId,
+      eventType: 'DISTRIBUTION_PUBLISHED',
+      severity: receipt.success ? 'INFO' : 'WARN',
+      policyDecision: receipt.success ? 'ALLOW' : 'DENY',
+      correlationId: typedPayload.idempotencyKey || `pub_${integrationId}_${Date.now()}`,
+      artifactId: integrationId,
+      metadata: { channel: integrationId, success: receipt.success },
+    }).catch((err) => console.error('[Hermes Publish API] Failed to log publish audit:', err));
 
     return NextResponse.json(
       {

@@ -4,6 +4,9 @@ import { hermesMediaRequests, hermesGenerationAttempts, hermesArtifacts } from '
 import { eq, and } from "@saasfly/db-core";
 import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
 import { TenantAuthorityService } from '@saasfly/hermes-core';
+import { checkTenantRateLimit, buildRateLimitHeaders } from '@saasfly/hermes-core';
+import { integrationKeyMatchesTenant } from '@/lib/integrations/a2a-tenant-match';
+import { enforceA2AEnvironment } from '@/lib/integrations/a2a-env';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,7 +38,7 @@ export async function GET(
       );
     }
 
-    // 2. Validate tenant authority / portal session (Fail-closed)
+    // 2. Validate tenant authority / portal session / API key (Fail-closed)
     const canonical = await TenantAuthorityService.resolveCanonicalTenant(request.tenantId);
     if (!canonical) {
       return NextResponse.json(
@@ -44,23 +47,94 @@ export async function GET(
       );
     }
 
-    let ctx;
-    try {
-      ctx = await resolvePortalContext(canonical.projectSlug);
-    } catch (err: any) {
-      if (err?.code === 'ORGANIZATION_ACCESS_DENIED' || err?.code === 'NO_SESSION' || err?.code === 'INVALID_SESSION') {
+    let authorizedSlug: string;
+    let clientEnvironment: 'staging' | 'production' | undefined = undefined;
+    const authHeader = req.headers.get('authorization') || '';
+    const bearer = authHeader.replace(/^Bearer\s+/i, '').trim();
+
+    if (bearer && bearer.startsWith('sk_')) {
+      try {
+        const { IntegrationKeyService } = await import('@/lib/integrations/auth');
+        const client = await IntegrationKeyService.validateKey(bearer);
+        
+        // H3: Authorize the key against the requested tenant (fail-closed). Handles the
+        // 'pandoras' ecosystem-root sentinel (projectId 0) WITHOUT granting cross-tenant access.
+        const isProjectMatch = client
+          ? await integrationKeyMatchesTenant(client.projectId, canonical)
+          : false;
+
+        if (!client || !isProjectMatch) {
+          return NextResponse.json(
+            { ok: false, error: `Not authorized to access media requests for tenant '${canonical.projectSlug}'.` },
+            { status: 403 }
+          );
+        }
+
+        // H2: Scope check (Strict fail-closed: empty permissions denies operational access)
+        const permissions = Array.isArray(client.permissions) ? (client.permissions as string[]) : [];
+        const hasMediaPermission = 
+          permissions.includes('hermes_a2a') ||
+          permissions.includes('media:generate') ||
+          permissions.includes('media:read') ||
+          permissions.includes('media:create') ||
+          permissions.includes('*');
+
+        if (!hasMediaPermission) {
+          return NextResponse.json(
+            { ok: false, error: "FORBIDDEN_CAPABILITY", message: "FORBIDDEN_CAPABILITY: Integration Key lacks required capability for media inspection." },
+            { status: 403 }
+          );
+        }
+
+        authorizedSlug = canonical.projectSlug.toLowerCase();
+        clientEnvironment = client.environment as 'staging' | 'production';
+      } catch (keyErr) {
         return NextResponse.json(
-          { ok: false, error: `Not authorized to access media requests for tenant '${canonical.projectSlug}'.` },
-          { status: 403 }
+          { ok: false, error: 'Failed to validate integration key.' },
+          { status: 401 }
         );
       }
+    } else if (bearer && bearer.startsWith('pk_')) {
+      // H1: Reject public keys for media inspection
       return NextResponse.json(
-        { ok: false, error: `Portal session validation failed: ${err?.message || 'unknown error'}` },
-        { status: 401 }
+        { ok: false, error: 'Public key (pk_) cannot be used for media inspection operations. Secret key (sk_) required.' },
+        { status: 403 }
+      );
+    } else {
+      let ctx;
+      try {
+        ctx = await resolvePortalContext(canonical.projectSlug);
+        authorizedSlug = ctx.organization.slug.toLowerCase();
+      } catch (err: any) {
+        if (err?.code === 'ORGANIZATION_ACCESS_DENIED' || err?.code === 'NO_SESSION' || err?.code === 'INVALID_SESSION') {
+          return NextResponse.json(
+            { ok: false, error: `Not authorized to access media requests for tenant '${canonical.projectSlug}'.` },
+            { status: 403 }
+          );
+        }
+        return NextResponse.json(
+          { ok: false, error: `Portal session validation failed: ${err?.message || 'unknown error'}` },
+          { status: 401 }
+        );
+      }
+    }
+
+    // H5: Environment allowlist enforcement (integration-key sessions).
+    const envCheck = enforceA2AEnvironment(req, clientEnvironment);
+    if (!envCheck.ok) {
+      return NextResponse.json({ ok: false, error: envCheck.error }, { status: envCheck.status });
+    }
+
+    // H5: Tenant-scoped rate limiting (anti-abuse).
+    const rl = checkTenantRateLimit(canonical.canonicalOrgId, 60, 60_000);
+    const rlHeaders = buildRateLimitHeaders(rl);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { ok: false, error: 'RATE_LIMIT_EXCEEDED', message: 'Límite de solicitudes por minuto excedido para este tenant.', retryAfter: rl.retryAfterSeconds },
+        { status: 429, headers: rlHeaders }
       );
     }
 
-    const authorizedSlug = ctx.organization.slug.toLowerCase();
     if (authorizedSlug !== request.tenantId.toLowerCase()) {
       return NextResponse.json(
         { ok: false, error: 'Unauthorized: Cross-tenant request inspection is forbidden.' },
