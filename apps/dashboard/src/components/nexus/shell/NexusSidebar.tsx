@@ -72,7 +72,7 @@ export function NexusSidebar({ auth, onAction }: NexusSidebarProps) {
       label: "KNOWLEDGE",
       items: [
         { name: "Knowledge", href: "#", action: "KNOWLEDGE", icon: BookOpen },
-        { name: "Presentations", href: "/pitch/institutional-os", icon: MonitorPlay },
+        { name: "Presentations", href: "/nexus/presentations", icon: MonitorPlay },
       ]
     },
     {
