@@ -6,7 +6,9 @@
  *
  * Enforces:
  * 1. Zero-Secret Invariant: No raw private keys, API secrets, or DB strings in prompt context.
- * 2. Classification Invariant: No SECRET or INTERNAL_OPERATIONAL facts in tenant contexts.
+ * 2. Classification Invariant: No SECRET, CONFIDENTIAL or INTERNAL_OPERATIONAL facts in tenant
+ *    contexts unless the actor is explicitly authorized for that tier (defense-in-depth alongside
+ *    the upstream disclosure lattice in context-adapter.ts).
  * 3. Status Invariant: Every fact entering the LLM MUST be explicitly 'ACTIVE'.
  */
 
@@ -18,6 +20,12 @@ export interface ContextHygieneOptions {
    * while SECRET raw keys remain unconditionally blocked.
    */
   allowInternalOperationalUse?: boolean;
+  /**
+   * When true, allows CONFIDENTIAL institutional facts (constitution, charters,
+   * treasury books) for authorized actors (founders / platform master scope).
+   * SECRET remains unconditionally blocked regardless of this flag.
+   */
+  allowConfidentialUse?: boolean;
 }
 
 export interface ContextHygieneResult {
@@ -85,6 +93,18 @@ export class ContextHygieneValidator {
           });
           factRejected = true;
         }
+      }
+
+      // CONFIDENTIAL tier (institutional constitutions, charters, treasury books):
+      // permitted only for explicitly authorized actors (founders / platform master).
+      if (fact.classification === 'CONFIDENTIAL' && !options.allowConfidentialUse) {
+        violations.push({
+          code: 'CONFIDENTIAL_DISCLOSURE',
+          severity: 'BLOCK',
+          message: `Pre-LLM Hygiene: Fact '${fact.key}' contains CONFIDENTIAL institutional knowledge not authorized for this actor's reasoning context.`,
+          source: fact.id
+        });
+        factRejected = true;
       }
 
       if (!factRejected) {

@@ -91,21 +91,14 @@ export async function POST(req: NextRequest) {
     const effectiveName = interlocutor.name || operatorContext?.name || (isBoss ? 'Marco' : 'Operador');
     const actorId = interlocutor.actorId || operatorContext?.email || operatorContext?.id || `nexus_${validatedRole.toLowerCase()}`;
 
-    // Cryptographically bind the session as required by HermesRuntime Hardening (Fase A - P0)
-    const crypto = await import('crypto');
+    // Internal system session: authority derived from the authenticated Nexus session above (getNexusAuthContext).
     const orgId = auth.canonicalOrgId || 'pandoras';
-    const boundActorSession = ActorIdentityBindingService.createBoundSession(
-      {
-        actorId,
-        tenantId: orgId,
-        authProvider: 'PORTAL_INTERNAL',
-        proofSignature: crypto.randomBytes(32).toString('hex'),
-        issuedAt: Math.floor(Date.now() / 1000),
-        nonce: crypto.randomUUID(),
-      },
-      isBoss ? 'INTERNAL_OPERATIONAL' : 'CONFIDENTIAL',
-      3600
-    );
+    const boundActorSession = ActorIdentityBindingService.createInternalSystemSession({
+      actorId,
+      tenantId: orgId,
+      clearanceLevel: isBoss ? 'INTERNAL_OPERATIONAL' : 'CONFIDENTIAL',
+      ttlSeconds: 3600,
+    });
 
     const controlPlaneContext: any = {
       channel: 'INTERNAL_DASHBOARD', // K27.6: authoritative ceiling source (CONFIDENTIAL)

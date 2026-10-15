@@ -521,8 +521,29 @@ export class HermesRuntime implements HermesCognitiveRuntime {
       );
 
       // Step 3b: Pre-LLM Context Hygiene Validation (Phase 2.2 / 3.0 Gate T12)
+      const actorRole = (controlPlaneContext as any)?.role || '';
+      const isBossOrOwner = Boolean(
+        (controlPlaneContext as any)?.identity?.isBoss ||
+        (controlPlaneContext as any)?.interlocutor?.isBoss ||
+        actorRole === 'FOUNDER_BOSS' ||
+        actorRole === 'OWNER' ||
+        actorRole === 'SUPER_ADMIN'
+      );
+      const isInternalScope = canonicalTenantId === 'pandoras' || canonicalTenantId === 'master';
+      const allowInternalOperationalUse = Boolean(
+        isBossOrOwner ||
+        (isInternalScope && ['ADMIN', 'OPERATOR'].includes(actorRole)) ||
+        (controlPlaneContext as any)?.permissions?.includes('knowledge.read')
+      );
+      // CONFIDENTIAL (constitution, charters, treasury books) is reserved for the founder
+      // and platform master-scope owners. SECRET stays unconditionally blocked in hygiene.
+      const allowConfidentialUse = Boolean(
+        isBossOrOwner ||
+        (isInternalScope && ['OWNER', 'SUPER_ADMIN'].includes(actorRole))
+      );
+
       const { sanitizedContext: reasoningContext, violations: hygieneViolations } =
-        ContextHygieneValidator.validate(rawReasoningContext);
+        ContextHygieneValidator.validate(rawReasoningContext, { allowInternalOperationalUse, allowConfidentialUse });
 
       // Step 3d: Active Journey Skills (K11-HITO-2: Dynamic Skill Loader)
       // Pure read of the actor's current Journey Stage → procedure Markdown

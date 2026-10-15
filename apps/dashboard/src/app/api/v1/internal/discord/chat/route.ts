@@ -39,18 +39,13 @@ export async function POST(req: Request) {
     const actorId = `discord_${discordUserId}`;
     const conversationId = `conv_discord_${discordUserId}_${channelId}`;
 
-    const boundActorSession = ActorIdentityBindingService.createBoundSession(
-      {
-        actorId,
-        tenantId: organizationId,
-        authProvider: 'PORTAL_INTERNAL',
-        nonce: `nonce_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-        proofSignature: `sig_${organizationId}_${Date.now()}`,
-        issuedAt: Date.now(),
-      },
-      'TENANT_RESTRICTED',
-      3600
-    );
+    // Internal system session: authority derived from the verified INTERNAL_SECRET + DB collaborator gate above.
+    const boundActorSession = ActorIdentityBindingService.createInternalSystemSession({
+      actorId,
+      tenantId: organizationId,
+      clearanceLevel: 'TENANT_RESTRICTED',
+      ttlSeconds: 3600,
+    });
 
     const controlPlaneContext: any = {
       organizationId,

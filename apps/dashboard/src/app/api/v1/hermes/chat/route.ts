@@ -34,7 +34,6 @@ export async function POST(req: NextRequest) {
       message,
       conversationId,
       // bodyActorId is completely ignored for authority. Identity is 100% server-derived.
-      authProvider = 'PORTAL_INTERNAL',
       channelType = 'AUTHENTICATED_WEB',
       surface,
       handoffTarget,
@@ -102,18 +101,13 @@ export async function POST(req: NextRequest) {
       tenantSlug: effectiveOrgId,
     });
 
-    const boundActorSession = ActorIdentityBindingService.createBoundSession(
-      {
-        actorId: interlocutor.actorId,
-        tenantId: effectiveOrgId,
-        authProvider,
-        nonce: `nonce_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-        proofSignature: auth.sessionId,
-        issuedAt: Date.now(),
-      },
-      channelType === 'INTERNAL_WORKBENCH' || interlocutor.isBoss ? 'CONFIDENTIAL' : 'TENANT_RESTRICTED',
-      3600
-    );
+    // Internal system session: authority derived from the canonical auth session resolver above (fail-closed).
+    const boundActorSession = ActorIdentityBindingService.createInternalSystemSession({
+      actorId: interlocutor.actorId,
+      tenantId: effectiveOrgId,
+      clearanceLevel: channelType === 'INTERNAL_WORKBENCH' || interlocutor.isBoss ? 'CONFIDENTIAL' : 'TENANT_RESTRICTED',
+      ttlSeconds: 3600,
+    });
 
     // 4. ControlPlaneContext with cryptographic session & interlocutor
     const controlPlaneContext: any = {

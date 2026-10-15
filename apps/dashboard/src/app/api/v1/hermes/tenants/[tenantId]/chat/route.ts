@@ -129,18 +129,13 @@ export async function POST(
       tenantSlug: canonical.canonicalOrgId,
     });
 
-    const boundActorSession = ActorIdentityBindingService.createBoundSession(
-      {
-        actorId: interlocutor.actorId,
-        tenantId: canonical.canonicalOrgId,
-        authProvider: 'TELEGRAM_INIT_DATA',
-        nonce: `tg_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
-        proofSignature: channelSecret, // H1 Hardening: Use the actual verified channel secret as proof, no implicit fallback
-        issuedAt: Date.now(),
-      },
-      'TENANT_RESTRICTED',
-      3600
-    );
+    // Internal system session: authority derived from the verified channel-secret gate above (no client tampering).
+    const boundActorSession = ActorIdentityBindingService.createInternalSystemSession({
+      actorId: interlocutor.actorId,
+      tenantId: canonical.canonicalOrgId,
+      clearanceLevel: 'TENANT_RESTRICTED',
+      ttlSeconds: 3600,
+    });
 
     // 4. ControlPlaneContext with Verified Interlocutor Identity
     const controlPlaneContext = {

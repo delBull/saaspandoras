@@ -28,18 +28,12 @@ export class HermesOnboardingOrchestrator {
   }> {
     const effectiveContext: ControlPlaneContext = {
       ...controlPlaneContext,
-      boundActorSession: controlPlaneContext.boundActorSession ?? ActorIdentityBindingService.createBoundSession(
-        {
-          actorId: controlPlaneContext.actorId,
-          tenantId: organizationId,
-          authProvider: 'PORTAL_INTERNAL',
-          proofSignature: `onboarding_sig_${Date.now()}_${controlPlaneContext.actorId}`,
-          issuedAt: Date.now(),
-          nonce: `onb_nonce_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
-        },
-        'TENANT_RESTRICTED',
-        3600
-      ),
+      boundActorSession: controlPlaneContext.boundActorSession ?? ActorIdentityBindingService.createInternalSystemSession({
+        actorId: controlPlaneContext.actorId,
+        tenantId: organizationId,
+        clearanceLevel: 'TENANT_RESTRICTED',
+        ttlSeconds: 3600,
+      }),
     };
 
     // 1. If we are in CHANNEL_SETUP, intercept and don't use LLM to collect secrets

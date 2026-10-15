@@ -520,18 +520,12 @@ export class HermesQARunner {
     const runtime = getDefaultRuntime();
 
     const actorId = `qa_actor_${scenario.id}`;
-    const boundActorSession = ActorIdentityBindingService.createBoundSession(
-      {
-        actorId,
-        tenantId: orgId,
-        authProvider: 'PORTAL_INTERNAL',
-        proofSignature: `qa_sig_${Date.now()}_${scenario.id}`,
-        issuedAt: Date.now(),
-        nonce: `qa_nonce_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
-      },
-      'CONFIDENTIAL',
-      3600
-    );
+    const boundActorSession = ActorIdentityBindingService.createInternalSystemSession({
+      actorId,
+      tenantId: orgId,
+      clearanceLevel: 'CONFIDENTIAL',
+      ttlSeconds: 3600,
+    });
 
     const cpCtx: ControlPlaneContext = {
       actorId,

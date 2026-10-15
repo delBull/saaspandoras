@@ -120,18 +120,13 @@ async function handler(req: Request, props: { params: Promise<{ projectId: strin
     // 3. Delegate to the Governed HermesRuntime (Runtime Parity & Tenant Boundary)
     const { getDefaultRuntime, ActorIdentityBindingService } = await import('@saasfly/hermes-core');
     const actorId = `tg_actor_${chatId}`;
-    const boundActorSession = ActorIdentityBindingService.createBoundSession(
-      {
-        actorId,
-        tenantId: projectSlug,
-        authProvider: 'TELEGRAM_INIT_DATA',
-        proofSignature: `proj_tg_sig_${Date.now()}_${chatId}`,
-        issuedAt: Date.now(),
-        nonce: `proj_tg_nonce_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
-      },
-      'PUBLIC',
-      1800
-    );
+    // Internal system session: authority derived from the verified Telegram secret token gate above.
+    const boundActorSession = ActorIdentityBindingService.createInternalSystemSession({
+      actorId,
+      tenantId: projectSlug,
+      clearanceLevel: 'PUBLIC',
+      ttlSeconds: 1800,
+    });
 
     const runtime = getDefaultRuntime();
     const runtimeResponse = await runtime.respond({

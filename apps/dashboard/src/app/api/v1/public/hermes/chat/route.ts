@@ -57,18 +57,13 @@ export async function POST(req: Request) {
 
     // Setup strictly limited Public Knowledge Scope
     const { ActorIdentityBindingService } = await import('@saasfly/hermes-core');
-    const boundActorSession = ActorIdentityBindingService.createBoundSession(
-      {
-        actorId: sessionId,
-        tenantId: orgContext.organizationId,
-        authProvider: 'PORTAL_INTERNAL',
-        proofSignature: `pub_sig_${Date.now()}_${sessionId}`,
-        issuedAt: Date.now(),
-        nonce: `pub_nonce_${Date.now()}_${crypto.randomBytes(6).toString('hex')}`,
-      },
-      'PUBLIC',
-      1800
-    );
+    // Internal system session: authority derived from the validated Public API Key + capability gate above.
+    const boundActorSession = ActorIdentityBindingService.createInternalSystemSession({
+      actorId: sessionId,
+      tenantId: orgContext.organizationId,
+      clearanceLevel: 'PUBLIC',
+      ttlSeconds: 1800,
+    });
 
     const restrictedScope: any = {
       organizationId: orgContext.organizationId,

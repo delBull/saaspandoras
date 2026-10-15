@@ -31,6 +31,8 @@ import {
   RuntimeMessage,
   RuntimeTrace,
   CanonicalMemoryFact,
+  KnowledgeClassificationTier,
+  CLASSIFICATION_LATTICE_RANK,
 } from './contracts';
 import { ConversationContext as EffectiveContext } from '../addons/context-merger';
 import { HermesSoulRegistry } from "../soul/snarai-soul";
@@ -95,7 +97,16 @@ export class CognitiveContextAdapter {
           continue;
         }
 
-        const classificationTier = (pack.classification || (['PUBLIC', 'TENANT_RESTRICTED', 'B2B_RESTRICTED', 'INTERNAL_OPERATIONAL', 'CONFIDENTIAL', 'SECRET'].includes(pack.visibility) ? pack.visibility : 'PUBLIC')) as any;
+        // Fail-closed classification resolution: only canonical lattice tiers are honored.
+        // An unrecognized or missing classification (e.g. 'UNCLASSIFIED', NULL) is NEVER
+        // downgraded to PUBLIC; it falls back to the conservative INTERNAL_OPERATIONAL tier.
+        const rawClassification = typeof pack.classification === 'string' ? pack.classification.toUpperCase() : undefined;
+        const rawVisibility = typeof pack.visibility === 'string' ? pack.visibility.toUpperCase() : undefined;
+        const classificationTier = (
+          rawClassification && rawClassification in CLASSIFICATION_LATTICE_RANK ? rawClassification :
+          rawVisibility && rawVisibility in CLASSIFICATION_LATTICE_RANK ? rawVisibility :
+          'INTERNAL_OPERATIONAL'
+        ) as KnowledgeClassificationTier;
         
         // Disclosure Clearance Lattice Gate (K26 / Phase 2.2 — Least Privilege Principle)
         // Authorization = f(Identity, TenantScope, Role, Capabilities/Permissions, DisclosurePolicy)
@@ -104,14 +115,8 @@ export class CognitiveContextAdapter {
         const tenantId = ((effectiveContext.core as any)?.tenantId || '').toLowerCase().replace(/^org_/, '');
         const actorPermissions: string[] = (effectiveContext.core as any)?.permissions || [];
 
-        const clearanceRank: Record<string, number> = {
-          PUBLIC: 1,
-          TENANT_RESTRICTED: 2,
-          B2B_RESTRICTED: 3,
-          INTERNAL_OPERATIONAL: 4,
-          CONFIDENTIAL: 5,
-          SECRET: 6,
-        };
+        // Canonical classification lattice (single source of truth — contracts.ts)
+        const clearanceRank = CLASSIFICATION_LATTICE_RANK as Record<string, number>;
 
         const isPlatformMasterScope = tenantId === 'pandoras' || tenantId === 'master';
         const hasGovernanceAdminCap = actorPermissions.includes('governance.admin') || actorPermissions.includes('claims.verify');
