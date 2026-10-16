@@ -14,7 +14,7 @@ import type {
 export const dynamic = 'force-dynamic';
 
 /**
- * Sanitizes and validates external URL against allowed domains or safe protocols.
+ * Sanitizes and validates external URL against allowed domains strictly (fail-closed).
  */
 function resolveSafeTargetUrl(rawUrl: string | null | undefined, allowedDomains: unknown): string | null {
   if (!rawUrl || typeof rawUrl !== 'string') return null;
@@ -23,19 +23,23 @@ function resolveSafeTargetUrl(rawUrl: string | null | undefined, allowedDomains:
 
   try {
     const parsed = new URL(trimmed);
-    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return null;
+    if (parsed.protocol !== 'https:') return null;
 
-    if (Array.isArray(allowedDomains) && allowedDomains.length > 0) {
-      const isAllowed = allowedDomains.some((domain) => {
-        if (typeof domain !== 'string') return false;
-        const cleanDomain = domain.toLowerCase().replace(/^https?:\/\//, '').split('/')[0];
-        return parsed.hostname.toLowerCase() === cleanDomain || parsed.hostname.toLowerCase().endsWith('.' + cleanDomain);
-      });
-      if (isAllowed) return parsed.toString();
+    // Fail-closed: Must belong to explicitly authorized allowedDomains
+    if (!Array.isArray(allowedDomains) || allowedDomains.length === 0) {
+      return null;
     }
 
-    // Default to the validated URL if no domain restrictions are explicitly enforced
-    return parsed.toString();
+    const isAllowed = allowedDomains.some((domain) => {
+      if (typeof domain !== 'string') return false;
+      const parts = domain.toLowerCase().replace(/^https?:\/\//, '').split('/');
+      const cleanDomain = (parts[0] || '').trim();
+      if (!cleanDomain) return false;
+      const host = parsed.hostname.toLowerCase();
+      return host === cleanDomain || host.endsWith('.' + cleanDomain);
+    });
+
+    return isAllowed ? parsed.toString() : null;
   } catch {
     return null;
   }
@@ -144,9 +148,14 @@ function resolveVerificationFlags(p: typeof projects.$inferSelect): CatalogVerif
     flags.push('TENANT_AUTHENTICATED');
   }
 
-  // Legal structure reviewed only if legalConfig is populated with agreement templates or formal legal status
-  if (p.legalConfig && typeof p.legalConfig === 'object' && Object.keys(p.legalConfig).length > 0) {
-    flags.push('LEGAL_STRUCTURE_REVIEWED');
+  // Legal structure reviewed ONLY if legalConfig has certified status or a verified IPFS CID template
+  if (p.legalConfig && typeof p.legalConfig === 'object') {
+    const cfg = p.legalConfig as Record<string, unknown>;
+    const hasCertifiedStatus = cfg.status === 'certified' || cfg.legalStatus === 'reviewed';
+    const hasVerifiedTemplate = typeof cfg.templateCid === 'string' && cfg.templateCid.startsWith('bafk');
+    if (hasCertifiedStatus || hasVerifiedTemplate) {
+      flags.push('LEGAL_STRUCTURE_REVIEWED');
+    }
   }
 
   // Cryptographically sealed only if deployment is deployed with contractAddress and chainId

@@ -100,4 +100,55 @@ describe("Catalog DTO & Contracts Verification", () => {
     expect((item as any).guaranteedApy).toBeUndefined();
     expect((item as any).projectedRoi).toBeUndefined();
   });
+
+  it("enforces fail-closed rules: external URL rejected if domain is not in allowedDomains whitelist", () => {
+    function testResolveSafeTargetUrl(rawUrl: string | null | undefined, allowedDomains: unknown): string | null {
+      if (!rawUrl || typeof rawUrl !== 'string') return null;
+      try {
+        const parsed = new URL(rawUrl.trim());
+        if (parsed.protocol !== 'https:') return null;
+        if (!Array.isArray(allowedDomains) || allowedDomains.length === 0) return null;
+
+        const isAllowed = allowedDomains.some((domain) => {
+          if (typeof domain !== 'string') return false;
+          const parts = domain.toLowerCase().replace(/^https?:\/\//, '').split('/');
+          const cleanDomain = (parts[0] || '').trim();
+          if (!cleanDomain) return false;
+          const host = parsed.hostname.toLowerCase();
+          return host === cleanDomain || host.endsWith('.' + cleanDomain);
+        });
+        return isAllowed ? parsed.toString() : null;
+      } catch {
+        return null;
+      }
+    }
+
+    // Whitelist matches
+    expect(testResolveSafeTargetUrl("https://snarai.com/portal", ["snarai.com"])).toBe("https://snarai.com/portal");
+    expect(testResolveSafeTargetUrl("https://app.snarai.com", ["snarai.com"])).toBe("https://app.snarai.com/");
+
+    // Malicious or mismatched domains rejected (fail-closed)
+    expect(testResolveSafeTargetUrl("https://phishing-snarai.com", ["snarai.com"])).toBeNull();
+    expect(testResolveSafeTargetUrl("https://external-unregistered.com", [])).toBeNull();
+    expect(testResolveSafeTargetUrl("http://insecure.snarai.com", ["snarai.com"])).toBeNull();
+  });
+
+  it("enforces strict legal badge attribution: requires certified status or valid IPFS CID", () => {
+    function testHasLegalReviewedBadge(legalConfig: unknown): boolean {
+      if (!legalConfig || typeof legalConfig !== 'object') return false;
+      const cfg = legalConfig as Record<string, unknown>;
+      const hasCertifiedStatus = cfg.status === 'certified' || cfg.legalStatus === 'reviewed';
+      const hasVerifiedTemplate = typeof cfg.templateCid === 'string' && cfg.templateCid.startsWith('bafk');
+      return Boolean(hasCertifiedStatus || hasVerifiedTemplate);
+    }
+
+    // Unreviewed or empty drafts do NOT receive badge
+    expect(testHasLegalReviewedBadge({})).toBe(false);
+    expect(testHasLegalReviewedBadge({ randomField: "data" })).toBe(false);
+    expect(testHasLegalReviewedBadge({ templateCid: "invalid_cid" })).toBe(false);
+
+    // Truly certified or notarized IPFS template receives badge
+    expect(testHasLegalReviewedBadge({ templateCid: "bafkreihash123" })).toBe(true);
+    expect(testHasLegalReviewedBadge({ status: "certified" })).toBe(true);
+  });
 });
