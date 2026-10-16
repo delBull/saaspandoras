@@ -21,6 +21,7 @@ import {
   KeyIcon,
 } from '@heroicons/react/24/outline';
 import { useActiveAccount, ConnectButton, useWalletBalance } from 'thirdweb/react';
+import { useAuth } from '@/components/auth/AuthProvider';
 import { wallets } from '@/lib/wallets';
 import { base, sepolia, baseSepolia } from 'thirdweb/chains';
 import { client } from '@saasfly/shared/thirdweb-client';
@@ -40,6 +41,8 @@ export type ModalType = 'none' | 'send' | 'receive' | 'buy' | 'history';
 export default function WalletProPage() {
   const router = useRouter();
   const account = useActiveAccount();
+  const { user } = useAuth();
+  const effectiveAddress = account?.address || user?.address;
 
   // Fijar la red a Base por ahora
   const selectedChain = base;
@@ -47,7 +50,7 @@ export default function WalletProPage() {
   // Obtener balance real de ETH en Base
   const { data: balanceData } = useWalletBalance({
     client,
-    address: account?.address,
+    address: effectiveAddress,
     chain: base,
   });
 
@@ -206,7 +209,7 @@ export default function WalletProPage() {
           </p>
         </motion.div>
 
-        {account ? (
+        {effectiveAddress ? (
           <>
             {/* Wallet Stats Grid */}
             <motion.div

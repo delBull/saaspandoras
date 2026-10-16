@@ -1,10 +1,13 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useActiveAccount } from 'thirdweb/react';
+import { useActiveAccount, ConnectButton } from 'thirdweb/react';
 import { toast } from 'sonner';
 import { AmbassadorForm } from '@/components/ambassadors/AmbassadorForm';
 import { PartnerHub } from '@/components/marketing/PartnerHub';
+import { useAuth } from '@/components/auth/AuthProvider';
+import { client } from '@saasfly/shared/thirdweb-client';
+import { wallets } from '@/lib/wallets';
 
 interface CommissionData {
   referralCode: string;
@@ -69,6 +72,9 @@ export default function AmbassadorDashboard() {
 
   // ... (handleClaim stays the same) ...
 
+  const { user } = useAuth();
+  const effectiveWallet = account?.address || user?.address || null;
+
   const handleClaim = async () => {
     if (!account?.address || !data || data.pending.count === 0) return;
 
@@ -95,12 +101,25 @@ export default function AmbassadorDashboard() {
     }
   };
 
-  if (!account?.address) {
+  if (!effectiveWallet) {
     return (
-      <div className="text-white">
-        <div className="max-w-4xl mx-auto text-center py-20">
-          <h1 className="text-3xl font-bold mb-4">Ambassador Dashboard</h1>
-          <p className="text-zinc-400">Connect your wallet to view your commissions</p>
+      <div className="text-white min-h-[500px] flex items-center justify-center">
+        <div className="max-w-md mx-auto text-center p-8 rounded-2xl bg-zinc-950/70 border border-zinc-800 space-y-4">
+          <h1 className="text-2xl font-bold">Ambassador Dashboard</h1>
+          <p className="text-xs text-zinc-400">
+            Conecta tu wallet para inspeccionar tus comisiones acumuladas, referidos activos y solicitar retiros en USDC.
+          </p>
+          <div className="pt-2 flex justify-center">
+            <ConnectButton
+              client={client}
+              theme="dark"
+              wallets={wallets}
+              connectButton={{
+                className: "!bg-lime-400 !text-black !font-bold !rounded-xl !px-6 !h-10 !text-sm hover:!bg-lime-500 !transition-all",
+                label: "Conectar Billetera",
+              }}
+            />
+          </div>
         </div>
       </div>
     );
@@ -111,7 +130,7 @@ export default function AmbassadorDashboard() {
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold">Ambassador Dashboard</h1>
           <span className="text-sm text-zinc-500 font-mono">
-            {account.address.slice(0, 6)}...{account.address.slice(-4)}
+            {effectiveWallet.slice(0, 6)}...{effectiveWallet.slice(-4)}
           </span>
         </div>
 

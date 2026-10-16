@@ -268,14 +268,13 @@ export function ConsumerHomePage() {
               >
                 Comenzar
               </Button>
-              <Link href="/growth-os">
-                <Button
-                  variant="outline"
-                  className="border-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-900 font-medium text-xs px-4 py-2.5 rounded-xl"
-                >
-                  Conocer Más
-                </Button>
-              </Link>
+              <Button
+                onClick={() => setActiveNavTab('partners')}
+                variant="outline"
+                className="border-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-900 font-medium text-xs px-4 py-2.5 rounded-xl"
+              >
+                Ver Partners
+              </Button>
             </div>
           )}
         </div>

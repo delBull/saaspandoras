@@ -39,20 +39,6 @@ export default function ProjectNavigationHeader() {
               <Shield className="w-3.5 h-3.5 text-emerald-400" />
               <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Growth OS Secure</span>
             </div>
-            
-            <ConnectButton connectModal={{ showThirdwebBranding: false }}  
-              client={client}
-              theme="dark"
-              wallets={wallets}
-              connectButton={{
-                className: "!bg-white !text-black !font-bold !rounded-xl !px-6 !h-10 !text-sm hover:!bg-zinc-200 !transition-all",
-                label: "Conectar"
-              }}
-              appMetadata={{
-                name: "Pandoras Growth",
-                url: "https://pandoras.finance"
-              }}
-            />
           </div>
         </div>
       </div>

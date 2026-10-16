@@ -18,6 +18,7 @@ import {
   FolderIcon,
   ViewfinderCircleIcon,
   BuildingLibraryIcon,
+  WalletIcon,
 } from "@heroicons/react/24/outline";
 import { cn } from "@saasfly/shared/utils";
 import { useActiveAccount, useDisconnect, useActiveWallet } from "thirdweb/react";
@@ -32,6 +33,7 @@ import { usePathname } from 'next/navigation';
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { hasFullPlatformAccess } from "@/lib/roles";
 import { usePersistedAccount } from "@/hooks/usePersistedAccount";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 interface SidebarProps {
   wallet?: string;
@@ -72,10 +74,15 @@ export function Sidebar({
   const [walletExpanded, setWalletExpanded] = useState(false);
 
   const account = useActiveAccount();
+  const { user } = useAuth();
   const wallet = useActiveWallet();
   const { disconnect } = useDisconnect();
   const { logout } = usePersistedAccount();
   const pathname = usePathname();
+
+  // Unified Identity: resolve active account, platform user session, or wallet prop
+  const effectiveAddress = account?.address || user?.address || walletProp;
+  const isConnectedEffective = Boolean(account || (user?.address && user?.address !== '0x0000000000000000000000000000000000000000') || (walletProp && walletProp !== '0x0000000000000000000000000000000000000000'));
 
   // Multi-chain wallet state
   const [selectedChain, setSelectedChain] = useState(DEFAULT_NETWORK?.chain || ethereum);
@@ -911,7 +918,7 @@ export function Sidebar({
                 </div>
               )}
 
-              {isClient && account && (
+              {isClient && isConnectedEffective && (
                 <div
                   className={cn(
                     "border-t border-gray-800 pt-2",
@@ -922,9 +929,22 @@ export function Sidebar({
                     <Tooltip.Root>
                       <Tooltip.Trigger asChild>
                         <button
-                          onClick={() => { logout() }}
-                          disabled={!wallet}
-                          className="relative flex w-full items-center rounded-lg py-2 text-gray-400 transition-all duration-200 hover:bg-gray-800/50 hover:text-white disabled:opacity-50 justify-center"
+                          onClick={() => {
+                            if (wallet) {
+                              logout();
+                            } else {
+                              fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+                              if (typeof window !== "undefined") {
+                                localStorage.removeItem("wallet-session");
+                                localStorage.removeItem("wallet-address");
+                                localStorage.setItem("wallet-logged-out", "true");
+                                document.cookie = "wallet-address=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+                                document.cookie = "thirdweb:wallet-address=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+                                window.location.href = "/";
+                              }
+                            }
+                          }}
+                          className="relative flex w-full items-center rounded-lg py-2 text-gray-400 transition-all duration-200 hover:bg-gray-800/50 hover:text-white justify-center"
                         >
                           <ArrowLeftOnRectangleIcon className="h-5 w-5 shrink-0" />
                         </button>
@@ -934,15 +954,28 @@ export function Sidebar({
                           className="z-50 rounded-md bg-zinc-900 ml-20 px-3 py-1.5 text-xs text-white shadow-md border border-zinc-700"
                           sideOffset={3}
                         >
-                          Desconectar Wallet
+                          Desconectar
                         </Tooltip.Content>
                       </Tooltip.Portal>
                     </Tooltip.Root>
                   ) : (
                     <button
-                      onClick={() => { logout() }}
-                      disabled={!wallet}
-                      className="relative flex w-full items-center rounded-lg py-2 text-gray-400 transition-all duration-200 hover:bg-gray-800/50 hover:text-white disabled:opacity-50 px-4"
+                      onClick={() => {
+                        if (wallet) {
+                          logout();
+                        } else {
+                          fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+                          if (typeof window !== "undefined") {
+                            localStorage.removeItem("wallet-session");
+                            localStorage.removeItem("wallet-address");
+                            localStorage.setItem("wallet-logged-out", "true");
+                            document.cookie = "wallet-address=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+                            document.cookie = "thirdweb:wallet-address=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+                            window.location.href = "/";
+                          }
+                        }
+                      }}
+                      className="relative flex w-full items-center rounded-lg py-2 text-gray-400 transition-all duration-200 hover:bg-gray-800/50 hover:text-white px-4"
                     >
                       <ArrowLeftOnRectangleIcon className="h-5 w-5 shrink-0" />
                       <motion.span
@@ -961,7 +994,7 @@ export function Sidebar({
               )}
 
               {/* Conectar / Login for guests */}
-              {isClient && !account && (
+              {isClient && !isConnectedEffective && (
                 <div
                   className={cn(
                     "border-t border-gray-800 pt-2",
@@ -971,9 +1004,23 @@ export function Sidebar({
                   {!open ? (
                     <Tooltip.Root>
                       <Tooltip.Trigger asChild>
-                        <div className="flex w-full items-center justify-center rounded-lg py-2 overflow-hidden scale-75 origin-center">
-                          <ConnectWalletButton />
-                        </div>
+                        <button
+                          onClick={() => {
+                            if (typeof window !== "undefined") {
+                              localStorage.removeItem("wallet-logged-out");
+                            }
+                            const btn = document.getElementById("wallet-connect-btn");
+                            if (btn) btn.click();
+                            else {
+                              // Trigger connect through dispatch
+                              window.dispatchEvent(new CustomEvent("pandoras:open-connect-modal"));
+                            }
+                          }}
+                          className="relative flex w-full items-center justify-center rounded-lg py-2 text-lime-400 hover:bg-lime-500/10 hover:text-lime-300 transition-colors"
+                          title="Conectar Billetera"
+                        >
+                          <WalletIcon className="h-5 w-5 shrink-0" />
+                        </button>
                       </Tooltip.Trigger>
                       <Tooltip.Portal>
                         <Tooltip.Content
@@ -1307,15 +1354,25 @@ export function Sidebar({
                     </div>
                   )}
 
-                  {isClient && account && (
+                  {isClient && isConnectedEffective && (
                     <div className="border-t border-gray-800 pt-2">
                       <button
                         onClick={() => {
-                          if (wallet) { disconnect(wallet); fetch("/api/auth/logout", { method: "POST" }).catch(() => {}); }
+                          if (wallet) {
+                            disconnect(wallet);
+                          }
+                          fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+                          if (typeof window !== "undefined") {
+                            localStorage.removeItem("wallet-session");
+                            localStorage.removeItem("wallet-address");
+                            localStorage.setItem("wallet-logged-out", "true");
+                            document.cookie = "wallet-address=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+                            document.cookie = "thirdweb:wallet-address=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+                            window.location.href = "/";
+                          }
                           setMobileOpen(false);
                         }}
-                        disabled={!wallet}
-                        className="relative flex w-full items-center rounded-lg py-2 px-4 text-gray-400 transition-all duration-200 hover:bg-gray-800/50 hover:text-white disabled:opacity-50"
+                        className="relative flex w-full items-center rounded-lg py-2 px-4 text-gray-400 transition-all duration-200 hover:bg-gray-800/50 hover:text-white"
                       >
                         <ArrowLeftOnRectangleIcon className="h-5 w-5 shrink-0" />
                         <span className="ml-3 whitespace-nowrap">
@@ -1324,7 +1381,7 @@ export function Sidebar({
                       </button>
                     </div>
                   )}
-                  {isClient && !account && (
+                  {isClient && !isConnectedEffective && (
                     <div className="border-t border-gray-800 pt-4 pb-2 px-4 flex justify-center">
                       <ConnectWalletButton />
                     </div>

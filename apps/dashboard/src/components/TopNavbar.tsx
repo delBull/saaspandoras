@@ -23,6 +23,7 @@ import { client } from "@saasfly/shared/thirdweb-client";
 import { inAppWallet, createWallet } from "thirdweb/wallets";
 import { wallets } from "@/lib/wallets";
 import { config } from "@/config";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { useTour } from "@/components/onboarding/TourEngine";
 import { RocketLaunchIcon, BeakerIcon, GlobeAltIcon } from "@heroicons/react/24/outline";
 import { useRealGamification } from "@/hooks/useRealGamification";
@@ -54,10 +55,14 @@ export function TopNavbar({
   const [copyAnimation, setCopyAnimation] = useState(false);
 
   const account = useActiveAccount();
+  const { user } = useAuth();
   const pathname = usePathname();
 
+  // Unified Identity: resolve active account, platform user session, or wallet prop
+  const effectiveAddress = account?.address || user?.address || walletProp;
+
   // Gamification for Sandbox
-  const { trackNewEvent } = useRealGamification(account?.address);
+  const { trackNewEvent } = useRealGamification(effectiveAddress);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [transitionTarget, setTransitionTarget] = useState<'production' | 'sandbox'>('production');
 
@@ -129,7 +134,7 @@ export function TopNavbar({
   // Fetch admin status and user profile when account changes
   useEffect(() => {
     // When wallet disconnects, reset UI state so the connect button reappears
-    if (!account?.address) {
+    if (!effectiveAddress) {
       setAdminStatus({ isAdmin: false, isSuperAdmin: false, verified: true });
       setUserProfile(null);
       setIsInitialLoad(false);
@@ -141,7 +146,7 @@ export function TopNavbar({
         const res = await fetch("/api/admin/verify", {
           headers: {
             'Content-Type': 'application/json',
-            'x-thirdweb-address': account.address,
+            'x-thirdweb-address': effectiveAddress,
           }
         });
 
@@ -168,14 +173,14 @@ export function TopNavbar({
 
     // Fetch user profile data
     const fetchProfile = async () => {
-      if (account?.address) {
+      if (effectiveAddress) {
         try {
           const response = await fetch('/api/profile', {
             headers: {
               'Content-Type': 'application/json',
-              'x-thirdweb-address': account.address,
-              'x-wallet-address': account.address,
-              'x-user-address': account.address,
+              'x-thirdweb-address': effectiveAddress,
+              'x-wallet-address': effectiveAddress,
+              'x-user-address': effectiveAddress,
             }
           });
           if (response.ok) {
@@ -189,7 +194,7 @@ export function TopNavbar({
     };
 
     void fetchProfile();
-  }, [account?.address, isInitialLoad, isAdminProp, isSuperAdminProp]);
+  }, [effectiveAddress, isInitialLoad, isAdminProp, isSuperAdminProp]);
 
   // Handle click outside
   useEffect(() => {
@@ -311,7 +316,7 @@ export function TopNavbar({
             <div className="flex items-center gap-4 ml-auto pointer-events-auto">
 
               {/* Profile Button or Connect Button */}
-              {!account?.address ? (
+              {!effectiveAddress ? (
                 !isLandingPage && (
                   <button
                     id="wallet-connect-btn"
@@ -384,10 +389,10 @@ export function TopNavbar({
                 className="w-full flex items-center gap-3 p-2 rounded hover:bg-zinc-800 transition-colors group"
                 onClick={(e) => {
                   e.stopPropagation();
-                  const fullAddress = account?.address ?? userName ?? walletProp ?? '';
+                  const fullAddress = effectiveAddress ?? userName ?? walletProp ?? '';
                   void copyWalletAddress(fullAddress);
                 }}
-                title={`${account?.address ?? userName ?? walletProp ?? ''} - Click to copy wallet`}
+                title={`${effectiveAddress ?? userName ?? walletProp ?? ''} - Click to copy wallet`}
               >
                 <span className="font-mono text-xs text-gray-400 flex-shrink-0">
                   C:\USER\
@@ -396,7 +401,7 @@ export function TopNavbar({
                   className={`truncate font-mono text-xs transition-colors ${copyAnimation ? 'text-green-400' : 'text-lime-400 group-hover:text-lime-300'
                     }`}
                 >
-                  {account?.address ? account.address.substring(0, 8) + '...' + account.address.substring(36, 42) : '...'}
+                  {effectiveAddress ? effectiveAddress.substring(0, 8) + '...' + effectiveAddress.substring(effectiveAddress.length - 6) : '...'}
                 </span>
                 <motion.div
                   animate={{ scale: copyAnimation ? [1, 1.2, 1] : 1 }}

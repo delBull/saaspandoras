@@ -12,6 +12,7 @@ import { GovernanceProposalModal } from "./GovernanceProposalModal";
 import { GovernanceWithdrawModal } from "./GovernanceWithdrawModal";
 import { ManageActivities } from "../dao/ManageActivities";
 import { useReadContract, useActiveAccount, useContractEvents, TransactionButton } from "thirdweb/react";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { getContract, prepareEvent, prepareContractCall } from "thirdweb";
 import { client } from "@saasfly/shared/thirdweb-client";
 import { config } from "@/config";
@@ -100,6 +101,8 @@ export default function GovernancePage() {
     const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
     const [pendingProposal, setPendingProposal] = useState<{ title: string; description: string; days: number } | null>(null);
     const account = useActiveAccount();
+    const { user } = useAuth();
+    const effectiveAddress = account?.address || user?.address;
     const { settings } = useGovernanceSettings();
     const [isOwner, setIsOwner] = useState(false);
 
@@ -113,14 +116,14 @@ export default function GovernancePage() {
 
     // --- Ownership Check ---
     useEffect(() => {
-        if (project && account?.address) {
-            const isProjectOwner = project.applicant_wallet_address?.toLowerCase() === account.address.toLowerCase();
-            const isSuperAdmin = config.superAdminAddress && account.address.toLowerCase() === config.superAdminAddress.toLowerCase();
+        if (project && effectiveAddress) {
+            const isProjectOwner = project.applicant_wallet_address?.toLowerCase() === effectiveAddress.toLowerCase();
+            const isSuperAdmin = config.superAdminAddress && effectiveAddress.toLowerCase() === config.superAdminAddress.toLowerCase();
             setIsOwner(isProjectOwner || !!isSuperAdmin);
         } else {
             setIsOwner(false);
         }
-    }, [account?.address, project]);
+    }, [effectiveAddress, project]);
 
 
     // --- On-Chain Data Fetching ---
@@ -136,7 +139,7 @@ export default function GovernancePage() {
     const { data: userStats } = useReadContract({
         contract,
         method: "getUserStats",
-        params: [account?.address || "0x0000000000000000000000000000000000000000"]
+        params: [effectiveAddress || "0x0000000000000000000000000000000000000000"]
     });
 
     // 3. User Deposits
@@ -234,7 +237,7 @@ export default function GovernancePage() {
                     <StatsCard title="Total Staked Protocol" value={isLoading ? "Loading..." : totalDisplay} change={settings.stakedSubtext} icon={<Coins className="h-5 w-5 text-lime-400" />} />
                     <StatsCard title="APY Actual" value={`${settings.apy}%`} change={`+ Boost ${settings.boostMultiplier}`} icon={<TrendingUp className="h-5 w-5 text-emerald-400" />} />
                     <StatsCard title="Participantes" value={participantCount.toString()} change={participantCount > 0 ? "Active DAO Members" : "Be the first!"} icon={<Users className="h-5 w-5 text-blue-400" />} />
-                    <StatsCard title="Tu Voting Power" value={`${userVP} VP`} change={account ? "Derived from Staking" : "Connect Wallet"} icon={<Vote className="h-5 w-5 text-purple-400" />} />
+                    <StatsCard title="Tu Voting Power" value={`${userVP} VP`} change={effectiveAddress ? "Derived from Staking" : "Connect Wallet"} icon={<Vote className="h-5 w-5 text-purple-400" />} />
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
