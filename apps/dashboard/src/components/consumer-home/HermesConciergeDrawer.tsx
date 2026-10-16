@@ -136,6 +136,7 @@ export function HermesConciergeDrawer({
           phone: leadForm.phone || undefined,
           intent: "explore",
           consent: true,
+          projectId: item.tenantSlug,
           metadata: {
             catalogItemId: item.id,
             catalogItemTitle: item.title,

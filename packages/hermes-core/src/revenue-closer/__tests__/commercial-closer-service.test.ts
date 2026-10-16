@@ -57,4 +57,13 @@ describe('CommercialCloserService — Production Wiring Certification', () => {
     expect(soul?.canonicalUrls.checkout).toBe('https://dash.pandoras.finance/pay/snarai/fundador');
     expect(soul?.agentName).toBe('Hermes Patrimonial');
   });
+
+  it('registers and resolves PANDORAS_SOUL for B2B Developers and Deal Rooms', () => {
+    const soul = HermesSoulRegistry.getSoul('pandoras');
+    expect(soul).toBeDefined();
+    expect(soul?.agentName).toBe('Hermes B2B Concierge');
+    expect(soul?.canonicalUrls.developers).toBe('https://dash.pandoras.finance/developers');
+    expect(soul?.canonicalUrls.calendar).toBe('https://dash.pandoras.finance/events/pandoras/1');
+    expect(soul?.claimsPolicy.prohibited).toContain('rendimiento fijo garantizado');
+  });
 });
