@@ -52,6 +52,7 @@ export * from './platform/portal-auth';
 export * from './platform/product-registry';
 export * from './portal/permissions';
 export * from './portal/portal-types';
+export * from './portal/catalog-types';
 export * from './project-status';
 export * from './project-utils';
 export * from './projects/stats';

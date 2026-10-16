@@ -1,36 +1,37 @@
 'use client';
 
 /**
- * 📦 Pandoras App Consumer Home — Preserved for app.pandoras.finance
+ * 📦 Pandoras App Consumer Home — Unified Sovereign Portal
  * src/components/consumer-home/ConsumerHomePage.tsx
  */
 
 import React, { useState, useMemo, useEffect } from "react";
-import { useReadContract, TransactionButton, useActiveAccount } from "thirdweb/react";
 import Link from "next/link";
-import { config } from "@/config";
-import { getContract, prepareContractCall } from "thirdweb";
-import { governanceABI as PANDORAS_GOVERNANCE_ABI } from "@/lib/governance-abi";
-import { PANDORAS_POOL_ABI } from "@/lib/pandoras-pool-abi";
-import { UserGroupIcon, ArrowPathIcon, BanknotesIcon, LockClosedIcon, Squares2X2Icon, ShieldCheckIcon, ChevronRightIcon, ChevronLeftIcon, CurrencyDollarIcon, RocketLaunchIcon } from "@heroicons/react/24/outline";
-import { client } from "@saasfly/shared/thirdweb-client";
+import { 
+  Compass, 
+  Key, 
+  Building2, 
+  ChevronRight, 
+  Sparkles, 
+  Wallet,
+  AlertCircle 
+} from "lucide-react";
 import { sanitizeUrl } from "@saasfly/shared/project-utils";
-import { base } from "thirdweb/chains";
-import { createWallet } from "thirdweb/wallets";
+import type { CatalogItemDto, CatalogResponseDto } from "@saasfly/shared";
+
 import { NotificationsPanel } from "@/components/dashboard/notifications-panel";
-import { GovernanceParticipationModal } from "@/components/governance/GovernanceParticipationModal";
 import { LeadCaptureModal } from "@/components/marketing/LeadCaptureModal";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useAdmin } from "@/hooks/useAdmin";
-import { resolveAccessState, AccessState } from "@/lib/access/state-machine";
-import { Loader2, ShieldAlert } from "lucide-react";
-import { NFTGate } from "@/components/nft-gate";
-import { useIsAutoConnecting } from "thirdweb/react";
 import { usePersistedAccount } from "@/hooks/usePersistedAccount";
-import { useRouter } from "next/navigation";
 
-const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+import { CatalogCard } from "./CatalogCard";
+import { CatalogFilterBar, type FilterState } from "./CatalogFilterBar";
+import { PartnersDirectory } from "./PartnersDirectory";
+import { UserSpaceVault } from "./UserSpaceVault";
+import { CatalogSkeletonGrid } from "./ConsumerSkeletons";
+import { HermesConciergeDrawer } from "./HermesConciergeDrawer";
 
 const FALLBACK_PROJECTS = [
   {
@@ -54,14 +55,14 @@ function TypewriterText({ text, className, delay = 0 }: { text: string; classNam
         setDisplayText(prev => prev + text[currentIndex]);
         setCurrentIndex(prev => prev + 1);
       }
-    }, 100);
+    }, 80);
     return () => clearTimeout(timer);
   }, [currentIndex, text, delay]);
 
   return (
     <h1 className={className}>
       {displayText}
-      <span className="animate-pulse">|</span>
+      <span className="animate-pulse text-emerald-400">|</span>
     </h1>
   );
 }
@@ -87,139 +88,54 @@ function FeaturedCarousel({ projects }: { projects: any[] }) {
 
   return (
     <div className="relative w-full h-full">
-      <div className="relative h-full w-full rounded-2xl overflow-hidden group cursor-pointer border border-white/10 shadow-2xl shadow-purple-900/20 aspect-[16/10] md:aspect-auto">
+      <div className="relative h-full w-full rounded-2xl overflow-hidden group cursor-pointer border border-zinc-800/80 shadow-2xl shadow-emerald-950/10 aspect-[16/10] md:aspect-auto bg-zinc-950">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={sanitizeUrl(currentProject.imageUrl || currentProject.coverPhotoUrl) || "/images/dhub3.png"}
           alt={currentProject.title}
           className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/50 to-transparent" />
 
         <div className="absolute bottom-0 left-0 p-6 md:p-8 w-full z-10">
           <div className="flex flex-col items-start gap-2">
-            <span className="px-2 py-1 bg-white/10 backdrop-blur-md rounded text-[10px] uppercase font-bold text-white tracking-widest border border-white/20">
+            <span className="text-[10px] uppercase font-bold tracking-widest text-emerald-400 px-2.5 py-1 rounded bg-emerald-950/80 border border-emerald-800/60 backdrop-blur-md">
               Destacado
             </span>
-            <h3 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white leading-tight drop-shadow-lg">{currentProject.title}</h3>
-            <p className="text-sm md:text-base text-gray-200 line-clamp-2 max-w-[90%] opacity-90 drop-shadow-md mb-4">{currentProject.subtitle || currentProject.description}</p>
+            <h2 className="text-xl md:text-3xl font-extrabold text-white tracking-tight">
+              {currentProject.title}
+            </h2>
+            <p className="text-xs md:text-sm text-zinc-300 max-w-xl line-clamp-2">
+              {currentProject.subtitle || currentProject.description}
+            </p>
+            {currentProject.projectSlug && (
+              <Link
+                href={`/project/${currentProject.projectSlug}`}
+                className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-white text-zinc-950 hover:bg-zinc-200 transition-colors shadow-lg"
+              >
+                <span>{currentProject.actionText || "Explorar"}</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </Link>
+            )}
+          </div>
+        </div>
 
-            <Link
-              href={currentProject.isFallback ? "/applicants" : `/projects/${currentProject.projectSlug || currentProject.slug}`}
-              className="inline-flex items-center gap-2 text-xs md:text-sm font-bold text-black bg-white px-5 py-2.5 rounded-full hover:bg-gray-200 transition-colors shadow-lg"
+        {projects.length > 1 && (
+          <div className="absolute top-4 right-4 z-20 flex gap-2">
+            <button
+              onClick={(e) => { e.stopPropagation(); prevProject(); }}
+              disabled={currentIndex === 0}
+              className="p-2 rounded-xl bg-black/60 border border-zinc-800 text-zinc-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed backdrop-blur-md"
             >
-              {currentProject.actionText || "Ver Proyecto"} <ChevronRightIcon className="w-4 h-4" />
-            </Link>
-          </div>
-        </div>
-
-        {currentIndex > 0 && (
-          <button
-            onClick={(e) => { e.preventDefault(); prevProject(); }}
-            className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/30 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center text-white hover:bg-black/50 transition-all z-20 group/nav"
-          >
-            <ChevronLeftIcon className="w-5 h-5 group-hover/nav:scale-110 transition-transform" />
-          </button>
-        )}
-
-        {currentIndex < projects.length - 1 && (
-          <button
-            onClick={(e) => { e.preventDefault(); nextProject(); }}
-            className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/30 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center text-white hover:bg-black/50 transition-all z-20 group/nav"
-          >
-            <ChevronRightIcon className="w-5 h-5 group-hover/nav:scale-110 transition-transform" />
-          </button>
-        )}
-
-        <div className="absolute top-4 right-4 flex gap-1.5 z-20">
-          {projects.map((_, idx) => (
-            <div
-              key={idx}
-              className={`h-1.5 rounded-full transition-all duration-300 ${idx === currentIndex ? 'w-6 bg-white' : 'w-1.5 bg-white/30'}`}
-            />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ListItem({ item, isArtifact }: { item: any, isArtifact: boolean }) {
-  return (
-    <Link href={`/projects/${item.slug}`} className="block">
-      <div className="bg-zinc-900/80 border border-zinc-800/50 rounded-xl p-3 flex gap-4 items-center hover:bg-zinc-800 transition-all duration-300 active:scale-[0.98]">
-        <div className="relative w-24 h-24 flex-shrink-0 rounded-lg overflow-hidden bg-black border border-zinc-800">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={sanitizeUrl(item.image) || "/images/default-logo.jpg"}
-            alt={item.title}
-            className="absolute inset-0 w-full h-full object-cover"
-          />
-          {isArtifact && (
-            <div className="absolute bottom-0 left-0 right-0 bg-black/80 backdrop-blur-sm px-2 py-1 text-center border-t border-white/10">
-              <span className="text-[10px] font-mono font-bold text-cyan-400">{item.price}</span>
-            </div>
-          )}
-        </div>
-
-        <div className="flex-1 min-w-0 flex flex-col gap-1.5 h-full justify-center">
-          <div className="flex justify-between items-start gap-2">
-            <h4 className="font-bold text-base text-white truncate">{item.title}</h4>
-            {!isArtifact && <span className="text-[10px] bg-green-500/10 text-green-400 px-2 py-0.5 rounded-full border border-green-500/20 font-bold tracking-wide">GRATIS</span>}
-          </div>
-
-          <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed opacity-90">
-            {item.description}
-          </p>
-
-          {isArtifact && <div className="flex items-center gap-2 mt-auto">
-            <span className="text-[10px] text-gray-400 bg-white/5 px-2 py-0.5 rounded border border-white/10">Tier #{item.phaseId}</span>
-            <span className="text-[10px] text-cyan-300 bg-cyan-950/30 px-2 py-0.5 rounded border border-cyan-500/20">Utility</span>
-          </div>}
-        </div>
-
-        <div className="flex-shrink-0 text-gray-600 pr-2">
-          <ChevronRightIcon className="w-5 h-5" />
-        </div>
-      </div>
-    </Link>
-  );
-}
-
-function AccessArtifactsSection({ accessCards, artifacts }: { accessCards: any[]; artifacts: any[] }) {
-  const [activeTab, setActiveTab] = useState<'access' | 'artifact'>('access');
-  const list = activeTab === 'access' ? accessCards : artifacts;
-
-  return (
-    <div id="access-section" className="mt-8 px-5 pb-24">
-      <div className="flex items-center gap-8 border-b border-zinc-800 mb-6">
-        <button
-          onClick={() => setActiveTab('access')}
-          className={`pb-3 text-sm font-bold uppercase tracking-wider transition-all relative ${activeTab === 'access' ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
-        >
-          Accesos
-          {activeTab === 'access' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-green-500 shadow-[0_0_15px_rgba(34,197,94,0.7)]" />}
-        </button>
-        <button
-          onClick={() => setActiveTab('artifact')}
-          className={`pb-3 text-sm font-bold uppercase tracking-wider transition-all relative ${activeTab === 'artifact' ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
-        >
-          Artefactos
-          {activeTab === 'artifact' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.7)]" />}
-        </button>
-      </div>
-
-      <div className="flex flex-col gap-4">
-        {list.length > 0 ? (
-          list.map((item: any) => (
-            <ListItem key={item.id} item={item} isArtifact={activeTab === 'artifact'} />
-          ))
-        ) : (
-          <div className="flex flex-col items-center justify-center py-16 text-center border border-dashed border-zinc-800 rounded-xl bg-zinc-900/20">
-            <div className="p-3 bg-zinc-900 rounded-full mb-3">
-              <Squares2X2Icon className="w-6 h-6 text-gray-600" />
-            </div>
-            <p className="text-gray-400 font-medium">No hay {activeTab === 'access' ? 'accesos' : 'artefactos'} activos.</p>
+              ‹
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); nextProject(); }}
+              disabled={currentIndex === projects.length - 1}
+              className="p-2 rounded-xl bg-black/60 border border-zinc-800 text-zinc-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed backdrop-blur-md"
+            >
+              ›
+            </button>
           </div>
         )}
       </div>
@@ -228,139 +144,281 @@ function AccessArtifactsSection({ accessCards, artifacts }: { accessCards: any[]
 }
 
 export function ConsumerHomePage() {
-  const { status, user, isAuthenticated, hasAccess, remoteState } = useAuth();
-  const { isAdmin } = useAdmin();
-  const isAutoConnecting = useIsAutoConnecting();
-  const { isConnecting: isManualConnecting } = usePersistedAccount();
-  const router = useRouter();
-
+  const { user } = useAuth();
   const [leadModal, setLeadModal] = useState(false);
-  const [homeData, setHomeData] = useState<{
+  const [conciergeItem, setConciergeItem] = useState<CatalogItemDto | null>(null);
+
+  // Active Main Navigation Tab
+  const [activeNavTab, setActiveNavTab] = useState<'explore' | 'vault' | 'partners'>('explore');
+
+  // Featured and Notifications data from bootstrap
+  const [bootstrapData, setBootstrapData] = useState<{
     featuredProjects: any[];
-    accessCards: any[];
-    artifacts: any[];
     notifications?: any[];
-    profile?: any;
-    loading: boolean
+    loading: boolean;
   }>({
     featuredProjects: [],
-    accessCards: [],
-    artifacts: [],
     loading: true
   });
 
-  const accessState = resolveAccessState({
-    status,
-    user,
-    isAdmin,
-    remoteState
+  // Dedicated Catalog state querying GET /api/v1/catalog
+  const [catalogItems, setCatalogItems] = useState<CatalogItemDto[]>([]);
+  const [isCatalogLoading, setIsCatalogLoading] = useState(true);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
+
+  // Filters State
+  const [filters, setFilters] = useState<FilterState>({
+    vertical: 'ALL',
+    productNature: 'ALL',
+    onlyVerified: false,
+    searchQuery: '',
   });
 
-  const canBootstrap = !!user?.address && (isAuthenticated || hasAccess);
-
+  // 1. Fetch bootstrap data for carousel & notifications
   useEffect(() => {
     const controller = new AbortController();
-
-    const load = async () => {
+    const loadBootstrap = async () => {
       try {
         const walletParam = user?.address ? `?wallet=${user.address}` : '';
-        const res = await fetch(`/api/bootstrap${walletParam}`, {
-          signal: controller.signal
-        });
+        const res = await fetch(`/api/bootstrap${walletParam}`, { signal: controller.signal });
         if (!res.ok) throw new Error("bootstrap failed");
-
         const data = await res.json();
         const rawProjects = data.featuredProjects || [];
-
-        setHomeData({
+        setBootstrapData({
           featuredProjects: rawProjects.length > 0 ? rawProjects : FALLBACK_PROJECTS,
-          accessCards: data.accessCards || [],
-          artifacts: data.artifacts || [],
           notifications: data.notifications || [],
-          profile: data.profile || null,
           loading: false
         });
       } catch (e: any) {
         if (e.name === "AbortError") return;
-
-        setHomeData(prev => ({
-          ...prev,
+        setBootstrapData({
           featuredProjects: FALLBACK_PROJECTS,
+          notifications: [],
           loading: false
-        }));
+        });
       }
     };
-
-    load();
-
+    loadBootstrap();
     return () => controller.abort();
-  }, [status, user?.address, isAdmin, isAuthenticated, hasAccess]);
+  }, [user?.address]);
+
+  // 2. Fetch canonical catalog items from GET /api/v1/catalog
+  useEffect(() => {
+    const controller = new AbortController();
+    const loadCatalog = async () => {
+      setIsCatalogLoading(true);
+      setCatalogError(null);
+      try {
+        const res = await fetch('/api/v1/catalog', { signal: controller.signal });
+        if (!res.ok) throw new Error("No fue posible consultar el catálogo.");
+        const data: CatalogResponseDto = await res.json();
+        if (data.success && Array.isArray(data.items)) {
+          setCatalogItems(data.items);
+        } else {
+          setCatalogItems([]);
+        }
+      } catch (err: any) {
+        if (err.name === "AbortError") return;
+        setCatalogError("Error de sincronización con la red de proyectos.");
+      } finally {
+        setIsCatalogLoading(false);
+      }
+    };
+    loadCatalog();
+    return () => controller.abort();
+  }, []);
+
+  // Filtered Catalog Items Memo
+  const filteredItems = useMemo(() => {
+    return catalogItems.filter((item) => {
+      if (filters.vertical !== 'ALL' && item.vertical !== filters.vertical) {
+        return false;
+      }
+      if (filters.productNature !== 'ALL' && item.productNature !== filters.productNature) {
+        return false;
+      }
+      if (filters.onlyVerified && !item.verificationFlags.includes('TENANT_AUTHENTICATED')) {
+        return false;
+      }
+      if (filters.searchQuery.trim()) {
+        const q = filters.searchQuery.toLowerCase();
+        const matchesTitle = item.title.toLowerCase().includes(q);
+        const matchesDesc = item.description.toLowerCase().includes(q);
+        const matchesTenant = item.tenantName.toLowerCase().includes(q);
+        if (!matchesTitle && !matchesDesc && !matchesTenant) return false;
+      }
+      return true;
+    });
+  }, [catalogItems, filters]);
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <div className="text-left pt-6 ml-5 mb-6 pr-5">
-        <TypewriterText
-          text="La Infraestructura para el Acceso Digital."
-          className="text-2xl md:text-3xl font-bold text-white tracking-tighter leading-tight"
-          delay={500}
-        />
-        {!user && (
-          <div className="mt-4 flex gap-4">
-            <Button 
-              onClick={() => setLeadModal(true)}
-              className="bg-white text-black hover:bg-zinc-200 font-black uppercase text-[10px] tracking-widest h-10 px-6 rounded-xl shadow-lg shadow-white/5"
-            >
-              Get Started Now
-            </Button>
-            <Link href="/growth-os">
-              <Button 
-                variant="outline"
-                className="border-zinc-800 text-zinc-400 hover:text-white font-black uppercase text-[10px] tracking-widest h-10 px-6 rounded-xl"
+    <div className="min-h-screen bg-[#050508] text-zinc-100 flex flex-col">
+      {/* Header & Pitch Hero */}
+      <div className="pt-8 px-5 md:px-8 max-w-7xl w-full mx-auto">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-zinc-900">
+          <div>
+            <span className="text-[11px] font-mono uppercase tracking-widest text-emerald-400 font-semibold">
+              Pandora&apos;s Sovereign Portal
+            </span>
+            <TypewriterText
+              text="La Infraestructura para el Acceso Digital y Activos Reales."
+              className="text-2xl md:text-3xl font-extrabold text-white tracking-tight leading-tight mt-1"
+              delay={400}
+            />
+            <p className="text-xs md:text-sm text-zinc-400 mt-2 max-w-2xl leading-relaxed">
+              Descubre proyectos, títulos notarizados en RWA, pases de membresía y soluciones empresariales con liquidación verificada.
+            </p>
+          </div>
+
+          {!user && (
+            <div className="flex items-center gap-3 shrink-0">
+              <Button
+                onClick={() => setLeadModal(true)}
+                className="bg-emerald-500 text-zinc-950 hover:bg-emerald-400 font-bold text-xs px-5 py-2.5 rounded-xl shadow-lg shadow-emerald-950/40"
               >
-                Learn More
+                Comenzar
               </Button>
-            </Link>
+              <Link href="/growth-os">
+                <Button
+                  variant="outline"
+                  className="border-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-900 font-medium text-xs px-4 py-2.5 rounded-xl"
+                >
+                  Conocer Más
+                </Button>
+              </Link>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Featured Showcase Carousel & Notifications Panel */}
+      <div className="px-5 md:px-8 max-w-7xl w-full mx-auto mt-6">
+        {bootstrapData.loading ? (
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <div className="lg:col-span-3 aspect-[16/10] md:aspect-[21/9] rounded-2xl bg-zinc-900/60 animate-pulse border border-zinc-800/80" />
+            <div className="hidden lg:block lg:col-span-1 rounded-2xl bg-zinc-900/60 animate-pulse border border-zinc-800/80" />
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <div className="lg:col-span-3 w-full aspect-[16/10] lg:aspect-[16/9] 2xl:aspect-[21/9]">
+              <FeaturedCarousel projects={bootstrapData.featuredProjects} />
+            </div>
+
+            <div className="lg:col-span-1 w-full h-[360px] lg:h-full">
+              <NotificationsPanel
+                hasAccess={catalogItems.length > 0}
+                notifications={bootstrapData.notifications}
+              />
+            </div>
           </div>
         )}
       </div>
 
-      {homeData.loading ? (
-        <div className="relative px-5 mt-6 mb-16 w-full md:max-w-7xl">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            <div className="lg:col-span-3 aspect-[16/10] md:aspect-[21/9] rounded-2xl bg-zinc-900 animate-pulse border border-zinc-800" />
-            <div className="hidden lg:block lg:col-span-1 rounded-2xl bg-zinc-900 animate-pulse border border-zinc-800" />
-          </div>
-        </div>
-      ) : (
-        <div className="px-5 mt-6 mb-16 w-full">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            <div id="tour-carousel" className="lg:col-span-3 w-full aspect-[16/10] lg:aspect-[16/9] 2xl:aspect-[21/9]">
-              <FeaturedCarousel projects={homeData.featuredProjects} />
-            </div>
+      {/* Unified Tab Navigation Bar */}
+      <div className="px-5 md:px-8 max-w-7xl w-full mx-auto mt-10">
+        <div className="flex items-center gap-3 border-b border-zinc-800/90 pb-3">
+          <button
+            onClick={() => setActiveNavTab('explore')}
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold tracking-wide transition-all ${
+              activeNavTab === 'explore'
+                ? "bg-zinc-800 text-emerald-400 border border-zinc-700 shadow-md"
+                : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900"
+            }`}
+          >
+            <Compass className="w-4 h-4" />
+            <span>Explorar Ofertas</span>
+          </button>
 
-            <div id="tour-notifications" className="lg:col-span-1 w-full h-[400px] lg:h-full">
-              <NotificationsPanel
-                hasAccess={homeData.accessCards.length > 0}
-                notifications={homeData.notifications}
-              />
-            </div>
-          </div>
-        </div>
-      )}
+          <button
+            onClick={() => setActiveNavTab('vault')}
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold tracking-wide transition-all ${
+              activeNavTab === 'vault'
+                ? "bg-zinc-800 text-emerald-400 border border-zinc-700 shadow-md"
+                : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900"
+            }`}
+          >
+            <Key className="w-4 h-4" />
+            <span>Mi Bóveda Soberana</span>
+          </button>
 
-      {homeData.loading ? (
-        <div className="mt-8 px-5 pb-24 flex flex-col gap-4">
-          <div className="h-10 w-40 bg-zinc-900 animate-pulse rounded-lg" />
-          {[1, 2, 3].map(i => <div key={i} className="h-28 bg-zinc-900 animate-pulse rounded-xl" />)}
+          <button
+            onClick={() => setActiveNavTab('partners')}
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold tracking-wide transition-all ${
+              activeNavTab === 'partners'
+                ? "bg-zinc-800 text-emerald-400 border border-zinc-700 shadow-md"
+                : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900"
+            }`}
+          >
+            <Building2 className="w-4 h-4" />
+            <span>Directorio de Partners</span>
+          </button>
         </div>
-      ) : (
-        <div id="tour-assets">
-          <AccessArtifactsSection accessCards={homeData.accessCards} artifacts={homeData.artifacts} />
-        </div>
-      )}
-      <LeadCaptureModal 
-        isOpen={leadModal} 
-        onClose={() => setLeadModal(false)} 
+      </div>
+
+      {/* Tab Panels */}
+      <div className="px-5 md:px-8 max-w-7xl w-full mx-auto mt-6 pb-24 flex-1">
+        {/* TAB 1: EXPLORAR */}
+        {activeNavTab === 'explore' && (
+          <div className="flex flex-col gap-6">
+            <CatalogFilterBar
+              filters={filters}
+              onChange={setFilters}
+              totalCount={filteredItems.length}
+            />
+
+            {isCatalogLoading ? (
+              <CatalogSkeletonGrid />
+            ) : catalogError ? (
+              <div className="p-8 rounded-2xl bg-red-950/20 border border-red-900/40 text-center flex flex-col items-center gap-2">
+                <AlertCircle className="w-6 h-6 text-red-400" />
+                <p className="text-sm font-semibold text-red-300">{catalogError}</p>
+                <p className="text-xs text-zinc-500">Por favor, recargue la página en unos momentos.</p>
+              </div>
+            ) : filteredItems.length === 0 ? (
+              <div className="p-16 rounded-2xl bg-zinc-950/40 border border-dashed border-zinc-800/80 text-center flex flex-col items-center">
+                <Compass className="w-8 h-8 text-zinc-600 mb-2" />
+                <h4 className="text-sm font-semibold text-zinc-200">No se encontraron ofertas con los filtros actuales</h4>
+                <p className="text-xs text-zinc-500 max-w-sm mt-1">
+                  Intenta cambiar la vertical seleccionada o desmarcar el filtro de verificación.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredItems.map((item) => (
+                  <CatalogCard
+                    key={item.id}
+                    item={item}
+                    onConciergeClick={(it) => {
+                      setConciergeItem(it);
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 2: MI BÓVEDA */}
+        {activeNavTab === 'vault' && (
+          <UserSpaceVault walletAddress={user?.address || null} />
+        )}
+
+        {/* TAB 3: PARTNERS DIRECTORY */}
+        {activeNavTab === 'partners' && (
+          <PartnersDirectory items={catalogItems} />
+        )}
+      </div>
+
+      {/* Hermes AI Concierge Drawer */}
+      <HermesConciergeDrawer
+        item={conciergeItem}
+        isOpen={Boolean(conciergeItem)}
+        onClose={() => setConciergeItem(null)}
+      />
+
+      <LeadCaptureModal
+        isOpen={leadModal}
+        onClose={() => setLeadModal(false)}
         source="dashboard-home"
       />
     </div>
