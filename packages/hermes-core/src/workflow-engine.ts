@@ -33,7 +33,16 @@ export class AutonomousWorkflowEngine {
     let followupsSent = 0;
 
     for (const lead of inactiveLeads) {
-      console.log(`[WorkflowEngine] Proactive follow-up generated for lead: ${lead.name || lead.email}`);
+      // Skip leads with no contact destination (null email and null phone)
+      if (!lead.email && !lead.phoneNumber) {
+        // Mark as updated to avoid repeatedly querying the same contact-less lead
+        await db.update(marketingLeads)
+          .set({ updatedAt: new Date() })
+          .where(eq(marketingLeads.id, lead.id));
+        continue;
+      }
+
+      console.log(`[WorkflowEngine] Proactive follow-up generated for lead: ${lead.name || lead.email || lead.phoneNumber}`);
 
       try {
         // Emit event so channels/connectors can reach out

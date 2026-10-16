@@ -187,6 +187,12 @@ export const SNARAI_CANONICAL_CLAIM_CONTRACT: TenantClaimContract = {
       permittedPhrasings: [
         'Títulos de Participación desde $50 USD',
         'inversión fraccionada accesible desde $50 USD',
+        'adquisición de participaciones/títulos',
+        'adquisición de participaciones',
+        'adquisición de títulos',
+        'adquisición directa de participaciones/títulos del desarrollo',
+        'títulos notarizados',
+        'títulos de participación notarizados',
       ],
       provenance: {
         artifactId: 'snarai-projects',
@@ -869,6 +875,19 @@ export class ClaimContractEngine {
             'históricamente',
             'historicaménte',
             'en el pasado',
+            'títulos notarizados',
+            'titulo notarizado',
+            'contratos notarizados',
+            'notarizados en',
+            'adquisición de participaciones',
+            'adquisición de títulos',
+            'adquisición directa',
+            'enlace oficial de checkout',
+            'proceso de adquisición',
+            'fideicomiso inmobiliario',
+            'derechos fideicomisarios',
+            'deal room',
+            'deal rooms',
           ].some(m => clauseLower.includes(m));
           if (contextualMarker && !hardPromise) {
             continue;

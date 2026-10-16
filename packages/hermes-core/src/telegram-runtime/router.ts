@@ -63,7 +63,12 @@ async function tgPost(token: string, method: string, payload: Record<string, unk
   });
   if (!res.ok) {
     const errText = await res.text();
-    console.error(`[Telegram Bot] ${method} failed:`, errText);
+    // Non-blocking expected client errors (e.g. chat not found or blocked by user)
+    if (errText.includes('chat not found') || errText.includes('bot was blocked by the user') || errText.includes('user is deactivated')) {
+      console.warn(`[Telegram Bot] ${method} skipped (inactive/invalid recipient):`, errText);
+    } else {
+      console.error(`[Telegram Bot] ${method} failed:`, errText);
+    }
     return null;
   }
   return res.json();

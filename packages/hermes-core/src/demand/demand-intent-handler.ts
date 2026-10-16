@@ -25,11 +25,12 @@ export class DemandIntentHandler {
    */
   public static isDemandIntent(text: string): boolean {
     const clean = (text || '').trim().toLowerCase();
+    // Only trigger on explicit commands or dedicated requests to launch/create distribution campaigns
     return (
-      /^\/(?:demand|campa[ñn]a|campaign)/i.test(clean) ||
-      /(?:conseguir|atraer|generar|buscar)\s+(?:m[aá]s\s+)?(?:clientes|leads|prospectos|citas|demanda)/i.test(clean) ||
-      /(?:prepara|crea|inicia|lanza|haz|quiero)\s+(?:una\s+)?campa[ñn]a\s+(?:de\s+)?(?:distribuci[oó]n|marketing|demanda)/i.test(clean) ||
-      /(?:activa|activar)\s+(?:la\s+)?demanda/i.test(clean)
+      /^\/(?:demand|campa[ñn]a|campaign)\b/i.test(clean) ||
+      /(?:prepara|crea|inicia|lanza|haz|quiero|armar?)\s+(?:una\s+)?campa[ñn]a\s+(?:de\s+)?(?:distribuci[oó]n|marketing|demanda)/i.test(clean) ||
+      /(?:activa|activar)\s+(?:la\s+)?demanda\s+con\s+(?:sofia|media\s*co)/i.test(clean) ||
+      /(?:generar|lanzar)\s+campa[ñn]a\s+de\s+(?:captaci[oó]n|leads|clientes)/i.test(clean)
     );
   }
 

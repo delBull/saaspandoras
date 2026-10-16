@@ -144,7 +144,7 @@ export async function lockWithdrawal(
           projectId,
           walletAddress: wallet.toLowerCase(),
           amount,
-          token: 'USDC',
+          currency: 'USDC',
           status: 'processing',
           nonce,
           signature,

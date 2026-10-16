@@ -147,7 +147,7 @@ async function handler(request: Request): Promise<Response> {
         projectId,
         walletAddress: walletAddress.toLowerCase(),
         amount,
-        token: 'USDC',
+        currency: 'USDC',
         status: 'processing',
         nonce: userNonce,
         signature: walletSignature,

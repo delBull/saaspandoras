@@ -1285,7 +1285,7 @@ export const withdrawals = pgTable("withdrawals", {
   projectId: integer("project_id").notNull(), // FK to projects (needed for treasury lookups & cooldown scoping)
   walletAddress: varchar("wallet_address", { length: 42 }).notNull(),
   amount: decimal("amount", { precision: 18, scale: 6 }).notNull(),
-  token: varchar("token", { length: 20 }).default('USDC').notNull(),
+  currency: varchar("currency", { length: 20 }).default('USDC').notNull(),
   status: varchar("status", { length: 20 }).default('pending').notNull(), // pending, processing, completed, failed
   txHash: varchar("tx_hash", { length: 66 }),
   nonce: integer("nonce").notNull(),

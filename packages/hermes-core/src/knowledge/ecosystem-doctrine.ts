@@ -139,8 +139,10 @@ export const PANDORAS_ECOSYSTEM_CLAIMS: EcosystemDoctrineClaim[] = [
     canonicalAssertion: "La vertical de Core Protocol y Deal Rooms (/nexus/rooms) permite crear, revisar y notarizar propuestas, acuerdos bilaterales, NDAs y contratos. Cada documento firmado genera un digest SHA-256 inmutable vinculado a la bóveda Sovereign K25 en IPFS.",
     permittedPhrasings: [
       'Deal Rooms y contratos notarizados en /nexus/rooms',
+      'títulos notarizados y acuerdos con anclaje IPFS',
       'ejecución soberana de acuerdos bilaterales con firma SHA-256',
       'gestión jerárquica de propuestas, acuerdos y enmiendas',
+      'emisión y custodia de títulos notarizados en IPFS',
     ],
     provenance: computeProvenance(
       'nexus-deal-rooms',
