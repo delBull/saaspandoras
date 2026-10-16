@@ -33,17 +33,7 @@ import { UserSpaceVault } from "./UserSpaceVault";
 import { CatalogSkeletonGrid } from "./ConsumerSkeletons";
 import { HermesConciergeDrawer } from "./HermesConciergeDrawer";
 
-const FALLBACK_PROJECTS = [
-  {
-    id: "fallback-1",
-    title: "Pandora's Hub",
-    subtitle: "La infraestructura descentralizada para el acceso digital soberano.",
-    actionText: "Explorar",
-    imageUrl: "/images/dhub3.png",
-    projectSlug: "pandoras-protocol",
-    isFallback: true
-  }
-];
+// Strict compliance with Frozen Contract FC-011: No synthetic fallback projects.
 
 function TypewriterText({ text, className, delay = 0 }: { text: string; className?: string; delay?: number }) {
   const [displayText, setDisplayText] = useState('');
@@ -185,14 +175,14 @@ export function ConsumerHomePage() {
         const data = await res.json();
         const rawProjects = data.featuredProjects || [];
         setBootstrapData({
-          featuredProjects: rawProjects.length > 0 ? rawProjects : FALLBACK_PROJECTS,
+          featuredProjects: rawProjects,
           notifications: data.notifications || [],
           loading: false
         });
       } catch (e: any) {
         if (e.name === "AbortError") return;
         setBootstrapData({
-          featuredProjects: FALLBACK_PROJECTS,
+          featuredProjects: [],
           notifications: [],
           loading: false
         });

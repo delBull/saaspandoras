@@ -42,19 +42,23 @@ export function UserSpaceVault({ walletAddress, onConnectWallet }: UserSpaceVaul
       setIsLoading(true);
       setError(null);
       try {
-        // Query existing live endpoint for external purchases with authorized wallet
-        const res = await fetch(`/api/v1/external/users/${walletAddress}/purchases`);
+        // Query authenticated portal vault endpoint (server-side wallet session resolution)
+        const res = await fetch(`/api/v1/portal/user/vault`);
         if (!res.ok) {
+          if (res.status === 401) {
+            setError("Sesión de wallet no verificada en el servidor. Reconecte su wallet.");
+            return;
+          }
           throw new Error("No fue posible cargar sus adquisiciones");
         }
         const data = await res.json();
         if (data.success && Array.isArray(data.purchases)) {
           setPurchases(data.purchases);
-        } else if (Array.isArray(data)) {
-          setPurchases(data);
+        } else {
+          setPurchases([]);
         }
       } catch (err: any) {
-        console.warn("[UserSpaceVault] Querying purchases degraded:", err.message);
+        console.warn("[UserSpaceVault] Querying vault degraded:", err.message);
         setError("Error de sincronización con la bóveda. Intente reconectar.");
       } finally {
         setIsLoading(false);

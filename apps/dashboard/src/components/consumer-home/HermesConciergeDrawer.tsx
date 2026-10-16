@@ -127,30 +127,38 @@ export function HermesConciergeDrawer({
     if (!leadForm.name || !leadForm.email) return;
 
     try {
-      await fetch("/api/v1/marketing/leads", {
+      const res = await fetch("/api/v1/marketing/leads/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          fullName: leadForm.name,
+          name: leadForm.name,
           email: leadForm.email,
-          phoneNumber: leadForm.phone,
-          notes: `Interés en catálogo: ${item.title} (${item.tenantSlug}). Notas: ${leadForm.notes}`,
-          tenantId: item.tenantSlug,
-          source: "consumer_catalog_concierge",
+          phone: leadForm.phone || undefined,
+          intent: "explore",
+          consent: true,
+          metadata: {
+            catalogItemId: item.id,
+            catalogItemTitle: item.title,
+            tenantSlug: item.tenantSlug,
+            notes: leadForm.notes || undefined,
+            source: "consumer_catalog_concierge",
+          },
         }),
       });
+
+      if (!res.ok) throw new Error("Fallo al registrar solicitud");
 
       setMessages((prev) => [
         ...prev,
         {
           sender: 'hermes',
-          text: `¡Excelente, ${leadForm.name}! Tus datos han sido transferidos a la mesa de operaciones de ${item.tenantName}. Te contactaremos a la brevedad.`,
+          text: `¡Excelente, ${leadForm.name}! Tu solicitud ha sido registrada y transferida al equipo de ${item.tenantName}. Te contactaremos a la brevedad.`,
           time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         },
       ]);
       setLeadCaptured(false);
     } catch {
-      alert("No fue posible enviar tus datos. Inténtalo más tarde.");
+      alert("No fue posible enviar tus datos en este momento. Inténtalo más tarde.");
     }
   };
 
