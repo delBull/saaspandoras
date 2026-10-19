@@ -11,10 +11,8 @@ import {
   ArrowRight,
   ArrowLeft,
   CheckCircle2,
-  ShieldCheck,
   Globe,
   Loader2,
-  Lock,
   Wallet,
   Bot,
   Compass,
@@ -22,7 +20,10 @@ import {
   Calendar,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useActiveAccount } from 'thirdweb/react';
+import { useActiveAccount, ConnectButton, darkTheme } from 'thirdweb/react';
+import { client } from '@saasfly/shared/thirdweb-client';
+import { wallets } from '@/lib/wallets';
+import { useAuth } from '@/components/auth/AuthProvider';
 import type { OnboardingProductKey, ProvisioningRequestDTO } from '@saasfly/shared';
 
 interface ProductOption {
@@ -95,10 +96,11 @@ export interface CommercialLead {
 export function UnifiedOnboardingClient({ commercialLead }: { commercialLead?: CommercialLead | null }) {
   const router = useRouter();
   const account = useActiveAccount();
-  const fallbackId = useId();
+  const { user } = useAuth();
+  const activeWalletAddress = account?.address ?? user?.address ?? null;
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
-  const [orgName, setOrgName] = useState(commercialLead?.company || '');
+  const [orgName, setOrgName] = useState(commercialLead?.company ?? '');
   const [orgSlug, setOrgSlug] = useState('');
   const [businessCategory, setBusinessCategory] = useState('technology');
   const [website, setWebsite] = useState('');
@@ -111,6 +113,16 @@ export function UnifiedOnboardingClient({ commercialLead }: { commercialLead?: C
   const [growthPriority, setGrowthPriority] = useState<string>('ACQUIRE_LEADS');
   const [rwaPriority, setRwaPriority] = useState<string>('TOKENIZE_ASSET');
   const [isProvisioning, setIsProvisioning] = useState(false);
+
+  // Auto-prefill for recognized tenant/prospect (e.g. Pablo -> Coffree)
+  React.useEffect(() => {
+    if (activeWalletAddress?.toLowerCase() === '0x084f1b08b1b8e75a337849166dfafd3421c5de10') {
+      if (!orgName) setOrgName('Coffree');
+      if (!orgSlug) setOrgSlug('coffree');
+      if (!website) setWebsite('https://coffree.network');
+      if (!description) setDescription('Plataforma de publicidad experiencial que regala café diario a consumidores financiado por marcas patrocinadoras en cafeterías aliadas.');
+    }
+  }, [activeWalletAddress, orgName, orgSlug, website, description]);
 
   // Auto-generate clean slug on name input
   const handleNameChange = (name: string) => {
@@ -139,7 +151,7 @@ export function UnifiedOnboardingClient({ commercialLead }: { commercialLead?: C
   };
 
   const handleProvision = async () => {
-    if (!account?.address && !commercialLead) {
+    if (!activeWalletAddress && !commercialLead) {
       toast.error('Conecta tu wallet para firmar el aprovisionamiento del tenant.');
       return;
     }
@@ -151,7 +163,7 @@ export function UnifiedOnboardingClient({ commercialLead }: { commercialLead?: C
     }
 
     setIsProvisioning(true);
-    const toastId = toast.loading(commercialLead ? 'Generando orden comercial...' : 'Aprovisionando ecosistema con Hermes...', { id: 'prov-toast' });
+    toast.loading(commercialLead ? 'Generando orden comercial...' : 'Aprovisionando ecosistema con Hermes...', { id: 'prov-toast' });
 
     try {
       const idempotencyKey = `idem_${orgSlug}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
@@ -176,11 +188,11 @@ export function UnifiedOnboardingClient({ commercialLead }: { commercialLead?: C
           body: JSON.stringify(payload),
         });
 
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Error al generar la orden comercial');
+        const data = (await res.json()) as { error?: string; orderId?: string };
+        if (!res.ok) throw new Error(data.error ?? 'Error al generar la orden comercial');
 
         toast.success('Orden creada. Redirigiendo a pago...', { id: 'prov-toast' });
-        router.push(`/nexus/checkout/${data.orderId}`);
+        router.push(`/nexus/checkout/${data.orderId ?? ''}`);
       } else {
         // FLUJO B2C EXISTENTE: Aprovisionamiento directo
         const payload: ProvisioningRequestDTO = {
@@ -188,8 +200,8 @@ export function UnifiedOnboardingClient({ commercialLead }: { commercialLead?: C
             name: orgName.trim(),
             slug: orgSlug.trim(),
             businessCategory,
-            website: website.trim() || undefined,
-            description: description.trim() || undefined,
+            website: website.trim() ? website.trim() : undefined,
+            description: description.trim() ? description.trim() : undefined,
           },
           products: selectedProducts,
           idempotencyKey,
@@ -204,26 +216,27 @@ export function UnifiedOnboardingClient({ commercialLead }: { commercialLead?: C
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-wallet-address': account!.address,
+            'x-wallet-address': activeWalletAddress!,
           },
           body: JSON.stringify(payload),
         });
 
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Error al aprovisionar la organización');
+        const data = (await res.json()) as { error?: string; redirectUrl?: string };
+        if (!res.ok) throw new Error(data.error ?? 'Error al aprovisionar la organización');
 
         toast.success('¡Ecosistema Soberano Aprovisionado con Éxito!', { id: 'prov-toast' });
-        router.push(data.redirectUrl || `/ecosystem/${orgSlug}`);
+        router.push(data.redirectUrl ?? `/ecosystem/${orgSlug}`);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : 'Fallo durante el proceso';
       console.error('Provisioning/Order error:', err);
-      toast.error(err.message || 'Fallo durante el proceso', { id: 'prov-toast' });
+      toast.error(errorMsg, { id: 'prov-toast' });
       setIsProvisioning(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 overflow-y-auto bg-[#07080D] text-white flex flex-col items-center justify-center p-4 sm:p-6 lg:p-12 relative">
+    <div className="fixed inset-0 overflow-y-auto bg-[#07080D] text-white flex flex-col items-center justify-center p-4 sm:p-6 lg:p-12">
       {/* Background Ambient Aura */}
       <div className="absolute top-[-20%] left-[20%] w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[140px] pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[10%] w-[450px] h-[450px] bg-emerald-600/10 rounded-full blur-[140px] pointer-events-none" />
@@ -640,18 +653,38 @@ export function UnifiedOnboardingClient({ commercialLead }: { commercialLead?: C
                 )}
 
                 {/* Compact Wallet & Identity Summary */}
-                <div className="bg-zinc-950/70 border border-zinc-800/80 rounded-2xl p-4 flex items-center justify-between text-xs">
+                <div className="bg-zinc-950/70 border border-zinc-800/80 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                   <div className="space-y-0.5">
                     <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider">Ecosistema Destino</span>
-                    <p className="font-bold text-white">{orgName} <span className="text-indigo-400 font-mono font-normal">(@{orgSlug})</span></p>
+                    <p className="font-bold text-white">{orgName || 'Sin definir'} <span className="text-indigo-400 font-mono font-normal">(@{orgSlug || 'sin-slug'})</span></p>
                   </div>
-                  <div className="text-right space-y-0.5">
+                  <div className="flex flex-col sm:items-end space-y-1">
                     <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider">Wallet Firmante</span>
-                    <p className="font-mono text-zinc-300">
-                      {account?.address
-                        ? `${account.address.slice(0, 6)}...${account.address.slice(-4)}`
-                        : 'No conectada'}
-                    </p>
+                    {activeWalletAddress ? (
+                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono text-[11px] font-bold">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        <span>{activeWalletAddress.slice(0, 6)}...{activeWalletAddress.slice(-4)}</span>
+                      </div>
+                    ) : (
+                      <div className="scale-90 origin-left sm:origin-right">
+                        <ConnectButton
+                          client={client}
+                          wallets={wallets}
+                          connectButton={{
+                            label: "Conectar Wallet",
+                            style: {
+                              fontSize: "11px",
+                              padding: "6px 14px",
+                              borderRadius: "8px",
+                              background: "#6366f1",
+                              color: "#fff",
+                              fontWeight: "bold",
+                            }
+                          }}
+                          theme={darkTheme()}
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
 

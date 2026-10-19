@@ -1,17 +1,25 @@
 'use client';
 
-import { useState, useEffect, useMemo, Suspense } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect, Suspense } from 'react';
+import { motion } from 'framer-motion';
 import { useActiveAccount, ConnectButton, darkTheme } from "thirdweb/react";
 import { client } from "@saasfly/shared/thirdweb-client";
 import { wallets } from "@/lib/wallets";
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { ShieldCheck, Loader2 } from 'lucide-react';
 import { defineChain } from 'thirdweb/chains';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { getProjectForAuth } from './actions';
 
+interface ProjectAuthData {
+    title: string;
+    chainId: number | string | null;
+    logoUrl: string | null;
+    themeColor: string | null;
+}
+
 function AuthContent() {
+    const router = useRouter();
     const account = useActiveAccount();
     const searchParams = useSearchParams();
     const { runAuthFlow, status: authStatus } = useAuth();
@@ -41,7 +49,7 @@ function AuthContent() {
         }
     }, [searchParams]);
     
-    const [project, setProject] = useState<any>(null);
+    const [project, setProject] = useState<ProjectAuthData | null>(null);
     const [loading, setLoading] = useState(true);
 
     // Chain detection (default to Sepolia for now or Base if project specifies)
@@ -50,19 +58,23 @@ function AuthContent() {
     const brandColor = project?.themeColor || '#7c3aed';
 
     useEffect(() => {
+        let isMounted = true;
         async function fetchProject() {
             try {
                 const projectData = await getProjectForAuth(projectSlug);
-                if (projectData) {
+                if (isMounted && projectData) {
                     setProject(projectData);
                 }
             } catch (e) {
                 console.error("Failed to fetch project for auth", e);
             } finally {
-                setLoading(false);
+                if (isMounted) setLoading(false);
             }
         }
-        fetchProject();
+        void fetchProject();
+        return () => {
+            isMounted = false;
+        };
     }, [projectSlug]);
 
     // Handle Authentication Completion
@@ -77,13 +89,16 @@ function AuthContent() {
             if (window.opener) {
                 // DESKTOP: Send wallet info to parent window IMMEDIATELY to avoid getting stuck in SIWE
                 console.log("🛡️ [Auth] Desktop popup: Sending immediate wallet sync:", account.address);
-                window.opener.postMessage({ type: 'growth_os:auth_success', wallet: account.address }, targetOrigin);
+                const openerWin = window.opener as Window;
+                openerWin.postMessage({ type: 'growth_os:auth_success', wallet: account.address }, targetOrigin);
                 
                 // Close window after a short delay so the user session is registered
                 closeTimeout = setTimeout(() => {
                     try {
                         window.close();
-                    } catch (e) {}
+                    } catch {
+                        // ignore close failure
+                    }
                 }, 2000);
                 
                 if (isSuccess) {
@@ -101,13 +116,19 @@ function AuthContent() {
                 } catch (e) {
                     console.error("Failed to construct return URL", e);
                 }
+            } else if (isSuccess) {
+                // DIRECT TAB ACCESS: Si entra directamente por URL (sin popup ni origin), redirigir al Dashboard
+                console.log("🛡️ [Auth] Direct tab access: redirecting to Dashboard...");
+                closeTimeout = setTimeout(() => {
+                    router.replace('/');
+                }, 1000);
             }
         }
 
         return () => {
             if (closeTimeout) clearTimeout(closeTimeout);
         };
-    }, [account?.address, authStatus, origin]);
+    }, [account?.address, authStatus, origin, router]);
 
     // Trigger SIWE if connected but not authenticated (Only really needed for desktop popup flow)
     useEffect(() => {
@@ -207,6 +228,17 @@ function AuthContent() {
                         className="mt-4 px-6 py-3 bg-white text-black text-[11px] font-black uppercase tracking-widest rounded-full hover:scale-105 transition-transform"
                     >
                         Volver al Portal
+                    </button>
+                )}
+
+                {account?.address && !window.opener && !origin && ['authenticated', 'has_access', 'no_access'].includes(authStatus) && (
+                    <button 
+                        onClick={() => {
+                            router.replace('/');
+                        }}
+                        className="mt-4 px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-black text-[11px] font-black uppercase tracking-widest rounded-full hover:scale-105 transition-transform shadow-lg shadow-emerald-500/20"
+                    >
+                        Entrar al Dashboard →
                     </button>
                 )}
             </motion.div>
