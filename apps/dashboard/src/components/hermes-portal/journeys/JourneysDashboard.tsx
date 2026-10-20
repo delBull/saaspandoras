@@ -337,6 +337,45 @@ export function JourneysDashboard({ journeys, organizationSlug, onToggleJourney 
                   </div>
                 ))}
               </div>
+              {/* Suggested Message / Outreach Template for this Journey */}
+              <div className="mt-8 p-5 rounded-2xl bg-gradient-to-br from-indigo-950/20 via-[#10101C] to-emerald-950/15 border border-indigo-500/20 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-emerald-400 font-bold text-xs uppercase tracking-wider flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                      Plantilla de Prospección Sugerida (WhatsApp + Dash)
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const sampleText = `Hola, te comparto nuestra línea de atención directa con Hermes AI para ${activeJourney.name}: https://wa.me/5213221374392?text=${encodeURIComponent(`Hola Hermes, quiero información sobre ${activeJourney.name}`)} (o entra directo al dashboard: https://dash.pandoras.finance)`;
+                      void navigator.clipboard.writeText(sampleText).then(() => {
+                        toast.success('Mensaje copiado al portapapeles');
+                      });
+                    }}
+                    className="text-[11px] font-semibold text-indigo-400 hover:text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 px-2.5 py-1 rounded-lg transition-all"
+                  >
+                    Copiar Mensaje
+                  </button>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-black/40 border border-white/5 text-xs text-white/80 font-mono leading-relaxed select-all">
+                  <span className="text-white/40">Hola [Nombre], te comparto la línea de atención de Hermes AI para {activeJourney.name}:</span><br />
+                  <span className="text-emerald-300 font-medium">📲 Chatear con Hermes en WhatsApp: </span>
+                  <a 
+                    href={`https://wa.me/5213221374392?text=${encodeURIComponent(`Hola Hermes, quiero revisar ${activeJourney.name}`)}`}
+                    target="_blank" 
+                    rel="noreferrer"
+                    className="text-indigo-400 hover:underline"
+                  >
+                    https://wa.me/5213221374392?text=...
+                  </a><br />
+                  <span className="text-white/50">💻 O si prefieres entrar directo al hub: </span>
+                  <a href="https://dash.pandoras.finance" target="_blank" rel="noreferrer" className="text-white/70 hover:underline">
+                    https://dash.pandoras.finance
+                  </a>
+                </div>
+              </div>
             </div>
 
             {/* Quick Action Footer */}

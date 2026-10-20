@@ -210,6 +210,96 @@ export const BUILTIN_PLAYBOOKS: Record<string, PlaybookDefinition> = {
         suggestedAction: 'Ejecutar calendar.schedule con equipo de ingeniería de producto.'
       }
     ]
+  },
+
+  // 4. Real Estate & RWA Syndication (Activos Reales, Preventa & SPV)
+  'rwa_syndicate_playbook': {
+    id: 'rwa_syndicate_playbook',
+    name: 'Real Estate & RWA Syndication Playbook',
+    version: '1.0',
+    stages: [
+      {
+        id: 'stage_rwa_asset_qualification',
+        name: 'Diagnóstico de Activo & Estructura Legal',
+        objective: 'Calificar el tipo de activo (inmueble, desarrollo hotelero, portafolio) y estructura societaria/fideicomiso.',
+        nextStageId: 'stage_rwa_teaser_absorption',
+        suggestedAction: 'Explicar cómo opera la tokenización vía SPV/Certificados de Participación y solicitar dossier del activo.'
+      },
+      {
+        id: 'stage_rwa_teaser_absorption',
+        name: 'Simulación Financiera & Absorción de Capital',
+        objective: 'Calcular meta de fondeo, ticket promedio y esquema de retornos/dividendos.',
+        requiredData: ['email', 'company'],
+        nextStageId: 'stage_rwa_private_deal_room',
+        suggestedAction: 'Entregar resumen ejecutivo y modelo de tokenización financiera.'
+      },
+      {
+        id: 'stage_rwa_private_deal_room',
+        name: 'Agendamiento Privado de Estructuración',
+        objective: 'Coordinar sesión técnica-financiera con el equipo de capital de Pandora\'s.',
+        suggestedAction: 'Ejecutar calendar.schedule con directores de estructuración RWA.'
+      }
+    ]
+  },
+
+  // 5. Retail Omnichannel & Fidelización E-Commerce (Recuperación y Carritos)
+  'ecommerce_omnichannel_playbook': {
+    id: 'ecommerce_omnichannel_playbook',
+    name: 'Retail Omnichannel & Direct-to-Consumer Loyalty Playbook',
+    version: '1.0',
+    stages: [
+      {
+        id: 'stage_omnichannel_welcome_offer',
+        name: 'Bienvenida & Recuperación de Intención',
+        objective: 'Reconectar con el visitante o carrito abandonado sin fricción vía WhatsApp con incentivo inmediato.',
+        nextStageId: 'stage_omnichannel_loyalty_activation',
+        suggestedAction: 'Entregar código de beneficio o cortesía personalizada según su última visita.'
+      },
+      {
+        id: 'stage_omnichannel_loyalty_activation',
+        name: 'Activación de Monedero / Puntos Digitales',
+        objective: 'Registrar la wallet o número móvil del comprador para acumular cashback en futuras compras.',
+        requiredData: ['phone'],
+        nextStageId: 'stage_omnichannel_checkout_assistance',
+        suggestedAction: 'Confirmar el balance inicial de recompensas y sugerir productos de su interés.'
+      },
+      {
+        id: 'stage_omnichannel_checkout_assistance',
+        name: 'Asistencia de Cierre & Checkout Conversacional',
+        objective: 'Resolver preguntas de envío, tallas o pago y guiar al pago con 1 clic.',
+        suggestedAction: 'Generar enlace de pago directo o checkout express.'
+      }
+    ]
+  },
+
+  // 6. Embajadores, Brokers & Afiliados On-Chain (Revenue Share & Splits)
+  'ambassador_network_playbook': {
+    id: 'ambassador_network_playbook',
+    name: 'Ambassador & Partner On-Chain Network Playbook',
+    version: '1.0',
+    stages: [
+      {
+        id: 'stage_ambassador_onboarding_evaluation',
+        name: 'Evaluación de Perfil & Audiencia de Embajador',
+        objective: 'Validar si el afiliado/broker cuenta con cartera de clientes, comunidad o presencia en sector meta.',
+        nextStageId: 'stage_ambassador_deal_agreement',
+        suggestedAction: 'Presentar el esquema de comisiones y splits automáticos en stablecoin/SPEI.'
+      },
+      {
+        id: 'stage_ambassador_deal_agreement',
+        name: 'Asignación de Golden Link & Contrato de Afiliación',
+        objective: 'Generar el enlace único de referidos y registrar la wallet/cuenta receptora.',
+        requiredData: ['email', 'phone'],
+        nextStageId: 'stage_ambassador_active_enablement',
+        suggestedAction: 'Entregar Golden Link rastreable y kit de prospección verificado.'
+      },
+      {
+        id: 'stage_ambassador_active_enablement',
+        name: 'Capacitación & Sesión de Estrategia de Prospección',
+        objective: 'Agendar llamada de alineación para revisar material de ventas y primeros leads.',
+        suggestedAction: 'Ejecutar calendar.schedule con el coordinador de la red de embajadores.'
+      }
+    ]
   }
 };
 
@@ -300,6 +390,51 @@ export const BUILTIN_JOURNEYS: Record<string, JourneyDefinition> = {
     successCriteria: {
       targetEvent: 'NEWSLETTER_SUBSCRIBED',
       requiredFields: ['email']
+    },
+    timeoutMinutes: 1440
+  },
+
+  'rwa_real_estate_syndicate_journey': {
+    id: 'rwa_real_estate_syndicate_journey',
+    name: 'Real Estate & RWA Syndication Journey',
+    persona: 'Pandoras Real Estate Capital Director',
+    goal: 'Calificar activo inmobiliario y agendar sesión privada de estructuración SPV',
+    playbookId: 'rwa_syndicate_playbook',
+    allowedSkills: ['rwa_advisory', 'deal_room_access'],
+    allowedTools: ['calendar.schedule'],
+    successCriteria: {
+      targetEvent: 'RWA_DEAL_ROOM_SCHEDULED',
+      requiredFields: ['email', 'company']
+    },
+    timeoutMinutes: 1440
+  },
+
+  'ecommerce_omnichannel_loyalty_journey': {
+    id: 'ecommerce_omnichannel_loyalty_journey',
+    name: 'Retail Omnichannel & D2C Loyalty Journey',
+    persona: 'Hermes Omnichannel Retailer',
+    goal: 'Recuperar intención de compra, activar cashback digital y asistir checkout',
+    playbookId: 'ecommerce_omnichannel_playbook',
+    allowedSkills: ['cart_recovery', 'loyalty_balance'],
+    allowedTools: ['notifications.whatsapp_send', 'payments.checkout'],
+    successCriteria: {
+      targetEvent: 'OMNICHANNEL_PURCHASE_COMPLETED',
+      requiredFields: ['phone']
+    },
+    timeoutMinutes: 720
+  },
+
+  'ambassador_deal_closer_journey': {
+    id: 'ambassador_deal_closer_journey',
+    name: 'Ambassador & Partner On-Chain Network Journey',
+    persona: 'Pandoras Partnership Lead',
+    goal: 'Asignar Golden Link de afiliado con split automático y agendar sesión de ventas',
+    playbookId: 'ambassador_network_playbook',
+    allowedSkills: ['affiliate_onboarding', 'golden_link_dispatch'],
+    allowedTools: ['calendar.schedule', 'notifications.whatsapp_send'],
+    successCriteria: {
+      targetEvent: 'AMBASSADOR_GOLDEN_LINK_ASSIGNED',
+      requiredFields: ['email', 'phone']
     },
     timeoutMinutes: 1440
   }
