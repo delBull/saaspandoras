@@ -4747,17 +4747,35 @@ export const nexusTasks = pgTable('nexus_tasks', {
   claimedAt: timestamp('claimed_at', { withTimezone: true }),
   completedAt: timestamp('completed_at', { withTimezone: true }),
   cancelledAt: timestamp('cancelled_at', { withTimezone: true }),
+  sourceRef: text('source_ref'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, (t) => {
   return {
     orgStatusIdx: index('idx_nexus_tasks_org_status').on(t.canonicalOrgId, t.status),
     assigneeIdx: index('idx_nexus_tasks_assignee').on(t.assigneeCollaboratorId, t.status),
+    sourceRefIdx: index('idx_nexus_tasks_source_ref').on(t.sourceRef),
   };
 });
 
 export type NexusTask = typeof nexusTasks.$inferSelect;
 export type NewNexusTask = typeof nexusTasks.$inferInsert;
+
+export const nexusTaskComments = pgTable('nexus_task_comments', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  taskId: uuid('task_id').notNull().references(() => nexusTasks.id, { onDelete: 'cascade' }),
+  canonicalOrgId: varchar('canonical_org_id', { length: 256 }).notNull(),
+  author: varchar('author', { length: 256 }).notNull(),
+  comment: text('comment').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => {
+  return {
+    taskIdx: index('idx_nexus_task_comments_task_id').on(t.taskId),
+  };
+});
+
+export type NexusTaskComment = typeof nexusTaskComments.$inferSelect;
+export type NewNexusTaskComment = typeof nexusTaskComments.$inferInsert;
 
 export const nexusPresence = pgTable('nexus_presence', {
   id: serial('id').primaryKey(),
