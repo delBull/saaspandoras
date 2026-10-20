@@ -12,6 +12,7 @@ export function resolveProjectSlug(slug: string): string {
   // Legacy Aliases Mapping (Scalable)
   const ALIASES: Record<string, string> = {
     'narai': 'snarai',
+    'pandoras_access': 'pandoras',
   };
   
   return ALIASES[s] || slug;
