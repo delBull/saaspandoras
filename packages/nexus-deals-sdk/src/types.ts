@@ -169,7 +169,7 @@ export function newRoomId(): string {
   return randomUUID();
 }
 
-export const ADMIN_UNLOCK_SECRET = process.env.NEXUS_DEAL_UNLOCK_SECRET;
+export const ADMIN_UNLOCK_SECRET = process.env.NEXUS_DEAL_UNLOCK_SECRET ?? process.env.PORTAL_JWT_SECRET ?? process.env.NEXTAUTH_SECRET ?? "pandoras_academy_fallback_secret_prod";
 export const DEAL_TOKEN_SECRET = process.env.NEXUS_DEAL_TOKEN_SECRET ?? process.env.PORTAL_JWT_SECRET;
 export const UNLOCK_TTL_MS = 2 * 60 * 60 * 1000; // 2 horas
 export const DEAL_TOKEN_EXPIRY = "7d";

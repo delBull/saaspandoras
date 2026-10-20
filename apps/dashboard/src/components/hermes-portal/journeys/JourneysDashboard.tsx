@@ -1,25 +1,21 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useId } from 'react';
 import { 
   GitBranch, 
   Goal, 
   CheckCircle2, 
-  Circle, 
   PlayCircle, 
   PauseCircle, 
   Plus, 
   LayoutGrid, 
   Settings2, 
   Trash2, 
-  X, 
-  Save, 
-  AlertTriangle,
-  MoveUp,
-  MoveDown
+  X
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { createJourney, updateJourney, deleteJourney, toggleJourneyState } from '@/app/portal/[organizationSlug]/audience/journeys/actions';
+import { JourneysGuideModal } from './JourneysGuideModal';
 
 export interface JourneyView {
   id: string;
@@ -36,8 +32,16 @@ interface JourneysDashboardProps {
 }
 
 export function JourneysDashboard({ journeys, organizationSlug, onToggleJourney }: JourneysDashboardProps) {
-  const [selectedId, setSelectedId] = useState<string | null>(journeys[0]?.id || null);
+  const [selectedId, setSelectedId] = useState<string | null>(journeys[0]?.id ?? null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+
+  // Accessible Form Control IDs
+  const createNameId = useId();
+  const createDescId = useId();
+  const createMilestoneId = useId();
+  const editNameId = useId();
+  const editDescId = useId();
+  const editMilestoneId = useId();
 
   // Modals state
   const [isCreating, setIsCreating] = useState(false);
@@ -49,7 +53,7 @@ export function JourneysDashboard({ journeys, organizationSlug, onToggleJourney 
   const [formDescription, setFormDescription] = useState('');
   const [formMilestones, setFormMilestones] = useState<string[]>(['']);
 
-  const activeJourney = journeys.find(j => j.id === selectedId) || journeys[0];
+  const activeJourney = journeys.find(j => j.id === selectedId) ?? journeys[0];
 
   // Open Create Modal
   const handleOpenCreate = () => {
@@ -63,7 +67,7 @@ export function JourneysDashboard({ journeys, organizationSlug, onToggleJourney 
   const handleOpenSettings = () => {
     if (!activeJourney) return;
     setFormName(activeJourney.name);
-    setFormDescription(activeJourney.description || '');
+    setFormDescription(activeJourney.description ?? '');
     setFormMilestones(activeJourney.milestones.length > 0 ? [...activeJourney.milestones] : ['']);
     setIsEditingSettings(true);
   };
@@ -110,8 +114,9 @@ export function JourneysDashboard({ journeys, organizationSlug, onToggleJourney 
         setIsCreating(false);
         if (res.journeyId) setSelectedId(res.journeyId);
       }
-    } catch (err: any) {
-      toast.error(err.message || 'Error al crear journey');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error al crear journey';
+      toast.error(msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -139,8 +144,9 @@ export function JourneysDashboard({ journeys, organizationSlug, onToggleJourney 
       });
       toast.success('Journey actualizado exitosamente');
       setIsEditingSettings(false);
-    } catch (err: any) {
-      toast.error(err.message || 'Error al actualizar journey');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error al actualizar journey';
+      toast.error(msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -160,8 +166,9 @@ export function JourneysDashboard({ journeys, organizationSlug, onToggleJourney 
       const remaining = journeys.filter(j => j.id !== activeJourney.id);
       if (remaining.length > 0 && remaining[0]) setSelectedId(remaining[0].id);
       else setSelectedId(null);
-    } catch (err: any) {
-      toast.error(err.message || 'Error al eliminar journey');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error al eliminar journey';
+      toast.error(msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -177,8 +184,9 @@ export function JourneysDashboard({ journeys, organizationSlug, onToggleJourney 
         await toggleJourneyState(organizationSlug, journeyId, activate);
       }
       toast.success(activate ? 'Journey activado' : 'Journey pausado');
-    } catch (err: any) {
-      toast.error(err.message || 'Error al cambiar estado');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error al cambiar estado';
+      toast.error(msg);
     } finally {
       setTogglingId(null);
     }
@@ -190,13 +198,18 @@ export function JourneysDashboard({ journeys, organizationSlug, onToggleJourney 
       {/* Sidebar: List of Journeys */}
       <div className="lg:w-80 shrink-0 space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-3">
-            <GitBranch className="w-7 h-7 text-indigo-400" />
-            Agent Journeys
-          </h1>
+          <div className="flex items-center justify-between gap-2">
+            <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-3">
+              <GitBranch className="w-7 h-7 text-indigo-400" />
+              Agent Journeys
+            </h1>
+          </div>
           <p className="text-white/50 mt-2 text-xs leading-relaxed">
             Autonomous workflows. Define the strategic goals Hermes should pursue in conversations.
           </p>
+          <div className="mt-3">
+            <JourneysGuideModal organizationSlug={organizationSlug} />
+          </div>
         </div>
 
         <button 
@@ -371,8 +384,9 @@ export function JourneysDashboard({ journeys, organizationSlug, onToggleJourney 
 
             <form onSubmit={handleCreateSubmit} className="p-6 space-y-5 overflow-y-auto flex-1">
               <div>
-                <label className="text-xs font-semibold text-neutral-300 block mb-1.5">Nombre del Journey</label>
+                <label htmlFor={createNameId} className="text-xs font-semibold text-neutral-300 block mb-1.5">Nombre del Journey</label>
                 <input
+                  id={createNameId}
                   type="text"
                   placeholder="Ej. Onboarding de Inversionistas VIP"
                   value={formName}
@@ -383,8 +397,9 @@ export function JourneysDashboard({ journeys, organizationSlug, onToggleJourney 
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-neutral-300 block mb-1.5">Descripción (Opcional)</label>
+                <label htmlFor={createDescId} className="text-xs font-semibold text-neutral-300 block mb-1.5">Descripción (Opcional)</label>
                 <input
+                  id={createDescId}
                   type="text"
                   placeholder="Propósito estratégico del workflow..."
                   value={formDescription}
@@ -395,7 +410,7 @@ export function JourneysDashboard({ journeys, organizationSlug, onToggleJourney 
 
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs font-semibold text-neutral-300">Hitos del Funnel (Milestones)</label>
+                  <label htmlFor={`${createMilestoneId}-0`} className="text-xs font-semibold text-neutral-300">Hitos del Funnel (Milestones)</label>
                   <button
                     type="button"
                     onClick={handleAddMilestone}
@@ -410,6 +425,7 @@ export function JourneysDashboard({ journeys, organizationSlug, onToggleJourney 
                     <div key={idx} className="flex items-center gap-2">
                       <span className="text-[11px] font-mono text-white/30 w-6 text-right">#{idx + 1}</span>
                       <input
+                        id={`${createMilestoneId}-${idx}`}
                         type="text"
                         placeholder={`Paso ${idx + 1}...`}
                         value={m}
@@ -470,8 +486,9 @@ export function JourneysDashboard({ journeys, organizationSlug, onToggleJourney 
 
             <form onSubmit={handleUpdateSubmit} className="p-6 space-y-5 overflow-y-auto flex-1">
               <div>
-                <label className="text-xs font-semibold text-neutral-300 block mb-1.5">Nombre del Journey</label>
+                <label htmlFor={editNameId} className="text-xs font-semibold text-neutral-300 block mb-1.5">Nombre del Journey</label>
                 <input
+                  id={editNameId}
                   type="text"
                   value={formName}
                   onChange={e => setFormName(e.target.value)}
@@ -481,8 +498,9 @@ export function JourneysDashboard({ journeys, organizationSlug, onToggleJourney 
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-neutral-300 block mb-1.5">Descripción</label>
+                <label htmlFor={editDescId} className="text-xs font-semibold text-neutral-300 block mb-1.5">Descripción</label>
                 <input
+                  id={editDescId}
                   type="text"
                   value={formDescription}
                   onChange={e => setFormDescription(e.target.value)}
@@ -492,7 +510,7 @@ export function JourneysDashboard({ journeys, organizationSlug, onToggleJourney 
 
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs font-semibold text-neutral-300">Hitos del Funnel (Milestones)</label>
+                  <label htmlFor={`${editMilestoneId}-0`} className="text-xs font-semibold text-neutral-300">Hitos del Funnel (Milestones)</label>
                   <button
                     type="button"
                     onClick={handleAddMilestone}
@@ -507,6 +525,7 @@ export function JourneysDashboard({ journeys, organizationSlug, onToggleJourney 
                     <div key={idx} className="flex items-center gap-2">
                       <span className="text-[11px] font-mono text-white/30 w-6 text-right">#{idx + 1}</span>
                       <input
+                        id={`${editMilestoneId}-${idx}`}
                         type="text"
                         value={m}
                         onChange={e => handleMilestoneChange(idx, e.target.value)}

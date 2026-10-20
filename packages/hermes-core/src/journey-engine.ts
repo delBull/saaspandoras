@@ -120,6 +120,96 @@ export const BUILTIN_PLAYBOOKS: Record<string, PlaybookDefinition> = {
         suggestedAction: 'Registrar correo para el boletín editorial.'
       }
     ]
+  },
+
+  // 1. Agencia de Marketing (Consolidación de Operaciones, CRM & Hermes AI)
+  'agency_operations_playbook': {
+    id: 'agency_operations_playbook',
+    name: 'Agencia de Marketing Operations & Growth Playbook',
+    version: '1.0',
+    stages: [
+      {
+        id: 'stage_agency_bottleneck_diagnosis',
+        name: 'Diagnóstico de Dispersión Operativa',
+        objective: 'Identificar los servicios regados que la agencia ofrece y la falta de un hub central de analítica y métricas.',
+        nextStageId: 'stage_agency_solution_hub',
+        suggestedAction: 'Preguntar qué herramientas usan actualmente y cómo entregan reportes de métricas a sus clientes.'
+      },
+      {
+        id: 'stage_agency_solution_hub',
+        name: 'Demostración de Growth OS & Multi-Tenant Whitelabel',
+        objective: 'Presentar cómo centralizar telemetría, CRM de leads y agentes Hermes con dashboards unificados.',
+        requiredData: ['email', 'phone'],
+        nextStageId: 'stage_agency_demo_booking',
+        suggestedAction: 'Mostrar demo interactiva de dash.pandoras.finance/onboarding o agendar videollamada.'
+      },
+      {
+        id: 'stage_agency_demo_booking',
+        name: 'Agendamiento de Sesión Estratégica',
+        objective: 'Coordinar videollamada en /meet para estructurar su hub de agencia.',
+        suggestedAction: 'Ejecutar calendar.schedule para agendar demo.'
+      }
+    ]
+  },
+
+  // 2. Café Local (Lanzamiento, Fidelización & Captación Local)
+  'local_coffee_launch_playbook': {
+    id: 'local_coffee_launch_playbook',
+    name: 'Café Local Launch & Local Foot-Traffic Playbook',
+    version: '1.0',
+    stages: [
+      {
+        id: 'stage_coffee_welcome_ambiance',
+        name: 'Bienvenida al Lanzamiento & Concepto',
+        objective: 'Presentar el concepto del café de especialidad y la fecha/ubicación de apertura sin fricción.',
+        nextStageId: 'stage_coffee_exclusive_invitation',
+        suggestedAction: 'Compartir invitación de cata inaugural o promoción de apertura por WhatsApp.'
+      },
+      {
+        id: 'stage_coffee_exclusive_invitation',
+        name: 'Invitación a Apertura & Pase VIP',
+        objective: 'Registrar al cliente local en la lista VIP de apertura a cambio de una cortesía o descuento.',
+        requiredData: ['name', 'phone'],
+        nextStageId: 'stage_coffee_vip_pass_confirmed',
+        suggestedAction: 'Entregar pase digital para la inauguración o menú de bienvenida.'
+      },
+      {
+        id: 'stage_coffee_vip_pass_confirmed',
+        name: 'Confirmación & Recordatorio de Visita',
+        objective: 'Enviar recordatorio por WhatsApp horas antes de la apertura.',
+        suggestedAction: 'Activar recordatorio automático de WhatsApp.'
+      }
+    ]
+  },
+
+  // 3. App de Recompensas Globales (Puntos, Incentivos, POS & Tokenomics)
+  'rewards_app_growth_playbook': {
+    id: 'rewards_app_growth_playbook',
+    name: 'Rewards & Incentive Protocol Playbook',
+    version: '1.0',
+    stages: [
+      {
+        id: 'stage_rewards_architecture_discovery',
+        name: 'Descubrimiento de Mecánica de Incentivos',
+        objective: 'Identificar si el proyecto requiere puntos off-chain, liquidación en POS, cupones o tokenización on-chain.',
+        nextStageId: 'stage_rewards_engine_alignment',
+        suggestedAction: 'Explicar cómo Pandora\'s conecta puntos de recompensa con fidelización y pagos.'
+      },
+      {
+        id: 'stage_rewards_engine_alignment',
+        name: 'Alineación de Infraestructura & APIs',
+        objective: 'Validar volumen transaccional y requerimientos de integración de API / POS.',
+        requiredData: ['email', 'company'],
+        nextStageId: 'stage_rewards_partner_meeting',
+        suggestedAction: 'Entregar documentación de integración y agendar sesión con arquitectura.'
+      },
+      {
+        id: 'stage_rewards_partner_meeting',
+        name: 'Agendamiento de Integración & Tokenomics',
+        objective: 'Coordinar sesión técnica para desplegar bóvedas de recompensas y contratos.',
+        suggestedAction: 'Ejecutar calendar.schedule con equipo de ingeniería de producto.'
+      }
+    ]
   }
 };
 
@@ -135,6 +225,51 @@ export const BUILTIN_JOURNEYS: Record<string, JourneyDefinition> = {
     successCriteria: {
       targetEvent: 'FOUNDER_MEETING_SCHEDULED',
       requiredFields: ['email', 'phone']
+    },
+    timeoutMinutes: 1440
+  },
+
+  'agency_consolidation_journey': {
+    id: 'agency_consolidation_journey',
+    name: 'Agencia de Marketing Hub & Operations Journey',
+    persona: 'Pandoras Growth Advisor',
+    goal: 'Demostrar centralización operativa en Growth OS y agendar Demo en /meet',
+    playbookId: 'agency_operations_playbook',
+    allowedSkills: ['marketing_audit', 'whitelabel_advisory'],
+    allowedTools: ['calendar.schedule'],
+    successCriteria: {
+      targetEvent: 'AGENCY_DEMO_SCHEDULED',
+      requiredFields: ['email', 'phone']
+    },
+    timeoutMinutes: 1440
+  },
+
+  'local_coffee_launch_journey': {
+    id: 'local_coffee_launch_journey',
+    name: 'Café Local Launch & Foot-Traffic Journey',
+    persona: 'Hermes Café Concierge',
+    goal: 'Registrar cliente local en lista VIP de apertura y enviar pase por WhatsApp',
+    playbookId: 'local_coffee_launch_playbook',
+    allowedSkills: ['local_hospitality', 'vip_rsvp'],
+    allowedTools: ['calendar.schedule', 'notifications.whatsapp_send'],
+    successCriteria: {
+      targetEvent: 'COFFEE_VIP_RSVP_COMPLETED',
+      requiredFields: ['name', 'phone']
+    },
+    timeoutMinutes: 720
+  },
+
+  'global_rewards_app_journey': {
+    id: 'global_rewards_app_journey',
+    name: 'Global Rewards & POS Loyalty Journey',
+    persona: 'Pandoras Protocol Architect',
+    goal: 'Calificar volumen de transacciones y agendar sesión de arquitectura técnica',
+    playbookId: 'rewards_app_growth_playbook',
+    allowedSkills: ['tokenomics_consulting', 'pos_rewards_architecture'],
+    allowedTools: ['calendar.schedule'],
+    successCriteria: {
+      targetEvent: 'REWARDS_ARCHITECTURE_SCHEDULED',
+      requiredFields: ['email', 'company']
     },
     timeoutMinutes: 1440
   },

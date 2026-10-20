@@ -10,10 +10,11 @@ export const dynamic = 'force-dynamic';
 
 export default async function MarketingPage() {
   // 1. Resolve Platform Authority Server-Side
-  const __hdrs = await import("next/headers").then(m => m.headers()); const auth = await getNexusAuthContext(await __hdrs);
+  const hdrs = await import("next/headers").then(m => m.headers());
+  const auth = await getNexusAuthContext(hdrs);
 
-  // Rol permitido: SUPER_ADMIN, ADMIN, MARKETING
-  if (!auth.isAuthenticated || (auth.role !== 'SUPER_ADMIN' && auth.role !== 'ADMIN' && auth.role !== 'MARKETING')) {
+  // Rol permitido: SUPER_ADMIN, ADMIN, MARKETING, OWNER
+  if (!auth.isAuthenticated || (auth.role !== 'SUPER_ADMIN' && auth.role !== 'ADMIN' && auth.role !== 'MARKETING' && (auth.role as string) !== 'OWNER')) {
     return (
       <AdminAccessGate
         reason={
@@ -36,7 +37,7 @@ export default async function MarketingPage() {
     .where(eq(marketingLeads.scope, 'b2b'))
     .orderBy(desc(marketingLeads.createdAt));
 
-  const serializedLeads = JSON.parse(JSON.stringify(leadsRows));
+  const serializedLeads = JSON.parse(JSON.stringify(leadsRows)) as Record<string, unknown>[];
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">

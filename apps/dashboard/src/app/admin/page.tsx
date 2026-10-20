@@ -29,15 +29,14 @@ import { AdminOperationsView } from '@/components/admin/views/AdminOperationsVie
 import { AdminCrmView } from '@/components/admin/views/AdminCrmView';
 import { AdminEcosystemGuidesView } from '@/components/admin/views/AdminEcosystemGuidesView';
 import { AdminAccessGate } from './AdminAccessGate';
-import { 
+import type { 
   PlatformActor, 
   PlatformGlobalKpis, 
   InfrastructureHealth,
   AdminTenantLensDTO,
   RwaDealSummaryDTO,
   PlatformB2bLeadDTO,
-  B2bPipelineMetricsDTO,
-  PlatformRole 
+  B2bPipelineMetricsDTO
 } from '@saasfly/shared';
 
 interface AdminPageProps {
@@ -48,14 +47,14 @@ export const dynamic = 'force-dynamic';
 
 export default async function AdminPage({ searchParams }: AdminPageProps) {
   const params = searchParams ? await searchParams : {};
-  const activeTab = params?.tab || 'overview';
+  const activeTab = params?.tab ?? 'overview';
 
   // 1. Resolve Platform Authority Server-Side
   const { headers } = await import('next/headers');
   const reqHeaders = await headers();
   const auth = await getNexusAuthContext(reqHeaders);
 
-  if (!auth.isAuthenticated || (auth.role !== 'SUPER_ADMIN' && auth.role !== 'ADMIN')) {
+  if (!auth.isAuthenticated || (auth.role !== 'SUPER_ADMIN' && auth.role !== 'ADMIN' && (auth.role as string) !== 'OWNER')) {
     return (
       <AdminAccessGate
         reason={
@@ -72,14 +71,53 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   let rwaCount = 0;
   let enrichedTenantsList: AdminTenantLensDTO[] = [];
   let rwaDealsList: RwaDealSummaryDTO[] = [];
-  let creditsRawList: any[] = [];
-  let recentEventsList: any[] = [];
-  let endpointsList: any[] = [];
-  let administratorsList: any[] = [];
-  let nexusCollaboratorsList: any[] = [];
+  let creditsRawList: {
+    tenantId: string;
+    name?: string;
+    creditBalanceUsd: number;
+    sandboxBalanceUsd: number;
+    totalDepositedUsd: number;
+    totalSpentUsd: number;
+    markupPercentage: number;
+    isSandboxEnabled: boolean;
+  }[] = [];
+  let recentEventsList: {
+    id: string;
+    tenantId: string;
+    capability: string;
+    executionSeconds: number;
+    rawCostUsd: number;
+    markupCostUsd: number;
+    totalChargedUsd: number;
+    status: string;
+    isSandbox: boolean;
+    createdAt: string;
+  }[] = [];
+  let endpointsList: {
+    id: string;
+    endpointId: string;
+    endpointName: string;
+    modelType: string;
+    gpuType: string;
+    perSecondCostUsd: number;
+    status: string;
+  }[] = [];
+  let administratorsList: {
+    id: number;
+    walletAddress: string;
+    role: string;
+    addedBy: string;
+    createdAt: string;
+  }[] = [];
+  let nexusCollaboratorsList: {
+    id: number;
+    email: string;
+    name: string | null;
+    role: string | null;
+    whatsappPhone: string | null;
+  }[] = [];
   let totalVaultDocuments = 0;
   let totalDeposited = 0;
-  let totalSpent = 0;
   let circulatingCredits = 0;
   let totalGpuSeconds = 0;
   let totalRetainedMargin = 0;
@@ -117,7 +155,6 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         creditsMap.set(c.tenantId.toLowerCase().trim(), c);
         circulatingCredits += parseFloat(c.balance || '0');
         totalDeposited += parseFloat(c.deposited || '0');
-        totalSpent += parseFloat(c.spent || '0');
       });
 
       // Query Projects
@@ -141,22 +178,25 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
       totalTenants = projectsRows.length;
       enrichedTenantsList = projectsRows.map((p) => {
-        const extra = (p.extraConfig as Record<string, any>) || {};
-        const prods = (extra.installed_products || extra.installedProducts || {}) as Record<string, boolean>;
-        const intents = (extra.intents || extra.strategicIntents || []) as string[];
+        const extra = (p.extraConfig as Record<string, unknown> | null) ?? {};
+        const prods = ((extra.installed_products ?? extra.installedProducts ?? {}) as Record<string, boolean>);
+        const intents = ((extra.intents ?? extra.strategicIntents ?? []) as string[]);
         const cred = creditsMap.get(p.slug.toLowerCase().trim());
 
         const isRwa = !!prods.tokenomics_rwa || (p.category ? p.category.includes('real_estate') : false);
         if (isRwa) rwaCount++;
 
+        const lifecycleState: AdminTenantLensDTO['lifecycleState'] = 
+          p.status === 'approved' ? 'ACTIVE' : p.status === 'pending' ? 'TRIAL' : 'PROVISIONED';
+
         return {
           id: String(p.id),
           slug: p.slug,
-          name: p.title || p.slug,
-          category: p.category || 'General',
-          lifecycleState: (p.status === 'approved' ? 'ACTIVE' : p.status === 'pending' ? 'TRIAL' : 'PROVISIONED') as any,
-          riskRating: 'LOW',
-          creatorWallet: p.applicantWallet || '',
+          name: p.title ?? p.slug,
+          category: p.category ?? 'General',
+          lifecycleState,
+          riskRating: 'LOW' as const,
+          creatorWallet: p.applicantWallet ?? '',
           products: {
             hermesAiMesh: !!prods.hermes_ai_mesh,
             growthOsCrm: !!prods.growth_os_crm,
@@ -164,10 +204,10 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           },
           intents,
           compute: {
-            creditBalanceUsd: parseFloat(cred?.balance || '0.00'),
-            sandboxBalanceUsd: parseFloat(cred?.sandboxBalance || '0.00'),
-            totalDepositedUsd: parseFloat(cred?.deposited || '0.00'),
-            totalSpentUsd: parseFloat(cred?.spent || '0.00'),
+            creditBalanceUsd: parseFloat(cred?.balance ?? '0.00'),
+            sandboxBalanceUsd: parseFloat(cred?.sandboxBalance ?? '0.00'),
+            totalDepositedUsd: parseFloat(cred?.deposited ?? '0.00'),
+            totalSpentUsd: parseFloat(cred?.spent ?? '0.00'),
             markupPercentage: cred?.markup ?? 35,
             isSandboxEnabled: cred?.isSandbox ?? true,
             totalEventsCount: 0,
@@ -179,30 +219,37 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       });
 
       // Construct RWA Deals List
-      rwaDealsList = projectsRows.map((p) => ({
-        id: String(p.id),
-        title: p.title || p.slug,
-        slug: p.slug,
-        originatingTenantId: p.slug,
-        sponsorName: p.applicantWallet ? `${p.applicantWallet.slice(0, 8)}...` : 'Pandoras Genesis',
-        stage: (p.status === 'approved' ? 'LIVE' : p.status === 'pending' ? 'STRUCTURING' : 'DUE_DILIGENCE') as any,
-        underlyingAssetType: (p.category && p.category.includes('real_estate') ? 'REAL_ESTATE' : 'PRIVATE_EQUITY') as any,
-        structuring: {
-          legalVehicle: 'S.A.P.I. de C.V. / Trust',
-          jurisdiction: 'México / Del.',
-          assetValuationUsd: p.totalValuationUsd ? parseFloat(p.totalValuationUsd) : 1500000,
-          totalTokenSupply: p.totalTokens || 100000,
-          tokenTicker: p.slug.toUpperCase().slice(0, 5),
-          initialTokenPriceUsd: p.tokenPriceUsd ? parseFloat(p.tokenPriceUsd) : 10.0,
-          offeringPhases: [],
-          contractArchitecture: 'ERC20_FRACTIONAL',
-          distributionModel: 'WHITELISTED_PUBLIC',
-        },
-        chain: 'Base Mainnet',
-        ndaSigned: true,
-        createdAt: p.createdAt ? new Date(p.createdAt).toISOString() : new Date().toISOString(),
-        updatedAt: p.updatedAt ? new Date(p.updatedAt).toISOString() : new Date().toISOString(),
-      }));
+      rwaDealsList = projectsRows.map((p) => {
+        const stage: RwaDealSummaryDTO['stage'] = 
+          p.status === 'approved' ? 'LIVE' : p.status === 'pending' ? 'STRUCTURING' : 'DUE_DILIGENCE';
+        const underlyingAssetType: RwaDealSummaryDTO['underlyingAssetType'] = 
+          (p.category?.includes('real_estate')) ? 'REAL_ESTATE' : 'PRIVATE_EQUITY';
+
+        return {
+          id: String(p.id),
+          title: p.title ?? p.slug,
+          slug: p.slug,
+          originatingTenantId: p.slug,
+          sponsorName: p.applicantWallet ? `${p.applicantWallet.slice(0, 8)}...` : 'Pandoras Genesis',
+          stage,
+          underlyingAssetType,
+          structuring: {
+            legalVehicle: 'S.A.P.I. de C.V. / Trust',
+            jurisdiction: 'México / Del.',
+            assetValuationUsd: p.totalValuationUsd ? parseFloat(p.totalValuationUsd) : 1500000,
+            totalTokenSupply: p.totalTokens ?? 100000,
+            tokenTicker: p.slug.toUpperCase().slice(0, 5),
+            initialTokenPriceUsd: p.tokenPriceUsd ? parseFloat(p.tokenPriceUsd) : 10.0,
+            offeringPhases: [],
+            contractArchitecture: 'ERC20_FRACTIONAL',
+            distributionModel: 'WHITELISTED_PUBLIC',
+          },
+          chain: 'Base Mainnet',
+          ndaSigned: true,
+          createdAt: p.createdAt ? new Date(p.createdAt).toISOString() : new Date().toISOString(),
+          updatedAt: p.updatedAt ? new Date(p.updatedAt).toISOString() : new Date().toISOString(),
+        };
+      });
 
       // Query Hermes Compute Events Aggregates
       const eventsAgg = await db
@@ -230,11 +277,11 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         id: ev.id,
         tenantId: ev.tenantId,
         capability: ev.capability,
-        executionSeconds: parseFloat(ev.executionSeconds || '0'),
-        rawCostUsd: parseFloat(ev.rawCostUsd || '0'),
-        markupCostUsd: parseFloat(ev.markupCostUsd || '0'),
-        totalChargedUsd: parseFloat(ev.totalChargedUsd || '0'),
-        status: ev.status || 'SETTLED',
+        executionSeconds: parseFloat(ev.executionSeconds ?? '0'),
+        rawCostUsd: parseFloat(ev.rawCostUsd ?? '0'),
+        markupCostUsd: parseFloat(ev.markupCostUsd ?? '0'),
+        totalChargedUsd: parseFloat(ev.totalChargedUsd ?? '0'),
+        status: ev.status ?? 'SETTLED',
         isSandbox: ev.isSandbox,
         createdAt: ev.createdAt ? new Date(ev.createdAt).toISOString() : new Date().toISOString(),
       }));
@@ -250,9 +297,9 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         endpointId: ep.endpointId,
         endpointName: ep.endpointName,
         modelType: ep.modelType,
-        gpuType: ep.gpuType || 'NVIDIA RTX A4000',
-        perSecondCostUsd: parseFloat(ep.perSecondCostUsd || '0.00035'),
-        status: ep.status || 'ACTIVE',
+        gpuType: ep.gpuType ?? 'NVIDIA RTX A4000',
+        perSecondCostUsd: parseFloat(ep.perSecondCostUsd ?? '0.00035'),
+        status: ep.status ?? 'ACTIVE',
       }));
 
       // Query Administrators
@@ -288,7 +335,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         .select({ count: sql<number>`count(*)` })
         .from(hermesKnowledge);
 
-      totalVaultDocuments = Number(docsCount[0]?.count || 0);
+      totalVaultDocuments = Number(docsCount[0]?.count ?? 0);
 
       // Query B2B Leads for CRM
       const leadsRows = await db
@@ -303,8 +350,8 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
       b2bLeadsList = leadsRows.map((l) => {
         // Map crmStage to PlatformB2bLeadStage
-        let mappedStage: any = 'PROSPECT';
-        const stage = l.crmStage || '';
+        let mappedStage: PlatformB2bLeadDTO['stage'] = 'PROSPECT';
+        const stage = l.crmStage ?? '';
         if (stage === 'LEAD') mappedStage = 'PROSPECT';
         else if (stage === 'QUALIFIED') mappedStage = 'DEMO';
         else if (stage === 'ASSESSMENT') mappedStage = 'DUE_DILIGENCE';
@@ -323,18 +370,21 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           closedWonCount++;
         }
         
-        const metadata = (l.metadata as any) || {};
+        const metadata = (l.metadata as Record<string, unknown> | null) ?? {};
+        const companyNameFromMeta = (typeof metadata.company === 'string' && metadata.company) || 
+          (typeof metadata.companyName === 'string' && metadata.companyName) || null;
+        const notesFromMeta = typeof metadata.notes === 'string' ? metadata.notes : null;
 
         return {
           id: l.id,
-          name: l.name || 'Desconocido',
-          companyName: metadata.company || metadata.companyName || l.name || 'Desconocido',
-          email: l.email || null,
-          phone: l.phoneNumber || null,
+          name: l.name ?? 'Desconocido',
+          companyName: companyNameFromMeta ?? l.name ?? 'Desconocido',
+          email: l.email ?? null,
+          phone: l.phoneNumber ?? null,
           stage: mappedStage,
-          source: l.source || 'Inbound',
+          source: l.source ?? 'Inbound',
           estimatedValueUsd: estimatedValue,
-          notes: metadata.notes || l.lastAction || null,
+          notes: notesFromMeta ?? l.lastAction ?? null,
           createdAt: l.createdAt ? new Date(l.createdAt).toISOString() : new Date().toISOString(),
           updatedAt: l.updatedAt ? new Date(l.updatedAt).toISOString() : new Date().toISOString(),
           assignedOperatorId: null,
@@ -379,22 +429,22 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
   // 5. Assemble Current Platform Actor
   const actor: PlatformActor = {
-    id: auth.wallet || auth.email || 'platform_admin',
+    id: auth.wallet ?? auth.email ?? 'platform_admin',
     actorType: auth.wallet ? 'WALLET' : 'MAGIC_LINK',
-    role: auth.role as PlatformRole,
-    walletAddress: auth.wallet || null,
-    email: auth.email || null,
+    role: auth.role!,
+    walletAddress: auth.wallet ?? null,
+    email: auth.email ?? null,
     name: auth.wallet ? `${auth.wallet.slice(0, 6)}...${auth.wallet.slice(-4)}` : 'Administrador',
     sessionStartedAt: new Date().toISOString(),
     isDiscord2faVerified: auth.role === 'SUPER_ADMIN',
   };
 
-  const treasuryAddress = process.env.PANDORAS_ADMIN_WALLET || '0xc52BB6f53C91ff7134e7508B102E5A22BA415954';
+  const treasuryAddress = process.env.PANDORAS_ADMIN_WALLET ?? '0xc52BB6f53C91ff7134e7508B102E5A22BA415954';
 
   return (
     <>
       {activeTab === 'tenants' ? (
-        <AdminTenantsView tenants={enrichedTenantsList} actorRole={auth.role} />
+        <AdminTenantsView tenants={enrichedTenantsList} actorRole={auth.role ?? undefined} />
       ) : activeTab === 'billing' ? (
         <AdminBillingView
           credits={creditsRawList}

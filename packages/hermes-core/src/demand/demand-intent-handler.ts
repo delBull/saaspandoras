@@ -30,7 +30,8 @@ export class DemandIntentHandler {
       /^\/(?:demand|campa[ñn]a|campaign)\b/i.test(clean) ||
       /(?:prepara|crea|inicia|lanza|haz|quiero|armar?)\s+(?:una\s+)?campa[ñn]a\s+(?:de\s+)?(?:distribuci[oó]n|marketing|demanda)/i.test(clean) ||
       /(?:activa|activar)\s+(?:la\s+)?demanda\s+con\s+(?:sofia|media\s*co)/i.test(clean) ||
-      /(?:generar|lanzar)\s+campa[ñn]a\s+de\s+(?:captaci[oó]n|leads|clientes)/i.test(clean)
+      /(?:generar|lanzar)\s+campa[ñn]a\s+de\s+(?:captaci[oó]n|leads|clientes)/i.test(clean) ||
+      /(?:quiero|necesito)\s+(?:conseguir|captar|atraer|generar)\s+(?:m[aá]s\s+)?(?:clientes|leads|prospectos|ventas)/i.test(clean)
     );
   }
 

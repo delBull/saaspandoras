@@ -1,12 +1,8 @@
-/**
- * 🎓 Pandora's Academy Control Plane Unlock API
- * apps/dashboard/src/app/api/admin/academy/unlock/route.ts
- */
-
-import { NextRequest, NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { getAuth, isAdmin } from "@saasfly/auth-sdk";
-import { generateAcademyToken, generateUnlockToken } from "@saasfly/nexus-deals-sdk";
+import { generateAcademyToken } from "@saasfly/nexus-deals-sdk";
 import { sendAcademyUnlockEmbed } from "@saasfly/nexus-deals-sdk";
 import { sendEmail } from "@/lib/email/client";
 
@@ -25,13 +21,18 @@ const MANAGER_EMAILS = [
   ...(process.env.ACADEMY_MANAGERS ? process.env.ACADEMY_MANAGERS.split(',').map(e => e.trim().toLowerCase()) : [])
 ].filter(Boolean);
 
+interface UnlockRequestBody {
+  email?: string;
+}
+
 export async function POST(req: NextRequest) {
   try {
-    const { session, isVerified } = await getAuth(await headers());
-    const address = session?.address;
+    const authResult = (await getAuth(await headers())) as { session?: { address?: string }; isVerified?: boolean };
+    const { session, isVerified } = authResult;
+    const address: string | undefined = session?.address;
 
     // 1. Admin autenticado vía Web3 / sesión → desbloqueo inmediato
-    if (isVerified && address && (await isAdmin(address))) {
+    if (Boolean(isVerified) && Boolean(address) && (await isAdmin(address))) {
       return NextResponse.json({ ok: true, unlocked: true, role: "admin", reason: "admin-session" });
     }
 
@@ -58,7 +59,7 @@ export async function POST(req: NextRequest) {
     // 2. Parse payload
     let targetEmail = "";
     try {
-      const body = await req.json();
+      const body = (await req.json()) as UnlockRequestBody;
       if (body?.email && typeof body.email === 'string') {
         targetEmail = body.email.trim().toLowerCase();
       }
@@ -84,9 +85,11 @@ export async function POST(req: NextRequest) {
       const { getCollaboratorByEmail } = await import('@saasfly/hermes-core');
       const collab = await getCollaboratorByEmail(targetEmail);
       if (collab && collab.status === 'ACTIVE') {
-        if (collab.permissions?.ecosystem || collab.role === 'SUPER_ADMIN' || collab.role === 'ADMIN') {
+        const collabPerms = collab.permissions as Record<string, boolean> | undefined;
+        const roleStr = String(collab.role);
+        if (Boolean(collabPerms?.ecosystem) || Boolean(collabPerms?.all) || roleStr === 'SUPER_ADMIN' || roleStr === 'ADMIN' || roleStr === 'OWNER') {
           resolvedRole = "admin";
-        } else if (collab.permissions?.academyAdmin || collab.role === 'MARKETING' || collab.role === 'OPERATOR' || (collab.role as string) === 'MANAGER') {
+        } else if (Boolean(collabPerms?.academyAdmin) || roleStr === 'MARKETING' || roleStr === 'OPERATOR' || roleStr === 'MANAGER') {
           resolvedRole = "manager";
         }
       }
@@ -196,10 +199,11 @@ export async function POST(req: NextRequest) {
         ? `Enlace mágico enviado a ${targetEmail}`
         : `No se pudo enviar el correo porque falta RESEND_API_KEY en este proyecto de Vercel. Puedes usar el enlace directo generado.`
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const errorMessage = err instanceof Error ? err.message : "Error al procesar la solicitud.";
     console.error("[Academy Unlock API Error]:", err);
     return NextResponse.json(
-      { ok: false, error: err.message || "Error al procesar la solicitud." },
+      { ok: false, error: errorMessage },
       { status: 500 }
     );
   }
