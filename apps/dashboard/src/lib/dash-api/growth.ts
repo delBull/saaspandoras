@@ -31,17 +31,17 @@ export class DashApiGrowth {
       headers: {
         'Content-Type': 'application/json',
         ...authHeaders,
-        ...(options?.headers || {}),
+        ...(options?.headers ?? {}),
       },
       cache: 'no-store',
     });
 
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ code: 'UNKNOWN_ERROR', message: `HTTP ${res.status}` }));
-      throw new Error(`[DashApi.growth] ${err.code || 'ERROR'}: ${err.message || 'Request failed'}`);
+      const err = (await res.json().catch(() => ({ code: 'UNKNOWN_ERROR', message: `HTTP ${res.status}` }))) as { code?: string; message?: string };
+      throw new Error(`[DashApi.growth] ${err.code ?? 'ERROR'}: ${err.message ?? 'Request failed'}`);
     }
 
-    return await res.json();
+    return (await res.json()) as T;
   }
 
   /**
@@ -70,6 +70,22 @@ export class DashApiGrowth {
    */
   async getEmailMarketing(organizationId: string): Promise<GetEmailMarketingResponseDTO> {
     return await this.request<GetEmailMarketingResponseDTO>(`/api/v1/growth/email?organizationId=${encodeURIComponent(organizationId)}`);
+  }
+
+  /**
+   * Create Email Campaign
+   */
+  async createEmailCampaign(payload: {
+    organizationId: string;
+    name: string;
+    templateId?: string;
+    subject?: string;
+    scheduledAt?: string;
+  }): Promise<{ success: boolean; campaignId: number; message: string }> {
+    return await this.request<{ success: boolean; campaignId: number; message: string }>('/api/v1/growth/email', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
   }
 
   /**

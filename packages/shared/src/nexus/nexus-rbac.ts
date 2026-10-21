@@ -8,22 +8,26 @@
 
 import { db } from '@saasfly/db-core';
 import { users, nexusCollaborators, projectCollaborators, projects, type NexusPermissionsOverride, type NexusProvisionStatus } from '@saasfly/db-core/schema';
-import { eq, and, gt, asc, or, sql } from "@saasfly/db-core";
+import { eq, and, gt, asc, sql } from "@saasfly/db-core";
 import { getAuth, isAdmin } from '@saasfly/auth-sdk';
 import crypto from 'crypto';
 
 // Dynamic require for next/headers without triggering direct-eval bundler warning
-let nextHeaders: any;
-let nextCookies: any;
+type HeadersFn = () => Promise<Headers>;
+type CookiesFn = () => Promise<{ get: (name: string) => { value: string } | undefined }>;
+
+let nextHeaders: HeadersFn | undefined;
+let nextCookies: CookiesFn | undefined;
 if (typeof process !== "undefined" && typeof window === "undefined") {
     try {
-        const req = (globalThis as any)["__non_webpack_require__"] || (typeof require !== "undefined" ? require : null);
+        const globalScope = globalThis as unknown as { __non_webpack_require__?: (id: string) => unknown };
+        const req = globalScope.__non_webpack_require__ ?? (typeof require !== "undefined" ? require : null);
         if (req) {
-            const mod = req("next/headers");
+            const mod = req("next/headers") as { headers?: HeadersFn; cookies?: CookiesFn };
             nextHeaders = mod.headers;
             nextCookies = mod.cookies;
         }
-    } catch (e) {
+    } catch {
         // Ignore
     }
 }
@@ -216,10 +220,10 @@ export function resolveEffectivePermissions(
     // 🛡️ SECURITY GUARD: Institutional books NEVER grants via collaborator overrides
     institutionalBooks: role === 'SUPER_ADMIN' && surface === 'ADMIN',
     // Granular Module Overrides
-    academyAdmin: overrides?.['academyAdmin'] !== undefined ? Boolean(overrides['academyAdmin']) : (role === 'SUPER_ADMIN' || role === 'ADMIN' || (role as string) === 'MANAGER'),
-    dealRoom: overrides?.['dealRoom'] !== undefined ? Boolean(overrides['dealRoom']) : (role === 'SUPER_ADMIN' || role === 'ADMIN'),
-    settings: overrides?.['settings'] !== undefined ? Boolean(overrides['settings']) : (role === 'SUPER_ADMIN' && (surface === 'ADMIN' || surface === 'NEXUS')),
-    hermesQa: overrides?.['hermesQa'] !== undefined ? Boolean(overrides['hermesQa']) : (role === 'SUPER_ADMIN' || role === 'ADMIN'),
+    academyAdmin: overrides?.academyAdmin !== undefined ? Boolean(overrides.academyAdmin) : (role === 'SUPER_ADMIN' || role === 'ADMIN' || (role as string) === 'MANAGER'),
+    dealRoom: overrides?.dealRoom !== undefined ? Boolean(overrides.dealRoom) : (role === 'SUPER_ADMIN' || role === 'ADMIN'),
+    settings: overrides?.settings !== undefined ? Boolean(overrides.settings) : (role === 'SUPER_ADMIN' && (surface === 'ADMIN' || surface === 'NEXUS')),
+    hermesQa: overrides?.hermesQa !== undefined ? Boolean(overrides.hermesQa) : (role === 'SUPER_ADMIN' || role === 'ADMIN'),
   };
 
   return effective;
@@ -267,7 +271,7 @@ export async function resolveCollaboratorCanonicalOrgId(
       if (!match) {
         return null;
       }
-      return match.organizationId || null;
+      return match.organizationId ?? null;
     }
 
     // 🛡️ Fail-closed: Multiple assignments without explicit tenant selection MUST be rejected
@@ -278,8 +282,8 @@ export async function resolveCollaboratorCanonicalOrgId(
 
     // Exactly one assigned project: resolve its canonical organizationId UUID
     const primary = assignedProjects[0];
-    return primary?.organizationId || null;
-  } catch (err: any) {
+    return primary?.organizationId ?? null;
+  } catch (err: unknown) {
     console.warn('[NexusRBAC] Error resolving canonicalOrgId:', err);
     return null;
   }
@@ -299,7 +303,7 @@ export async function getNexusAuthContext(
       reqHeaders = customHeaders;
     } else {
       try {
-        reqHeaders = await nextHeaders();
+        reqHeaders = nextHeaders ? await nextHeaders() : new Headers();
       } catch {
         reqHeaders = new Headers();
       }
@@ -308,8 +312,8 @@ export async function getNexusAuthContext(
     // Auto-discover surface if UNKNOWN (using server-authoritative headers only, fail-closed against spoofable referer and next-url)
     let resolvedSurface = surface;
     if (resolvedSurface === 'UNKNOWN') {
-      const invokePath = reqHeaders.get('x-invoke-path') || reqHeaders.get('x-matched-path') || '';
-      const host = reqHeaders.get('x-forwarded-host') || reqHeaders.get('host') || '';
+      const invokePath = reqHeaders.get('x-invoke-path') ?? reqHeaders.get('x-matched-path') ?? '';
+      const host = reqHeaders.get('x-forwarded-host') ?? reqHeaders.get('host') ?? '';
 
       if (invokePath.startsWith('/api/admin') || invokePath.startsWith('/admin')) {
         resolvedSurface = 'ADMIN';
@@ -326,8 +330,14 @@ export async function getNexusAuthContext(
     surface = resolvedSurface;
 
     // 1. Check Web3 Authenticated Session
-    const { session, isVerified } = await getAuth(reqHeaders);
-    const sessionWallet = (session?.address || reqHeaders.get('x-wallet-address') || reqHeaders.get('x-thirdweb-address'))?.toLowerCase();
+    const authResult = (await getAuth(reqHeaders)) as {
+      session?: { address?: string | null } | null;
+      isVerified?: boolean;
+    };
+    const session = authResult.session;
+    const isVerified = Boolean(authResult.isVerified);
+    const rawWallet = session?.address ?? reqHeaders.get('x-wallet-address') ?? reqHeaders.get('x-thirdweb-address');
+    const sessionWallet = typeof rawWallet === 'string' ? rawWallet.toLowerCase() : null;
 
     if (sessionWallet && isVerified) {
       const isPlatformAdmin = await isAdmin(sessionWallet);
@@ -348,7 +358,7 @@ export async function getNexusAuthContext(
         // Resolve collaborator record via email or admin env list
         const candidateEmails = [
           email,
-          ...(process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL || process.env.NEXUS_ADMIN_EMAIL || '')
+          ...(process.env.ADMIN_EMAILS ?? process.env.ADMIN_EMAIL ?? process.env.NEXUS_ADMIN_EMAIL ?? '')
             .toLowerCase()
             .split(',')
             .map((e) => e.trim())
@@ -356,16 +366,20 @@ export async function getNexusAuthContext(
           'admin@pandoras.finance',
         ].filter(Boolean) as string[];
 
+        let collaboratorId: number | null = null;
+
         for (const candidate of candidateEmails) {
           try {
             const [collab] = await db
-              .select({ name: nexusCollaborators.name, email: nexusCollaborators.email })
+              .select({ id: nexusCollaborators.id, name: nexusCollaborators.name, email: nexusCollaborators.email, whatsappPhone: nexusCollaborators.whatsappPhone })
               .from(nexusCollaborators)
               .where(eq(nexusCollaborators.email, candidate))
               .limit(1);
             if (collab) {
-              name = name || collab.name;
-              email = email || collab.email;
+              name = name ?? collab.name;
+              email = email ?? collab.email;
+              collaboratorId = collab.id;
+              whatsappPhone = whatsappPhone ?? collab.whatsappPhone;
               break;
             }
           } catch (collabErr) {
@@ -385,9 +399,10 @@ export async function getNexusAuthContext(
           isAuthenticated: true,
           role: 'SUPER_ADMIN',
           wallet: sessionWallet,
-          email: email || process.env.ADMIN_EMAIL || 'admin@pandoras.finance',
-          name: name || process.env.ADMIN_NAME || 'Admin',
-          whatsappPhone: whatsappPhone || process.env.ADMIN_WHATSAPP_PHONE || null,
+          email: email ?? process.env.ADMIN_EMAIL ?? 'admin@pandoras.finance',
+          name: name ?? process.env.ADMIN_NAME ?? 'Admin',
+          whatsappPhone: whatsappPhone ?? process.env.ADMIN_WHATSAPP_PHONE ?? null,
+          collaboratorId,
           canonicalOrgId: 'pandoras',
           surface,
           permissions: resolveEffectivePermissions('SUPER_ADMIN', null, surface),
@@ -458,14 +473,14 @@ export async function getNexusAuthContext(
 
               canonicalOrgId = await resolveCollaboratorCanonicalOrgId(
                 c.id,
-                reqHeaders.get('x-nexus-tenant') || reqHeaders.get('x-tenant-id')
+                reqHeaders.get('x-nexus-tenant') ?? reqHeaders.get('x-tenant-id')
               );
 
               if (!effectiveRole) {
                 effectiveRole = (c.role ? c.role.toUpperCase() : 'VIEWER') as NexusRole;
               }
               if (c.permissions) {
-                collaboratorOverrides = c.permissions as NexusPermissionsOverride;
+                collaboratorOverrides = c.permissions;
               }
               if (c.whatsappPhone) {
                 whatsappPhone = c.whatsappPhone;
@@ -491,7 +506,7 @@ export async function getNexusAuthContext(
             canonicalOrgId,
             // 🛡️ P0 Fail-Closed: Ausencia de registro en nexus_collaborators NO concede 'ACTIVE'.
             // Solo SUPER_ADMIN/ADMIN confirmados en users obtienen ACTIVE si no tienen registro previo.
-            provisionStatus: (collaboratorStatus || (effectiveRole === 'SUPER_ADMIN' || effectiveRole === 'ADMIN' ? 'ACTIVE' : 'PENDING')) as NexusProvisionStatus,
+            provisionStatus: (collaboratorStatus ?? (effectiveRole === 'SUPER_ADMIN' || effectiveRole === 'ADMIN' ? 'ACTIVE' : 'PENDING')) as NexusProvisionStatus,
             surface,
             permissions: resolveEffectivePermissions(
               effectiveRole, 
@@ -506,14 +521,14 @@ export async function getNexusAuthContext(
           // PERO si tienen un token, dejamos que pase al paso 2 (Magic Link).
           let cookieToken: string | null = null;
           try {
-            const cookieStore = await nextCookies();
-            cookieToken = cookieStore.get('pandoras_nexus_token')?.value || cookieStore.get('nexus_token')?.value || null;
+            const cookieStore = nextCookies ? await nextCookies() : null;
+            cookieToken = cookieStore?.get('pandoras_nexus_token')?.value ?? cookieStore?.get('nexus_token')?.value ?? null;
           } catch {
-            const rawCookie = reqHeaders.get('cookie') || '';
+            const rawCookie = reqHeaders.get('cookie') ?? '';
             const match = rawCookie.match(/(?:pandoras_nexus_token|nexus_token)=([^;]+)/);
-            if (match && match[1]) cookieToken = decodeURIComponent(match[1]);
+            if (match?.[1]) cookieToken = decodeURIComponent(match[1]);
           }
-          const hasToken = !!(tokenParam || cookieToken || reqHeaders.get('x-nexus-token') || reqHeaders.get('authorization')?.replace(/^Bearer\s+/i, ''));
+          const hasToken = !!(tokenParam ?? cookieToken ?? reqHeaders.get('x-nexus-token') ?? reqHeaders.get('authorization')?.replace(/^Bearer\s+/i, ''));
 
           if (!hasToken) {
             return {
@@ -536,14 +551,14 @@ export async function getNexusAuthContext(
         // Los dejamos pasar como PENDING para el auto-registro, a menos que tengan token.
         let cookieToken: string | null = null;
         try {
-          const cookieStore = await nextCookies();
-          cookieToken = cookieStore.get('pandoras_nexus_token')?.value || cookieStore.get('nexus_token')?.value || null;
+          const cookieStore = nextCookies ? await nextCookies() : null;
+          cookieToken = cookieStore?.get('pandoras_nexus_token')?.value ?? cookieStore?.get('nexus_token')?.value ?? null;
         } catch {
-          const rawCookie = reqHeaders.get('cookie') || '';
+          const rawCookie = reqHeaders.get('cookie') ?? '';
           const match = rawCookie.match(/(?:pandoras_nexus_token|nexus_token)=([^;]+)/);
-          if (match && match[1]) cookieToken = decodeURIComponent(match[1]);
+          if (match?.[1]) cookieToken = decodeURIComponent(match[1]);
         }
-        const hasToken = !!(tokenParam || cookieToken || reqHeaders.get('x-nexus-token') || reqHeaders.get('authorization')?.replace(/^Bearer\s+/i, ''));
+        const hasToken = !!(tokenParam ?? cookieToken ?? reqHeaders.get('x-nexus-token') ?? reqHeaders.get('authorization')?.replace(/^Bearer\s+/i, ''));
 
         if (!hasToken) {
           return {
@@ -566,15 +581,15 @@ export async function getNexusAuthContext(
     // 2. Check Magic Link / Collaborator Token (from query param, cookie, or header)
     let cookieToken: string | null = null;
     try {
-      const cookieStore = await nextCookies();
-      cookieToken = cookieStore.get('pandoras_nexus_token')?.value || cookieStore.get('nexus_token')?.value || null;
+      const cookieStore = nextCookies ? await nextCookies() : null;
+      cookieToken = cookieStore?.get('pandoras_nexus_token')?.value ?? cookieStore?.get('nexus_token')?.value ?? null;
     } catch {
-      const rawCookie = reqHeaders.get('cookie') || '';
+      const rawCookie = reqHeaders.get('cookie') ?? '';
       const match = rawCookie.match(/(?:pandoras_nexus_token|nexus_token)=([^;]+)/);
-      if (match && match[1]) cookieToken = decodeURIComponent(match[1]);
+      if (match?.[1]) cookieToken = decodeURIComponent(match[1]);
     }
 
-    const token = tokenParam || cookieToken || reqHeaders.get('x-nexus-token') || reqHeaders.get('authorization')?.replace(/^Bearer\s+/i, '');
+    const token = tokenParam ?? cookieToken ?? reqHeaders.get('x-nexus-token') ?? reqHeaders.get('authorization')?.replace(/^Bearer\s+/i, '');
 
     if (token) {
       const now = new Date();
@@ -615,10 +630,10 @@ export async function getNexusAuthContext(
           .catch((err) => console.warn('[NexusRBAC] Notice updating lastAccessAt:', err));
 
         let role = (collaborator.role as NexusRole) || 'COLLABORATOR';
-        const normalizedEmail = (collaborator.email || '').toLowerCase().trim();
+        const normalizedEmail = (collaborator.email ?? '').toLowerCase().trim();
         const adminEmailsList = [
-          (process.env.NEXUS_ADMIN_EMAIL || '').toLowerCase(),
-          (process.env.ADMIN_EMAIL || '').toLowerCase(),
+          (process.env.NEXUS_ADMIN_EMAIL ?? '').toLowerCase(),
+          (process.env.ADMIN_EMAIL ?? '').toLowerCase(),
           ...(process.env.ADMIN_EMAILS ? process.env.ADMIN_EMAILS.split(',').map(e => e.trim().toLowerCase()) : []),
           'admin@pandoras.finance',
         ].filter(Boolean);
@@ -633,11 +648,11 @@ export async function getNexusAuthContext(
         } else {
           canonicalOrgId = await resolveCollaboratorCanonicalOrgId(
             collaborator.id,
-            reqHeaders.get('x-nexus-tenant') || reqHeaders.get('x-tenant-id')
+            reqHeaders.get('x-nexus-tenant') ?? reqHeaders.get('x-tenant-id')
           );
         }
 
-        const permissions = resolveEffectivePermissions(role, collaborator.permissions as NexusPermissionsOverride, surface);
+        const permissions = resolveEffectivePermissions(role, collaborator.permissions, surface);
 
         return {
           isAuthenticated: true,
@@ -667,7 +682,7 @@ export async function getNexusAuthContext(
             surface: effectiveSurface,
             permissions: resolveEffectivePermissions(role, {}, effectiveSurface),
             email: hmac.email,
-            name: hmac.email?.split('@')[0] || 'Sovereign Actor',
+            name: hmac.email?.split('@')[0] ?? 'Sovereign Actor',
             wallet: null
           };
         }
@@ -681,7 +696,7 @@ export async function getNexusAuthContext(
       surface,
       permissions: DEFAULT_EMPTY_PERMISSIONS,
     };
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('[NexusRBAC] Error resolving auth context:', err);
     return {
       isAuthenticated: false,

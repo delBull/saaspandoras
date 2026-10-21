@@ -6,7 +6,8 @@
  * across Hermes AI, Growth OS, and Pandoras RWA.
  */
 
-import { db } from '@saasfly/db';
+import { db } from '@saasfly/db-core';
+import type { DrizzleClient } from '@saasfly/db-core';
 import {
   projects,
   installedProducts,
@@ -14,7 +15,7 @@ import {
   telegramBindings,
   marketingLeads,
 } from '@saasfly/db-core/schema';
-import { eq, or, sql } from "@saasfly/db-core";
+import { eq, sql } from "@saasfly/db-core";
 
 export interface SetupChecklistItem {
   id: string;
@@ -35,6 +36,8 @@ export interface ModuleSetupState {
   checklist: SetupChecklistItem[];
   primaryActionUrl: string;
   primaryActionLabel: string;
+  isReadyToActivate: boolean;
+  canActivateTrial: boolean;
 }
 
 export interface EcosystemSetupSummary {
@@ -43,13 +46,19 @@ export interface EcosystemSetupSummary {
   totalActiveModules: number;
   completedModules: number;
   modules: ModuleSetupState[];
+  isTrial: boolean;
+  trialStatus: 'PENDING_ACTIVATION' | 'READY_TO_ACTIVATE' | 'ACTIVE' | 'EXPIRED' | 'CONVERTED' | 'PRESERVED' | 'PRODUCTION';
+  trialStartedAt?: Date | null;
+  trialEndsAt?: Date | null;
+  isReadyToActivate: boolean;
+  canActivateTrial: boolean;
 }
 
 export class SetupProgressService {
-  constructor(private readonly customDb?: any) {}
+  constructor(private readonly customDb?: DrizzleClient) {}
 
-  private get db() {
-    return this.customDb || db;
+  private get db(): DrizzleClient {
+    return this.customDb ?? db;
   }
 
   /**
@@ -59,12 +68,11 @@ export class SetupProgressService {
     const cleanSlug = organizationSlug.toLowerCase().trim();
 
     // 1. Fetch Project Identity
-    const project = await this.db
+    const [project] = await this.db
       .select()
       .from(projects)
       .where(eq(projects.slug, cleanSlug))
-      .limit(1)
-      .then((rows: any[]) => rows[0]);
+      .limit(1);
 
     if (!project) {
       return {
@@ -73,6 +81,10 @@ export class SetupProgressService {
         totalActiveModules: 0,
         completedModules: 0,
         modules: [],
+        isTrial: false,
+        trialStatus: 'PRODUCTION',
+        isReadyToActivate: false,
+        canActivateTrial: false,
       };
     }
 
@@ -84,10 +96,10 @@ export class SetupProgressService {
       .from(installedProducts)
       .where(eq(installedProducts.projectId, projectId));
 
-    const hermesProd = installed.find((p: any) => p.productFamily === 'HERMES');
-    const growthProd = installed.find((p: any) => p.productFamily === 'GROWTH_OS');
-    const rwaProd = installed.find((p: any) => p.productFamily === 'CAPITAL');
-    const nftLabProd = installed.find((p: any) => p.product === 'NFT_LAB');
+    const hermesProd = installed.find((p) => p.productFamily === 'HERMES');
+    const growthProd = installed.find((p) => p.productFamily === 'GROWTH_OS');
+    const rwaProd = installed.find((p) => p.productFamily === 'CAPITAL');
+    const nftLabProd = installed.find((p) => p.product === 'NFT_LAB');
 
     // 3. Parallel Database Signals Gathering
     const [knowledgeCountRes, telegramBindingsRes, leadsCountRes] = await Promise.allSettled([
@@ -95,7 +107,7 @@ export class SetupProgressService {
         .select({ count: sql<number>`count(*)::int` })
         .from(hermesKnowledge)
         .where(
-          eq(hermesKnowledge.organizationId, project.organizationId)
+          eq(hermesKnowledge.organizationId, project.organizationId ?? '')
         ),
       this.db
         .select({ count: sql<number>`count(*)::int` })
@@ -112,14 +124,14 @@ export class SetupProgressService {
     ]);
 
     const hasKnowledge =
-      knowledgeCountRes.status === 'fulfilled' && (knowledgeCountRes.value[0]?.count || 0) > 0;
+      knowledgeCountRes.status === 'fulfilled' && (knowledgeCountRes.value[0]?.count ?? 0) > 0;
     const hasTelegramBot =
-      telegramBindingsRes.status === 'fulfilled' && (telegramBindingsRes.value[0]?.count || 0) > 0;
+      telegramBindingsRes.status === 'fulfilled' && (telegramBindingsRes.value[0]?.count ?? 0) > 0;
     const hasLeads =
-      leadsCountRes.status === 'fulfilled' && (leadsCountRes.value[0]?.count || 0) > 0;
+      leadsCountRes.status === 'fulfilled' && (leadsCountRes.value[0]?.count ?? 0) > 0;
 
     const extra = typeof project.extraConfig === 'object' && project.extraConfig !== null
-      ? (project.extraConfig as Record<string, any>)
+      ? (project.extraConfig as Record<string, unknown>)
       : {};
 
     // ── HERMES AI MODULE SETUP STATE ──
@@ -158,6 +170,28 @@ export class SetupProgressService {
       },
     ];
 
+    const isTrial = project.tenantType === 'TRIAL';
+    type ValidTrialStatus = 'PENDING_ACTIVATION' | 'READY_TO_ACTIVATE' | 'ACTIVE' | 'EXPIRED' | 'CONVERTED' | 'PRESERVED' | 'PRODUCTION';
+    const rawTrialStatus = (project.trialStatus as ValidTrialStatus | null | undefined);
+    const trialStatus: ValidTrialStatus = rawTrialStatus ?? (isTrial ? 'PENDING_ACTIVATION' : 'ACTIVE');
+    const trialStartedAt = project.trialStartedAt ? new Date(project.trialStartedAt) : null;
+    const trialEndsAt = project.trialEndsAt ? new Date(project.trialEndsAt) : null;
+
+    // Deterministic readiness rules:
+    // Hermes: Ready if has knowledge vault docs OR persona prompt configured
+    const isHermesReady = hasKnowledge || Boolean(hermesProd?.config && Object.keys(hermesProd.config).length > 1);
+    // Growth OS: Ready if has leads in CRM OR email marketing sender/template OR Safe address
+    const isGrowthReady = hasLeads || Boolean(extra.emailSenderConfigured || extra.resendDomainVerified || extra.safeAddress);
+    // RWA: Ready if has valuation/targetAmount or contract or legal pack
+    const isRwaReady = Boolean(
+      (project.contractAddress ? true : false) ||
+      Number(project.targetAmount ?? project.totalValuationUsd ?? 0) > 0 ||
+      (project.valuationDocumentUrl ? true : false)
+    );
+
+    // Can activate trial if trial is pending activation (clock has not started) and readiness condition is met
+    const canActivateTrialGeneral = isTrial && (trialStatus === 'PENDING_ACTIVATION' || trialStatus === 'READY_TO_ACTIVATE');
+
     const hermesCompleted = hermesChecklist.filter((c) => c.isCompleted).length;
     const hermesStatus = hermesProd ? (hermesProd.status === 'active' ? 'ACTIVE' : 'TRIAL') : 'AVAILABLE';
     const hermesState: ModuleSetupState = {
@@ -170,6 +204,8 @@ export class SetupProgressService {
       checklist: hermesChecklist,
       primaryActionUrl: `/portal/${cleanSlug}`,
       primaryActionLabel: hermesStatus === 'AVAILABLE' ? 'Activar Hermes AI' : 'Abrir Hermes Portal',
+      isReadyToActivate: isHermesReady,
+      canActivateTrial: canActivateTrialGeneral && isHermesReady,
     };
 
     // ── GROWTH OS MODULE SETUP STATE ──
@@ -199,9 +235,9 @@ export class SetupProgressService {
         title: 'Tesorería Soberana (Safe Vault)',
         description: 'Billetera multi-firma o contrato de tesorería vinculado.',
         isCompleted: Boolean(
-          project.treasuryAddress ||
-          project.allowanceControllerAddress ||
-          extra.allowanceControllerAddress ||
+          project.treasuryAddress ??
+          project.allowanceControllerAddress ??
+          extra.allowanceControllerAddress ??
           extra.safeAddress
         ),
         actionUrl: `/growth-os/organizations/${cleanSlug}/finance`,
@@ -212,9 +248,9 @@ export class SetupProgressService {
         title: 'Pases de Acceso & VIP NFTs',
         description: 'Contratos ERC-721 para membresías y tiers de inversores.',
         isCompleted: Boolean(
-          (project.contractAddress && project.deploymentStatus === 'deployed') ||
-          extra.nftContractAddress ||
-          extra.nftPassConfigured ||
+          (project.contractAddress && project.deploymentStatus === 'deployed') ??
+          extra.nftContractAddress ??
+          extra.nftPassConfigured ??
           extra.nftPassDeployed
         ),
         actionUrl: `/growth-os/organizations/${cleanSlug}/nft-lab`,
@@ -236,6 +272,8 @@ export class SetupProgressService {
       checklist: growthChecklist,
       primaryActionUrl: `/growth-os/organizations/${cleanSlug}`,
       primaryActionLabel: growthStatus === 'AVAILABLE' ? 'Activar Growth OS' : 'Abrir Growth Console',
+      isReadyToActivate: isGrowthReady,
+      canActivateTrial: canActivateTrialGeneral && isGrowthReady,
     };
 
     // ── PANDORAS RWA MODULE SETUP STATE ──
@@ -252,7 +290,7 @@ export class SetupProgressService {
         id: 'rwa-tokenomics',
         title: 'Valuación & Tokenomics',
         description: 'Definición de precio del token, objetivo de recaudación y APY estimado.',
-        isCompleted: Boolean(Number(project.targetAmount || project.totalValuationUsd || 0) > 0),
+        isCompleted: Boolean(Number(project.targetAmount ?? project.totalValuationUsd ?? 0) > 0),
         actionUrl: `/profile/projects/${cleanSlug}/manage`,
         actionLabel: 'Configurar Fases',
       },
@@ -268,7 +306,7 @@ export class SetupProgressService {
         id: 'rwa-compliance',
         title: 'Legal & Risk Assessment Pack',
         description: 'Documentos de due diligence y estructura fiduciaria respaldada.',
-        isCompleted: Boolean(project.valuationDocumentUrl || project.dueDiligenceReportUrl),
+        isCompleted: Boolean(project.valuationDocumentUrl ?? project.dueDiligenceReportUrl),
         actionUrl: `/profile/projects/${cleanSlug}/manage`,
         actionLabel: 'Cargar Dictamen',
       },
@@ -286,6 +324,8 @@ export class SetupProgressService {
       checklist: rwaChecklist,
       primaryActionUrl: `/profile/projects/${cleanSlug}/manage`,
       primaryActionLabel: rwaStatus === 'AVAILABLE' ? 'Activar RWA' : 'Gestionar Protocolo',
+      isReadyToActivate: isRwaReady,
+      canActivateTrial: canActivateTrialGeneral && isRwaReady,
     };
 
     const modules = [hermesState, growthState, rwaState];
@@ -298,12 +338,23 @@ export class SetupProgressService {
 
     const completedModules = activeModules.filter((m) => m.progressPercentage === 100).length;
 
+    const isAnyActiveModuleReady = activeModules.some((m) => m.isReadyToActivate);
+    const effectiveTrialStatus = isTrial 
+      ? (trialStartedAt ? trialStatus : (isAnyActiveModuleReady ? 'READY_TO_ACTIVATE' : 'PENDING_ACTIVATION'))
+      : 'PRODUCTION';
+
     return {
       organizationSlug: cleanSlug,
       overallPercentage,
       totalActiveModules: totalActive,
       completedModules,
       modules,
+      isTrial,
+      trialStatus: effectiveTrialStatus,
+      trialStartedAt,
+      trialEndsAt,
+      isReadyToActivate: isAnyActiveModuleReady,
+      canActivateTrial: canActivateTrialGeneral && isAnyActiveModuleReady,
     };
   }
 }

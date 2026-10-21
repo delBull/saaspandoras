@@ -16,26 +16,17 @@ import type { PortalOrganization } from '@saasfly/shared';
 import type { LucideIcon } from 'lucide-react';
 import {
   LayoutDashboard,
-  Fingerprint,
   BookOpen,
-  Plug,
-  MessageSquare,
   Activity,
   Shield,
-  GitBranch,
   Settings,
   Lock,
   ChevronLeft,
   ChevronRight,
   Boxes,
-  Zap,
   Sparkles,
   Target,
-  GraduationCap,
   Code2,
-  Compass,
-  BarChart2,
-  FileText,
   Users
 } from 'lucide-react';
 
@@ -168,14 +159,21 @@ export function PortalSidebar({
         role="navigation"
         aria-label="Menú principal móvil"
       >
-        <div className="flex items-center gap-3 px-2 py-3 mb-4 border-b border-white/[0.08]">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-600 to-indigo-700 flex items-center justify-center shadow-md">
-            <span className="text-white text-xs font-bold">H</span>
-          </div>
-          <div className="overflow-hidden">
-            <p className="font-semibold text-sm truncate text-white">{organization.name}</p>
-            <p className="text-[10px] text-zinc-400 font-mono">Hermes AI OS</p>
-          </div>
+        <div className="px-2 py-3 mb-4 border-b border-white/[0.08]">
+          <Link
+            href={`/ecosystem/${organizationSlug}`}
+            onClick={onNavClick}
+            className="flex items-center gap-3 group"
+            title="Regresar al Hub Central"
+          >
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-600 to-indigo-700 flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
+              <span className="text-white text-xs font-bold">H</span>
+            </div>
+            <div className="overflow-hidden">
+              <p className="font-semibold text-sm truncate text-white group-hover:text-amber-300 transition-colors">{organization.name}</p>
+              <p className="text-[10px] text-zinc-400 font-mono">← Hub Central (Hermes AI OS)</p>
+            </div>
+          </Link>
         </div>
 
         <nav className="flex-1 flex flex-col gap-1">
@@ -302,16 +300,22 @@ export function PortalSidebar({
 
       {/* DESKTOP SIDEBAR */}
       <aside className={`hidden md:flex flex-col items-center py-3 h-screen bg-[#09090C] border-r border-white/10 shrink-0 z-30 select-none transition-all duration-300 ${collapsed ? 'w-16' : 'w-64 items-start px-3'}`}>
-        <div className={`mb-4 ${collapsed ? '' : 'flex items-center gap-3 px-2 w-full mt-2'}`}>
-            <div className="w-8 h-8 shrink-0 rounded-lg bg-purple-500/10 border border-purple-500/30 flex items-center justify-center shadow-lg text-purple-400">
-                <span className="text-xs font-bold font-mono">H</span>
+        <div className={`mb-4 ${collapsed ? '' : 'w-full px-2 mt-2'}`}>
+          <Link
+            href={`/ecosystem/${organizationSlug}`}
+            className={`flex items-center group transition-all ${collapsed ? 'justify-center' : 'gap-3 w-full'}`}
+            title="Regresar al Hub Central"
+          >
+            <div className="w-8 h-8 shrink-0 rounded-lg bg-purple-500/10 border border-purple-500/30 flex items-center justify-center shadow-lg text-purple-400 group-hover:scale-105 group-hover:ring-2 group-hover:ring-amber-500/50 transition-all">
+              <span className="text-xs font-bold font-mono">H</span>
             </div>
             {!collapsed && (
               <div className="flex-1 overflow-hidden">
-                <div className="text-sm font-semibold text-white truncate">Hermes OS</div>
-                <div className="text-[10px] text-zinc-500 font-mono truncate">{organization.name}</div>
+                <div className="text-sm font-semibold text-white truncate group-hover:text-amber-300 transition-colors">Hermes OS</div>
+                <div className="text-[10px] text-zinc-500 font-mono truncate group-hover:text-zinc-400">← Hub Central ({organization.name})</div>
               </div>
             )}
+          </Link>
         </div>
         
         <div className={`flex-1 flex flex-col gap-0.5 w-full ${collapsed ? 'items-center' : 'px-1'}`}>

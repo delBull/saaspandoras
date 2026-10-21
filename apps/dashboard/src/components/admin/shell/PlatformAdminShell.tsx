@@ -14,7 +14,7 @@
 
 import React, { useState, useTransition } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import {
   LayoutDashboard,
   Building2,
@@ -39,7 +39,8 @@ import {
 } from 'lucide-react';
 import { PlatformInspectorProvider } from '../inspector/PlatformInspectorContext';
 import { PlatformInspectorDrawer } from '../inspector/PlatformInspectorDrawer';
-import { PlatformActor, PlatformRole } from '@saasfly/shared';
+import type { PlatformActor, PlatformRole } from '@saasfly/shared';
+import type { LucideIcon } from 'lucide-react';
 import { openHQPortalAction } from '@/app/admin/actions/open-hq-portal';
 
 interface PlatformAdminShellProps {
@@ -49,14 +50,13 @@ interface PlatformAdminShellProps {
 }
 
 export function PlatformAdminShell({ actor, children, activeSection = 'overview' }: PlatformAdminShellProps) {
-  const [isCollapsed, setIsCollapsed] = useState(true);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const [isPortalPending, startPortalTransition] = useTransition();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const router = useRouter();
 
   // If activeSection isn't passed accurately, we deduce it from the URL
-  const currentTab = searchParams.get('tab') || (pathname === '/admin' ? 'overview' : pathname.split('/').pop() || 'overview');
+  const currentTab = searchParams.get('tab') ?? (pathname === '/admin' ? 'overview' : (pathname.split('/').pop() ?? 'overview'));
 
   // Use currentTab as activeSection if activeSection is the default 'overview' but currentTab is different
   const effectiveSection = (activeSection === 'overview' && currentTab !== 'overview') ? currentTab : activeSection;
@@ -76,11 +76,18 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
     'VIEWER'
   ];
 
-  const platformNavItems: Array<{
-    id: string; label: string; href?: string; icon: any;
-    active: boolean; allowedRoles: PlatformRole[];
+  interface PlatformNavItem {
+    id: string;
+    label: string;
+    href?: string;
+    icon: LucideIcon;
+    active: boolean;
+    allowedRoles: PlatformRole[];
     isPortalButton?: boolean;
-  }> = [
+    badge?: string;
+  }
+
+  const platformNavItems: PlatformNavItem[] = [
     {
       id: 'overview',
       label: 'HQ Overview',
@@ -187,10 +194,7 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
     },
   ].filter(item => item.allowedRoles.includes(actor.role));
 
-  const tenantNavItems: Array<{
-    id: string; label: string; href: string; icon: any;
-    active: boolean; badge?: string; allowedRoles: PlatformRole[];
-  }> = [
+  const tenantNavItems: PlatformNavItem[] = [
     {
       id: 'tenants',
       label: 'Directorio Tenants',
@@ -320,7 +324,7 @@ export function PlatformAdminShell({ actor, children, activeSection = 'overview'
                     return (
                       <Link
                         key={item.id}
-                        href={item.href}
+                        href={item.href ?? '#'}
                         className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium transition-all ${item.active
                           ? 'bg-cyan-600/15 text-cyan-300 border border-cyan-500/30 shadow-sm'
                           : 'text-zinc-400 hover:text-white hover:bg-white/[0.04]'

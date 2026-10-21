@@ -152,20 +152,32 @@ export class HermesTrialPolicyService {
     const trialTier = (projectRow?.trialTier as TrialTier) || 'SOFTWARE_ONLY';
     const trialStartedAt = projectRow?.trialStartedAt ? new Date(projectRow.trialStartedAt) : null;
     const trialEndsAt = projectRow?.trialEndsAt ? new Date(projectRow.trialEndsAt) : null;
-    const trialStatus = projectRow?.trialStatus || 'ACTIVE';
+    const rawTrialStatus = projectRow?.trialStatus || (tenantType === 'TRIAL' ? 'PENDING_ACTIVATION' : 'ACTIVE');
 
     trialStateCache.set(normalized, {
       tenantType,
       trialTier,
       trialStartedAt,
       trialEndsAt,
-      trialStatus,
+      trialStatus: rawTrialStatus,
       cachedAt: now,
     });
 
     const isTrial = tenantType === 'TRIAL';
-    const isExpired = isTrial && Boolean(trialEndsAt && trialEndsAt.getTime() <= now);
-    const remainingMs = isTrial && trialEndsAt ? Math.max(0, trialEndsAt.getTime() - now) : 0;
+    const isClockStarted = Boolean(trialStartedAt && trialEndsAt);
+    const isExpired = isTrial && isClockStarted && Boolean(trialEndsAt && trialEndsAt.getTime() <= now);
+    const remainingMs = isTrial 
+      ? (isClockStarted && trialEndsAt ? Math.max(0, trialEndsAt.getTime() - now) : 72 * 3600 * 1000)
+      : 0;
+
+    let computedTrialStatus = rawTrialStatus;
+    if (isTrial) {
+      if (!isClockStarted) {
+        computedTrialStatus = rawTrialStatus === 'READY_TO_ACTIVATE' ? 'READY_TO_ACTIVATE' : 'PENDING_ACTIVATION';
+      } else if (isExpired) {
+        computedTrialStatus = 'EXPIRED';
+      }
+    }
 
     return {
       isTrial,
@@ -173,7 +185,7 @@ export class HermesTrialPolicyService {
       trialTier,
       trialStartedAt,
       trialEndsAt,
-      trialStatus: isExpired ? 'EXPIRED' : trialStatus,
+      trialStatus: computedTrialStatus,
       isExpired,
       remainingMs,
     };
@@ -210,6 +222,14 @@ export class HermesTrialPolicyService {
     // Must not be expired
     if (state.isExpired) {
       throw new HermesTrialExpiredError();
+    }
+
+    // Gating external billable resources when trial is pending manual activation
+    if (resource === 'distribution' && (state.trialStatus === 'PENDING_ACTIVATION' || state.trialStatus === 'READY_TO_ACTIVATE')) {
+      throw new HermesTrialQuotaExceededError(
+        'distribution',
+        'La emisión externa y consumo de envíos en vivo requieren activar tu prueba gratuita de 3 días en el Hub Central.'
+      );
     }
 
     let limit = Infinity;

@@ -52,7 +52,7 @@ export interface PortalTrialContext {
   tier?: 'SOFTWARE_ONLY' | 'MEDIA_ENABLED' | 'FOUNDER';
   startedAt?: Date | null;
   endsAt?: Date | null;
-  status?: 'ACTIVE' | 'EXPIRED' | 'CONVERTED' | 'PRESERVED' | null;
+  status?: 'PENDING_ACTIVATION' | 'READY_TO_ACTIVATE' | 'ACTIVE' | 'EXPIRED' | 'CONVERTED' | 'PRESERVED' | null;
   isExpired?: boolean;
 }
 

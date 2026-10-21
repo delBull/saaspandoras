@@ -58,7 +58,9 @@ export default async function EmailMarketingPage({ params }: { params: Promise<{
           </div>
           <div className="relative z-10">
             <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider font-mono">Tasa de Apertura</p>
-            <p className="text-3xl font-black text-white font-mono mt-1 tracking-tighter">{emailData.stats.avgOpenRate}%</p>
+            <p className="text-3xl font-black text-white font-mono mt-1 tracking-tighter">
+              {emailData.stats.avgOpenRate !== null && emailData.stats.avgOpenRate !== undefined ? `${emailData.stats.avgOpenRate}%` : '—'}
+            </p>
           </div>
         </div>
 
@@ -69,7 +71,9 @@ export default async function EmailMarketingPage({ params }: { params: Promise<{
           </div>
           <div className="relative z-10">
             <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider font-mono">Tasa de Clics</p>
-            <p className="text-3xl font-black text-white font-mono mt-1 tracking-tighter">{emailData.stats.avgClickRate}%</p>
+            <p className="text-3xl font-black text-white font-mono mt-1 tracking-tighter">
+              {emailData.stats.avgClickRate !== null && emailData.stats.avgClickRate !== undefined ? `${emailData.stats.avgClickRate}%` : '—'}
+            </p>
           </div>
         </div>
       </div>

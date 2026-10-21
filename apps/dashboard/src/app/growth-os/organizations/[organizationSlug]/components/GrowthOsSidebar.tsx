@@ -21,28 +21,32 @@ import {
   ShieldAlert,
   Activity,
   BarChart2,
-  Bot,
   Menu,
   X,
   ChevronLeft,
   ChevronRight,
-  ExternalLink,
-  Layers,
-  FileText,
   Lock,
 } from 'lucide-react';
 
 interface GrowthOsSidebarProps {
   slugId: string;
   orgName: string;
-  hasHermes: boolean;
+  hasHermes?: boolean;
   enabledCapabilities?: string[];
 }
 
-export function GrowthOsSidebar({ slugId, orgName, hasHermes, enabledCapabilities = [] }: GrowthOsSidebarProps) {
+interface GrowthNavItem {
+  label: string;
+  href: string;
+  icon: React.ElementType;
+  section: 'ops' | 'gov';
+  capability?: string;
+}
+
+export function GrowthOsSidebar({ slugId, orgName, hasHermes: _hasHermes, enabledCapabilities = [] }: GrowthOsSidebarProps) {
   const pathname = usePathname();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(true);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const [loadingIntent, setLoadingIntent] = useState<string | null>(null);
 
   const handleLockedClick = async (e: React.MouseEvent, capability?: string, label?: string) => {
@@ -70,7 +74,7 @@ export function GrowthOsSidebar({ slugId, orgName, hasHermes, enabledCapabilitie
 
   const basePath = `/growth-os/organizations/${slugId}`;
 
-  const navItems = [
+  const navItems: GrowthNavItem[] = [
     { label: 'Overview', href: '', icon: LayoutDashboard, section: 'ops' },
     { label: 'Growth Campaigns', href: '/growth/marketing', icon: BarChart2, section: 'ops', capability: 'growth.email' },
     { label: 'Mission Control', href: '/missions', icon: Target, section: 'ops' },
@@ -120,21 +124,31 @@ export function GrowthOsSidebar({ slugId, orgName, hasHermes, enabledCapabilitie
       {/* ── MOBILE SLIDE-OVER DRAWER & BACKDROP ── */}
       {isMobileOpen && (
         <div className="md:hidden fixed inset-0 z-50 flex">
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 bg-black/80 backdrop-blur-md transition-opacity"
+          {/* Backdrop with a11y keyboard listener */}
+          <button
+            type="button"
+            className="fixed inset-0 bg-black/80 backdrop-blur-md transition-opacity cursor-pointer border-0 w-full h-full text-left"
             onClick={() => setIsMobileOpen(false)}
+            aria-label="Cerrar navegación lateral"
           />
 
           {/* Drawer Panel */}
           <div className="relative flex-1 flex flex-col max-w-[280px] w-full bg-[#050505] border-r border-white/10 text-zinc-300 z-50 h-full shadow-2xl">
             <div className="flex items-center justify-between h-16 px-4 border-b border-white/10">
-              <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-violet-600 flex items-center justify-center text-white font-bold text-xs">
+              <Link
+                href={`/ecosystem/${slugId}`}
+                onClick={() => setIsMobileOpen(false)}
+                className="flex items-center gap-2.5 group"
+                title="Regresar al Hub Central"
+              >
+                <div className="w-7 h-7 rounded-lg bg-violet-600 flex items-center justify-center text-white font-bold text-xs group-hover:scale-105 transition-transform">
                   G
                 </div>
-                <span className="text-white font-bold text-sm tracking-tight">Growth OS</span>
-              </div>
+                <div>
+                  <span className="text-white font-bold text-sm tracking-tight group-hover:text-amber-300 transition-colors">Growth OS</span>
+                  <span className="text-[10px] text-zinc-400 block -mt-0.5">← Hub Central</span>
+                </div>
+              </Link>
               <button
                 onClick={() => setIsMobileOpen(false)}
                 className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/[0.06] transition-colors"
@@ -151,14 +165,14 @@ export function GrowthOsSidebar({ slugId, orgName, hasHermes, enabledCapabilitie
               {opsItems.map((item) => {
                 const active = isActive(item.href);
                 const Icon = item.icon;
-                const access = hasAccess((item as any).capability);
+                const access = hasAccess(item.capability);
                 return (
                   <Link
                     key={item.href}
                     href={access ? `${basePath}${item.href}` : '#'}
                     onClick={(e) => {
                       if (!access) {
-                        handleLockedClick(e, (item as any).capability, item.label);
+                        void handleLockedClick(e, item.capability, item.label);
                       } else {
                         setIsMobileOpen(false);
                       }
@@ -184,14 +198,14 @@ export function GrowthOsSidebar({ slugId, orgName, hasHermes, enabledCapabilitie
               {govItems.map((item) => {
                 const active = isActive(item.href);
                 const Icon = item.icon;
-                const access = hasAccess((item as any).capability);
+                const access = hasAccess(item.capability);
                 return (
                   <Link
                     key={item.href}
                     href={access ? `${basePath}${item.href}` : '#'}
                     onClick={(e) => {
                       if (!access) {
-                        handleLockedClick(e, (item as any).capability, item.label);
+                        void handleLockedClick(e, item.capability, item.label);
                       } else {
                         setIsMobileOpen(false);
                       }
@@ -223,17 +237,25 @@ export function GrowthOsSidebar({ slugId, orgName, hasHermes, enabledCapabilitie
       >
         <div className={`border-b border-white/10 w-full ${isCollapsed ? 'p-3.5 flex justify-center' : 'p-5'}`}>
           <div className="flex items-center justify-between w-full">
-            <div className={`flex items-center ${isCollapsed ? 'justify-center w-full' : 'gap-3 min-w-0'}`}>
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-700 flex items-center justify-center text-white font-bold text-sm shadow-md shrink-0">
+            <Link
+              href={`/ecosystem/${slugId}`}
+              className={`flex items-center group transition-all ${isCollapsed ? 'justify-center w-full' : 'gap-3 min-w-0'}`}
+              title="Regresar al Hub Central"
+            >
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-700 flex items-center justify-center text-white font-bold text-sm shadow-md shrink-0 group-hover:scale-105 group-hover:ring-2 group-hover:ring-amber-500/50 transition-all">
                 G
               </div>
               {!isCollapsed && (
                 <div className="overflow-hidden">
-                  <h2 className="text-white font-bold text-base tracking-tight truncate">Growth OS</h2>
-                  <p className="text-xs text-zinc-400 truncate">{orgName}</p>
+                  <div className="flex items-center gap-1.5">
+                    <h2 className="text-white font-bold text-base tracking-tight truncate group-hover:text-amber-300 transition-colors">Growth OS</h2>
+                  </div>
+                  <p className="text-xs text-zinc-400 truncate flex items-center gap-1 group-hover:text-zinc-300">
+                    ← Hub Central ({orgName})
+                  </p>
                 </div>
               )}
-            </div>
+            </Link>
           </div>
         </div>
 
@@ -246,14 +268,14 @@ export function GrowthOsSidebar({ slugId, orgName, hasHermes, enabledCapabilitie
           {opsItems.map((item) => {
             const active = isActive(item.href);
             const Icon = item.icon;
-            const access = hasAccess((item as any).capability);
+            const access = hasAccess(item.capability);
             return (
               <Link
                 key={item.href}
                 href={access ? `${basePath}${item.href}` : '#'}
                 onClick={(e) => {
                   if (!access) {
-                    handleLockedClick(e, (item as any).capability, item.label);
+                    void handleLockedClick(e, item.capability, item.label);
                   }
                 }}
                 title={isCollapsed ? (access ? item.label : `${item.label} (Locked)`) : undefined}
@@ -287,7 +309,7 @@ export function GrowthOsSidebar({ slugId, orgName, hasHermes, enabledCapabilitie
           {govItems.map((item) => {
             const active = isActive(item.href);
             const Icon = item.icon;
-            const access = hasAccess((item as any).capability);
+            const access = hasAccess(item.capability);
             return (
               <Link
                 key={item.href}

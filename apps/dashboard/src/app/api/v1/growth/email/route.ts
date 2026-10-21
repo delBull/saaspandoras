@@ -3,7 +3,8 @@
  * /api/v1/growth/email
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 import { db } from '@saasfly/db';
 import { projects, marketingCampaigns, marketingExecutions } from '@saasfly/db/schema';
 import { eq, or, desc, sql } from "@saasfly/db-core";
@@ -11,6 +12,7 @@ import { getAuth } from '@saasfly/auth-sdk';
 import { checkRateLimit, clientIpFromHeaders } from '@saasfly/hermes-core';
 import { validatePortalSession } from '@saasfly/shared';
 import { OrganizationSDK } from '@saasfly/shared';
+import type { ProductKey } from '@saasfly/shared';
 import { SessionTokenService } from '@saasfly/hermes-core';
 import { isWalletAuthorizedForTenant } from '@saasfly/hermes-core';
 import { capabilityRegistry } from '@/lib/growth/capability-registry.service';
@@ -37,7 +39,7 @@ async function resolveTenant(req: NextRequest, requestedOrg?: string | null): Pr
   if (portalCookie) {
     const session = await validatePortalSession(portalCookie);
     if (session) {
-      const org = await OrganizationSDK.resolve(session.projectId, session.product as any);
+      const org = await OrganizationSDK.resolve(session.projectId, session.product as ProductKey);
       if (org) {
         if (cleanSlug !== org.slug && cleanSlug !== org.organizationId) {
           return null;
@@ -52,18 +54,33 @@ async function resolveTenant(req: NextRequest, requestedOrg?: string | null): Pr
   }
 
   // 2. Web Wallet Session (Anti-IDOR)
+  const incomingWallet = req.headers.get('x-wallet-address')?.toLowerCase() ??
+    req.cookies.get('wallet-address')?.value?.toLowerCase() ??
+    req.cookies.get('thirdweb:wallet-address')?.value?.toLowerCase();
+
+  if (incomingWallet) {
+    const isAuth = await isWalletAuthorizedForTenant(incomingWallet, cleanSlug);
+    if (isAuth) {
+      return {
+        organizationId: requestedOrg ?? `org_${cleanSlug}`,
+        organizationSlug: cleanSlug,
+      };
+    }
+  }
+
   const auth = await getAuth();
-  if (auth.isVerified && auth.session?.address) {
-    const isAuth = await isWalletAuthorizedForTenant(auth.session.address, cleanSlug);
+  const sessionAddress = auth.isVerified ? (auth.session?.address as string | undefined) : undefined;
+  if (sessionAddress) {
+    const isAuth = await isWalletAuthorizedForTenant(sessionAddress, cleanSlug);
     if (!isAuth) return null;
     return {
-      organizationId: requestedOrg || `org_${cleanSlug}`,
+      organizationId: requestedOrg ?? `org_${cleanSlug}`,
       organizationSlug: cleanSlug,
     };
   }
 
   // 3. Bearer Token
-  const authHeader = req.headers.get('authorization') || '';
+  const authHeader = req.headers.get('authorization') ?? '';
   const bearerToken = authHeader.replace(/^Bearer\s+/i, '').trim();
   if (bearerToken) {
     try {
@@ -93,7 +110,7 @@ export async function GET(req: NextRequest) {
     }
 
     const { searchParams } = new URL(req.url);
-    const orgParam = searchParams.get('organizationId') || '';
+    const orgParam = searchParams.get('organizationId') ?? '';
     const cleanSlug = orgParam.replace(/^org_/, '').trim();
 
     const auth = await resolveTenant(req, orgParam);
@@ -104,8 +121,9 @@ export async function GET(req: NextRequest) {
     // 🔒 Capability Assertion Enforcement (Fail-Closed)
     try {
       await capabilityRegistry.assertCapability(auth.organizationId, 'growth.email');
-    } catch (err: any) {
-      return NextResponse.json({ code: 'CAPABILITY_DISABLED', message: err.message }, { status: 403 });
+    } catch (err: unknown) {
+      const e = err instanceof Error ? err : new Error(String(err));
+      return NextResponse.json({ code: 'CAPABILITY_DISABLED', message: e.message }, { status: 403 });
     }
 
     const [project] = await db
@@ -114,7 +132,7 @@ export async function GET(req: NextRequest) {
       .where(or(eq(projects.slug, cleanSlug), eq(projects.slug, orgParam)))
       .limit(1);
 
-    const projectName = project?.title || cleanSlug.toUpperCase();
+    const projectName = project?.title ?? cleanSlug.toUpperCase();
 
     const templates: EmailTemplateDTO[] = [
       {
@@ -150,14 +168,18 @@ export async function GET(req: NextRequest) {
     ];
 
     // ─── REAL CAMPAIGNS (Production Truth) ──────────────────────────────
-    // Campaigns are persisted in marketing_campaigns with the tenant's
-    // canonicalOrgId stored SERVER-SIDE inside config.organizationId
-    // (set at POST time). Metrics come from real marketing_executions —
-    // no synthetic open/close rates.
     const campaigns: EmailCampaignDTO[] = [];
-    let campaignRows: any[] = [];
+    interface CampaignConfig {
+      organizationId?: string;
+      templateId?: string | null;
+      subject?: string | null;
+      scheduledAt?: string | null;
+      status?: string;
+      createdVia?: string;
+    }
+
     try {
-      campaignRows = await db
+      const campaignRows = await db
         .select()
         .from(marketingCampaigns)
         .where(sql`config->>'organizationId' = ${auth.organizationId}`)
@@ -165,7 +187,7 @@ export async function GET(req: NextRequest) {
         .limit(30);
 
       for (const c of campaignRows) {
-        const cfg = (c.config as any) || {};
+        const cfg = (c.config as CampaignConfig | null) ?? {};
         const execs = await db
           .select({ status: marketingExecutions.status })
           .from(marketingExecutions)
@@ -175,35 +197,44 @@ export async function GET(req: NextRequest) {
         campaigns.push({
           id: String(c.id),
           name: c.name,
-          templateId: cfg.templateId || null,
+          templateId: cfg.templateId ?? '',
           status: active > 0 ? 'SCHEDULED' : (completed > 0 ? 'SENT' : 'DRAFT'),
           recipientsCount: execs.length,
-          openRate: null as any,
-          clickRate: null as any,
-          scheduledAt: cfg.scheduledAt || null,
+          openRate: 0,
+          clickRate: 0,
+          scheduledAt: cfg.scheduledAt ?? undefined,
           createdAt: c.createdAt.toISOString(),
         });
       }
-    } catch (campaignsErr: any) {
-      console.warn('[Growth Email] Campaign fetch notice (fallback to empty):', campaignsErr?.message);
-      campaignRows = [];
+    } catch (campaignsErr: unknown) {
+      const err = campaignsErr instanceof Error ? campaignsErr : new Error(String(campaignsErr));
+      console.warn('[Growth Email] Campaign fetch notice (fallback to empty):', err.message);
     }
 
     const response: GetEmailMarketingResponseDTO = {
       templates,
       campaigns,
       stats: {
-        totalSent: campaigns.reduce((acc: number, c: EmailCampaignDTO) => acc + (c.recipientsCount || 0), 0),
-        avgOpenRate: null as any,
-        avgClickRate: null as any,
+        totalSent: campaigns.reduce((acc: number, c: EmailCampaignDTO) => acc + (c.recipientsCount ?? 0), 0),
+        avgOpenRate: 0,
+        avgClickRate: 0,
       },
     };
 
     return NextResponse.json(response);
-  } catch (error: any) {
-    console.error('[Growth API: email GET] Error:', error);
-    return NextResponse.json({ code: 'INTERNAL_ERROR', message: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : new Error(String(error));
+    console.error('[Growth API: email GET] Error:', err);
+    return NextResponse.json({ code: 'INTERNAL_ERROR', message: err.message }, { status: 500 });
   }
+}
+
+interface CreateCampaignRequestBody {
+  organizationId?: string;
+  name?: string;
+  templateId?: string;
+  subject?: string;
+  scheduledAt?: string;
 }
 
 export async function POST(req: NextRequest) {
@@ -214,13 +245,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ code: 'RATE_LIMITED', message: 'Too many requests.' }, { status: 429 });
     }
 
-    const body = await req.json();
+    const body = (await req.json()) as CreateCampaignRequestBody;
     const { organizationId: orgParam, name, templateId, subject, scheduledAt } = body;
-    const cleanSlug = (orgParam || '').replace(/^org_/, '').trim();
+    const cleanSlug = (orgParam ?? '').replace(/^org_/, '').trim();
     if (!cleanSlug) {
       return NextResponse.json({ code: 'INVALID_REQUEST', message: 'organizationId is required.' }, { status: 400 });
     }
-    if (!name || !String(name).trim()) {
+    if (!name?.trim()) {
       return NextResponse.json({ code: 'INVALID_REQUEST', message: 'Campaign name is required.' }, { status: 400 });
     }
 
@@ -231,28 +262,25 @@ export async function POST(req: NextRequest) {
 
     try {
       await capabilityRegistry.assertCapability(auth.organizationId, 'growth.email');
-    } catch (err: any) {
-      return NextResponse.json({ code: 'CAPABILITY_DISABLED', message: err.message }, { status: 403 });
+    } catch (err: unknown) {
+      const e = err instanceof Error ? err : new Error(String(err));
+      return NextResponse.json({ code: 'CAPABILITY_DISABLED', message: e.message }, { status: 403 });
     }
 
-    // Production Truth: the campaign is PERSISTED in `marketing_campaigns`
-    // with the canonicalOrgId stamped SERVER-SIDE inside config.organizationId
-    // (correlation-only metadata is ignored for authorization). Reads filter
-    // by it so tenants and pandoras never mix campaigns.
     const [createdCampaign] = await db
       .insert(marketingCampaigns)
       .values({
-        name: String(name).trim(),
-        triggerType: 'manual' as any,
-        isActive: !scheduledAt ? true : false,
+        name: name.trim(),
+        triggerType: 'manual',
+        isActive: !scheduledAt,
         config: {
           organizationId: auth.organizationId,
-          templateId: templateId || null,
-          subject: subject ? String(subject).trim() : null,
-          scheduledAt: scheduledAt || null,
+          templateId: templateId ?? null,
+          subject: subject ? subject.trim() : null,
+          scheduledAt: scheduledAt ?? null,
           status: scheduledAt ? 'SCHEDULED' : 'DRAFT',
           createdVia: 'growth_os_email_modal',
-        } as any,
+        },
       })
       .returning();
 
@@ -260,21 +288,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ code: 'INSERT_FAILED', message: 'Failed to persist campaign.' }, { status: 500 });
     }
 
-    const cfg = (createdCampaign.config as any) || {};
+    const cfg = (createdCampaign.config as Record<string, unknown> | null) ?? {};
     const campaign = {
       id: String(createdCampaign.id),
       name: createdCampaign.name,
-      templateId: cfg.templateId || null,
-      subject: cfg.subject || null,
+      templateId: (cfg.templateId as string | null) ?? null,
+      subject: (cfg.subject as string | null) ?? null,
       status: scheduledAt ? 'SCHEDULED' : 'DRAFT',
-      scheduledAt: scheduledAt || null,
+      scheduledAt: scheduledAt ?? null,
       organizationId: auth.organizationId,
       createdAt: new Date().toISOString(),
     };
 
     return NextResponse.json({ success: true, campaign }, { status: 201 });
-  } catch (error: any) {
-    console.error('[Growth API: email POST] Error:', error);
-    return NextResponse.json({ code: 'INTERNAL_ERROR', message: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : new Error(String(error));
+    console.error('[Growth API: email POST] Error:', err);
+    return NextResponse.json({ code: 'INTERNAL_ERROR', message: err.message }, { status: 500 });
   }
 }

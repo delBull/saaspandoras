@@ -5,12 +5,14 @@
  * Enforces fail-closed authentication and tenant ownership authorization.
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+import type { ProductKey } from '@saasfly/shared';
 import { setupProgressService } from '@saasfly/shared';
 import { getAuth, isAdmin } from '@saasfly/auth-sdk';
 import { db } from '@saasfly/db';
 import { projects } from '@saasfly/db/schema';
-import { eq, sql } from "@saasfly/db-core";
+import { eq } from "@saasfly/db-core";
 
 export const dynamic = 'force-dynamic';
 
@@ -26,51 +28,76 @@ export async function GET(
 
     const cleanSlug = organizationSlug.toLowerCase().trim();
 
-    // 🛡️ SECURITY GUARD: Authenticate caller
-    const auth = await getAuth(req.headers);
-    const sessionWallet = auth.session?.address?.toLowerCase();
-    const headerWallet = (
-      req.headers.get('x-wallet-address') || req.headers.get('x-thirdweb-address')
-    )?.toLowerCase();
+    // 🛡️ SECURITY GUARD: Authenticate caller via Portal Session or Web Wallet / Admin
+    let isCallerAuthorized = false;
 
-    const callerWallet = sessionWallet || (auth.isVerified ? headerWallet : null);
+    // 1. Try portal session
+    const portalCookie = req.cookies.get('pandoras_portal_session')?.value;
+    const authHeader = req.headers.get('authorization')?.replace(/^Bearer\s+/i, '').trim();
+    const portalToken = portalCookie ?? authHeader;
 
-    if (!callerWallet) {
-      return NextResponse.json(
-        { error: 'UNAUTHORIZED: Authentication is required to access tenant setup signals.' },
-        { status: 401 }
-      );
+    if (portalToken) {
+      try {
+        const { validatePortalSession, OrganizationSDK } = await import('@saasfly/shared');
+        const session = await validatePortalSession(portalToken);
+        if (session) {
+          const org = await OrganizationSDK.resolve(session.projectId, session.product as ProductKey | undefined);
+          if (org && (org.slug === cleanSlug || org.organizationId === cleanSlug)) {
+            isCallerAuthorized = true;
+          }
+        }
+      } catch (_pErr) {
+        // Fallback to wallet auth
+      }
     }
 
-    // Check if caller is super admin or platform admin
-    const isUserAdmin = await isAdmin(callerWallet);
+    if (!isCallerAuthorized) {
+      const auth = await getAuth(req.headers);
+      const sessionWallet = typeof auth.session?.address === 'string' ? auth.session.address.toLowerCase() : null;
+      const rawHeaderWallet = req.headers.get('x-wallet-address') ?? req.headers.get('x-thirdweb-address');
+      const headerWallet = typeof rawHeaderWallet === 'string' ? rawHeaderWallet.toLowerCase() : null;
 
-    if (!isUserAdmin) {
-      // Verify tenant ownership
-      const tenantProject = await db
-        .select({ applicantWalletAddress: projects.applicantWalletAddress })
-        .from(projects)
-        .where(eq(projects.slug, cleanSlug))
-        .limit(1)
-        .then((rows) => rows[0]);
+      const callerWallet = sessionWallet ?? (auth.isVerified ? headerWallet : null);
 
-      if (!tenantProject) {
-        return NextResponse.json({ error: 'TENANT_NOT_FOUND' }, { status: 404 });
+      if (!callerWallet) {
+        return NextResponse.json(
+          { error: 'UNAUTHORIZED: Authentication is required to access tenant setup signals.' },
+          { status: 401 }
+        );
       }
 
-      const projectWallet = tenantProject.applicantWalletAddress?.toLowerCase();
-      if (!projectWallet || projectWallet !== callerWallet) {
-        return NextResponse.json(
-          { error: 'FORBIDDEN_TENANT_ACCESS: You do not have permissions for this organization.' },
-          { status: 403 }
-        );
+      // Check if caller is super admin or platform admin
+      const isUserAdmin = await isAdmin(callerWallet);
+
+      if (!isUserAdmin) {
+        // Verify tenant ownership
+        const [tenantProject] = await db
+          .select({ applicantWalletAddress: projects.applicantWalletAddress })
+          .from(projects)
+          .where(eq(projects.slug, cleanSlug))
+          .limit(1);
+
+        if (!tenantProject) {
+          return NextResponse.json({ error: 'TENANT_NOT_FOUND' }, { status: 404 });
+        }
+
+        const projectWallet = typeof tenantProject.applicantWalletAddress === 'string'
+          ? tenantProject.applicantWalletAddress.toLowerCase()
+          : null;
+        if (!projectWallet || projectWallet !== callerWallet) {
+          return NextResponse.json(
+            { error: 'FORBIDDEN_TENANT_ACCESS: You do not have permissions for this organization.' },
+            { status: 403 }
+          );
+        }
       }
     }
 
     const state = await setupProgressService.getEcosystemSetupState(cleanSlug);
     return NextResponse.json(state);
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('[SetupProgressAPI] Error:', err);
-    return NextResponse.json({ error: err?.message || 'INTERNAL_ERROR' }, { status: 500 });
+    const message = err instanceof Error ? err.message : 'INTERNAL_ERROR';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

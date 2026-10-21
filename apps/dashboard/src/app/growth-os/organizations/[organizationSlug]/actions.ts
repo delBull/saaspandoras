@@ -12,7 +12,7 @@ export async function getOrganizationOverview(requestedOrganizationId: string) {
 }
 
 export async function getActiveMissions(requestedOrganizationId: string) {
-  const data = await DashApi.controlPlane.getOverview(requestedOrganizationId);
+  await DashApi.controlPlane.getOverview(requestedOrganizationId);
   return { missions: [] };
 }
 
@@ -21,8 +21,8 @@ export async function getPendingIntents(requestedOrganizationId: string) {
   return { pendingIntents };
 }
 
-export async function getMissionAuditTrail(requestedOrganizationId: string, missionId?: string) {
-  return { auditTrail: [] };
+export async function getMissionAuditTrail(_requestedOrganizationId: string, _missionId?: string) {
+  return await Promise.resolve({ auditTrail: [] });
 }
 
 // ============================================================================
@@ -35,14 +35,15 @@ export async function approveIntent(requestedOrganizationId: string, intentId: s
     
     try {
       revalidatePath(`/growth-os/organizations/${requestedOrganizationId}/governance`);
-    } catch (e) {
+    } catch {
       // revalidatePath skipped in non-web contexts
     }
     
     return { success: true };
-  } catch (error: any) {
-    console.error(`[ServerAction] approveIntent error:`, error);
-    return { success: false, code: 'ERROR', message: error.message || 'Failed to approve intent' };
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : new Error(String(error));
+    console.error(`[ServerAction] approveIntent error:`, err);
+    return { success: false, code: 'ERROR', message: err.message || 'Failed to approve intent' };
   }
 }
 
@@ -52,13 +53,44 @@ export async function rejectIntent(requestedOrganizationId: string, intentId: st
     
     try {
       revalidatePath(`/growth-os/organizations/${requestedOrganizationId}/governance`);
-    } catch (e) {
+    } catch {
       // revalidatePath skipped in non-web contexts
     }
     
     return { success: true };
-  } catch (error: any) {
-    console.error(`[ServerAction] rejectIntent error:`, error);
-    return { success: false, code: 'ERROR', message: error.message || 'Failed to reject intent' };
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : new Error(String(error));
+    console.error(`[ServerAction] rejectIntent error:`, err);
+    return { success: false, code: 'ERROR', message: err.message || 'Failed to reject intent' };
+  }
+}
+
+export async function createEmailCampaignAction(payload: {
+  organizationSlug: string;
+  name: string;
+  templateId?: string;
+  subject?: string;
+  scheduledAt?: string;
+}): Promise<CommandResult> {
+  try {
+    await DashApi.growth.createEmailCampaign({
+      organizationId: `org_${payload.organizationSlug}`,
+      name: payload.name,
+      templateId: payload.templateId,
+      subject: payload.subject,
+      scheduledAt: payload.scheduledAt,
+    });
+
+    try {
+      revalidatePath(`/growth-os/organizations/${payload.organizationSlug}/email`);
+    } catch (e) {
+      // revalidatePath skipped in non-web contexts
+    }
+
+    return { success: true };
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : new Error(String(error));
+    console.error(`[ServerAction] createEmailCampaignAction error:`, err);
+    return { success: false, code: 'ERROR', message: err.message || 'Failed to create campaign' };
   }
 }

@@ -7,15 +7,11 @@ import {
   Command, 
   CheckSquare, 
   AlertOctagon, 
-  Activity, 
   Building2, 
   Briefcase, 
   Handshake, 
   BookOpen, 
-  GraduationCap, 
-  Webhook, 
   Code2, 
-  HeartPulse, 
   BrainCircuit, 
   Users, 
   ShieldCheck, 
@@ -24,7 +20,8 @@ import {
   ChevronRight,
   LayoutDashboard,
   LogOut,
-  MonitorPlay
+  MonitorPlay,
+  type LucideIcon,
 } from "lucide-react";
 import type { NexusAuthContext } from "@saasfly/shared";
 
@@ -33,23 +30,27 @@ interface NexusSidebarProps {
   onAction?: (action: string) => void;
 }
 
+interface NavigationItem {
+  name: string;
+  href: string;
+  icon: LucideIcon;
+  exact?: boolean;
+  show?: boolean;
+  external?: boolean;
+  action?: string;
+}
+
+interface NavigationSection {
+  label: string;
+  items: NavigationItem[];
+}
+
 export function NexusSidebar({ auth, onAction }: NexusSidebarProps) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const permissions = auth.permissions || {} as Record<string, boolean>;
 
-  const navigation: Array<{
-    label: string;
-    items: Array<{
-      name: string;
-      href: string;
-      icon: any;
-      exact?: boolean;
-      show?: boolean;
-      external?: boolean;
-      action?: string;
-    }>;
-  }> = [
+  const navigation: NavigationSection[] = [
     {
       label: "OPERATIONS",
       items: [
@@ -104,7 +105,7 @@ export function NexusSidebar({ auth, onAction }: NexusSidebarProps) {
     >
       <div className="flex items-center justify-between p-4 shrink-0 h-16 border-b border-white/[0.08]">
         {!collapsed && (
-          <span className="text-xs font-mono tracking-[0.2em] text-zinc-300 font-bold uppercase">Pandora's Nexus</span>
+          <span className="text-xs font-mono tracking-[0.2em] text-zinc-300 font-bold uppercase">Pandora&apos;s Nexus</span>
         )}
         <button 
           onClick={() => setCollapsed(!collapsed)}
@@ -179,18 +180,32 @@ export function NexusSidebar({ auth, onAction }: NexusSidebarProps) {
       {!collapsed && (
         <div className="p-4 mt-auto border-t border-white/5 bg-[#050508]">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-500/20 to-purple-500/20 border border-white/10 flex items-center justify-center shrink-0">
-              <span className="text-xs font-bold text-white">
-                {auth.name ? auth.name.substring(0, 2).toUpperCase() : "OP"}
-              </span>
-            </div>
-            <div className="flex flex-col overflow-hidden flex-1">
-              <span className="text-sm text-white font-medium truncate">{auth.name || "Operator"}</span>
-              <span className="text-[10px] font-mono text-amber-500/80 truncate">{auth.role}</span>
-            </div>
+            <button
+              type="button"
+              onClick={() => onAction?.('SETTINGS')}
+              title="Ver mi perfil y configuración"
+              className="flex items-center gap-3 flex-1 min-w-0 text-left p-1.5 -ml-1.5 rounded-lg hover:bg-white/5 transition-all group cursor-pointer focus:outline-none focus:ring-1 focus:ring-amber-500/40"
+            >
+              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-500/20 to-purple-500/20 border border-white/10 flex items-center justify-center shrink-0 group-hover:border-amber-500/40 group-hover:scale-105 transition-all">
+                <span className="text-xs font-bold text-white group-hover:text-amber-300">
+                  {auth.name ? auth.name.substring(0, 2).toUpperCase() : "OP"}
+                </span>
+              </div>
+              <div className="flex flex-col overflow-hidden flex-1 min-w-0">
+                <span className="text-sm text-white font-medium truncate group-hover:text-amber-200 transition-colors">{auth.name ?? "Operator"}</span>
+                <span className="text-[10px] font-mono text-amber-500/80 truncate flex items-center gap-1">
+                  <span>{auth.role}</span>
+                  <Settings className="w-2.5 h-2.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </span>
+              </div>
+            </button>
             <button 
               onClick={async () => {
-                await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+                try {
+                  await fetch('/api/auth/logout', { method: 'POST' });
+                } catch (logoutErr) {
+                  console.warn('[Logout]', logoutErr);
+                }
                 window.location.href = '/';
               }}
               title="Cerrar sesión"

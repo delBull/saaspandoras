@@ -1,18 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   BuildingLibraryIcon,
   CurrencyDollarIcon,
-  DocumentTextIcon,
   Cog6ToothIcon,
-  ArrowLeftIcon,
   Bars3Icon,
   XMarkIcon,
   UsersIcon,
   EyeIcon,
-  ShieldCheckIcon,
   ClockIcon,
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
@@ -20,13 +17,13 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { LegalTab } from './tabs/LegalTab';
 import { DaoTreasuryTab } from './tabs/DaoTreasuryTab';
-import { ResourceHubTab } from './tabs/ResourceHubTab';
 import { NetworkTab } from './tabs/NetworkTab';
 import { EventsTab } from '@/components/shared/tabs/EventsTab';
 import { ProjectDaoProtocolSection } from './components/ProjectDaoProtocolSection';
 import { TokenomicsBotsTab } from './tabs/TokenomicsBotsTab';
 import { UnifiedResourceHubTab } from './tabs/UnifiedResourceHubTab';
 import { ProtocolSandboxPreviewModal } from '@/components/projects/ProtocolSandboxPreviewModal';
+import type { Project } from '@/types/admin';
 import GovernancePage from '@/components/governance/GovernancePage';
 import { useProfile } from '@/hooks/useProfile';
 import {
@@ -46,7 +43,6 @@ import {
   Rocket,
   Landmark,
   ExternalLink,
-  Wallet,
   Copy,
   CheckCircle2,
   FileText,
@@ -54,20 +50,66 @@ import {
   ChevronRight,
   Shield,
   User,
-  Settings,
   LogOut,
   Sparkles,
   Vote,
   Lock,
 } from 'lucide-react';
 
+export interface ProjectPhaseConfig {
+  id: string;
+  name: string;
+  isSoftCap?: boolean;
+  type: string;
+  limit: number | string;
+  tokenPrice?: number | string;
+  isActive: boolean;
+}
+
+export interface ProjectW2EConfig {
+  treasuryAddress?: string;
+  governorAddress?: string;
+  phases?: ProjectPhaseConfig[];
+  [key: string]: unknown;
+}
+
+export interface DashboardProjectData {
+  id: number | string;
+  slug: string;
+  title: string;
+  status?: string;
+  chainId?: number | null;
+  description?: string | null;
+  createdAt?: string | Date | null;
+  created_at?: string | Date | null;
+  raised_amount?: number | string | null;
+  raisedAmount?: number | string | null;
+  target_amount?: number | string | null;
+  targetAmount?: number | string | null;
+  totalValuationUsd?: number | string | null;
+  tokenType?: string | null;
+  treasury_address?: string | null;
+  governorContractAddress?: string | null;
+  contractAddress?: string | null;
+  w2eConfig?: unknown;
+  [key: string]: unknown;
+}
+
+export interface PurchaseItem {
+  id: number;
+  buyerAddress?: string;
+  amount: number | string;
+  tokenCount: number | string;
+  createdAt: string | Date;
+}
+
 interface ProjectFounderDashboardProps {
-  project: any;
+  project: DashboardProjectData;
   hasGrowthOs?: boolean;
   activeModules?: string[];
 }
 
-function parseSafeNumber(val: any): number {
+function parseSafeNumber(val: unknown): number {
   if (val === null || val === undefined || val === '') return 0;
   if (typeof val === 'number') return isNaN(val) ? 0 : val;
   if (typeof val === 'string') {
@@ -92,14 +134,14 @@ type MainTab =
   | 'settings'
   | 'pandoras_governance';
 
-export default function ProjectFounderDashboard({ project, hasGrowthOs, activeModules = [] }: ProjectFounderDashboardProps) {
+export default function ProjectFounderDashboard({ project, hasGrowthOs: _hasGrowthOs, activeModules = [] }: ProjectFounderDashboardProps) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<MainTab>('overview');
   const [isLoadingPhase, setIsLoadingPhase] = useState<string | null>(null);
   const [pendingCount, setPendingCount] = useState(0);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [copiedWallet, setCopiedWallet] = useState(false);
 
   // Sub-tab states for consolidated views
@@ -109,33 +151,36 @@ export default function ProjectFounderDashboard({ project, hasGrowthOs, activeMo
   const wallet = useActiveWallet();
   const { disconnect } = useDisconnect();
 
-  const fetchPendingCount = async () => {
+  const fetchPendingCount = useCallback(async () => {
     if (!account?.address) return;
     try {
       const res = await fetch(`/api/v1/projects/${project.id}/admin/purchases`, {
         headers: { 'x-wallet-address': account.address },
       });
       if (res.ok) {
-        const data = await res.json();
+        const data: unknown = await res.json();
         setPendingCount(Array.isArray(data) ? data.length : 0);
       }
     } catch (error) {
       console.error(error);
     }
-  };
-
-  useEffect(() => {
-    fetchPendingCount();
   }, [account?.address, project.id]);
 
-  let config: any = {};
+  useEffect(() => {
+    void fetchPendingCount();
+  }, [fetchPendingCount]);
+
+  let config: ProjectW2EConfig = {};
   try {
-    config = typeof project.w2eConfig === 'string' ? JSON.parse(project.w2eConfig) : project.w2eConfig || {};
+    if (typeof project.w2eConfig === 'string') {
+      config = JSON.parse(project.w2eConfig) as ProjectW2EConfig;
+    } else if (project.w2eConfig && typeof project.w2eConfig === 'object') {
+      config = project.w2eConfig as ProjectW2EConfig;
+    }
   } catch (e) {
     console.error('Error parsing w2eConfig', e);
   }
-  const treasuryAddress = config.treasuryAddress || project.treasury_address;
-  const governorAddress = config.governorAddress || project.governorContractAddress;
+  const treasuryAddress = config.treasuryAddress ?? project.treasury_address;
 
   const handleTogglePhase = async (phaseId: string, currentStatus: boolean) => {
     try {
@@ -160,7 +205,7 @@ export default function ProjectFounderDashboard({ project, hasGrowthOs, activeMo
 
   const copyAddress = () => {
     if (account?.address) {
-      navigator.clipboard.writeText(account.address);
+      void navigator.clipboard.writeText(account.address);
       setCopiedWallet(true);
       toast.success('Dirección copiada');
       setTimeout(() => setCopiedWallet(false), 2000);
@@ -170,7 +215,9 @@ export default function ProjectFounderDashboard({ project, hasGrowthOs, activeMo
   const handleLogout = () => {
     try {
       if (wallet) disconnect(wallet);
-    } catch {}
+    } catch (e) {
+      console.error('Error during disconnect', e);
+    }
     document.cookie = 'pandoras_portal_session=; Max-Age=0; path=/';
     document.cookie = 'wallet-address=; Max-Age=0; path=/';
     document.cookie = 'thirdweb:wallet-address=; Max-Age=0; path=/';
@@ -395,8 +442,10 @@ export default function ProjectFounderDashboard({ project, hasGrowthOs, activeMo
         {/* MOBILE DRAWER */}
         {isMobileDrawerOpen && (
           <div className="md:hidden fixed inset-0 z-50 flex">
-            <div
-              className="fixed inset-0 bg-black/80 backdrop-blur-sm"
+            <button
+              type="button"
+              aria-label="Cerrar menú móvil"
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm cursor-default w-full h-full border-0 p-0 m-0"
               onClick={() => setIsMobileDrawerOpen(false)}
             />
             <div className="relative flex flex-col w-72 max-w-[80vw] bg-[#09090D] border-r border-white/10 h-full z-10">
@@ -613,7 +662,7 @@ export default function ProjectFounderDashboard({ project, hasGrowthOs, activeMo
 
       {/* Protocol Sandbox Preview Modal */}
       <ProtocolSandboxPreviewModal
-        project={project}
+        project={project as unknown as Project}
         isOpen={isPreviewOpen}
         onClose={() => setIsPreviewOpen(false)}
       />
@@ -626,21 +675,22 @@ export default function ProjectFounderDashboard({ project, hasGrowthOs, activeMo
 function ProfileTab({
   project,
   account,
-  chainName,
-  onCopyAddress,
-  copiedWallet,
+  chainName: _chainName,
+  onCopyAddress: _onCopyAddress,
+  copiedWallet: _copiedWallet,
   onOpenPreview,
 }: {
-  project: any;
-  account: any;
+  project: DashboardProjectData;
+  account?: { address?: string } | null;
   chainName: string;
   onCopyAddress: () => void;
   copiedWallet: boolean;
   onOpenPreview: () => void;
 }) {
-  const { profile, isLoading: profileLoading } = useProfile();
+  const { profile } = useProfile();
   const [kycModalOpen, setKycModalOpen] = useState(false);
   const [profileSubTab, setProfileSubTab] = useState<'identity' | 'compliance' | 'security' | 'referrals'>('identity');
+  const profileRecord = profile as Record<string, unknown> | null | undefined;
 
   return (
     <div className="space-y-6">
@@ -722,12 +772,20 @@ function ProfileTab({
           </div>
           <div className="space-y-4">
             <AccountStatus
-              role={profile?.role || 'OPERATOR'}
-              connectionCount={profile?.connectionCount ?? (profile as any)?.connection_count ?? 1}
-              kycCompleted={profile?.kycCompleted ?? (profile as any)?.kyc_completed ?? false}
-              lastConnectionAt={profile?.lastConnectionAt ?? (profile as any)?.last_connection_at}
+              role={profile?.role ?? 'OPERATOR'}
+              connectionCount={profile?.connectionCount ?? (typeof profileRecord?.connection_count === 'number' ? profileRecord.connection_count : 1)}
+              kycCompleted={profile?.kycCompleted ?? (typeof profileRecord?.kyc_completed === 'boolean' ? profileRecord.kyc_completed : false)}
+              lastConnectionAt={
+                profile?.lastConnectionAt
+                  ? (typeof profile.lastConnectionAt === 'string' ? profile.lastConnectionAt : new Date(profile.lastConnectionAt).toISOString())
+                  : (typeof profileRecord?.last_connection_at === 'string'
+                      ? profileRecord.last_connection_at
+                      : profileRecord?.last_connection_at instanceof Date
+                      ? profileRecord.last_connection_at.toISOString()
+                      : undefined)
+              }
               projectCount={profile?.totalProjects ?? profile?.projectCount ?? 1}
-              hasPandorasKey={profile?.hasPandorasKey ?? (profile as any)?.has_pandoras_key ?? true}
+              hasPandorasKey={profile?.hasPandorasKey ?? (typeof profileRecord?.has_pandoras_key === 'boolean' ? profileRecord.has_pandoras_key : true)}
             />
           </div>
         </div>
@@ -800,29 +858,29 @@ function OverviewTab({
   onTogglePhase,
   loadingPhase,
 }: {
-  project: any;
-  config: any;
+  project: DashboardProjectData;
+  config: ProjectW2EConfig;
   onTogglePhase: (id: string, status: boolean) => void;
   loadingPhase: string | null;
 }) {
   const chainName =
-    project?.chainId === 8453
+    project.chainId === 8453
       ? 'Base Mainnet (8453)'
-      : project?.chainId === 84532
+      : project.chainId === 84532
       ? 'Base Sepolia (84532)'
-      : project?.chainId === 1
+      : project.chainId === 1
       ? 'Ethereum Mainnet (1)'
-      : project?.chainId === 11155111
+      : project.chainId === 11155111
       ? 'Ethereum Sepolia (11155111)'
       : 'Base L2 Network';
 
-  const creationDate =
-    project?.createdAt || project?.created_at
-      ? new Date(project.createdAt || project.created_at).toLocaleDateString()
-      : 'Activo';
+  const rawCreatedAt = project.createdAt ?? project.created_at;
+  const creationDate = rawCreatedAt
+    ? new Date(rawCreatedAt).toLocaleDateString()
+    : 'Activo';
 
-  const raised = parseSafeNumber(project?.raised_amount ?? project?.raisedAmount);
-  const target = parseSafeNumber(project?.target_amount ?? project?.targetAmount ?? project?.totalValuationUsd);
+  const raised = parseSafeNumber(project.raised_amount ?? project.raisedAmount);
+  const target = parseSafeNumber(project.target_amount ?? project.targetAmount ?? project.totalValuationUsd);
   const progressPercent = target > 0 ? Math.min(100, Math.round((raised / target) * 100)) : 0;
 
   return (
@@ -836,7 +894,7 @@ function OverviewTab({
               Estado del Protocolo RWA
             </h3>
             <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
-              {project?.status?.toUpperCase() || 'LIVE'}
+              {project.status?.toUpperCase() ?? 'LIVE'}
             </span>
           </div>
 
@@ -861,7 +919,7 @@ function OverviewTab({
                 <span className="text-xs text-zinc-500">USD</span>
               </p>
               <p className="text-[11px] text-zinc-500 pt-2 font-mono">
-                Tipo: {project?.tokenType || 'PAS-721 / ERC-20'}
+                Tipo: {project.tokenType ?? 'PAS-721 / ERC-20'}
               </p>
             </div>
           </div>
@@ -875,8 +933,8 @@ function OverviewTab({
           </div>
 
           <div className="space-y-3">
-            {config.phases?.length > 0 ? (
-              config.phases.map((phase: any) => (
+            {config.phases && config.phases.length > 0 ? (
+              config.phases.map((phase: ProjectPhaseConfig) => (
                 <div
                   key={phase.id}
                   className="flex justify-between items-center p-4 bg-white/[0.02] hover:bg-white/[0.04] rounded-2xl border border-white/5 transition-colors"
@@ -963,7 +1021,7 @@ function OverviewTab({
   );
 }
 
-function TreasuryTab({ project, address }: { project: any; address?: string }) {
+function TreasuryTab({ project, address }: { project: DashboardProjectData; address?: string | null }) {
   const account = useActiveAccount();
   const [isDistributing, setIsDistributing] = useState(false);
   const [distAmount, setDistAmount] = useState('');
@@ -973,15 +1031,17 @@ function TreasuryTab({ project, address }: { project: any; address?: string }) {
   useEffect(() => {
     if (!address) return;
     fetch(`/api/v1/projects/${project.id}/admin/treasury-balance`, {
-      headers: { 'x-wallet-address': account?.address || '' },
+      headers: { 'x-wallet-address': account?.address ?? '' },
     })
-      .then((r) => (r.ok ? r.json() : null))
+      .then((r) => (r.ok ? (r.json() as Promise<{ balance?: number | string }>) : null))
       .then((data) => {
         if (data?.balance !== undefined) {
           setTreasuryBalance(Number(data.balance).toFixed(2));
         }
       })
-      .catch(() => {});
+      .catch((err) => {
+        console.error('Error fetching treasury balance', err);
+      });
   }, [project.id, address, account?.address]);
 
   if (!address)
@@ -1013,14 +1073,15 @@ function TreasuryTab({ project, address }: { project: any; address?: string }) {
         }),
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Error al procesar distribución');
+      const data = (await res.json()) as { error?: string; recipientsCount?: number };
+      if (!res.ok) throw new Error(data.error ?? 'Error al procesar distribución');
 
-      toast.success(`Distribuido con éxito a ${data.recipientsCount} miembros.`);
+      toast.success(`Distribuido con éxito a ${data.recipientsCount ?? 0} miembros.`);
       setDistAmount('');
       setDistDesc('');
-    } catch (e: any) {
-      toast.error(e.message || 'Error en la distribución');
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Error en la distribución';
+      toast.error(msg);
     } finally {
       setIsDistributing(false);
     }
@@ -1057,8 +1118,9 @@ function TreasuryTab({ project, address }: { project: any; address?: string }) {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-mono text-zinc-400 mb-1">Monto Total USDC a Distribuir</label>
+              <label htmlFor="treasury-dist-amount" className="block text-xs font-mono text-zinc-400 mb-1">Monto Total USDC a Distribuir</label>
               <input
+                id="treasury-dist-amount"
                 type="number"
                 value={distAmount}
                 onChange={(e) => setDistAmount(e.target.value)}
@@ -1067,8 +1129,9 @@ function TreasuryTab({ project, address }: { project: any; address?: string }) {
               />
             </div>
             <div>
-              <label className="block text-xs font-mono text-zinc-400 mb-1">Concepto / Nota</label>
+              <label htmlFor="treasury-dist-desc" className="block text-xs font-mono text-zinc-400 mb-1">Concepto / Nota</label>
               <input
+                id="treasury-dist-desc"
                 type="text"
                 value={distDesc}
                 onChange={(e) => setDistDesc(e.target.value)}
@@ -1091,7 +1154,7 @@ function TreasuryTab({ project, address }: { project: any; address?: string }) {
   );
 }
 
-function GovernanceTab({ address, project }: { address?: string; project: any }) {
+export function GovernanceTab({ address, project: _project }: { address?: string; project: DashboardProjectData }) {
   if (!address)
     return (
       <div className="p-12 text-center bg-white/[0.02] rounded-3xl border border-white/10 text-zinc-500 font-mono">
@@ -1113,7 +1176,7 @@ function GovernanceTab({ address, project }: { address?: string; project: any })
   );
 }
 
-function SettingsTab({ project }: { project: any }) {
+function SettingsTab({ project }: { project: DashboardProjectData }) {
   return (
     <div className="bg-white/[0.02] border border-white/10 rounded-3xl p-6 backdrop-blur-xl space-y-6 shadow-2xl">
       <h3 className="text-base font-bold text-white uppercase tracking-wider font-mono">
@@ -1140,20 +1203,20 @@ function SettingsTab({ project }: { project: any }) {
   );
 }
 
-function PurchasesTab({ project, onUpdatePending }: { project: any; onUpdatePending: () => void }) {
+function PurchasesTab({ project, onUpdatePending }: { project: DashboardProjectData; onUpdatePending: () => void }) {
   const account = useActiveAccount();
-  const [purchases, setPurchases] = useState<any[]>([]);
+  const [purchases, setPurchases] = useState<PurchaseItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
 
-  const fetchPurchases = async () => {
+  const fetchPurchases = useCallback(async () => {
     if (!account?.address) return;
     try {
       const res = await fetch(`/api/v1/projects/${project.id}/admin/purchases`, {
         headers: { 'x-wallet-address': account.address },
       });
       if (res.ok) {
-        const data = await res.json();
+        const data = (await res.json()) as PurchaseItem[];
         setPurchases(Array.isArray(data) ? data : []);
       }
     } catch (e) {
@@ -1161,11 +1224,11 @@ function PurchasesTab({ project, onUpdatePending }: { project: any; onUpdatePend
     } finally {
       setLoading(false);
     }
-  };
+  }, [account?.address, project.id]);
 
   useEffect(() => {
-    fetchPurchases();
-  }, [project.id, account?.address]);
+    void fetchPurchases();
+  }, [fetchPurchases]);
 
   const handleApprove = async (purchaseId: number) => {
     if (!account?.address) return;
@@ -1181,15 +1244,16 @@ function PurchasesTab({ project, onUpdatePending }: { project: any; onUpdatePend
       });
 
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'Error al aprobar compra');
+        const errorData = (await res.json()) as { error?: string };
+        throw new Error(errorData.error ?? 'Error al aprobar compra');
       }
 
       toast.success('Compra aprobada y sincronizada');
-      fetchPurchases();
+      void fetchPurchases();
       onUpdatePending();
-    } catch (e: any) {
-      toast.error(e.message || 'Error al aprobar compra');
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Error al aprobar compra';
+      toast.error(msg);
     } finally {
       setActionLoading(null);
     }
@@ -1230,7 +1294,9 @@ function PurchasesTab({ project, onUpdatePending }: { project: any; onUpdatePend
               </div>
               <div>
                 <button
-                  onClick={() => handleApprove(p.id)}
+                  onClick={() => {
+                    void handleApprove(p.id);
+                  }}
                   disabled={actionLoading === p.id}
                   className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold font-mono transition-all disabled:opacity-50 shadow-sm"
                 >

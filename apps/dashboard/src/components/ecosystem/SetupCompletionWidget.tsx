@@ -5,21 +5,20 @@ import Link from 'next/link';
 import { 
   Bot, 
   Rocket, 
-  Landmark, 
   CheckCircle2, 
   Circle, 
   ArrowRight,
   ArrowUpRight, 
   Sparkles, 
-  ShieldCheck, 
-  Cpu,
   Compass,
   Zap,
+  Clock,
 } from 'lucide-react';
 
 import type { EcosystemSetupSummary } from '@saasfly/shared';
 import { HermesFloatingGuide } from '@/components/guides/HermesFloatingGuide';
-import { getStationsForTenantVertical, TenantVertical } from '@/lib/guides/tenant-vertical-guides.data';
+import type { EcosystemTourRole } from '@/lib/guides/ecosystem-guides.data';
+import { getStationsForTenantVertical, type TenantVertical } from '@/lib/guides/tenant-vertical-guides.data';
 import type { TenantExperienceContext } from '@/lib/mesh/tenant-experience-context';
 
 export type StepTier = 'REQUIRED' | 'RECOMMENDED' | 'OPTIONAL';
@@ -59,6 +58,17 @@ export function SetupCompletionWidget({
   tenantRole?: string;
   actorId?: string;
 }) {
+  const normalizedRole: EcosystemTourRole = (
+    tenantRole?.toUpperCase() === 'OWNER' || tenantRole?.toUpperCase() === 'ADMIN'
+      ? 'ADMIN'
+      : tenantRole?.toUpperCase() === 'OPERATOR'
+      ? 'OPERATOR'
+      : tenantRole?.toUpperCase() === 'MARKETING'
+      ? 'MARKETING'
+      : tenantRole?.toUpperCase() === 'SUPER_ADMIN'
+      ? 'SUPER_ADMIN'
+      : 'VIEWER'
+  );
   const hermesMod = initialSummary?.modules?.find((m) => m.productKey === 'HERMES');
   const growthMod = initialSummary?.modules?.find((m) => m.productKey === 'GROWTH_OS');
   const rwaMod = initialSummary?.modules?.find((m) => m.productKey === 'PANDORAS_RWA');
@@ -94,13 +104,8 @@ export function SetupCompletionWidget({
   const isGrowthCampaignDone = Boolean(growthMod?.checklist?.find((c) => c.id === 'growth-email')?.isCompleted);
   const isGrowthTreasuryDone = Boolean(growthMod?.checklist?.find((c) => c.id === 'growth-treasury')?.isCompleted);
 
-  const isRwaProjectDone = Boolean(rwaMod?.checklist?.find((c) => c.id === 'rwa-compliance')?.isCompleted);
-  const isRwaTokenomicsDone = Boolean(rwaMod?.checklist?.find((c) => c.id === 'rwa-tokenomics')?.isCompleted);
-  const isRwaDeployDone = Boolean(rwaMod?.checklist?.find((c) => c.id === 'rwa-contract')?.isCompleted);
-
   const hermesPercentage = hermesMod?.progressPercentage ?? (isHermesPersonaDone ? 35 : 0);
   const growthPercentage = growthMod?.progressPercentage ?? (isGrowthPipelineDone ? 35 : 0);
-  const rwaPercentage = rwaMod?.progressPercentage ?? (isRwaProjectDone ? 35 : 0);
 
   const allSuites: SuiteMission[] = [
     {
@@ -318,6 +323,105 @@ export function SetupCompletionWidget({
           </div>
         </div>
 
+        {/* ── CENTRAL HUB TRIAL ACTIVATION CONTROL PLANE ── */}
+        {initialSummary?.isTrial && (
+          <div className={`p-5 sm:p-6 rounded-2xl border transition-all ${
+            initialSummary.trialStatus === 'ACTIVE'
+              ? 'bg-gradient-to-r from-purple-950/30 via-slate-900/40 to-indigo-950/20 border-purple-500/30'
+              : initialSummary.isReadyToActivate
+              ? 'bg-gradient-to-r from-emerald-950/40 via-slate-900/50 to-amber-950/30 border-emerald-500/40 shadow-xl shadow-emerald-500/5'
+              : 'bg-white/[0.02] border-white/10'
+          }`}>
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+              <div className="space-y-1.5 max-w-2xl">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className={`text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+                    initialSummary.trialStatus === 'ACTIVE'
+                      ? 'bg-purple-500/15 border-purple-500/30 text-purple-300'
+                      : initialSummary.isReadyToActivate
+                      ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300'
+                      : 'bg-amber-500/10 border-amber-500/20 text-amber-300'
+                  }`}>
+                    {initialSummary.trialStatus === 'ACTIVE'
+                      ? '● Prueba de 3 Días Activa (72 Horas)'
+                      : initialSummary.isReadyToActivate
+                      ? '★ Lista para Activar (Sin Costo de Configuración)'
+                      : '⏳ Inyección de Información en Curso'}
+                  </span>
+                  <span className="text-zinc-500 text-xs font-mono">· Sovereign Free Trial</span>
+                </div>
+
+                <h4 className="text-base sm:text-lg font-bold text-white tracking-tight">
+                  {initialSummary.trialStatus === 'ACTIVE'
+                    ? 'Tu prueba gratuita de 3 días está corriendo'
+                    : initialSummary.isReadyToActivate
+                    ? '¡Tu organización cuenta con información suficiente para comenzar!'
+                    : 'Configura tus herramientas y documentos a tu ritmo antes de iniciar'}
+                </h4>
+
+                <p className="text-xs text-zinc-400 leading-relaxed">
+                  {initialSummary.trialStatus === 'ACTIVE'
+                    ? 'Tienes acceso activo a tus verticales provisionadas. El tiempo de 72 horas expira al concluir los 3 días.'
+                    : (
+                      <>
+                        <strong className="text-zinc-200">El tiempo de los 3 días NO corre</strong> mientras inyectas documentos o configuras prospectos (sin costo ni consumo de recursos). Una vez que hagas clic en <span className="text-emerald-300 font-semibold">&quot;Activar Prueba Gratuita&quot;</span>, comenzará formalmente el contador de 72 horas.
+                      </>
+                    )}
+                </p>
+              </div>
+
+              {/* Action Side: Activate Button OR Countdown */}
+              <div className="shrink-0 flex items-center gap-3">
+                {initialSummary.trialStatus === 'ACTIVE' ? (
+                  <div className="px-4 py-2.5 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-300 text-xs font-mono font-bold flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-purple-400 animate-pulse" />
+                    <span>Prueba en Curso (72h)</span>
+                  </div>
+                ) : (
+                  <button
+                    onClick={async () => {
+                      if (!initialSummary.isReadyToActivate) {
+                        alert('Para activar la prueba necesitas ingresar al menos 1 documento en Hermes o un prospecto en Growth OS.');
+                        return;
+                      }
+                      try {
+                        const res = await fetch(`/api/v1/projects/${organizationSlug}/trial/activate`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                        });
+                        const data = (await res.json()) as { ok?: boolean; message?: string };
+                        if (res.ok && data.ok) {
+                          alert('¡Prueba gratuita de 3 días activada con éxito!');
+                          window.location.reload();
+                        } else {
+                          alert(data.message ?? 'No fue posible activar la prueba.');
+                        }
+                      } catch (err: unknown) {
+                        const errMsg = err instanceof Error ? err.message : 'Error al conectar con el servidor.';
+                        alert(errMsg);
+                      }
+                    }}
+                    disabled={!initialSummary.isReadyToActivate}
+                    className={`px-5 py-3 rounded-xl text-xs font-bold font-mono flex items-center gap-2 transition-all ${
+                      initialSummary.isReadyToActivate
+                        ? 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-black shadow-xl shadow-emerald-500/20 hover:scale-[1.02] cursor-pointer'
+                        : 'bg-white/5 border border-white/10 text-zinc-500 cursor-not-allowed opacity-60'
+                    }`}
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    <span>
+                      {initialSummary.isReadyToActivate
+                        ? 'Activar Prueba Gratuita (3 Días)'
+                        : 'Completa Requisitos para Activar'}
+                    </span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ── QUICK RECOMMENDED ACTIONS (TENANT EXPERIENCE CONTEXT) ── */}
         {experienceContext && experienceContext.recommendedActions.length > 0 && (
           <div className="flex flex-wrap items-center gap-2.5 pt-1">
@@ -325,7 +429,7 @@ export function SetupCompletionWidget({
               Siguientes Pasos Sugeridos:
             </span>
             {experienceContext.recommendedActions
-              .sort((a, b) => (a.priority === 'HIGH' ? -1 : 1))
+              .sort((a, _b) => (a.priority === 'HIGH' ? -1 : 1))
               .map((action) => (
                 <Link
                   key={action.id}
@@ -534,11 +638,11 @@ export function SetupCompletionWidget({
         titleOverride={`Setup · ${organizationSlug.toUpperCase()}`}
         isOpen={isTourOpen}
         onClose={() => setIsTourOpen(false)}
-        role={tenantRole as any}
+        role={normalizedRole}
         operatorContext={{
-          name: actorId?.startsWith('wallet_') ? `${actorId.slice(7, 13)}...` : actorId || 'Operador',
+          name: actorId?.startsWith('wallet_') ? `${actorId.slice(7, 13)}...` : (actorId ?? 'Operador'),
           email: '',
-          role: tenantRole || 'OPERATOR',
+          role: normalizedRole,
         }}
         organizationSlug={organizationSlug}
       />

@@ -2,10 +2,11 @@
 
 import { useState } from 'react';
 import { X, Mail, Loader2, CheckCircle2, Send } from 'lucide-react';
+import { createEmailCampaignAction } from '../actions';
 
 interface NewCampaignModalProps {
   organizationSlug: string;
-  templates?: Array<{ id: string; name: string }>;
+  templates?: { id: string; name: string }[];
   onSuccess?: () => void;
 }
 
@@ -36,20 +37,17 @@ export function NewCampaignModal({ organizationSlug, templates = [], onSuccess }
     setError(null);
 
     try {
-      const res = await fetch('/api/v1/growth/email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          organizationId: `org_${organizationSlug}`,
-          name: form.name.trim(),
-          templateId: form.templateId || undefined,
-          subject: form.subject.trim() || undefined,
-          scheduledAt: form.scheduledAt || undefined,
-        }),
+      const res = await createEmailCampaignAction({
+        organizationSlug,
+        name: form.name.trim(),
+        templateId: form.templateId || undefined,
+        subject: form.subject.trim() || undefined,
+        scheduledAt: form.scheduledAt || undefined,
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Error al crear la campaña.');
+      if (!res.success) {
+        throw new Error(res.message || 'Error al crear la campaña.');
+      }
 
       setDone(true);
       setTimeout(() => {
@@ -59,8 +57,9 @@ export function NewCampaignModal({ organizationSlug, templates = [], onSuccess }
         onSuccess?.();
         window.location.reload();
       }, 1200);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      const e = err instanceof Error ? err : new Error(String(err));
+      setError(e.message);
     } finally {
       setLoading(false);
     }
@@ -77,9 +76,11 @@ export function NewCampaignModal({ organizationSlug, templates = [], onSuccess }
 
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm cursor-pointer border-0 w-full h-full text-left"
             onClick={() => !loading && setOpen(false)}
+            aria-label="Cerrar modal"
           />
 
           <div className="relative w-full max-w-lg rounded-3xl border border-white/10 bg-[#09090D]/95 backdrop-blur-2xl shadow-2xl p-8 z-10 animate-in fade-in zoom-in-95 duration-300">
@@ -107,8 +108,9 @@ export function NewCampaignModal({ organizationSlug, templates = [], onSuccess }
             ) : (
               <form onSubmit={handleSubmit} className="space-y-5 relative z-10">
                 <div className="flex flex-col gap-2">
-                  <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Nombre de la Campaña *</label>
+                  <label htmlFor="campaign-name" className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Nombre de la Campaña *</label>
                   <input
+                    id="campaign-name"
                     type="text"
                     name="name"
                     value={form.name}
@@ -121,8 +123,9 @@ export function NewCampaignModal({ organizationSlug, templates = [], onSuccess }
 
                 {templates.length > 0 && (
                   <div className="flex flex-col gap-2">
-                    <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Template de Email</label>
+                    <label htmlFor="campaign-template" className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Template de Email</label>
                     <select
+                      id="campaign-template"
                       name="templateId"
                       value={form.templateId}
                       onChange={handleChange}
@@ -137,8 +140,9 @@ export function NewCampaignModal({ organizationSlug, templates = [], onSuccess }
                 )}
 
                 <div className="flex flex-col gap-2">
-                  <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Asunto del Email</label>
+                  <label htmlFor="campaign-subject" className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Asunto del Email</label>
                   <input
+                    id="campaign-subject"
                     type="text"
                     name="subject"
                     value={form.subject}
@@ -149,8 +153,9 @@ export function NewCampaignModal({ organizationSlug, templates = [], onSuccess }
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Fecha de Envío</label>
+                  <label htmlFor="campaign-scheduledAt" className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Fecha de Envío</label>
                   <input
+                    id="campaign-scheduledAt"
                     type="datetime-local"
                     name="scheduledAt"
                     value={form.scheduledAt}

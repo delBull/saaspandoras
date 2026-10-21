@@ -16,7 +16,7 @@ import { KnowledgeAdvancedPanel } from './KnowledgeAdvancedPanel';
 interface KnowledgeDashboardProps {
   overview: KnowledgeOverviewView;
   organizationName?: string;
-  onAddKnowledge?: (payload: { type: KnowledgeSourceView['type']; title: string; content: string }) => void;
+  onAddKnowledge?: (payload: { type: KnowledgeSourceView['type']; title: string; content: string }) => Promise<unknown> | void;
   onViewSource?: (sourceId: string) => void;
   onApproveFact?: (factId: string) => void;
   onRejectFact?: (factId: string) => void;
@@ -65,9 +65,10 @@ export function KnowledgeDashboard({ overview, organizationName = 'your organiza
         {showTeachModal && (
           <TeachHermesDialog 
             onClose={() => setShowTeachModal(false)} 
-            onSelect={(payload) => {
-              setShowTeachModal(false);
-              onAddKnowledge?.(payload);
+            onSelect={async (payload) => {
+              if (onAddKnowledge) {
+                await onAddKnowledge(payload);
+              }
             }}
           />
         )}

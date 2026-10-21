@@ -19,6 +19,7 @@ import { Menu, X } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { InspectorProvider } from './InspectorContext';
 import { TrialCockpitBanner } from './trial/TrialCockpitBanner';
+import { TrialReadinessBanner } from '@/components/ecosystem/TrialReadinessBanner';
 import { SimulationAlert } from './SimulationAlert';
 import { PortalProvider } from '@pandoras/display-engine';
 import '@pandoras/display-engine/styles.css';
@@ -31,8 +32,8 @@ interface PortalShellProps {
 
 export function PortalShell({ context, children, activeModules = [] }: PortalShellProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [desktopCollapsed, setDesktopCollapsed] = useState(true);
-  const [inspectorExpanded, setInspectorExpanded] = useState(true);
+  const [desktopCollapsed, setDesktopCollapsed] = useState(false);
+  const [inspectorExpanded, setInspectorExpanded] = useState(false);
   const pathname = usePathname();
 
   const toggleSidebar = () => {
@@ -128,8 +129,15 @@ export function PortalShell({ context, children, activeModules = [] }: PortalShe
           />
         </div>
 
+        {/* Trial Readiness & Pre-Activation Banner */}
+        <TrialReadinessBanner
+          organizationSlug={context.organization.slug}
+          organizationName={context.organization.name}
+          currentVertical="HERMES"
+        />
+
         {/* Trial Cockpit & Live Upgrade Banner */}
-        {context.trial?.isTrial && (
+        {context.trial?.isTrial && context.trial?.status === 'ACTIVE' && (
           <div className="z-20 shrink-0">
             <TrialCockpitBanner
               trial={context.trial}

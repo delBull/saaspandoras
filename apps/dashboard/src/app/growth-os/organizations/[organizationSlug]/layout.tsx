@@ -1,14 +1,16 @@
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { DashApi } from '@/lib/dash-api';
 import { GrowthOsSidebar } from './components/GrowthOsSidebar';
 import { SovereignHeader } from '@/components/sovereign-mesh/SovereignHeader';
 import { GrowthOsFooter } from './components/GrowthOsFooter';
 import { getNexusAuthContext } from '@saasfly/shared';
 import { redirect } from 'next/navigation';
+import type { EcosystemSetupSummary } from '@saasfly/shared';
 import { setupProgressService } from '@saasfly/shared';
 import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
 import { PortalAuthorizationError } from '@saasfly/shared';
 import { SimulationAlert } from '@/components/hermes-portal/SimulationAlert';
+import { TrialReadinessBanner } from '@/components/ecosystem/TrialReadinessBanner';
 import { DashboardProvider } from '@pandoras/display-engine';
 import '@pandoras/display-engine/styles.css';
 
@@ -31,7 +33,7 @@ export default async function ControlPlaneLayout({
   if (!isPlatformAdmin) {
     try {
       portalContext = await resolvePortalContext(slugId);
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (err instanceof PortalAuthorizationError) {
         if (err.code === 'NO_SESSION' || err.code === 'INVALID_SESSION') {
           redirect(`/portal/login?return=/growth-os/organizations/${slugId}`);
@@ -64,7 +66,7 @@ export default async function ControlPlaneLayout({
   let enabledCapabilities: string[] = ['growth.crm', 'growth.email'];
   try {
     const growthOverview = await DashApi.growth.getOverview(orgId);
-    if (growthOverview && growthOverview.enabledCapabilities) {
+    if (growthOverview?.enabledCapabilities) {
       enabledCapabilities = growthOverview.enabledCapabilities;
     }
   } catch (err) {
@@ -73,10 +75,11 @@ export default async function ControlPlaneLayout({
 
   // Load setup state to know which modules are active for the navbar
   let activeModules: string[] = [];
+  let setupSummary: EcosystemSetupSummary | null = null;
   try {
-    const setupSummary = await setupProgressService.getEcosystemSetupState(slugId);
-    if (setupSummary && setupSummary.modules) {
-      activeModules = setupSummary.modules.map(m => m.productKey);
+    setupSummary = await setupProgressService.getEcosystemSetupState(slugId);
+    if (setupSummary?.modules) {
+      activeModules = setupSummary.modules.map((m) => m.productKey);
     }
   } catch (err) {
     console.warn('[ControlPlaneLayout] Setup summary fetch notice:', err);
@@ -90,6 +93,14 @@ export default async function ControlPlaneLayout({
           organization={overview} 
           organizationSlug={slugId} 
           activeModules={activeModules} 
+        />
+
+        {/* Trial Readiness & Pre-Activation Notification */}
+        <TrialReadinessBanner
+          organizationSlug={slugId}
+          organizationName={overview.name}
+          currentVertical="GROWTH_OS"
+          initialSummary={setupSummary}
         />
 
         {portalContext?.organization?.isSimulationMode && (

@@ -1,22 +1,35 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { headers } from 'next/headers';
 import { db } from '@saasfly/db';
 import { nexusPresence, nexusCollaborators } from '@saasfly/db/schema';
-import { eq, desc } from "@saasfly/db-core";
+import { eq, desc, sql } from "@saasfly/db-core";
 import { getNexusAuthContext } from '@saasfly/shared';
 
-const PRESENCE_VALID_STATUSES = ['ONLINE', 'OFFLINE', 'DO_NOT_DISTURB', 'IN_MEETING'];
-const PRESENCE_VALID_CHANNELS = ['NEXUS_CHAT', 'TELEGRAM', 'WHATSAPP', 'EMAIL'];
+const PRESENCE_VALID_STATUSES = ['ONLINE', 'OFFLINE', 'DO_NOT_DISTURB', 'IN_MEETING'] as const;
+type PresenceValidStatus = (typeof PRESENCE_VALID_STATUSES)[number];
+
+const PRESENCE_VALID_CHANNELS = ['NEXUS_CHAT', 'TELEGRAM', 'WHATSAPP', 'EMAIL'] as const;
+type PresenceValidChannel = (typeof PRESENCE_VALID_CHANNELS)[number];
+
+interface PresenceRequestBody {
+  status?: string;
+  preferredChannel?: string;
+  context?: string;
+}
 
 export async function GET() {
   try {
-    const __hdrs = await import("next/headers").then(m => m.headers()); const auth = await getNexusAuthContext(await __hdrs);
+    const reqHeaders = await headers();
+    const auth = await getNexusAuthContext(reqHeaders);
     if (!auth.isAuthenticated) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const orgId = auth.canonicalOrgId || 'pandoras';
-    const presenceData = await db
+    const orgId = auth.canonicalOrgId ?? 'pandoras';
+    const isHqOrg = orgId === 'pandoras' || orgId === 'pandoras-core';
+
+    const baseQuery = db
       .select({
         id: nexusPresence.id,
         collaboratorId: nexusPresence.collaboratorId,
@@ -29,16 +42,23 @@ export async function GET() {
         role: nexusCollaborators.role,
       })
       .from(nexusPresence)
-      .innerJoin(nexusCollaborators, eq(nexusPresence.collaboratorId, nexusCollaborators.id))
-      .where(eq(nexusCollaborators.canonicalOrgId, orgId))
-      .orderBy(desc(nexusPresence.lastSeenAt));
+      .innerJoin(nexusCollaborators, eq(nexusPresence.collaboratorId, nexusCollaborators.id));
+
+    const presenceData = isHqOrg
+      ? await baseQuery
+          .where(sql`(${nexusCollaborators.canonicalOrgId} = ${orgId} OR ${nexusCollaborators.canonicalOrgId} = 'pandoras' OR ${nexusCollaborators.canonicalOrgId} IS NULL)`)
+          .orderBy(desc(nexusPresence.lastSeenAt))
+      : await baseQuery
+          .where(eq(nexusCollaborators.canonicalOrgId, orgId))
+          .orderBy(desc(nexusPresence.lastSeenAt));
 
     return NextResponse.json({ presence: presenceData });
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Migration-lag tolerance: if the nexus_presence table has not been applied
     // to the active environment yet, report empty presence instead of a 500.
-    const errorMessage = error?.message || '';
-    const causeMessage = error?.cause?.message || '';
+    const err = error as { message?: string; cause?: { message?: string } } | null;
+    const errorMessage = err?.message ?? '';
+    const causeMessage = err?.cause?.message ?? '';
     const relationMissing =
       /relation "?nexus_presence"? does not exist|undefined_table|_nexus_presence/.test(errorMessage) ||
       /relation "?nexus_presence"? does not exist|undefined_table|_nexus_presence/.test(causeMessage);
@@ -53,20 +73,39 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    const __hdrs = await import("next/headers").then(m => m.headers()); const auth = await getNexusAuthContext(await __hdrs);
+    const reqHeaders = await headers();
+    const auth = await getNexusAuthContext(reqHeaders);
     if (!auth.isAuthenticated) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const collaboratorId = auth.collaboratorId;
+    let collaboratorId = auth.collaboratorId;
+    if (!collaboratorId && auth.email) {
+      // Auto-resolve collaboratorId if available by email
+      const [collab] = await db
+        .select({ id: nexusCollaborators.id })
+        .from(nexusCollaborators)
+        .where(eq(nexusCollaborators.email, auth.email))
+        .limit(1);
+      if (collab) {
+        collaboratorId = collab.id;
+      }
+    }
+
     if (!collaboratorId) {
       return NextResponse.json({ error: 'Not a linked collaborator' }, { status: 403 });
     }
 
-    const body = await req.json().catch(() => ({}));
-    const status = PRESENCE_VALID_STATUSES.includes(body?.status) ? body.status : 'ONLINE';
-    const preferredChannel = PRESENCE_VALID_CHANNELS.includes(body?.preferredChannel) ? body.preferredChannel : 'NEXUS_CHAT';
-    const context = typeof body?.context === 'string' ? body.context.slice(0, 255) : null;
+    const body = (await req.json().catch(() => ({}))) as PresenceRequestBody;
+    const status: PresenceValidStatus = 
+      typeof body.status === 'string' && (PRESENCE_VALID_STATUSES as readonly string[]).includes(body.status)
+        ? (body.status as PresenceValidStatus)
+        : 'ONLINE';
+    const preferredChannel: PresenceValidChannel = 
+      typeof body.preferredChannel === 'string' && (PRESENCE_VALID_CHANNELS as readonly string[]).includes(body.preferredChannel)
+        ? (body.preferredChannel as PresenceValidChannel)
+        : 'NEXUS_CHAT';
+    const context = typeof body.context === 'string' ? body.context.slice(0, 255) : null;
 
     const now = new Date();
 
@@ -86,7 +125,7 @@ export async function POST(req: NextRequest) {
         await db
           .insert(nexusPresence)
           .values({ collaboratorId, status, context, preferredChannel, lastSeenAt: now, updatedAt: now });
-      } catch (insertErr: any) {
+      } catch (insertErr: unknown) {
         // Race tolerance: if a concurrent heartbeat inserted the row first,
         // retry as an update against the winner.
         const [winner] = await db
@@ -106,10 +145,11 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ ok: true, status, lastSeenAt: now.toISOString() });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const err = error as { message?: string } | null;
     const relationMissing =
-      typeof error?.message === 'string' &&
-      /relation "?nexus_presence"? does not exist|undefined_table|_nexus_presence/.test(error.message);
+      typeof err?.message === 'string' &&
+      /relation "?nexus_presence"? does not exist|undefined_table|_nexus_presence/.test(err.message);
     if (relationMissing) {
       console.warn('[PRESENCE_POST] nexus_presence table not found yet (migration pending).');
       return NextResponse.json({ ok: false, reason: 'PRESENCE_MIGRATION_PENDING' }, { status: 503 });
