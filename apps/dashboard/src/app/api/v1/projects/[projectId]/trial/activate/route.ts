@@ -23,15 +23,15 @@ export const dynamic = 'force-dynamic';
  */
 export async function POST(
   req: NextRequest,
-  { params }: { params: Promise<{ slug: string }> }
+  { params }: { params: Promise<{ projectId: string }> }
 ) {
   try {
-    const { slug } = await params;
-    if (!slug) {
-      return NextResponse.json({ ok: false, errorCode: 'SLUG_REQUIRED', message: 'Slug de organización requerido.' }, { status: 400 });
+    const { projectId } = await params;
+    if (!projectId) {
+      return NextResponse.json({ ok: false, errorCode: 'PROJECT_ID_REQUIRED', message: 'Identificador de proyecto o slug requerido.' }, { status: 400 });
     }
 
-    const cleanSlug = slug.toLowerCase().trim();
+    const cleanSlug = projectId.toLowerCase().trim();
 
     // 1. Authorize Caller: Portal Session OR Web Wallet / Admin
     let isAuthorized = false;

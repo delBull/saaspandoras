@@ -138,7 +138,7 @@ export function SetupCompletionWidget({
           label: 'Conecta tu canal (Telegram / Widget)',
           tier: 'OPTIONAL',
           done: isHermesChannelsDone,
-          href: `/portal/${organizationSlug}/channels`,
+          href: `/portal/${organizationSlug}/audience/channels`,
           actionText: 'Conectar Canal',
         },
       ],
