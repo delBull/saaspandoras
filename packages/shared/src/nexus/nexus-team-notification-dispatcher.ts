@@ -1,9 +1,11 @@
 import { db } from '@saasfly/db-core';
-import { eq, and } from "@saasfly/db-core";
+import { eq } from "@saasfly/db-core";
 import { nexusCollaborators } from '@saasfly/db-core/schema';
 import { NexusTeamTransport } from '@saasfly/hermes-core';
-import { NexusActionDispatcher, ActionPayload } from '@saasfly/hermes-core';
-import { resolveEffectivePermissions, NexusRole, NexusPermissions } from '../index';
+import type { ActionPayload } from '@saasfly/hermes-core';
+import { NexusActionDispatcher } from '@saasfly/hermes-core';
+import type { NexusRole, NexusPermissions } from '../index';
+import { resolveEffectivePermissions } from '../index';
 import { createDeepLinkReference, dispatchTelegramNotification } from '@saasfly/hermes-core';
 
 export class NexusTeamNotificationDispatcher {
@@ -25,18 +27,25 @@ export class NexusTeamNotificationDispatcher {
     actionConfig?: { actionType: string; targetResource: string; payload: ActionPayload; approveText?: string; rejectText?: string; canonicalOrgId?: string }
   ): Promise<void> {
     try {
-      // 1. Fetch eligible collaborators (scoped to canonicalOrgId if specified)
-      const whereClause = actionConfig?.canonicalOrgId
-        ? and(eq(nexusCollaborators.status, 'ACTIVE'), eq(nexusCollaborators.canonicalOrgId, actionConfig.canonicalOrgId))
-        : eq(nexusCollaborators.status, 'ACTIVE');
-
+      // 1. Fetch eligible collaborators (scoped to canonicalOrgId or SUPER_ADMINs)
       const collaborators = await db.query.nexusCollaborators.findMany({
-        where: whereClause,
+        where: eq(nexusCollaborators.status, 'ACTIVE'),
       });
 
-      const eligibleCollaborators = collaborators.filter((c: any) => {
+      const eligibleCollaborators = collaborators.filter((c) => {
+        const isSuperAdmin = c.role === 'SUPER_ADMIN' || c.canonicalOrgId === 'pandoras';
+        const assignedId = (actionConfig?.payload as Record<string, unknown> | undefined)?.assignedCollaboratorId;
+        const isAssigned = typeof assignedId === 'number'
+          ? c.id === assignedId
+          : true;
+        const matchesOrg = !actionConfig?.canonicalOrgId || c.canonicalOrgId === actionConfig.canonicalOrgId || isSuperAdmin;
+
+        if (!isSuperAdmin && (!isAssigned || !matchesOrg)) {
+          return false;
+        }
+
         const effective = resolveEffectivePermissions(
-          (c.role as NexusRole) || 'VIEWER', 
+          (c.role as NexusRole) ?? 'VIEWER', 
           c.permissions as Partial<Record<string, boolean>> | null
         );
         return Boolean(effective[requiredCapability]);
@@ -51,12 +60,11 @@ export class NexusTeamNotificationDispatcher {
       for (const collaborator of eligibleCollaborators) {
         if (!collaborator.telegramUserId) continue;
 
-        let inline_keyboard: any[][] = [];
         let deepLinkRef: string | undefined = undefined;
 
         if (actionConfig) {
           try {
-            const approveToken = await this.actionDispatcher.createActionRequest(
+            await this.actionDispatcher.createActionRequest(
               actionConfig.actionType + '_APPROVE',
               actionConfig.payload,
               collaborator.id,
@@ -65,7 +73,7 @@ export class NexusTeamNotificationDispatcher {
               24 // TTL 24 hours
             );
             
-            const rejectToken = await this.actionDispatcher.createActionRequest(
+            await this.actionDispatcher.createActionRequest(
               actionConfig.actionType + '_REJECT',
               actionConfig.payload,
               collaborator.id,
@@ -73,16 +81,11 @@ export class NexusTeamNotificationDispatcher {
               actionConfig.canonicalOrgId,
               24
             );
-
-            inline_keyboard = [[
-              { text: `✅ ${actionConfig.approveText || 'Aprobar'}`, callback_data: approveToken },
-              { text: `❌ ${actionConfig.rejectText || 'Rechazar'}`, callback_data: rejectToken }
-            ]];
             
             // Wire the Deep Link
             const targetType = actionConfig.actionType === 'HERMES' ? 'hitl_intervention' : 'action_request';
             deepLinkRef = await createDeepLinkReference({
-              canonicalOrgId: actionConfig.canonicalOrgId || 'pandoras',
+              canonicalOrgId: actionConfig.canonicalOrgId ?? 'pandoras',
               targetType,
               targetId: actionConfig.targetResource,
               createdBy: collaborator.id.toString(),
@@ -153,6 +156,27 @@ export class NexusTeamNotificationDispatcher {
       payload: { campaignId, canonicalOrgId },
       approveText: 'Aprobar y Distribuir',
       rejectText: 'Rechazar',
+    });
+  }
+
+  /**
+   * Dedicated method to notify about a Tenant reaching readiness to activate their 3-day trial.
+   */
+  async notifyTenantTrialActivationReady(
+    organizationSlug: string,
+    organizationName: string,
+    readinessPercent: number,
+    assignedCollaboratorId?: number | null
+  ) {
+    const text = `🎉 <b>Tenant Listo para Activar Prueba (72h)</b>\n\nEl tenant <b>${organizationName}</b> (<code>${organizationSlug}</code>) ha alcanzado un <b>${readinessPercent}% de readiness</b>.\n\nLa información inicial está inyectada y lista sin costo. ¿Deseas autorizar e iniciar los 3 días de prueba gratuita ahora?`;
+
+    await this.notifyTeam(text, 'nexus.manage', {
+      actionType: 'TENANT_TRIAL_READY',
+      targetResource: organizationSlug,
+      canonicalOrgId: organizationSlug,
+      payload: { organizationSlug, organizationName, readinessPercent, assignedCollaboratorId },
+      approveText: 'Activar 3 Días',
+      rejectText: 'Posponer',
     });
   }
 }

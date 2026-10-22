@@ -1,17 +1,15 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   X,
   Sparkles,
   ShieldCheck,
   CheckCircle2,
   Calendar,
-  Zap,
   ArrowRight,
-  Lock,
   Loader2,
-  Building2,
 } from 'lucide-react';
 
 interface TrialUpgradeModalProps {
@@ -22,7 +20,7 @@ interface TrialUpgradeModalProps {
 }
 
 const AGENDA_1_1_URL =
-  process.env.NEXT_PUBLIC_AGENDA_1_1_URL ||
+  process.env.NEXT_PUBLIC_AGENDA_1_1_URL ??
   (typeof window !== 'undefined'
     ? `${window.location.origin}/schedule/pandoras?type=strategy`
     : 'https://dash.pandoras.finance/schedule/pandoras?type=strategy');
@@ -82,14 +80,19 @@ export function TrialUpgradeModal({
   onClose,
   organizationSlug,
   organizationName,
-}: TrialUpgradeModalProps) {
+}: TrialUpgradeModalProps): React.JSX.Element | null {
   const [selectedPlan, setSelectedPlan] = useState('growth');
   const [requestSent, setRequestSent] = useState(false);
   const [referenceId, setReferenceId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!isOpen || !mounted) return null;
 
   const handleRequestUpgrade = async () => {
     setLoading(true);
@@ -102,26 +105,27 @@ export function TrialUpgradeModal({
         body: JSON.stringify({
           organizationSlug,
           planId: selectedPlan,
-          planName: plan?.name || selectedPlan,
+          planName: plan?.name ?? selectedPlan,
         }),
       });
 
-      const data = await res.json();
+      const data = (await res.json()) as { message?: string; error?: string; referenceId?: string };
       if (!res.ok) {
-        throw new Error(data.message || data.error || 'Error al registrar intención de upgrade.');
+        throw new Error(data.message ?? data.error ?? 'Error al registrar intención de upgrade.');
       }
 
-      setReferenceId(data.referenceId || `upg_${Date.now()}`);
+      setReferenceId(data.referenceId ?? `upg_${Date.now()}`);
       setRequestSent(true);
-    } catch (err: any) {
-      setErrorMessage(err?.message || 'Error inesperado al conectar con el servidor.');
+    } catch (err: unknown) {
+      const errObj = err as { message?: string };
+      setErrorMessage(errObj?.message ?? 'Error inesperado al conectar con el servidor.');
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
+  const modalContent = (
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md overflow-y-auto">
       <div className="w-full max-w-4xl bg-[#0B0B12] border border-white/10 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl relative my-8 text-zinc-100">
         <button
           onClick={onClose}
@@ -187,15 +191,22 @@ export function TrialUpgradeModal({
               </p>
             </div>
 
+            {errorMessage && (
+              <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-300 text-xs">
+                {errorMessage}
+              </div>
+            )}
+
             {/* Plans Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
               {PLANS.map((plan) => {
                 const isSelected = selectedPlan === plan.id;
                 return (
-                  <div
+                  <button
+                    type="button"
                     key={plan.id}
                     onClick={() => setSelectedPlan(plan.id)}
-                    className={`cursor-pointer rounded-2xl p-5 border transition-all relative flex flex-col justify-between ${
+                    className={`cursor-pointer rounded-2xl p-5 border transition-all relative flex flex-col justify-between text-left ${
                       isSelected
                         ? 'bg-purple-950/30 border-purple-500/90 shadow-xl shadow-purple-950/40'
                         : 'bg-zinc-950/50 border-zinc-850 hover:border-zinc-700'
@@ -238,7 +249,7 @@ export function TrialUpgradeModal({
                         {isSelected ? 'Seleccionado' : 'Elegir Plan'}
                       </div>
                     </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>
@@ -288,4 +299,6 @@ export function TrialUpgradeModal({
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body) as unknown as React.JSX.Element;
 }

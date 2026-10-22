@@ -407,14 +407,25 @@ export function PortalSidebar({
            })}
         </div>
 
-        <div className={`mb-4 mt-2 pt-2 w-full flex ${collapsed ? 'justify-center' : 'justify-end px-4'}`}>
-            <button 
-                onClick={onToggle}
-                className="p-2 text-zinc-500 hover:text-zinc-300 transition-colors rounded-lg hover:bg-white/5 cursor-pointer"
-                title={collapsed ? "Expandir Menú" : "Colapsar Menú"}
-            >
-                {collapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
-            </button>
+        {/* Standardized Seamless Collapse Toggle */}
+        <div className="mt-auto pt-2 pb-2 px-2 w-full border-t border-white/5">
+          <button 
+            onClick={onToggle}
+            className={`w-full flex items-center ${
+              collapsed ? 'justify-center py-2.5' : 'justify-between px-3 py-2'
+            } rounded-xl text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.05] border border-transparent hover:border-white/5 transition-all text-xs font-mono group cursor-pointer`}
+            title={collapsed ? "Expandir barra lateral" : "Comprimir barra lateral"}
+            aria-label={collapsed ? "Expandir barra lateral" : "Comprimir barra lateral"}
+          >
+            {!collapsed && (
+              <span className="text-[11px] text-zinc-500 group-hover:text-zinc-300 transition-colors">
+                Comprimir
+              </span>
+            )}
+            <div className={`p-1 rounded-md bg-white/[0.02] group-hover:bg-white/[0.08] text-zinc-500 group-hover:text-white transition-all ${collapsed ? '' : 'ml-auto'}`}>
+              {collapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronLeft className="w-3.5 h-3.5" />}
+            </div>
+          </button>
         </div>
       </aside>
     </>

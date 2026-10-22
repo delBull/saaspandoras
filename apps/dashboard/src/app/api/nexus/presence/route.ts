@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { headers } from 'next/headers';
+import crypto from 'crypto';
 import { db } from '@saasfly/db';
 import { nexusPresence, nexusCollaborators } from '@saasfly/db/schema';
 import { eq, desc, sql } from "@saasfly/db-core";
@@ -89,6 +90,38 @@ export async function POST(req: NextRequest) {
         .limit(1);
       if (collab) {
         collaboratorId = collab.id;
+      } else if (auth.role === 'SUPER_ADMIN' || auth.role === 'ADMIN') {
+        // Auto-provision collaborator record for platform admins so their presence dock never fails
+        try {
+          const rawToken = crypto.randomUUID();
+          const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+          const [newCollab] = await db
+            .insert(nexusCollaborators)
+            .values({
+              name: auth.name ?? 'Admin',
+              email: auth.email.toLowerCase().trim(),
+              token: tokenHash,
+              role: auth.role,
+              canonicalOrgId: auth.canonicalOrgId ?? 'pandoras',
+              whatsappPhone: auth.whatsappPhone ?? null,
+              status: 'ACTIVE',
+              expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+            })
+            .returning({ id: nexusCollaborators.id });
+          if (newCollab) {
+            collaboratorId = newCollab.id;
+          }
+        } catch (_collabErr) {
+          // If concurrent insert occurred, attempt re-fetch
+          const [collabRetry] = await db
+            .select({ id: nexusCollaborators.id })
+            .from(nexusCollaborators)
+            .where(eq(nexusCollaborators.email, auth.email))
+            .limit(1);
+          if (collabRetry) {
+            collaboratorId = collabRetry.id;
+          }
+        }
       }
     }
 

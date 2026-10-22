@@ -1,11 +1,12 @@
-/* Base theme (defaults to system or light) */
-:root {
-  --display-bg: #ffffff;
-  --display-surface: #f8fafc;
-  --display-text: #0f172a;
-  --display-text-muted: #64748b;
-  --display-border: #e2e8f0;
-  --display-primary: #3b82f6;
+/* Base theme (default is Dark Mode to match Pandoras Sovereign aesthetic) */
+:root,
+:root[data-display-theme="base"] {
+  --display-bg: #09090d;
+  --display-surface: #111118;
+  --display-text: #f4f4f5;
+  --display-text-muted: #a1a1aa;
+  --display-border: rgba(255, 255, 255, 0.1);
+  --display-primary: #f59e0b;
 }
 
 /* High Contrast Mode */
@@ -32,34 +33,34 @@
 
 /* Grayscale Mode */
 :root[data-display-theme="grayscale"] {
-  --display-bg: #ffffff;
-  --display-surface: #f0f0f0;
-  --display-text: #000000;
-  --display-text-muted: #666666;
-  --display-border: #cccccc;
-  --display-primary: #555555;
+  --display-bg: #18181b;
+  --display-surface: #27272a;
+  --display-text: #f4f4f5;
+  --display-text-muted: #a1a1aa;
+  --display-border: #3f3f46;
+  --display-primary: #a1a1aa;
   filter: grayscale(100%);
 }
 
 /* Low Light Mode (Dark Mode Soft) */
 :root[data-display-theme="low-light"] {
-  --display-bg: #0f172a;
-  --display-surface: #1e293b;
-  --display-text: #f1f5f9;
-  --display-text-muted: #94a3b8;
-  --display-border: #334155;
-  --display-primary: #60a5fa;
+  --display-bg: #0b0c10;
+  --display-surface: #15161e;
+  --display-text: #e2e8f0;
+  --display-text-muted: #828b9d;
+  --display-border: #232733;
+  --display-primary: #f59e0b;
   filter: brightness(80%) contrast(95%);
 }
 
 /* Blancos Mode (Light Mode / Invert) */
 :root[data-display-theme="blancos"] {
-  --display-bg: #ffffff;
-  --display-surface: #f8fafc;
-  --display-text: #0f172a;
-  --display-text-muted: #64748b;
-  --display-border: #e2e8f0;
-  --display-primary: #3b82f6;
+  --display-bg: #12131a;
+  --display-surface: #1a1b24;
+  --display-text: #f8fafc;
+  --display-text-muted: #94a3b8;
+  --display-border: rgba(255, 255, 255, 0.15);
+  --display-primary: #f59e0b;
   filter: invert(100%) hue-rotate(180deg) brightness(105%) contrast(105%);
 }
 

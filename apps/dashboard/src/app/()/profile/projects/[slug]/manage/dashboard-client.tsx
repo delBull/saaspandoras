@@ -427,14 +427,24 @@ export default function ProjectFounderDashboard({ project, hasGrowthOs: _hasGrow
             </button>
           </div>
 
-          {/* Sidebar Collapse Toggle */}
-          <div className={`p-3 border-t border-white/10 w-full flex ${isSidebarCollapsed ? 'justify-center' : 'justify-end'}`}>
+          {/* Standardized Seamless Collapse Toggle */}
+          <div className="mt-auto pt-2 pb-2 px-2 w-full border-t border-white/5">
             <button
               onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-              className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-white/5 transition-colors cursor-pointer"
-              title={isSidebarCollapsed ? 'Expandir Menú' : 'Colapsar Menú'}
+              className={`w-full flex items-center ${
+                isSidebarCollapsed ? 'justify-center py-2.5' : 'justify-between px-3 py-2'
+              } rounded-xl text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.05] border border-transparent hover:border-white/5 transition-all text-xs font-mono group cursor-pointer`}
+              title={isSidebarCollapsed ? 'Expandir barra lateral' : 'Comprimir barra lateral'}
+              aria-label={isSidebarCollapsed ? 'Expandir barra lateral' : 'Comprimir barra lateral'}
             >
-              {isSidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+              {!isSidebarCollapsed && (
+                <span className="text-[11px] text-zinc-500 group-hover:text-zinc-300 transition-colors">
+                  Comprimir
+                </span>
+              )}
+              <div className={`p-1 rounded-md bg-white/[0.02] group-hover:bg-white/[0.08] text-zinc-500 group-hover:text-white transition-all ${isSidebarCollapsed ? '' : 'ml-auto'}`}>
+                {isSidebarCollapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronLeft className="w-3.5 h-3.5" />}
+              </div>
             </button>
           </div>
         </aside>

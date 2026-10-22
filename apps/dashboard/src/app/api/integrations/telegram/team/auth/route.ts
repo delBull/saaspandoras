@@ -20,14 +20,16 @@
  *   - Raw initData is NEVER logged.
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 import {
   resolveNexusTmaSession,
   NexusTmaAuthError,
 } from '@/lib/nexus/nexus-tma-auth';
 import { cookies } from 'next/headers';
-import { ActorIdentityBindingService, type ActorBindingProof } from '@saasfly/hermes-core';
-import crypto from 'crypto';
+import { db } from '@saasfly/db';
+import { nexusCollaborators } from '@saasfly/db/schema';
+import { eq } from '@saasfly/db-core';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -69,16 +71,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     // To unify Nexus TMA with Nexus Web, we use the collaborator's token
     // and set it as pandoras_nexus_token so the same ControlPlaneContext resolves.
-    const { db, nexusCollaborators } = require('@saasfly/db-core');
-    const { eq } = require('@saasfly/db-core');
-
     const [collaborator] = await db
       .select({ token: nexusCollaborators.token })
       .from(nexusCollaborators)
       .where(eq(nexusCollaborators.id, session.collaboratorId))
       .limit(1);
 
-    if (!collaborator || !collaborator.token) {
+    if (!collaborator?.token) {
       throw new Error("Collaborator token missing during session creation.");
     }
 

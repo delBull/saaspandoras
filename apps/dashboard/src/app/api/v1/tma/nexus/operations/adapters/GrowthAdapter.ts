@@ -1,8 +1,9 @@
 import { db } from '@saasfly/db';
 import { eq, and, gt } from "@saasfly/db-core";
-import { marketingLeads, projects, nexusCampaignProposals } from '@saasfly/db/schema';
-import { DomainAdapter, NexusOperation } from './DomainAdapter';
-import { NexusAuthContext, checkNexusPermission } from '@saasfly/shared';
+import { marketingLeads, projects, nexusCampaignProposals, nexusActionRequests } from '@saasfly/db/schema';
+import type { DomainAdapter, NexusOperation } from './DomainAdapter';
+import type { NexusAuthContext } from '@saasfly/shared';
+import { checkNexusPermission } from '@saasfly/shared';
 
 export class GrowthAdapter implements DomainAdapter {
   async getOperations(authCtx: NexusAuthContext): Promise<NexusOperation[]> {
@@ -35,9 +36,9 @@ export class GrowthAdapter implements DomainAdapter {
       type: 'ALERT', 
       priority: 'NORMAL',
       domain: 'GROWTH',
-      title: `New Lead: ${lead.name || lead.email || lead.phoneNumber || 'Anonymous'}`,
-      description: `Intent: ${lead.intent || 'Unknown'}`,
-      status: lead.status || 'active',
+      title: `New Lead: ${lead.name ?? lead.email ?? lead.phoneNumber ?? 'Anonymous'}`,
+      description: `Intent: ${lead.intent ?? 'Unknown'}`,
+      status: lead.status ?? 'active',
       requiredCapability: 'growth.manage',
       visibility: 'ORG',
       createdAt: lead.createdAt,
@@ -73,6 +74,47 @@ export class GrowthAdapter implements DomainAdapter {
       ]
     }));
 
-    return [...campaignOps, ...leadOps];
+    // 3. Fetch Pending Trial Activation Requests
+    const isHqAdmin = authCtx.role === 'SUPER_ADMIN' || authCtx.role === 'ADMIN' || authCtx.canonicalOrgId === 'pandoras';
+    const trialWhere = and(
+      eq(nexusActionRequests.status, 'PENDING'),
+      eq(nexusActionRequests.actionType, 'TENANT_TRIAL_READY_APPROVE'),
+      gt(nexusActionRequests.expiresAt, new Date()),
+      isHqAdmin
+        ? undefined
+        : eq(nexusActionRequests.canonicalOrgId, authCtx.canonicalOrgId)
+    );
+
+    const trialRequests = await db.query.nexusActionRequests.findMany({
+      where: trialWhere,
+      limit: 10,
+    });
+
+    const trialOps: NexusOperation[] = trialRequests.map((r) => {
+      const p = (r.payload as Record<string, unknown>) ?? {};
+      const orgName = typeof p.organizationName === 'string' ? p.organizationName : (r.targetResource ?? 'Organization');
+      const readiness = typeof p.readinessPercent === 'number' ? p.readinessPercent : 25;
+      return {
+        id: r.actionToken,
+        type: 'DECISION',
+        priority: 'CRITICAL',
+        domain: 'GROWTH',
+        title: `Activar Prueba 3 Días: ${orgName}`,
+        description: `Readiness al ${readiness}%. Inicia prueba gratuita de 72 horas para ${r.canonicalOrgId ?? 'tenant'}.`,
+        status: r.status,
+        requiredCapability: 'growth.manage',
+        visibility: r.actorIdentityId ? 'ASSIGNED' : 'TEAM',
+        assigneeId: r.actorIdentityId,
+        createdAt: r.createdAt,
+        expiresAt: r.expiresAt,
+        actions: [
+          { label: '🚀 Iniciar Prueba (72h)', action: 'ACTIVATE_TRIAL', intent: 'primary' },
+          { label: 'Posponer', action: 'DISMISS', intent: 'secondary' },
+        ],
+        payload: { ...p, organizationSlug: r.targetResource },
+      };
+    });
+
+    return [...trialOps, ...campaignOps, ...leadOps];
   }
 }

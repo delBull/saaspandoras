@@ -14,8 +14,10 @@ import {
   hermesKnowledge,
   telegramBindings,
   marketingLeads,
+  nexusActionRequests,
+  projectCollaborators,
 } from '@saasfly/db-core/schema';
-import { eq, sql } from "@saasfly/db-core";
+import { eq, and, sql } from "@saasfly/db-core";
 
 export interface SetupChecklistItem {
   id: string;
@@ -342,6 +344,43 @@ export class SetupProgressService {
     const effectiveTrialStatus = isTrial 
       ? (trialStartedAt ? trialStatus : (isAnyActiveModuleReady ? 'READY_TO_ACTIVATE' : 'PENDING_ACTIVATION'))
       : 'PRODUCTION';
+
+    // 🛡️ Auto-Emit Nexus Operation Signal when readiness is reached in Trial mode
+    if (isTrial && isAnyActiveModuleReady && !trialStartedAt) {
+      try {
+        const [existingRequest] = await this.db
+          .select({ id: nexusActionRequests.id })
+          .from(nexusActionRequests)
+          .where(
+            and(
+              eq(nexusActionRequests.targetResource, cleanSlug),
+              eq(nexusActionRequests.actionType, 'TENANT_TRIAL_READY_APPROVE'),
+              eq(nexusActionRequests.status, 'PENDING')
+            )
+          )
+          .limit(1);
+
+        if (!existingRequest) {
+          // Resolve assigned collaborator for this project/tenant if any
+          const [assignment] = await this.db
+            .select({ collaboratorId: projectCollaborators.collaboratorId })
+            .from(projectCollaborators)
+            .where(eq(projectCollaborators.projectId, cleanSlug))
+            .limit(1);
+
+          const { NexusTeamNotificationDispatcher } = await import('../nexus/nexus-team-notification-dispatcher');
+          const dispatcher = new NexusTeamNotificationDispatcher();
+          dispatcher.notifyTenantTrialActivationReady(
+            cleanSlug,
+            project.title ?? cleanSlug.toUpperCase(),
+            overallPercentage,
+            assignment?.collaboratorId ?? null
+          ).catch((e: unknown) => console.warn('[SetupProgress] Notice notifying trial readiness:', e));
+        }
+      } catch (signalErr: unknown) {
+        console.warn('[SetupProgress] Non-blocking trial signal check error:', signalErr);
+      }
+    }
 
     return {
       organizationSlug: cleanSlug,

@@ -39,9 +39,42 @@ export function PortalHeader({ organization, role, organizationSlug }: PortalHea
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const handleLogout = () => {
-    document.cookie = 'pandoras_portal_session=; Max-Age=0; path=/';
-    window.location.href = `/portal/login`;
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch (err: unknown) {
+      console.warn('[PortalHeader] Logout API warning:', err);
+    }
+
+    const cookiesToClear = [
+      'pandoras_portal_session',
+      'pandoras_nexus_token',
+      'nexus_token',
+      'auth_token',
+      '__pbox_sid',
+      'pbox_session_v3',
+      'wallet-address',
+      'thirdweb:wallet-address',
+      'pd_current_tenant',
+      'portal_slug',
+      'snarai_project_slug',
+    ];
+    cookiesToClear.forEach((name) => {
+      document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0;`;
+    });
+
+    try {
+      localStorage.removeItem('wallet-session');
+      localStorage.removeItem('wallet-address');
+      localStorage.setItem('wallet-logged-out', 'true');
+      localStorage.removeItem('snarai_wallet');
+      localStorage.removeItem('thirdweb:active-wallet');
+      sessionStorage.clear();
+    } catch (storageErr: unknown) {
+      console.warn('[PortalHeader] Storage cleanup warning:', storageErr);
+    }
+
+    window.location.href = `/accessv2`;
   };
 
   return (

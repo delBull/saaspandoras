@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Layers, Bot, Rocket, Landmark, ShieldCheck, LogOut, Sliders, Lock, Sparkles } from 'lucide-react';
 import { DisplayControlsWidget } from '@pandoras/display-engine';
 import { TrialUpgradeModal } from '@/components/hermes-portal/trial/TrialUpgradeModal';
@@ -10,9 +11,10 @@ interface SovereignHeaderProps {
   organization: { name: string };
   organizationSlug: string;
   activeModules?: string[];
+  portalTitle?: string;
 }
 
-export function SovereignHeader({ organization, organizationSlug, activeModules = [] }: SovereignHeaderProps) {
+export function SovereignHeader({ organization, organizationSlug, activeModules = [], portalTitle }: SovereignHeaderProps) {
   const [displayControlsOpen, setDisplayControlsOpen] = useState(false);
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
   const displayControlsRef = useRef<HTMLDivElement>(null);
@@ -38,9 +40,42 @@ export function SovereignHeader({ organization, organizationSlug, activeModules 
     };
   }, [displayControlsOpen]);
 
-  const handleLogout = () => {
-    document.cookie = 'pandoras_portal_session=; Max-Age=0; path=/';
-    window.location.href = `/accessv2`;
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch (err: unknown) {
+      console.warn('[SovereignHeader] Logout API warning:', err);
+    }
+
+    const cookiesToClear = [
+      'pandoras_portal_session',
+      'pandoras_nexus_token',
+      'nexus_token',
+      'auth_token',
+      '__pbox_sid',
+      'pbox_session_v3',
+      'wallet-address',
+      'thirdweb:wallet-address',
+      'pd_current_tenant',
+      'portal_slug',
+      'snarai_project_slug',
+    ];
+    cookiesToClear.forEach((name) => {
+      document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0;`;
+    });
+
+    try {
+      localStorage.removeItem('wallet-session');
+      localStorage.removeItem('wallet-address');
+      localStorage.setItem('wallet-logged-out', 'true');
+      localStorage.removeItem('snarai_wallet');
+      localStorage.removeItem('thirdweb:active-wallet');
+      sessionStorage.clear();
+    } catch (storageErr: unknown) {
+      console.warn('[SovereignHeader] Storage cleanup warning:', storageErr);
+    }
+
+    window.location.href = '/accessv2';
   };
 
   // Only show as unlocked if explicitly provisioned or in activeModules
@@ -49,31 +84,57 @@ export function SovereignHeader({ organization, organizationSlug, activeModules 
   // RWA & Capital operates backstage unless explicitly active
   const hasRwa = activeModules.includes('PANDORAS_RWA');
 
+  const pathname = usePathname();
+  const isHermesPortal = pathname?.startsWith('/portal/') || portalTitle === 'Hermes OS';
+  const isGrowthPortal = pathname?.startsWith('/growth-os/') || portalTitle === 'Growth OS';
+
   const hubUrl = `/ecosystem/${organizationSlug}`;
 
   return (
     <header className="h-14 bg-[#09090D]/80 border-b border-white/5 flex items-center justify-between px-4 sm:px-6 shrink-0 sticky top-0 z-40 backdrop-blur-xl shadow-sm shadow-black/50">
-      {/* Brand Identity / Hub Central Link */}
-      <Link
-        href={hubUrl}
-        className="flex items-center gap-3 group transition-all"
-        title="Regresar al Hub Central"
-      >
-        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-black font-black text-xs shadow-lg shadow-amber-500/20 group-hover:scale-105 transition-transform">
-          <Layers className="w-4 h-4 text-black" />
-        </div>
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-sm text-white tracking-tight group-hover:text-amber-300 transition-colors">
-              {organization.name}
-            </span>
-            <span className="text-[10px] font-mono px-2 py-0.2 bg-amber-500/10 text-amber-300 border border-amber-500/25 rounded-full uppercase group-hover:bg-amber-500/20 transition-all">
-              Hub Central
-            </span>
+      {/* Brand Identity / Left Section */}
+      {isHermesPortal ? (
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 font-bold text-xs shadow-sm shadow-purple-950/30">
+            <Bot className="w-4 h-4 text-purple-400" />
           </div>
-          <p className="text-[10px] text-zinc-500 font-mono">Sovereign Mesh Orchestrator</p>
+          <div>
+            <span className="font-bold text-sm text-white tracking-tight">Hermes OS</span>
+            <p className="text-[10px] text-zinc-500 font-mono truncate max-w-[120px] sm:max-w-[160px]">{organization.name}</p>
+          </div>
         </div>
-      </Link>
+      ) : isGrowthPortal ? (
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-violet-500/10 border border-violet-500/30 flex items-center justify-center text-violet-400 font-bold text-xs shadow-sm shadow-violet-950/30">
+            <Rocket className="w-4 h-4 text-violet-400" />
+          </div>
+          <div>
+            <span className="font-bold text-sm text-white tracking-tight">Growth OS</span>
+            <p className="text-[10px] text-zinc-500 font-mono truncate max-w-[120px] sm:max-w-[160px]">{organization.name}</p>
+          </div>
+        </div>
+      ) : (
+        <Link
+          href={hubUrl}
+          className="flex items-center gap-3 group transition-all"
+          title="Regresar al Hub Central"
+        >
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-black font-black text-xs shadow-lg shadow-amber-500/20 group-hover:scale-105 transition-transform">
+            <Layers className="w-4 h-4 text-black" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-sm text-white tracking-tight group-hover:text-amber-300 transition-colors">
+                {organization.name}
+              </span>
+              <span className="text-[10px] font-mono px-2 py-0.2 bg-amber-500/10 text-amber-300 border border-amber-500/25 rounded-full uppercase group-hover:bg-amber-500/20 transition-all">
+                Hub Central
+              </span>
+            </div>
+            <p className="text-[10px] text-zinc-500 font-mono">Sovereign Mesh Orchestrator</p>
+          </div>
+        </Link>
+      )}
 
       {/* 3 Planes Navigation */}
       <div className="hidden md:flex items-center gap-2 bg-black/40 p-1 rounded-2xl border border-white/5">
