@@ -1,42 +1,68 @@
 import { NextResponse } from 'next/server';
-import { NexusReadAdapter } from '@saasfly/hermes-core';
-import { NexusAuthorizationService } from '@saasfly/hermes-core';
+import { GET as myWorkHandler } from '@/app/api/v1/tma/nexus/operations/my-work/route';
+import type { NexusOperation } from '@/app/api/v1/tma/nexus/operations/adapters/DomainAdapter';
 
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+interface MyWorkResponse {
+  operations?: {
+    NEEDS_ATTENTION?: NexusOperation[];
+    TODAY?: NexusOperation[];
+    RECENT?: NexusOperation[];
+  };
+  error?: string;
+}
+
+interface InboxItem {
+  id: string;
+  title: string;
+  reason: string;
+  type: 'ESCALATION' | 'CAMPAIGN' | 'TASK';
+  severity: string;
+  createdAt: string;
+  recommendedAction: { label: string; action: string; intent?: string };
+  payload?: unknown;
+  domain: string;
+}
+
+/**
+ * 📥 GET /api/v1/nexus/inbox
+ * Canonical alias for TMA and Web attention inbox.
+ * Flattens and unifies operations into items format.
+ */
 export async function GET(req: Request) {
   try {
-    // Basic Authentication simulation
-    const authHeader = req.headers.get('authorization');
-    if (!authHeader) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const res = await myWorkHandler(req);
+    const data = (await res.json()) as MyWorkResponse;
+
+    if (!res.ok) {
+      return NextResponse.json(data, { status: res.status });
     }
 
-    // In a real flow, the canonical identity is extracted from the JWT or token
-    // For this example, we assume auth logic injects trusted context
-    const canonicalOrgId = req.headers.get('x-canonical-org-id');
-    const actorId = req.headers.get('x-actor-id');
-    const telegramUserId = req.headers.get('x-telegram-user-id');
+    const buckets = data.operations ?? {};
+    const rawOps: NexusOperation[] = [
+      ...(buckets.NEEDS_ATTENTION ?? []),
+      ...(buckets.TODAY ?? []),
+      ...(buckets.RECENT ?? []),
+    ];
 
-    if (!canonicalOrgId || !actorId) {
-      return NextResponse.json({ error: 'Missing required canonical identity headers' }, { status: 400 });
-    }
+    const items: InboxItem[] = rawOps.map((op: NexusOperation) => ({
+      id: op.id,
+      title: op.title,
+      reason: op.description ?? '',
+      type: op.type === 'INTERVENTION' ? 'ESCALATION' : op.type === 'DECISION' ? 'CAMPAIGN' : 'TASK',
+      severity: op.priority,
+      createdAt: op.createdAt instanceof Date ? op.createdAt.toISOString() : String(op.createdAt),
+      recommendedAction: op.actions[0] ?? { label: 'Revisar', action: 'VIEW' },
+      payload: (op.payload as unknown) ?? null,
+      domain: op.domain,
+    }));
 
-    // Server-side construction of the Resource Scope
-    const secureNexusScope = await NexusAuthorizationService.resolveCollaboratorScope(
-      canonicalOrgId,
-      actorId,
-      telegramUserId ? parseInt(telegramUserId) : undefined
-    );
-
-    if (!secureNexusScope) {
-      return NextResponse.json({ error: 'Unauthorized: Actor lacks Nexus access' }, { status: 403 });
-    }
-
-    // Delegate fetching to the adapter which strictly honors the scope
-    const inbox = await NexusReadAdapter.getAttentionInbox(secureNexusScope);
-
-    return NextResponse.json(inbox, { status: 200 });
-  } catch (error: any) {
-    console.error('[Nexus Inbox Endpoint] Error:', error);
-    return NextResponse.json({ error: 'Internal Server Error', details: error.message }, { status: 500 });
+    return NextResponse.json({ items, count: items.length });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[NexusInbox GET] Error:', message);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

@@ -26,14 +26,14 @@ import { ethereum } from "thirdweb/chains";
 import { WalletBalance, NetworkSelector, ConnectWalletButton } from "@/components/wallet";
 import { SUPPORTED_NETWORKS, DEFAULT_NETWORK } from "@/config/networks";
 import { SUPER_ADMIN_WALLET } from "@saasfly/auth-sdk";
-import { Hash, PackageCheckIcon, BookOpen, Lock, HelpCircle, ChevronDown, ChevronUp } from "lucide-react";
-import { useRealGamification } from '@/hooks/useRealGamification';
+import { Hash, PackageCheckIcon, BookOpen, ChevronDown, ChevronUp } from "lucide-react";
 import { resolveIpfsUrl } from '@saasfly/shared/project-utils';
 import { usePathname } from 'next/navigation';
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { hasFullPlatformAccess } from "@/lib/roles";
 import { usePersistedAccount } from "@/hooks/usePersistedAccount";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { AvatarEditor } from "@/components/AvatarEditor";
 
 interface SidebarProps {
   wallet?: string;
@@ -64,12 +64,20 @@ export function Sidebar({
     return false; // Estado por defecto cerrado
   };
 
+interface SidebarUserProfile {
+  id?: string;
+  image?: string | null;
+  role?: string | null;
+  projectCount?: number | null;
+  kycLevel?: string | number | null;
+}
+
   const [open, setOpen] = useState(getInitialState);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileDropdown, setProfileDropdown] = useState(false);
-  const [userProfile, setUserProfile] = useState<any>(null);
+  const [showAvatarModal, setShowAvatarModal] = useState(false);
+  const [userProfile, setUserProfile] = useState<SidebarUserProfile | null>(null);
   const [networkDropdown, setNetworkDropdown] = useState(false);
-  const [dropdownOpenedAt, setDropdownOpenedAt] = useState<number>(0);
   const [copyAnimation, setCopyAnimation] = useState(false);
   const [walletExpanded, setWalletExpanded] = useState(false);
 
@@ -81,11 +89,11 @@ export function Sidebar({
   const pathname = usePathname();
 
   // Unified Identity: resolve active account, platform user session, or wallet prop
-  const effectiveAddress = account?.address || user?.address || walletProp;
-  const isConnectedEffective = Boolean(account || (user?.address && user?.address !== '0x0000000000000000000000000000000000000000') || (walletProp && walletProp !== '0x0000000000000000000000000000000000000000'));
+  const _effectiveAddress = account?.address ?? user?.address ?? walletProp;
+  const isConnectedEffective = Boolean(account ?? (user?.address && user?.address !== '0x0000000000000000000000000000000000000000') ?? (walletProp && walletProp !== '0x0000000000000000000000000000000000000000'));
 
   // Multi-chain wallet state
-  const [selectedChain, setSelectedChain] = useState(DEFAULT_NETWORK?.chain || ethereum);
+  const [selectedChain, setSelectedChain] = useState(DEFAULT_NETWORK?.chain ?? ethereum);
 
   // State for client-side admin status - Only trust server props if they're explicitly true
   const [adminStatus, setAdminStatus] = useState<{
@@ -225,7 +233,7 @@ export function Sidebar({
             }
           });
           if (response.ok) {
-            const userData = await response.json();
+            const userData = (await response.json()) as SidebarUserProfile;
             setUserProfile(userData);
           }
         } catch (error) {
@@ -246,15 +254,9 @@ export function Sidebar({
       if (!profileDropdown && !networkDropdown) return;
 
       const target = event.target as Element;
-      const now = Date.now();
 
       // For profile dropdown: check if click is outside dropdown content
       if (profileDropdown) {
-        // Ignore clicks that happen too soon after opening (prevent accidental closes)
-        if (now - dropdownOpenedAt < 150) {
-          return;
-        }
-
         const profileDropdownContent = document.querySelector('.profile-dropdown-content');
         const avatarButton = document.querySelector('button[title="Menú de perfil"]');
 
@@ -297,7 +299,7 @@ export function Sidebar({
       document.removeEventListener('mousedown', handleClickOutside, false);
       document.removeEventListener('keydown', handleEscapeKey, true);
     };
-  }, [profileDropdown, networkDropdown, dropdownOpenedAt]);
+  }, [profileDropdown, networkDropdown]);
 
   // The final isAdmin status - STRICT: Only trust verified API status or hardcoded super admin wallet
   // We no longer fallback to unverified props to prevent spoofing in Staging
@@ -552,34 +554,22 @@ export function Sidebar({
               // --- ESTADO CONECTADO - TODO DENTRO DEL RECUADRO CON COLOR ---
               <div className="w-full rounded-lg border border-gray-700 bg-gray-800/50 p-2 relative">
                 <div className="flex items-center space-x-2">
-                  {/* Avatar (clickeable para dropdown) */}
+                  {/* Avatar (clickeable para personalizar / dropdown) */}
                   <button
                     onClick={(e) => {
-                      e.preventDefault(); // Prevent default behavior
-                      e.stopPropagation(); // Prevent event bubbling
-
-                      // Immediately toggle the dropdown
-                      const isOpening = !profileDropdown;
-                      setProfileDropdown(!profileDropdown);
-
-                      // If opening the dropdown, record the timestamp
-                      if (isOpening) {
-                        setDropdownOpenedAt(Date.now());
-                      }
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setShowAvatarModal(true);
                     }}
-                    onMouseDown={(e) => {
-                      e.preventDefault(); // Prevent default mousedown behavior
-                      e.stopPropagation(); // Prevent mousedown propagation
-                    }}
-                    className="hidden flex-shrink-0 relative hover:bg-zinc-700/30 p-1 rounded transition-colors"
-                    title="Menú de perfil"
+                    className="flex-shrink-0 relative hover:ring-2 hover:ring-lime-400 p-0.5 rounded-full transition-all cursor-pointer"
+                    title="Personalizar avatar"
                   >
                     <Image
-                      src={resolveIpfsUrl(userProfile?.image) || '/images/avatars/onlybox2.png'}
+                      src={resolveIpfsUrl(userProfile?.image) ?? '/images/avatars/onlybox2.png'}
                       alt="Profile Avatar"
                       width={32}
                       height={32}
-                      className="w-8 h-8 rounded-full border border-lime-400"
+                      className="w-8 h-8 rounded-full border border-lime-400 object-cover"
                     />
                   </button>
 
@@ -712,7 +702,7 @@ export function Sidebar({
                                 Gestión de Billetera
                               </div>
                               <div className="text-[11px] text-gray-400">
-                                Use el botón "Desconectar" al final del sidebar para salir.
+                                Use el botón &quot;Desconectar&quot; al final del sidebar para salir.
                               </div>
                             </div>
 
@@ -933,7 +923,9 @@ export function Sidebar({
                             if (wallet) {
                               logout();
                             } else {
-                              fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+                              fetch("/api/auth/logout", { method: "POST" }).catch((_err) => {
+                                console.debug("Logout request error", _err);
+                              });
                               if (typeof window !== "undefined") {
                                 localStorage.removeItem("wallet-session");
                                 localStorage.removeItem("wallet-address");
@@ -964,7 +956,9 @@ export function Sidebar({
                         if (wallet) {
                           logout();
                         } else {
-                          fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+                          fetch("/api/auth/logout", { method: "POST" }).catch((_err) => {
+                            console.debug("Logout request error", _err);
+                          });
                           if (typeof window !== "undefined") {
                             localStorage.removeItem("wallet-session");
                             localStorage.removeItem("wallet-address");
@@ -1134,37 +1128,25 @@ export function Sidebar({
                   // --- ESTADO CONECTADO - MISMO FORMATO QUE DESKTOP ---
                   <div className="w-full rounded-lg border border-gray-700 bg-gray-800/50 p-2 relative">
                     <div className="flex items-center space-x-2">
-                      {/* Avatar (clickeable para dropdown) */}
+                      {/* Avatar (clickeable para personalizar / modal) */}
                       <button
                         onClick={(e) => {
-                          e.preventDefault(); // Prevent default behavior
-                          e.stopPropagation(); // Prevent event bubbling
-
-                          // Immediately toggle the dropdown
-                          const isOpening = !profileDropdown;
-                          setProfileDropdown(!profileDropdown);
-
-                          // If opening the dropdown, record the timestamp
-                          if (isOpening) {
-                            setDropdownOpenedAt(Date.now());
-                          }
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setShowAvatarModal(true);
                         }}
-                        onMouseDown={(e) => {
-                          e.preventDefault(); // Prevent default mousedown behavior
-                          e.stopPropagation(); // Prevent mousedown propagation
-                        }}
-                        className="hidden flex-shrink-0 relative hover:bg-zinc-700/30 p-1 rounded transition-colors"
-                        title="Menú de perfil"
+                        className="flex-shrink-0 relative hover:ring-2 hover:ring-lime-400 p-0.5 rounded-full transition-all cursor-pointer"
+                        title="Personalizar avatar"
                       >
                         <Image
-                          src={resolveIpfsUrl(userProfile?.image) || '/images/avatars/onlybox2.png'}
+                          src={resolveIpfsUrl(userProfile?.image) ?? '/images/avatars/onlybox2.png'}
                           alt="Profile Avatar"
                           width={32}
                           height={32}
-                          className="w-8 h-8 rounded-full border border-lime-400"
+                          className="w-8 h-8 rounded-full border border-lime-400 object-cover"
                         />
                         {userProfile?.kycLevel === 'basic' && (
-                          <div className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full border border-zinc-900 bg-green-500"></div>
+                          <div className="absolute -bottom-1 -right-1 w-2.5 h-2.5 rounded-full border border-zinc-900 bg-green-500"></div>
                         )}
                       </button>
 
@@ -1258,7 +1240,7 @@ export function Sidebar({
                                 Gestión de Billetera
                               </div>
                               <div className="text-[11px] text-gray-400">
-                                Use el botón "Desconectar" al final del sidebar para salir.
+                                Use el botón &quot;Desconectar&quot; al final del sidebar para salir.
                               </div>
                             </div>
                           </div>
@@ -1361,7 +1343,9 @@ export function Sidebar({
                           if (wallet) {
                             disconnect(wallet);
                           }
-                          fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+                          fetch("/api/auth/logout", { method: "POST" }).catch((_err) => {
+                            console.debug("Mobile logout request error", _err);
+                          });
                           if (typeof window !== "undefined") {
                             localStorage.removeItem("wallet-session");
                             localStorage.removeItem("wallet-address");
@@ -1406,6 +1390,27 @@ export function Sidebar({
           </>
         )}
       </AnimatePresence>
+      {/* Modal de Avatar activable desde Sidebar */}
+      {showAvatarModal && (
+        <AvatarEditor 
+          variant="desktop" 
+          onClose={() => {
+            setShowAvatarModal(false);
+            // Refresh userProfile state
+            if (account?.address) {
+              fetch('/api/profile', {
+                headers: {
+                  'x-wallet-address': account.address,
+                  'x-thirdweb-address': account.address,
+                }
+              })
+                .then(r => r.json() as Promise<SidebarUserProfile>)
+                .then(data => { if (data?.image) setUserProfile(data); })
+                .catch(() => undefined);
+            }
+          }} 
+        />
+      )}
     </Tooltip.Provider>
   );
 }

@@ -2,13 +2,24 @@ import { useState, useEffect, useCallback } from 'react';
 import { nexusGet, nexusPost } from '../lib/api-client';
 import type { NexusTmaSession } from '../lib/session-store';
 import { AgendaView } from './AgendaView';
+import { ActionSheet } from '../components/nexus/ActionSheet';
+import { AttentionItemCard } from '../components/nexus/AttentionItemCard';
+import { 
+  Calendar, 
+  RefreshCw, 
+  CheckCircle2, 
+  Clock, 
+  Video,
+  ChevronRight,
+  ShieldCheck,
+  Brain
+} from 'lucide-react';
 
 interface CommandCenterProps {
   session: NexusTmaSession;
   hasCapability: (cap: string) => boolean;
 }
 
-// ─── Shared Types ───────────────────────────────────────────────────
 export type OperationPriority = 'CRITICAL' | 'HIGH' | 'NORMAL' | 'LOW';
 export type OperationType = 'DECISION' | 'TASK' | 'ALERT' | 'INTERVENTION';
 export type OperationDomain = 'TREASURY' | 'GROWTH' | 'HERMES' | 'GOVERNANCE';
@@ -35,18 +46,14 @@ export interface NexusOperation {
   payload?: any;
 }
 
-import { ActionSheet } from '../components/nexus/ActionSheet';
-import { AttentionItemCard } from '../components/nexus/AttentionItemCard';
-
-
-// ─── Main View ────────────────────────────────────────────────────────────────
-export function CommandCenter({ session, hasCapability }: CommandCenterProps) {
-  
+export function CommandCenter({ session, hasCapability: _hasCapability }: CommandCenterProps) {
   const [inboxItems, setInboxItems] = useState<any[]>([]);
   const [selectedItem, setSelectedItem] = useState<any | null>(null);
+  const [activeFilter, setActiveFilter] = useState<'ALL' | 'CRITICAL' | 'HERMES'>('ALL');
 
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const [resolvingDeepLink, setResolvingDeepLink] = useState(false);
   const [deepLinkOp, setDeepLinkOp] = useState<NexusOperation | null>(null);
@@ -54,12 +61,22 @@ export function CommandCenter({ session, hasCapability }: CommandCenterProps) {
   const [showAgenda, setShowAgenda] = useState(false);
   const [agendaMeetings, setAgendaMeetings] = useState<any[]>([]);
 
-  const fetchOperations = useCallback(async () => {
+  const triggerHaptic = (type: 'light' | 'medium' = 'light') => {
     try {
-      setLoading(true);
+      // @ts-ignore
+      window.Telegram?.WebApp?.HapticFeedback?.impactOccurred(type);
+    } catch {
+      // ignore
+    }
+  };
+
+  const fetchOperations = useCallback(async (isManualRefresh = false) => {
+    try {
+      if (isManualRefresh) setRefreshing(true);
+      else setLoading(true);
       setError(null);
       
-      // 1. Check for deep link
+      // 1. Deep link check
       // @ts-ignore
       const tg = window.Telegram?.WebApp;
       const startParam = (tg?.initDataUnsafe as any)?.start_param;
@@ -78,23 +95,24 @@ export function CommandCenter({ session, hasCapability }: CommandCenterProps) {
         }
       }
 
-      // 2. Load standard hub via new Inbox endpoint
+      // 2. Load standard hub via Inbox endpoint
       const data = await nexusGet<{ items: any[] }>('/api/v1/nexus/inbox');
       setInboxItems(data.items || []);
 
-      // 3. Load next 2 agenda items
+      // 3. Load agenda preview
       try {
         const agendaData = await nexusGet<{ agenda: any[] }>('/api/v1/tma/nexus/agenda');
         if (agendaData.agenda) {
           setAgendaMeetings(agendaData.agenda.slice(0, 2));
         }
-      } catch (err) {
+      } catch {
         // non-fatal
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to load operations');
+      setError(err.message || 'No se pudieron sincronizar las operaciones');
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, [deepLinkOp, resolvingDeepLink]);
 
@@ -102,259 +120,243 @@ export function CommandCenter({ session, hasCapability }: CommandCenterProps) {
     fetchOperations();
   }, [fetchOperations]);
 
-  const handleItemClick = (item: any) => {
-    setSelectedItem(item);
-  };
-
-  const handleActionSuccess = async () => {
-    setSelectedItem(null);
-    if (deepLinkOp) setDeepLinkOp(null);
-    await fetchOperations();
-  };
-
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Good morning';
-    if (hour < 18) return 'Good afternoon';
-    return 'Good evening';
-  };
-
-  const totalOps = inboxItems.length;
-
   if (showAgenda) {
     return <AgendaView onBack={() => setShowAgenda(false)} />;
   }
 
+  // Filter items
+  const filteredItems = inboxItems.filter(item => {
+    if (activeFilter === 'CRITICAL') return item.severity === 'CRITICAL' || item.severity === 'HIGH';
+    if (activeFilter === 'HERMES') return item.type === 'CAMPAIGN' || item.type === 'ESCALATION';
+    return true;
+  });
+
+  const criticalCount = inboxItems.filter(i => i.severity === 'CRITICAL' || i.severity === 'HIGH').length;
+
   return (
-    <div className="screen fade-in">
-      <header className="nexus-header">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-2" style={{ marginBottom: 2 }}>
-              <span style={{ fontSize: 16 }}>⚡</span>
-              <span className="font-semibold text-lg">Nexus Command</span>
-              {session.badges?.total > 0 && (
-                <span style={{
-                  background: 'var(--color-danger)',
-                  color: '#fff',
-                  borderRadius: '999px',
-                  fontSize: '0.65rem',
-                  fontWeight: 700,
-                  padding: '1px 6px',
-                  minWidth: 18,
-                  textAlign: 'center',
-                }}>
-                  {session.badges.total}
-                </span>
-              )}
+    <div className="screen fade-in pb-24">
+      {/* Top Command Bar */}
+      <header className="nexus-top-bar">
+        <div className="flex items-center gap-2.5">
+          <div className="relative">
+            <div style={{
+              width: 36,
+              height: 36,
+              borderRadius: '12px',
+              background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.25) 0%, rgba(245, 158, 11, 0.25) 100%)',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontWeight: 'bold',
+              fontSize: 14,
+              color: '#ffffff'
+            }}>
+              {session.name ? session.name.charAt(0).toUpperCase() : '⚡'}
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-secondary text-sm">{getGreeting()}, {session.name.split(' ')[0]}.</span>
+            <span className="live-pulse" style={{ position: 'absolute', bottom: -1, right: -1 }} />
+          </div>
+
+          <div>
+            <div className="flex items-center gap-1.5">
+              <span className="font-bold text-sm text-white tracking-tight">
+                {session.name || 'Operador Nexus'}
+              </span>
+              <span className="badge badge-accent" style={{ fontSize: '9px', padding: '1px 6px' }}>
+                {session.role || 'CORE'}
+              </span>
+            </div>
+            <div className="text-[11px] text-muted font-mono flex items-center gap-1">
+              <span>{session.activeWorkspace}</span>
+              <span>•</span>
+              <span className="text-emerald-400">Hermes Live</span>
             </div>
           </div>
-          <button 
-            onClick={() => fetchOperations()} 
-            className="flex items-center justify-center"
-            style={{
-              width: 36, height: 36,
-              background: 'var(--color-bg-elevated)',
-              borderRadius: '50%',
-            }}
-          >
-            🔄
-          </button>
         </div>
 
-        {/* Workspace Switcher — only shown when collaborator has multiple orgs */}
-        {session.workspaces && session.workspaces.length > 1 && (
-          <div className="flex gap-2 mt-3" style={{ overflowX: 'auto', paddingBottom: 2 }}>
-            {session.workspaces.map((ws) => (
-              <button
-                key={ws.id}
-                className={`text-xs font-semibold px-3 py-1`}
-                style={{
-                  borderRadius: 'var(--radius-sm)',
-                  whiteSpace: 'nowrap',
-                  background: session.activeWorkspace === ws.id
-                    ? 'var(--color-accent)'
-                    : 'var(--color-bg-elevated)',
-                  color: session.activeWorkspace === ws.id
-                    ? '#fff'
-                    : 'var(--color-text-secondary)',
-                  border: 'none',
-                  cursor: 'pointer',
-                }}
-                onClick={() => {
-                  // Switch active workspace — reload operations for the new org
-                  // (Full reload; the session is re-hydrated via retry)
-                  window.location.reload();
-                }}
-              >
-                {ws.name}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Vertical badges — show only enabled verticals with counts */}
-        {session.enabledVerticals && session.enabledVerticals.length > 0 && (
-          <div className="flex gap-2 mt-3">
-            {session.enabledVerticals.includes('HERMES') && (
-              <div className="flex items-center gap-1" style={{
-                background: 'var(--color-bg-elevated)',
-                borderRadius: 'var(--radius-sm)',
-                padding: '3px 8px',
-                fontSize: '0.7rem',
-              }}>
-                <span>🧠</span>
-                <span className="text-secondary">HITL</span>
-                {session.badges?.hitlUrgentChats > 0 && (
-                  <span style={{ color: 'var(--color-danger)', fontWeight: 700 }}>
-                    {session.badges.hitlUrgentChats}
-                  </span>
-                )}
-              </div>
-            )}
-            {session.enabledVerticals.includes('GROWTH') && (
-              <div className="flex items-center gap-1" style={{
-                background: 'var(--color-bg-elevated)',
-                borderRadius: 'var(--radius-sm)',
-                padding: '3px 8px',
-                fontSize: '0.7rem',
-              }}>
-                <span>🚀</span>
-                <span className="text-secondary">Leads</span>
-                {session.badges?.growthHotLeadsToday > 0 && (
-                  <span style={{ color: 'var(--color-accent)', fontWeight: 700 }}>
-                    {session.badges.growthHotLeadsToday}
-                  </span>
-                )}
-              </div>
-            )}
-            {session.enabledVerticals.includes('RWA') && (
-              <div className="flex items-center gap-1" style={{
-                background: 'var(--color-bg-elevated)',
-                borderRadius: 'var(--radius-sm)',
-                padding: '3px 8px',
-                fontSize: '0.7rem',
-              }}>
-                <span>🏦</span>
-                <span className="text-secondary">Depósitos</span>
-                {session.badges?.rwaPendingDeposits > 0 && (
-                  <span style={{ color: 'var(--color-warning)', fontWeight: 700 }}>
-                    {session.badges.rwaPendingDeposits}
-                  </span>
-                )}
-              </div>
-            )}
-          </div>
-        )}
+        <button 
+          onClick={() => {
+            triggerHaptic('light');
+            fetchOperations(true);
+          }}
+          disabled={refreshing || loading}
+          className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-secondary active:scale-90 transition-transform"
+        >
+          <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-accent' : ''}`} />
+        </button>
       </header>
 
-      <div className="page-content flex-col gap-4">
+      <div className="page-content flex flex-col gap-4">
         {error && (
-          <div className="bg-red-500/10 border border-red-500/50 text-red-500 text-sm p-3 rounded-xl mb-4">
-            {error}
+          <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center justify-between">
+            <span>{error}</span>
+            <button onClick={() => fetchOperations(true)} className="text-[10px] font-bold underline">Reintentar</button>
           </div>
         )}
+        {/* Daily Command Metrics Banner */}
+        <div className="card" style={{
+          background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(15, 15, 24, 0.9) 100%)',
+          borderColor: 'rgba(139, 92, 246, 0.3)'
+        }}>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Brain className="w-4 h-4 text-accent" />
+              <span className="text-xs font-bold uppercase tracking-wider text-accent">
+                Command Overview
+              </span>
+            </div>
+            <span className="badge badge-success">
+              <ShieldCheck className="w-3 h-3" /> Sincronizado
+            </span>
+          </div>
 
-        {!hasCapability('nexus.manage') &&
-         !hasCapability('growth.manage') &&
-         !hasCapability('finance.manage') &&
-         !hasCapability('users.manage') ? (
-          <div className="card text-center" style={{ padding: 'var(--space-6)' }}>
-            <div style={{ fontSize: 32, marginBottom: 'var(--space-3)' }}>👁️</div>
-            <p className="font-medium" style={{ marginBottom: 'var(--space-2)' }}>
-              Modo observador
-            </p>
-            <p className="text-secondary text-sm">
-              Tu rol actual no tiene módulos de acción asignados.<br/>
-              Contacta al administrador del espacio de trabajo.
-            </p>
-          </div>
-        ) : deepLinkOp ? (
-          <div>
-             <div className="flex justify-between items-center mb-3">
-               <h3 className="font-bold text-sm text-accent flex items-center gap-2">
-                 <span>🎯</span> SOLICITUD DIRECTA
-               </h3>
-               <button onClick={() => setDeepLinkOp(null)} className="text-xs text-secondary underline">Volver al Hub</button>
-             </div>
-             <ActionSheet 
-               isOpen={true} 
-               onClose={() => setDeepLinkOp(null)} 
-               item={deepLinkOp} 
-               onSuccess={handleActionSuccess} 
-             />
-          </div>
-        ) : (
-          <>
-            <div className="card flex-col gap-3" style={{ marginBottom: 'var(--space-4)', borderLeft: '4px solid var(--color-accent)' }}>
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <span style={{ fontSize: '1.25rem' }}>📅</span>
-                  <h4 className="font-semibold text-sm">Próximas Reuniones</h4>
-                </div>
-                <button onClick={() => setShowAgenda(true)} className="text-xs font-bold text-accent underline">
-                  Ver agenda
-                </button>
+          <div className="grid grid-cols-2 gap-3 pt-1">
+            <div className="p-3 rounded-xl bg-white/5 border border-white/5">
+              <div className="text-[11px] text-secondary font-medium">Atención Pendiente</div>
+              <div className="text-2xl font-bold text-white mt-0.5 tracking-tight">
+                {inboxItems.length}
+                {criticalCount > 0 && (
+                  <span className="text-xs font-normal text-rose-400 ml-1.5">
+                    ({criticalCount} críticos)
+                  </span>
+                )}
               </div>
-              {agendaMeetings.length === 0 ? (
-                <p className="text-xs text-secondary">No tienes reuniones programadas pronto.</p>
-              ) : (
-                <div className="flex flex-col gap-2 mt-2">
-                  {agendaMeetings.map(m => (
-                    <div key={m.id} className="flex items-center justify-between bg-[var(--color-bg-elevated)] p-2 rounded">
-                      <div>
-                        <p className="text-xs font-bold">{m.title}</p>
-                        <p className="text-[10px] text-secondary">
-                           {new Date(m.startsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </p>
-                      </div>
-                      {m.actions?.canJoin && (
-                        <button onClick={() => window.open(m.joinUrl, '_blank')} className="btn btn-accent text-[10px] px-2 py-1 h-auto min-h-0">
-                          Unirse
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
 
-            {loading && totalOps === 0 && (
-              <div className="text-center p-8 text-secondary">Loading operations...</div>
-            )}
-            
-            {!loading && totalOps === 0 && (
-              <div className="text-center p-8">
-                 <span style={{ fontSize: 40, display: 'block', marginBottom: 12 }}>✅</span>
-                 <p className="font-medium">All caught up!</p>
-                 <p className="text-sm text-secondary">No operations require your attention right now.</p>
+            <div className="p-3 rounded-xl bg-white/5 border border-white/5 cursor-pointer" onClick={() => setShowAgenda(true)}>
+              <div className="text-[11px] text-secondary font-medium flex items-center justify-between">
+                <span>Agenda Hoy</span>
+                <ChevronRight className="w-3 h-3 text-muted" />
               </div>
-            )}
-
-            {inboxItems.length > 0 && (
-              <div className="flex flex-col gap-3 mt-4">
-                <h3 className="font-bold text-sm text-gray-800 mb-2 flex items-center gap-2">
-                  <span>📥</span> REQUIRES ATTENTION
-                </h3>
-                {inboxItems.map(item => (
-                  <AttentionItemCard key={item.id} item={item} onClick={handleItemClick} />
-                ))}
+              <div className="text-2xl font-bold text-white mt-0.5 tracking-tight">
+                {agendaMeetings.length}
+                <span className="text-xs font-normal text-secondary ml-1.5">citas</span>
               </div>
-            )}
+            </div>
+          </div>
+        </div>
 
-            {/* Action Sheet for selected item */}
-            <ActionSheet 
-              isOpen={selectedItem !== null} 
-              onClose={() => setSelectedItem(null)} 
-              item={selectedItem} 
-              onSuccess={handleActionSuccess} 
-            />
-          </>
+        {/* Quick Agenda Strip Preview */}
+        {agendaMeetings.length > 0 && (
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-secondary">
+                Próximas Sesiones
+              </span>
+              <button 
+                onClick={() => setShowAgenda(true)}
+                className="text-xs text-accent font-semibold flex items-center gap-0.5"
+              >
+                Ver agenda <ChevronRight className="w-3 h-3" />
+              </button>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              {agendaMeetings.map(m => (
+                <div 
+                  key={m.id}
+                  onClick={() => setShowAgenda(true)}
+                  className="card flex items-center justify-between p-3 border-white/10 active:scale-[0.99] cursor-pointer"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400">
+                      <Calendar className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-white">{m.title}</div>
+                      <div className="text-[10px] text-muted flex items-center gap-1 mt-0.5">
+                        <Clock className="w-3 h-3" />
+                        <span>{new Date(m.startsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        <span>• Con {m.hostName}</span>
+                      </div>
+                    </div>
+                  </div>
+                  {m.actions?.canJoin && m.joinUrl && (
+                    <span className="badge badge-success text-[10px]">
+                      <Video className="w-3 h-3" /> ENTRAR
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
         )}
+
+        {/* Attention Items Feed */}
+        <div className="mt-1">
+          <div className="flex items-center justify-between mb-2.5">
+            <span className="text-xs font-bold uppercase tracking-wider text-secondary">
+              Atención Inmediata
+            </span>
+            <span className="text-xs font-mono text-muted">
+              {filteredItems.length} requeridos
+            </span>
+          </div>
+
+          {/* Pill filter strip */}
+          <div className="pill-filter-strip">
+            <button 
+              onClick={() => { triggerHaptic('light'); setActiveFilter('ALL'); }}
+              className={`pill-item ${activeFilter === 'ALL' ? 'active' : ''}`}
+            >
+              Todos ({inboxItems.length})
+            </button>
+            <button 
+              onClick={() => { triggerHaptic('light'); setActiveFilter('CRITICAL'); }}
+              className={`pill-item ${activeFilter === 'CRITICAL' ? 'active' : ''}`}
+            >
+              Críticos ({criticalCount})
+            </button>
+            <button 
+              onClick={() => { triggerHaptic('light'); setActiveFilter('HERMES'); }}
+              className={`pill-item ${activeFilter === 'HERMES' ? 'active' : ''}`}
+            >
+              Hermes & Growth
+            </button>
+          </div>
+
+          {/* Items List */}
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-16 gap-3">
+              <div className="spinner" />
+              <span className="text-xs text-secondary">Consultando Sovereign Command Mesh...</span>
+            </div>
+          ) : filteredItems.length === 0 ? (
+            <div className="card text-center py-12 px-6 flex flex-col items-center justify-center">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-3">
+                <CheckCircle2 className="w-6 h-6" />
+              </div>
+              <h3 className="font-bold text-white text-base">Bandeja Despejada</h3>
+              <p className="text-xs text-secondary mt-1 max-w-xs leading-relaxed">
+                No hay decisiones u operaciones críticas pendientes de tu intervención en este momento.
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-col">
+              {filteredItems.map(item => (
+                <AttentionItemCard
+                  key={item.id}
+                  item={item}
+                  onClick={(i) => {
+                    triggerHaptic('medium');
+                    setSelectedItem(i);
+                  }}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Action Sheet Modal */}
+      <ActionSheet
+        isOpen={Boolean(selectedItem)}
+        item={selectedItem}
+        onClose={() => setSelectedItem(null)}
+        onSuccess={() => {
+          fetchOperations(true);
+        }}
+      />
     </div>
   );
 }

@@ -5,12 +5,14 @@ import { BrainCircuit, Compass, Boxes, Activity } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { NexusAuthContext } from "@saasfly/shared";
 import { HermesFloatingGuide } from "@/components/guides/HermesFloatingGuide";
-import type { EcosystemTourRole } from "@/lib/guides/ecosystem-guides.data";
+import type { EcosystemStation, EcosystemTourRole } from "@/lib/guides/ecosystem-guides.data";
 import TasksPanel from "@/components/nexus/TasksPanel";
-import { OperationsHubModal } from "@/components/nexus/OperationsHubModal";
-import { NexusCentralNotificationModal, NexusBroadcastItem } from "@/components/nexus/NexusCentralNotificationModal";
+import { OperationsHubModal, type Tab } from "@/components/nexus/OperationsHubModal";
+import type { NexusBroadcastItem } from "@/components/nexus/NexusCentralNotificationModal";
+import { NexusCentralNotificationModal } from "@/components/nexus/NexusCentralNotificationModal";
 import NexusSettingsPage from "./settings/SettingsClient";
-import { INITIAL_TASKS, TaskItem } from "@/components/nexus/taskTypes";
+import type { TaskItem } from "@/components/nexus/taskTypes";
+import { INITIAL_TASKS } from "@/components/nexus/taskTypes";
 import { useActiveWallet, useDisconnect } from "thirdweb/react";
 
 import { NexusShell } from "@/components/nexus/shell/NexusShell";
@@ -31,27 +33,26 @@ interface NexusCommandCenterProps {
   token?: string;
 }
 
-export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken, token }: NexusCommandCenterProps) {
+export function NexusCommandCenter({ auth, initialTour, initialRole: _initialRole, iframeToken: _iframeToken, token }: NexusCommandCenterProps) {
   const activeThirdwebWallet = useActiveWallet();
   const { disconnect: disconnectWallet } = useDisconnect();
 
-  const { role, wallet } = auth;
+  const { role } = auth;
   const isFirstVisitParam = initialTour === "ecosystem" || initialTour === "onboarding";
   const [isTourOpen, setIsTourOpen] = useState(isFirstVisitParam);
   const [showGuideSidebar, setShowGuideSidebar] = useState<boolean | null>(null);
   const [showWelcomePanel, setShowWelcomePanel] = useState(false);
   const [isOpsModalOpen, setIsOpsModalOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [showDisplayControls, setShowDisplayControls] = useState(false);
   const [isHermesAmbientOpen, setIsHermesAmbientOpen] = useState(false);
   const [isUnifiedIndexOpen, setIsUnifiedIndexOpen] = useState(false);
   const sidebarOpen = showGuideSidebar === true;
-  const [opsActiveTab, setOpsActiveTab] = useState<any>('WORK_ENGINE');
+  const [opsActiveTab, setOpsActiveTab] = useState<Tab>('WORK_ENGINE');
 
   useEffect(() => {
     try {
       const urlToken = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("token") : null;
-      const effectiveToken = urlToken || token;
+      const effectiveToken = urlToken ?? token;
       if (effectiveToken) {
         localStorage.setItem("pandoras_nexus_token", effectiveToken);
         document.cookie = `pandoras_nexus_token=${encodeURIComponent(effectiveToken)}; path=/; max-age=2592000; SameSite=Lax`;
@@ -71,17 +72,59 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
     try {
       const stored = localStorage.getItem("pandoras_ip_tasks_30d");
       if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) return parsed;
+        const parsed = JSON.parse(stored) as unknown;
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed as TaskItem[];
       }
-    } catch {}
+    } catch {
+      // ignore parse error
+    }
     return INITIAL_TASKS;
   });
+
+  // Sync server tasks from db (nexus_tasks table) to keep Web and TMA unified
+  useEffect(() => {
+    async function syncTasksFromServer() {
+      try {
+        const storedToken = typeof window !== 'undefined' ? (localStorage.getItem('pandoras_nexus_token') ?? localStorage.getItem('nexus_token')) : null;
+        const res = await fetch('/api/nexus/tasks', {
+          headers: storedToken ? { 'x-nexus-token': storedToken } : {},
+          credentials: 'include',
+        });
+        if (res.ok) {
+          const data = (await res.json()) as { tasks?: { id: string; title: string; priority?: string; status?: string; dueDate?: string; description?: string }[] };
+          if (Array.isArray(data.tasks) && data.tasks.length > 0) {
+            const serverTasks: TaskItem[] = data.tasks.map((t) => ({
+              id: t.id,
+              week: 'Semana 1',
+              title: t.title,
+              category: 'Operaciones',
+              priority: (t.priority === 'CRITICAL' || t.priority === 'HIGH') ? 'HIGH' : t.priority === 'LOW' ? 'LOW' : 'MEDIUM',
+              tipo: 'Operación',
+              completed: t.status === 'DONE',
+              dueDate: t.dueDate ? (new Date(t.dueDate).toISOString().split('T')[0] ?? '2026-10-30') : '2026-10-30',
+              detail: t.description ?? 'Tarea sincronizada desde Nexus Core.',
+            }));
+            setTasks(prev => {
+              // Merge preserving unique IDs
+              const existingIds = new Set(serverTasks.map(st => st.id));
+              const localOnly = prev.filter(p => !existingIds.has(p.id));
+              return [...serverTasks, ...localOnly];
+            });
+          }
+        }
+      } catch (err) {
+        console.warn('[Nexus] Failed to sync tasks from server:', err);
+      }
+    }
+    void syncTasksFromServer();
+  }, [auth?.canonicalOrgId]);
   
   useEffect(() => {
     try {
       localStorage.setItem("pandoras_ip_tasks_30d", JSON.stringify(tasks));
-    } catch {}
+    } catch {
+      // ignore storage error
+    }
   }, [tasks]);
 
   const [broadcasts, setBroadcasts] = useState<NexusBroadcastItem[]>([]);
@@ -91,29 +134,33 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
   useEffect(() => {
     async function fetchBroadcasts() {
       try {
-        const storedToken = typeof window !== 'undefined' ? (localStorage.getItem('pandoras_nexus_token') || localStorage.getItem('nexus_token')) : null;
+        const storedToken = typeof window !== 'undefined' ? (localStorage.getItem('pandoras_nexus_token') ?? localStorage.getItem('nexus_token')) : null;
         const res = await fetch('/api/nexus/broadcasts', {
           headers: storedToken ? { 'x-nexus-token': storedToken } : {},
           credentials: 'include',
         });
-        const data = await res.json();
+        const data = (await res.json()) as { success?: boolean; broadcasts?: NexusBroadcastItem[] };
         if (data.success && Array.isArray(data.broadcasts)) {
           setBroadcasts(data.broadcasts);
           let dismissed: string[] = [];
           try {
             const stored = localStorage.getItem('nexus_dismissed_broadcasts');
-            if (stored && stored !== 'undefined') dismissed = JSON.parse(stored);
-          } catch {}
+            if (stored && stored !== 'undefined') dismissed = JSON.parse(stored) as string[];
+          } catch {
+            // ignore
+          }
           
           try {
             const cookieMatch = document.cookie.match(/(?:^|; )nexus_dismissed_broadcasts=([^;]*)/);
-            if (cookieMatch && cookieMatch[1]) {
-              const cookieDismissed = JSON.parse(decodeURIComponent(cookieMatch[1]));
+            if (cookieMatch?.[1]) {
+              const cookieDismissed = JSON.parse(decodeURIComponent(cookieMatch[1])) as unknown;
               if (Array.isArray(cookieDismissed)) {
-                cookieDismissed.forEach((id: string) => { if (!dismissed.includes(id)) dismissed.push(id); });
+                (cookieDismissed as string[]).forEach((id: string) => { if (!dismissed.includes(id)) dismissed.push(id); });
               }
             }
-          } catch {}
+          } catch {
+            // ignore
+          }
           
           if (!Array.isArray(dismissed)) dismissed = [];
           
@@ -121,7 +168,7 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
             dismissed = dismissed.slice(-50);
           }
           
-          const unread = data.broadcasts.filter((b: any) => !dismissed.includes(String(b.id)));
+          const unread = data.broadcasts.filter((b: NexusBroadcastItem) => !dismissed.includes(String(b.id)));
           setUnreadBroadcasts(unread);
           if (unread.length > 0) {
             setIsBroadcastModalOpen(true);
@@ -133,7 +180,7 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
         console.error('[Nexus] Failed to fetch broadcasts:', err);
       }
     }
-    fetchBroadcasts();
+    void fetchBroadcasts();
   }, [auth?.email, auth?.wallet, role]);
 
   const handleDismissBroadcast = (broadcastId: string) => {
@@ -142,17 +189,21 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
       let dismissed: string[] = [];
       try {
         const stored = localStorage.getItem('nexus_dismissed_broadcasts');
-        if (stored && stored !== 'undefined') dismissed = JSON.parse(stored);
-      } catch {}
+        if (stored && stored !== 'undefined') dismissed = JSON.parse(stored) as string[];
+      } catch {
+        // ignore
+      }
       try {
         const cookieMatch = document.cookie.match(/(?:^|; )nexus_dismissed_broadcasts=([^;]*)/);
-        if (cookieMatch && cookieMatch[1]) {
-          const cookieDismissed = JSON.parse(decodeURIComponent(cookieMatch[1]));
+        if (cookieMatch?.[1]) {
+          const cookieDismissed = JSON.parse(decodeURIComponent(cookieMatch[1])) as unknown;
           if (Array.isArray(cookieDismissed)) {
-            cookieDismissed.forEach((id: string) => { if (!dismissed.includes(String(id))) dismissed.push(String(id)); });
+            (cookieDismissed as string[]).forEach((id: string) => { if (!dismissed.includes(String(id))) dismissed.push(String(id)); });
           }
         }
-      } catch {}
+      } catch {
+        // ignore
+      }
       if (!Array.isArray(dismissed)) dismissed = [];
       
       if (!dismissed.includes(idStr)) {
@@ -160,11 +211,11 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
         if (dismissed.length > 50) {
           dismissed = dismissed.slice(-50);
         }
-        try { localStorage.setItem('nexus_dismissed_broadcasts', JSON.stringify(dismissed)); } catch {}
+        try { localStorage.setItem('nexus_dismissed_broadcasts', JSON.stringify(dismissed)); } catch { /* ignore */ }
         try {
           const domain = window.location.hostname.includes('pandoras.finance') ? 'domain=.pandoras.finance;' : '';
           document.cookie = `nexus_dismissed_broadcasts=${encodeURIComponent(JSON.stringify(dismissed))}; path=/; max-age=31536000; ${domain} SameSite=Lax`;
-        } catch {}
+        } catch { /* ignore */ }
       }
       setUnreadBroadcasts(prev => {
         const next = prev.filter(b => String(b.id) !== idStr);
@@ -183,18 +234,18 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
     ? (role as EcosystemTourRole)
     : "VIEWER";
 
-  const [customStations, setCustomStations] = useState<any[] | undefined>();
+  const [customStations, setCustomStations] = useState<EcosystemStation[] | undefined>();
   useEffect(() => {
     try {
       const stored = localStorage.getItem("pandoras_guides_customizer_v1");
       if (stored) {
-        setCustomStations(JSON.parse(stored));
+        setCustomStations(JSON.parse(stored) as EcosystemStation[]);
       }
     } catch (error) {
       console.warn("Failed to parse custom stations", error);
     }
     
-    const actorIdentity = (auth.email || auth.wallet || 'operator').toLowerCase().trim();
+    const actorIdentity = (auth.email ?? auth.wallet ?? 'operator').toLowerCase().trim();
     const welcomeKey = `pandoras_welcome_v2_${actorIdentity}`;
     
     const isFirstVisit = (() => {
@@ -221,10 +272,10 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
     setShowWelcomePanel(isFirstVisit);
     setShowGuideSidebar(isFirstVisit || isFirstVisitParam);
 
-    return () => {};
+    return undefined;
   }, [auth.email, auth.wallet, isFirstVisitParam]);
 
-  const getRoleBadge = () => {
+  const _getRoleBadge = () => {
     switch (role) {
       case "SUPER_ADMIN":
         return (
@@ -253,7 +304,7 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
     }
   };
 
-  const handleLogout = async () => {
+  const _handleLogout = async () => {
     try {
       localStorage.removeItem('pandoras_nexus_token');
       document.cookie = 'pandoras_nexus_token=; path=/; max-age=0; SameSite=Lax';
@@ -263,14 +314,16 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
       if (activeThirdwebWallet) {
         disconnectWallet(activeThirdwebWallet);
       }
-      await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
-    } catch {}
+      await fetch('/api/auth/logout', { method: 'POST' }).catch(() => undefined);
+    } catch {
+      // ignore
+    }
     window.location.href = '/';
   };
 
   return (
     <NexusShell>
-      <NexusCommandPalette auth={auth} onOpenSettings={() => setIsSettingsOpen(true)} onOpenHermes={(initialQuery) => {
+      <NexusCommandPalette auth={auth} onOpenSettings={() => setIsSettingsOpen(true)} onOpenHermes={(_initialQuery) => {
         // TODO: Handle passing initial query to Hermes Ambient Drawer if needed later.
         setIsHermesAmbientOpen(true);
       }} />
@@ -286,7 +339,7 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
             } else if (action === 'SETTINGS') {
               setIsSettingsOpen(true);
             } else {
-              setOpsActiveTab(action);
+              setOpsActiveTab(action as Tab);
               setIsOpsModalOpen(true);
             }
           }} 
@@ -307,7 +360,7 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
                   } else if (action === 'SETTINGS') {
                     setIsSettingsOpen(true);
                   } else {
-                    setOpsActiveTab(action);
+                    setOpsActiveTab(action as Tab);
                     setIsOpsModalOpen(true);
                   }
                 }}
@@ -354,7 +407,7 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
 
                   <div className="space-y-4">
                     <p className="text-sm text-zinc-300 leading-relaxed">
-                      Bienvenido al <strong>Sovereign Command Plane</strong> de Pandora's OS. Soy Hermes, tu asistente operativo. Te he preparado el entorno.
+                      Bienvenido al <strong>Sovereign Command Plane</strong> de Pandora&apos;s OS. Soy Hermes, tu asistente operativo. Te he preparado el entorno.
                     </p>
                     
                     <div className="bg-white/5 border border-white/10 rounded-2xl p-5 space-y-3">
@@ -378,13 +431,15 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
 
                   <button
                     onClick={() => {
-                      const actorIdentity = (auth.email || auth.wallet || 'operator').toLowerCase().trim();
+                      const actorIdentity = (auth.email ?? auth.wallet ?? 'operator').toLowerCase().trim();
                       const welcomeKey = `pandoras_welcome_v2_${actorIdentity}`;
                       try {
                         localStorage.setItem(welcomeKey, 'true');
                         const domain = window.location.hostname.includes('pandoras.finance') ? 'domain=.pandoras.finance;' : '';
                         document.cookie = `${welcomeKey}=true; path=/; max-age=31536000; ${domain} SameSite=Lax`;
-                      } catch {}
+                      } catch {
+                        // ignore
+                      }
                       setShowWelcomePanel(false);
                       if (!isTourOpen) setIsTourOpen(true);
                     }}
@@ -420,7 +475,7 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
         userName={auth.name ?? undefined}
         userEmail={auth.email ?? undefined}
         userRole={role ?? undefined}
-        permissions={auth.permissions as any}
+        permissions={(auth.permissions ?? {}) as unknown as Record<string, boolean>}
         activeTab={opsActiveTab}
         onTabChange={(tab) => setOpsActiveTab(tab)}
       />
@@ -450,7 +505,7 @@ export function NexusCommandCenter({ auth, initialTour, initialRole, iframeToken
               operatorContext={auth.name && auth.email ? { 
                 name: auth.name, 
                 email: auth.email, 
-                role: role || 'VIEWER', 
+                role: role ?? 'VIEWER', 
                 permissions: (auth.permissions ?? {}) as unknown as Record<string, boolean | undefined>
               } : null}
               onClose={() => setIsSettingsOpen(false)}

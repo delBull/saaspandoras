@@ -5,8 +5,8 @@ import { put } from '@vercel/blob';
 import sharp from 'sharp';
 import { getAuth } from '@saasfly/auth-sdk';
 import { db } from '@saasfly/db';
-import { users } from '@saasfly/db/schema';
-import { eq, and } from "@saasfly/db-core";
+import { users, nexusCollaborators } from '@saasfly/db/schema';
+import { eq } from "@saasfly/db-core";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB max
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -15,21 +15,62 @@ export async function POST(request: NextRequest) {
   try {
     console.log('Avatar upload request received');
 
-    // Require verified JWT session for write operation (fallback to header for TMA)
+    // Require verified JWT session for write operation (fallback to header for TMA or collaborator token)
     const auth = await getAuth();
-    let walletAddress = auth.isVerified && auth.session?.address ? auth.session.address : null;
+    const sessionAddress = auth.isVerified && auth.session && 'address' in auth.session && typeof auth.session.address === 'string'
+      ? auth.session.address
+      : null;
+    let walletAddress: string | null = sessionAddress;
+    let collaboratorUserId: string | null = null;
     
-    // TMA fallback: if no JWT, try header (Thirdweb sets x-wallet-address)
+    // TMA fallback: if no JWT, try header (Thirdweb sets x-wallet-address) or nexus token
+    const requestHeaders = await headers();
     if (!walletAddress) {
-      const requestHeaders = await headers();
       const headerWallet = requestHeaders.get('x-thirdweb-address') ??
         requestHeaders.get('x-wallet-address') ??
         requestHeaders.get('x-user-address');
       if (headerWallet) walletAddress = headerWallet.toLowerCase();
     }
+
+    // Check if called from Nexus TMA via session or collaborator token
+    const collaboratorIdHeader = requestHeaders.get('x-collaborator-id');
+    const cookieHeader = requestHeaders.get('cookie') ?? '';
+    const tmaMatch = cookieHeader.match(/nexus_tma_session=([^;]+)/);
     
-    if (!walletAddress) {
-      return NextResponse.json({ error: 'Wallet address required' }, { status: 401 });
+    let resolvedCollaboratorId = collaboratorIdHeader ? parseInt(collaboratorIdHeader, 10) : null;
+    if (!resolvedCollaboratorId && tmaMatch?.[1]) {
+      try {
+        const parsed = JSON.parse(decodeURIComponent(tmaMatch[1])) as { actorId?: string };
+        if (parsed.actorId) resolvedCollaboratorId = parseInt(parsed.actorId, 10);
+      } catch {
+        // ignore
+      }
+    }
+
+    if (resolvedCollaboratorId) {
+      const [collab] = await db
+        .select({ email: nexusCollaborators.email, telegramUserId: nexusCollaborators.telegramUserId })
+        .from(nexusCollaborators)
+        .where(eq(nexusCollaborators.id, resolvedCollaboratorId))
+        .limit(1);
+
+      if (collab?.email) {
+        const [userByEmail] = await db
+          .select({ id: users.id, walletAddress: users.walletAddress })
+          .from(users)
+          .where(eq(users.email, collab.email))
+          .limit(1);
+        if (userByEmail) {
+          collaboratorUserId = userByEmail.id;
+          if (!walletAddress && userByEmail.walletAddress) {
+            walletAddress = userByEmail.walletAddress;
+          }
+        }
+      }
+    }
+    
+    if (!walletAddress && !collaboratorUserId) {
+      return NextResponse.json({ error: 'Identidad de usuario requerida' }, { status: 401 });
     }
 
     const formData = await request.formData();
@@ -65,7 +106,8 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(bytes);
 
     // Generate unique filename with wallet address
-    const walletShort = walletAddress.toLowerCase().slice(0, 8);
+    const safeWallet = typeof walletAddress === 'string' ? walletAddress : (collaboratorUserId ?? 'nexus');
+    const walletShort = safeWallet.toLowerCase().slice(0, 8);
     const timestamp = Date.now();
     const filename = `avatar_${walletShort}_${timestamp}.webp`;
 
@@ -107,16 +149,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Update user profile in database
+    const updateCondition = collaboratorUserId 
+      ? eq(users.id, collaboratorUserId)
+      : eq(users.walletAddress, walletAddress!.toLowerCase());
+
     const result = await db
       .update(users)
       .set({
         image: imageUrl
       })
-      .where(
-        and(
-          eq(users.walletAddress, walletAddress.toLowerCase()),
-        )
-      )
+      .where(updateCondition)
       .returning({ id: users.id, image: users.image });
 
     if (result.length === 0) {

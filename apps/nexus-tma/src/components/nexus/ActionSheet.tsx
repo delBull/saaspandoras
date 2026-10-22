@@ -1,6 +1,14 @@
 import React, { useState } from 'react';
 import { nexusPost } from '../../lib/api-client';
 import { ContextualHermesTrigger } from './ContextualHermesTrigger';
+import { 
+  X, 
+  AlertTriangle, 
+  ShieldCheck, 
+  Zap, 
+  Loader2,
+  ArrowRight
+} from 'lucide-react';
 
 interface ActionSheetProps {
   isOpen: boolean;
@@ -15,7 +23,17 @@ export const ActionSheet: React.FC<ActionSheetProps> = ({ isOpen, onClose, item,
 
   if (!isOpen || !item) return null;
 
+  const triggerHaptic = (type: 'light' | 'medium' | 'heavy' = 'medium') => {
+    try {
+      // @ts-ignore
+      window.Telegram?.WebApp?.HapticFeedback?.impactOccurred(type);
+    } catch {
+      // ignore
+    }
+  };
+
   const handleAction = async () => {
+    triggerHaptic('medium');
     setLoading(true);
     setError(null);
     try {
@@ -23,76 +41,138 @@ export const ActionSheet: React.FC<ActionSheetProps> = ({ isOpen, onClose, item,
         await nexusPost(`/api/v1/nexus/kyc/${item.resourceId}/approve`, {});
       } else if (item.type === 'DEPOSIT') {
         await nexusPost(`/api/v1/nexus/finance/deposits/${item.resourceId}/approve`, {});
+      } else if (item.recommendedAction?.action === 'ACTIVATE_TRIAL') {
+        await nexusPost('/api/v1/hermes/trial/activate', {
+          organizationSlug: item.payload?.organizationSlug || item.id,
+        });
+      } else if (item.id && (String(item.id).startsWith('act_') || String(item.id).length > 20)) {
+        await nexusPost('/api/v1/tma/nexus/actions/execute', {
+          actionToken: item.id,
+          action: item.recommendedAction?.action || 'APPROVE',
+        });
       } else {
-        // Fallback generic or other endpoint
-        console.warn('Unhandled action type', item.type);
+        console.info('Generic item handled:', item.type);
+      }
+      try {
+        // @ts-ignore
+        window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
+      } catch {
+        // ignore
       }
       onSuccess();
       onClose();
     } catch (err: any) {
       console.error('Action Failed:', err);
+      try {
+        // @ts-ignore
+        window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('error');
+      } catch {
+        // ignore
+      }
       setError(err.message || 'No se pudo completar la acción');
     } finally {
       setLoading(false);
     }
   };
 
+  const isCritical = item.severity === 'CRITICAL';
+
   return (
-    <>
+    <div className="fixed inset-0 z-50 flex flex-col justify-end">
       {/* Backdrop */}
       <div 
-        className="fixed inset-0 bg-black/60 z-40 transition-opacity"
+        className="fixed inset-0 bg-black/80 backdrop-blur-md transition-opacity"
         onClick={onClose}
       />
       
-      {/* Sheet */}
+      {/* Glass Bottom Sheet */}
       <div 
-        className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-50 p-6 flex flex-col gap-4 shadow-[0_-10px_40px_rgba(0,0,0,0.15)] transition-transform transform translate-y-0"
-        style={{ maxHeight: '90vh', overflowY: 'auto' }}
+        className="relative z-50 w-full bg-[#10101a] border-t border-white/10 rounded-t-[28px] p-6 pb-8 flex flex-col gap-5 shadow-[0_-16px_50px_rgba(0,0,0,0.85)] max-h-[88vh] overflow-y-auto"
+        style={{ paddingBottom: 'calc(24px + var(--safe-bottom))' }}
       >
-        <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mb-2" />
+        {/* Handle */}
+        <div className="w-12 h-1 bg-white/20 rounded-full mx-auto" />
         
-        <div className="flex justify-between items-start">
-          <div>
-            <h2 className="text-lg font-bold text-gray-900">{item.title}</h2>
-            <p className="text-sm text-gray-500 mt-1">{item.reason}</p>
+        {/* Header */}
+        <div className="flex justify-between items-start gap-4">
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-2">
+              <span className={`badge ${isCritical ? 'badge-danger' : item.severity === 'HIGH' ? 'badge-amber' : 'badge-accent'}`}>
+                {item.severity}
+              </span>
+              <span className="text-[11px] font-mono text-muted">
+                {item.type} · #{String(item.id).slice(0, 8)}
+              </span>
+            </div>
+            <h2 className="text-xl font-bold text-white tracking-tight">
+              {item.title}
+            </h2>
+            <p className="text-xs text-secondary mt-1.5 leading-relaxed">
+              {item.reason}
+            </p>
           </div>
-          <span className={`px-2 py-1 text-[10px] font-bold rounded uppercase ${
-            item.severity === 'CRITICAL' ? 'bg-red-100 text-red-700' : 
-            item.severity === 'HIGH' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'
-          }`}>
-            {item.severity}
-          </span>
+
+          <button 
+            onClick={onClose}
+            className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-secondary active:scale-90"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Notarized Execution Info Banner */}
+        <div className="p-3.5 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center gap-3">
+          <ShieldCheck className="w-5 h-5 text-violet-400 flex-shrink-0" />
+          <div className="text-xs text-secondary leading-normal">
+            Esta orden se ejecutará y notarizará en el <strong>Sovereign Command Plane</strong> con tu firma de operador.
+          </div>
         </div>
 
         {error && (
-          <div className="bg-red-50 text-red-600 p-3 rounded-lg text-xs border border-red-100 mt-2">
-            {error}
+          <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center gap-2.5 text-rose-300 text-xs">
+            <AlertTriangle className="w-4 h-4 flex-shrink-0 text-rose-400" />
+            <span>{error}</span>
           </div>
         )}
 
-        <div className="mt-4 flex flex-col gap-3">
+        {/* Buttons */}
+        <div className="flex flex-col gap-2.5 mt-2">
           <button 
             onClick={handleAction}
             disabled={loading}
-            className="w-full bg-zinc-900 text-white py-3.5 rounded-xl font-bold text-sm tracking-wider uppercase active:scale-95 transition-all disabled:opacity-50"
+            className="w-full btn btn-primary flex items-center justify-center gap-2 py-4 rounded-xl text-sm font-bold tracking-wide active:scale-[0.98] transition-all disabled:opacity-50"
+            style={{ fontSize: '14px' }}
           >
-            {loading ? 'Procesando...' : (item.recommendedAction?.label || 'Aprobar')}
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Ejecutando en Hermes Core...</span>
+              </>
+            ) : (
+              <>
+                <Zap className="w-4 h-4 text-violet-200" />
+                <span>{item.recommendedAction?.label || 'Aprobar y Ejecutar'}</span>
+                <ArrowRight className="w-4 h-4 ml-1" />
+              </>
+            )}
           </button>
           
           <button 
             onClick={onClose}
-            className="w-full bg-gray-100 text-gray-700 py-3 rounded-xl font-bold text-sm active:bg-gray-200 transition-all"
+            className="w-full btn btn-ghost py-3.5 rounded-xl text-xs font-semibold text-secondary active:scale-[0.98]"
           >
-            Cancelar
+            Posponer para más tarde
           </button>
         </div>
 
-        <ContextualHermesTrigger 
-          attentionItemId={item.id} 
-          onOpened={() => console.log('Hermes triggered')} 
-        />
+        {/* Contextual Hermes Assistance */}
+        <div className="pt-2 border-t border-white/5">
+          <ContextualHermesTrigger 
+            attentionItemId={item.id} 
+            onOpened={() => console.log('[TMA] Hermes assistance requested')} 
+          />
+        </div>
       </div>
-    </>
+    </div>
   );
 };
