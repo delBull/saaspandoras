@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import type { LucideIcon } from 'lucide-react';
 import {
   Bot,
   Sparkles,
@@ -17,17 +18,18 @@ import {
   Layers,
   Calendar,
   X,
-  LucideIcon,
 } from 'lucide-react';
-import {
+import type {
   SimulatorIndustry,
   SimulatorGoal,
-  SIMULATOR_INDUSTRIES,
-  resolveSafeDemoContext,
   HermesTrace,
   HermesTraceStep,
-  HERMES_PORTAL_MODULES,
   SimulatedScenario,
+} from '@saasfly/hermes-core';
+import {
+  SIMULATOR_INDUSTRIES,
+  resolveSafeDemoContext,
+  HERMES_PORTAL_MODULES,
 } from '@saasfly/hermes-core';
 import { SalesDemoBuilderDrawer } from '@/components/hermes/SalesDemoBuilderDrawer';
 import { PortalPreview } from '@/components/hermes-simulator/PortalPreview';
@@ -108,7 +110,7 @@ export function SimulatorClient() {
 
   const [companyName, setCompanyName] = useState(demoContext.company);
   const [industry, setIndustry] = useState<SimulatorIndustry>(demoContext.industry);
-  const [goal, setGoal] = useState<SimulatorGoal>(demoContext.goal);
+  const [goal, _setGoal] = useState<SimulatorGoal>(demoContext.goal);
   const [attributionRep] = useState(demoContext.attributionRep);
 
   const activeConfig = SIMULATOR_INDUSTRIES[industry] || SIMULATOR_INDUSTRIES.general;
@@ -196,7 +198,7 @@ export function SimulatorClient() {
   // ---------------------------------------------------------------------------
 
   const handleSendMessage = async (textToSend?: string) => {
-    const msg = (textToSend || input).trim();
+    const msg = (textToSend ?? input).trim();
     if (!msg || loading) return;
 
     const userMsg: ChatMessage = {
@@ -230,7 +232,13 @@ export function SimulatorClient() {
         }),
       });
 
-      const data = await res.json();
+      const data = (await res.json()) as {
+        success?: boolean;
+        intentDetected?: { type: string; label: string; confidence: string } | null;
+        trace?: HermesTrace;
+        response?: string;
+        remaining?: number;
+      };
 
       if (res.ok && data.success) {
         if (data.intentDetected) {
@@ -247,9 +255,9 @@ export function SimulatorClient() {
         const agentMsg: ChatMessage = {
           id: `agent-${Date.now()}`,
           role: 'agent',
-          text: data.response,
+          text: data.response ?? '',
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          intentDetected: data.intentDetected,
+          intentDetected: data.intentDetected ?? undefined,
         };
         setMessages((prev) => [...prev, agentMsg]);
 
@@ -353,8 +361,11 @@ export function SimulatorClient() {
             }),
           });
           if (propRes.ok) {
-            const propData = await propRes.json();
-            if (propData?.offer) {
+            const propData = (await propRes.json()) as {
+              linkId?: string;
+              offer?: { id: string; title: string; amount: string; currency: string };
+            };
+            if (propData?.offer && propData?.linkId) {
               setCreatedProposal({
                 linkId: propData.linkId,
                 offer: propData.offer,
@@ -365,8 +376,8 @@ export function SimulatorClient() {
           console.warn('[Simulator] Non-fatal proposal creation warning:', propErr);
         }
       } else {
-        const data = await res.json().catch(() => null);
-        setLeadError(data?.message || data?.error || 'No se pudo registrar tu solicitud. Inténtalo de nuevo.');
+        const data = (await res.json().catch(() => null)) as { message?: string; error?: string } | null;
+        setLeadError(data?.message ?? data?.error ?? 'No se pudo registrar tu solicitud. Inténtalo de nuevo.');
       }
     } catch (err) {
       console.error('[Lead submit error]:', err);
@@ -410,7 +421,7 @@ export function SimulatorClient() {
   // ---------------------------------------------------------------------------
 
   return (
-    <div className="fixed inset-0 overflow-hidden bg-[#07070B] text-white flex flex-col font-sans relative">
+    <div className="fixed inset-0 overflow-hidden bg-[#07070B] text-white flex flex-col font-sans">
       {/* Background Ambient Glows */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[450px] bg-gradient-to-b from-purple-500/10 via-indigo-500/5 to-transparent blur-[140px] pointer-events-none" />
 
@@ -488,10 +499,11 @@ export function SimulatorClient() {
 
             <div className="space-y-3">
               <div>
-                <label className="block text-[11px] font-mono text-zinc-400 uppercase tracking-wider mb-1">
+                <label htmlFor="company-name-input" className="block text-[11px] font-mono text-zinc-400 uppercase tracking-wider mb-1">
                   Nombre de tu Empresa
                 </label>
                 <input
+                  id="company-name-input"
                   type="text"
                   value={companyName}
                   onChange={(e) => setCompanyName(e.target.value)}
@@ -501,9 +513,9 @@ export function SimulatorClient() {
               </div>
 
               <div>
-                <label className="block text-[11px] font-mono text-zinc-400 uppercase tracking-wider mb-1">
+                <span className="block text-[11px] font-mono text-zinc-400 uppercase tracking-wider mb-1">
                   Vertical / Industria
-                </label>
+                </span>
                 <div className="grid grid-cols-1 gap-2">
                   {Object.values(SIMULATOR_INDUSTRIES).map((ind) => (
                     <button
@@ -686,9 +698,24 @@ export function SimulatorClient() {
             ))}
 
             {loading && (
-              <div className="flex items-center gap-2 text-zinc-400 text-xs p-3">
-                <Loader2 className="w-4 h-4 animate-spin text-purple-400" />
-                <span className="font-mono text-[11px]">Hermes está redactando respuesta...</span>
+              <div className="flex flex-col gap-2 max-w-[85%] sm:max-w-[75%] p-4 rounded-2xl bg-white/[0.04] border border-purple-500/20 rounded-bl-none shadow-[0_0_20px_rgba(168,85,247,0.1)] animate-in fade-in duration-300">
+                <div className="flex items-center gap-2.5">
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-purple-500"></span>
+                  </span>
+                  <span className="font-mono text-[11px] font-bold text-purple-300">
+                    Hermes OS está procesando
+                  </span>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-400 ml-auto" />
+                </div>
+                <div className="space-y-1.5 pt-1">
+                  <div className="h-2 bg-gradient-to-r from-purple-500/20 via-indigo-500/30 to-purple-500/20 rounded-full animate-pulse w-3/4" />
+                  <div className="h-2 bg-gradient-to-r from-purple-500/10 via-indigo-500/20 to-purple-500/10 rounded-full animate-pulse w-1/2" />
+                </div>
+                <span className="text-[9px] font-mono text-zinc-500 mt-0.5">
+                  Consultando memoria epistémica & analizando intención...
+                </span>
               </div>
             )}
           </div>
@@ -832,7 +859,7 @@ export function SimulatorClient() {
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
-                  handleSendMessage();
+                  void handleSendMessage();
                 }
               }}
               placeholder={`Escribe un mensaje para ${activeConfig.agentName}...`}
@@ -957,10 +984,11 @@ export function SimulatorClient() {
 
                 <div className="space-y-3 text-xs">
                   <div>
-                    <label className="block text-[11px] font-mono text-zinc-400 uppercase tracking-wider mb-1">
+                    <label htmlFor="lead-name-field" className="block text-[11px] font-mono text-zinc-400 uppercase tracking-wider mb-1">
                       Tu Nombre
                     </label>
                     <input
+                      id="lead-name-field"
                       type="text"
                       required
                       value={leadName}
@@ -971,10 +999,11 @@ export function SimulatorClient() {
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-mono text-zinc-400 uppercase tracking-wider mb-1">
+                    <label htmlFor="lead-email-field" className="block text-[11px] font-mono text-zinc-400 uppercase tracking-wider mb-1">
                       Correo Electrónico
                     </label>
                     <input
+                      id="lead-email-field"
                       type="email"
                       required
                       value={leadEmail}
@@ -985,10 +1014,11 @@ export function SimulatorClient() {
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-mono text-zinc-400 uppercase tracking-wider mb-1">
+                    <label htmlFor="lead-phone-field" className="block text-[11px] font-mono text-zinc-400 uppercase tracking-wider mb-1">
                       WhatsApp / Teléfono
                     </label>
                     <input
+                      id="lead-phone-field"
                       type="tel"
                       value={leadPhone}
                       onChange={(e) => setLeadPhone(e.target.value)}

@@ -5,6 +5,8 @@ import { CampaignDomainService } from '@/lib/marketing/campaigns.service';
 import { GlassCard } from '@/components/ui/glass-card';
 import { Target, TrendingUp, Users, Activity, Play, Plus } from 'lucide-react';
 
+import { NewMarketAttackDraftModal } from './NewMarketAttackDraftModal';
+
 export default async function PortalMarketAttackPage({ params }: { params: Promise<{ organizationSlug: string }> }) {
   const { organizationSlug } = await params;
   
@@ -43,9 +45,7 @@ export default async function PortalMarketAttackPage({ params }: { params: Promi
           </p>
         </div>
         
-        <button className="flex items-center gap-2 px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-black font-bold rounded-xl text-sm transition-all shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_25px_rgba(16,185,129,0.5)]">
-          <Plus size={18} /> Nuevo Draft
-        </button>
+        <NewMarketAttackDraftModal organizationSlug={organizationSlug} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
