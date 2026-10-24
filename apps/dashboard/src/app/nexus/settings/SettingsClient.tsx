@@ -25,6 +25,7 @@ import { AvatarEditor } from "@/components/AvatarEditor";
 export interface OperatorContext {
   name: string;
   email: string;
+  image?: string | null;
   whatsappPhone?: string | null;
   role: string;
   permissions: Record<string, boolean | undefined>;
@@ -236,7 +237,11 @@ export default function NexusSettingsPage({ isUserAdmin = false, userRole = "OPE
 
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
               <div className="md:col-span-5 bg-black/40 border border-white/5 p-6 rounded-xl flex flex-col items-center justify-center text-center space-y-4">
-                <AvatarEditor variant="desktop" />
+                <AvatarEditor
+                  variant="desktop"
+                  initialAvatar={operatorContext?.image}
+                  operatorEmail={operatorContext?.email}
+                />
                 <div>
                   <h4 className="text-sm font-semibold text-white">{operatorContext?.name ?? "Operador Nexus"}</h4>
                   <p className="text-xs text-zinc-400">{operatorContext?.email ?? "Sin email registrado"}</p>

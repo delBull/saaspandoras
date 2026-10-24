@@ -658,11 +658,28 @@ export async function getNexusAuthContext(
 
         const permissions = resolveEffectivePermissions(role, collaborator.permissions, surface);
 
+        let collaboratorImage: string | null = null;
+        if (collaborator.email) {
+          try {
+            const [u] = await db
+              .select({ image: users.image })
+              .from(users)
+              .where(sql`LOWER(${users.email}) = LOWER(${collaborator.email.trim()})`)
+              .limit(1);
+            if (u?.image) {
+              collaboratorImage = u.image;
+            }
+          } catch {
+            // non-blocking
+          }
+        }
+
         return {
           isAuthenticated: true,
           role,
           email: collaborator.email,
           name: collaborator.name,
+          image: collaboratorImage,
           collaboratorId: collaborator.id,
           canonicalOrgId,
           whatsappPhone: collaborator.whatsappPhone,

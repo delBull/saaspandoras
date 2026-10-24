@@ -15,14 +15,28 @@ import { toast } from 'sonner';
 
 interface AvatarEditorProps {
   variant?: 'mobile' | 'desktop';
+  initialAvatar?: string | null;
+  operatorEmail?: string | null;
   onClose?: () => void;
 }
 
-export function AvatarEditor({ variant = 'desktop', onClose }: AvatarEditorProps) {
+export function AvatarEditor({ variant = 'desktop', initialAvatar, operatorEmail, onClose }: AvatarEditorProps) {
   const account = useActiveAccount();
   const { profile, refreshProfile } = useProfile();
   const [showModal, setShowModal] = useState(false);
   const [updating, setUpdating] = useState(false);
+
+  // Local state initialized with initialAvatar or profile image or fallback
+  const resolvedCurrent = initialAvatar ?? resolveIpfsUrl(profile?.image) ?? null;
+  const [avatarSrc, setAvatarSrc] = useState<string>(resolvedCurrent ?? '/images/avatars/onlybox2.png');
+
+  // Keep in sync if initialAvatar or profile changes
+  React.useEffect(() => {
+    const updated = initialAvatar ?? resolveIpfsUrl(profile?.image) ?? null;
+    if (updated) {
+      setAvatarSrc(updated);
+    }
+  }, [initialAvatar, profile?.image]);
 
   const availableAvatars = [
     { path: '/images/avatars/onlybox2.png', name: 'OnlyBox' },
@@ -40,6 +54,9 @@ export function AvatarEditor({ variant = 'desktop', onClose }: AvatarEditorProps
         headers['x-thirdweb-address'] = account.address;
         headers['x-user-address'] = account.address;
       }
+      if (operatorEmail) {
+        headers['x-operator-email'] = operatorEmail;
+      }
 
       const response = await fetch('/api/profile/update-avatar', {
         method: 'PATCH',
@@ -48,7 +65,20 @@ export function AvatarEditor({ variant = 'desktop', onClose }: AvatarEditorProps
       });
 
       if (response.ok) {
-        await refreshProfile();
+        const data = await response.json().catch(() => ({})) as { imageUrl?: string; user?: { image?: string } };
+        const newUrl = data.imageUrl ?? data.user?.image ?? avatarPath;
+        setAvatarSrc(newUrl);
+
+        // Dispatch live event across Nexus surfaces
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('nexus-avatar-updated', { detail: { imageUrl: newUrl } }));
+        }
+
+        try {
+          await refreshProfile();
+        } catch {
+          // ignore
+        }
         setShowModal(false);
         toast.success('Avatar agregado correctamente');
         onClose?.();
@@ -76,6 +106,9 @@ export function AvatarEditor({ variant = 'desktop', onClose }: AvatarEditorProps
         headers['x-thirdweb-address'] = account.address;
         headers['x-user-address'] = account.address;
       }
+      if (operatorEmail) {
+        headers['x-operator-email'] = operatorEmail;
+      }
 
       const response = await fetch('/api/profile/upload-avatar', {
         method: 'POST',
@@ -84,7 +117,20 @@ export function AvatarEditor({ variant = 'desktop', onClose }: AvatarEditorProps
       });
 
       if (response.ok) {
-        await refreshProfile();
+        const data = await response.json().catch(() => ({})) as { imageUrl?: string; user?: { image?: string } };
+        const newUrl = data.imageUrl ?? data.user?.image;
+        if (newUrl) {
+          setAvatarSrc(newUrl);
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('nexus-avatar-updated', { detail: { imageUrl: newUrl } }));
+          }
+        }
+
+        try {
+          await refreshProfile();
+        } catch {
+          // ignore
+        }
         setShowModal(false);
         toast.success('Avatar agregado correctamente');
         onClose?.();
@@ -116,11 +162,11 @@ export function AvatarEditor({ variant = 'desktop', onClose }: AvatarEditorProps
         <div className="relative">
           <div className="relative inline-block">
             <Image
-              src={resolveIpfsUrl(profile?.image) ?? '/images/avatars/onlybox2.png'}
+              src={avatarSrc}
               alt="Profile Avatar"
               width={64}
               height={64}
-              className="w-16 h-16 rounded-lg border-2 border-lime-400"
+              className="w-16 h-16 rounded-lg border-2 border-lime-400 object-cover"
             />
             <button
               onClick={() => setShowModal(true)}
@@ -235,11 +281,11 @@ export function AvatarEditor({ variant = 'desktop', onClose }: AvatarEditorProps
       {/* Avatar Display */}
       <div className="relative mb-5">
         <Image
-          src={resolveIpfsUrl(profile?.image) ?? '/images/avatars/onlybox2.png'}
+          src={avatarSrc}
           alt="Profile Avatar"
           width={64}
           height={64}
-          className="w-16 h-16 rounded-lg border-2 border-lime-400"
+          className="w-16 h-16 rounded-lg border-2 border-lime-400 object-cover"
         />
         <button
           onClick={() => setShowModal(true)}

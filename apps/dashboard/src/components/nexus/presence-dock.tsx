@@ -233,6 +233,11 @@ export function PresenceDock({ hidden = false }: { hidden?: boolean }) {
       void tick();
     }, 30000);
 
+    const onAvatarUpdated = () => {
+      void fetchPresence();
+    };
+    window.addEventListener('nexus-avatar-updated', onAvatarUpdated);
+
     const onUnload = () => {
       const payload = {
         method: 'POST',
@@ -249,6 +254,7 @@ export function PresenceDock({ hidden = false }: { hidden?: boolean }) {
     return () => {
       mounted = false;
       clearInterval(interval);
+      window.removeEventListener('nexus-avatar-updated', onAvatarUpdated);
       window.removeEventListener('beforeunload', onUnload);
     };
   }, []);

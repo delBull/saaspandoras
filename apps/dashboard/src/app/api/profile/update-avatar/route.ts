@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { getAuth } from '@saasfly/auth-sdk';
 import { db } from '@saasfly/db';
 import { users } from '@saasfly/db/schema';
-import { eq } from "@saasfly/db-core";
+import { eq, sql } from "@saasfly/db-core";
 
 interface UpdateAvatarRequestBody {
   image?: string;
@@ -28,19 +28,21 @@ export async function PATCH(request: NextRequest) {
 
     let targetUserId: string | null = null;
     let targetUserEmail: string | null = null;
+    const headerEmail = request.headers.get('x-operator-email');
+    if (headerEmail) targetUserEmail = headerEmail.toLowerCase().trim();
 
     const { getNexusAuthContext } = await import('@saasfly/shared');
     const nexusAuth = await getNexusAuthContext(request.headers);
     if (nexusAuth.isAuthenticated) {
-      if (nexusAuth.wallet) walletAddress = nexusAuth.wallet.toLowerCase();
-      if (nexusAuth.email) targetUserEmail = nexusAuth.email.toLowerCase().trim();
+      if (nexusAuth.wallet && !walletAddress) walletAddress = nexusAuth.wallet.toLowerCase();
+      if (nexusAuth.email && !targetUserEmail) targetUserEmail = nexusAuth.email.toLowerCase().trim();
     }
 
     if (targetUserEmail) {
       const [u] = await db
         .select({ id: users.id, walletAddress: users.walletAddress })
         .from(users)
-        .where(eq(users.email, targetUserEmail))
+        .where(sql`LOWER(${users.email}) = LOWER(${targetUserEmail})`)
         .limit(1);
       if (u) {
         targetUserId = u.id;
@@ -107,6 +109,13 @@ export async function PATCH(request: NextRequest) {
       .where(updateCondition)
       .returning({ id: users.id, image: users.image });
 
+    if (targetUserEmail) {
+      db.update(users)
+        .set({ image })
+        .where(sql`LOWER(${users.email}) = LOWER(${targetUserEmail})`)
+        .catch((e) => console.warn('[UpdateAvatar] Notice syncing users by email:', e));
+    }
+
     if (result.length === 0) {
       return NextResponse.json(
         { error: 'User not found' },
@@ -116,6 +125,7 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
+      imageUrl: image,
       user: result[0],
       message: 'Avatar updated successfully'
     });

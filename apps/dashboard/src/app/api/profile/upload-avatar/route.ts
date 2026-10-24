@@ -6,7 +6,7 @@ import sharp from 'sharp';
 import { getAuth } from '@saasfly/auth-sdk';
 import { db } from '@saasfly/db';
 import { users, nexusCollaborators } from '@saasfly/db/schema';
-import { eq } from "@saasfly/db-core";
+import { eq, sql } from "@saasfly/db-core";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB max
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -23,6 +23,7 @@ export async function POST(request: NextRequest) {
     let walletAddress: string | null = sessionAddress;
     let collaboratorUserId: string | null = null;
     let resolvedCollaboratorId: number | null = null;
+    let resolvedEmail: string | null = null;
     
     // TMA fallback: if no JWT, try header (Thirdweb sets x-wallet-address) or nexus token
     const requestHeaders = await headers();
@@ -33,27 +34,23 @@ export async function POST(request: NextRequest) {
       if (headerWallet) walletAddress = headerWallet.toLowerCase();
     }
 
+    const headerEmail = requestHeaders.get('x-operator-email');
+    if (headerEmail) {
+      resolvedEmail = headerEmail.toLowerCase().trim();
+    }
+
     // Nexus Session & Token context check
-    if (!walletAddress) {
-      const { getNexusAuthContext } = await import('@saasfly/shared');
-      const nexusAuth = await getNexusAuthContext(requestHeaders);
-      if (nexusAuth.isAuthenticated) {
-        if (nexusAuth.wallet) {
-          walletAddress = nexusAuth.wallet.toLowerCase();
-        }
-        if (nexusAuth.collaboratorId) {
-          resolvedCollaboratorId = nexusAuth.collaboratorId;
-        } else if (nexusAuth.email) {
-          const [u] = await db
-            .select({ id: users.id, walletAddress: users.walletAddress })
-            .from(users)
-            .where(eq(users.email, nexusAuth.email.toLowerCase().trim()))
-            .limit(1);
-          if (u) {
-            collaboratorUserId = u.id;
-            if (u.walletAddress) walletAddress = u.walletAddress;
-          }
-        }
+    const { getNexusAuthContext } = await import('@saasfly/shared');
+    const nexusAuth = await getNexusAuthContext(requestHeaders);
+    if (nexusAuth.isAuthenticated) {
+      if (nexusAuth.wallet && !walletAddress) {
+        walletAddress = nexusAuth.wallet.toLowerCase();
+      }
+      if (nexusAuth.collaboratorId && !resolvedCollaboratorId) {
+        resolvedCollaboratorId = nexusAuth.collaboratorId;
+      }
+      if (nexusAuth.email && !resolvedEmail) {
+        resolvedEmail = nexusAuth.email.toLowerCase().trim();
       }
     }
 
@@ -74,6 +71,36 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Resolve user by email if provided
+    if (resolvedEmail && !collaboratorUserId) {
+      const [userByEmail] = await db
+        .select({ id: users.id, walletAddress: users.walletAddress })
+        .from(users)
+        .where(sql`LOWER(${users.email}) = LOWER(${resolvedEmail})`)
+        .limit(1);
+      if (userByEmail) {
+        collaboratorUserId = userByEmail.id;
+        if (!walletAddress && userByEmail.walletAddress) {
+          walletAddress = userByEmail.walletAddress;
+        }
+      }
+    }
+
+    // Resolve user by wallet if present
+    if (walletAddress && !collaboratorUserId) {
+      const [userByWallet] = await db
+        .select({ id: users.id, email: users.email })
+        .from(users)
+        .where(eq(users.walletAddress, walletAddress.toLowerCase()))
+        .limit(1);
+      if (userByWallet) {
+        collaboratorUserId = userByWallet.id;
+        if (!resolvedEmail && userByWallet.email) {
+          resolvedEmail = userByWallet.email.toLowerCase();
+        }
+      }
+    }
+
     if (resolvedCollaboratorId && !collaboratorUserId) {
       const [collab] = await db
         .select({ email: nexusCollaborators.email, telegramUserId: nexusCollaborators.telegramUserId })
@@ -82,10 +109,11 @@ export async function POST(request: NextRequest) {
         .limit(1);
 
       if (collab?.email) {
+        const collabEmail = collab.email.toLowerCase().trim();
         const [userByEmail] = await db
           .select({ id: users.id, walletAddress: users.walletAddress })
           .from(users)
-          .where(eq(users.email, collab.email))
+          .where(sql`LOWER(${users.email}) = LOWER(${collabEmail})`)
           .limit(1);
         if (userByEmail) {
           collaboratorUserId = userByEmail.id;
@@ -100,8 +128,8 @@ export async function POST(request: NextRequest) {
               .insert(users)
               .values({
                 id: newId,
-                email: collab.email,
-                name: collab.email.split('@')[0],
+                email: collabEmail,
+                name: collabEmail.split('@')[0],
                 status: 'ACTIVE',
                 role: 'operator',
               })
@@ -111,6 +139,27 @@ export async function POST(request: NextRequest) {
             // ignore
           }
         }
+      }
+    }
+
+    // If still no collaboratorUserId but we have resolvedEmail (e.g. Marco logged into Nexus), auto-provision user record
+    if (!collaboratorUserId && resolvedEmail) {
+      try {
+        const newId = `user_${Date.now()}`;
+        const [newUser] = await db
+          .insert(users)
+          .values({
+            id: newId,
+            email: resolvedEmail,
+            name: resolvedEmail.split('@')[0],
+            walletAddress: walletAddress ?? null,
+            status: 'ACTIVE',
+            role: 'operator',
+          })
+          .returning({ id: users.id });
+        if (newUser) collaboratorUserId = newUser.id;
+      } catch {
+        // ignore
       }
     }
     
@@ -206,6 +255,14 @@ export async function POST(request: NextRequest) {
       .where(updateCondition)
       .returning({ id: users.id, image: users.image });
 
+    // Also update any other user records sharing the same email to guarantee consistency across login methods
+    if (resolvedEmail) {
+      db.update(users)
+        .set({ image: imageUrl })
+        .where(sql`LOWER(${users.email}) = LOWER(${resolvedEmail})`)
+        .catch((e) => console.warn('[AvatarUpload] Notice syncing users by email:', e));
+    }
+
     if (result.length === 0) {
       return NextResponse.json(
         { error: 'User not found' },
@@ -215,6 +272,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
+      imageUrl,
       user: result[0],
       message: 'Avatar uploaded successfully',
       optimization: {
