@@ -8,18 +8,33 @@ import { eq, and } from "@saasfly/db-core";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+interface TaskRequestBody {
+  kind?: string;
+  taskId?: string;
+  id?: string;
+  task?: string;
+  title?: string;
+  details?: string;
+  description?: string;
+  priority?: string;
+  dueDate?: string;
+  assigneeCollaboratorId?: number | string;
+  action?: 'COMPLETE' | 'CLAIM' | 'CANCEL';
+}
+
 export async function GET(request: Request) {
   try {
     const auth = await getNexusAuthContext(request.headers);
     if (!auth.isAuthenticated || !auth.permissions.dealRoom) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
-    const orgId = auth.canonicalOrgId || 'pandoras';
+    const orgId = auth.canonicalOrgId ?? 'pandoras';
     const tasks = await getTasks(orgId);
     return NextResponse.json({ tasks });
-  } catch (err: any) {
-    console.error("[Tasks] GET Error:", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    const error = err as Error;
+    console.error("[Tasks] GET Error:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
@@ -30,17 +45,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    const orgId = auth.canonicalOrgId || 'pandoras';
-    const body = await request.json();
+    const orgId = auth.canonicalOrgId ?? 'pandoras';
+    const body = (await request.json().catch(() => ({}))) as TaskRequestBody;
 
     // 1. Task Completion Dispatch (kind === 'task-done')
     if (body.kind === 'task-done') {
-      const taskId = body.taskId || body.id;
+      const taskId = body.taskId ?? body.id;
       if (!taskId) {
         return NextResponse.json({ error: "taskId is required" }, { status: 400 });
       }
 
-      // If taskId is UUID or matching task in DB, update status
       const now = new Date();
       try {
         await db
@@ -52,7 +66,6 @@ export async function POST(request: Request) {
           })
           .where(and(eq(nexusTasks.id, taskId), eq(nexusTasks.canonicalOrgId, orgId)));
       } catch (dbErr) {
-        // If taskId was synthetic TSK-xxx from legacy frontend, still acknowledge gracefully
         console.warn('[Tasks] Updating task by ID warning:', dbErr);
       }
 
@@ -60,13 +73,13 @@ export async function POST(request: Request) {
     }
 
     // 2. Task Creation Dispatch
-    const title = body.task || body.title;
+    const title = body.task ?? body.title;
     if (!title || typeof title !== 'string' || title.trim().length === 0) {
       return NextResponse.json({ error: "Task title is required" }, { status: 400 });
     }
 
-    const description = body.details || body.description || null;
-    const priority = (body.priority || 'NORMAL').toUpperCase();
+    const description = body.details ?? body.description ?? null;
+    const priority = (body.priority ?? 'NORMAL').toUpperCase();
     const dueDate = body.dueDate ? new Date(body.dueDate) : null;
 
     // Resolve or fallback creator collaborator id
@@ -84,6 +97,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No collaborator identity found to create task" }, { status: 400 });
     }
 
+    const assigneeCollaboratorId = body.assigneeCollaboratorId ? Number(body.assigneeCollaboratorId) : null;
+
     const [created] = await db
       .insert(nexusTasks)
       .values({
@@ -94,14 +109,16 @@ export async function POST(request: Request) {
         visibility: 'TEAM_VISIBLE',
         status: 'OPEN',
         createdBy: creatorId,
+        assigneeCollaboratorId: assigneeCollaboratorId && !isNaN(assigneeCollaboratorId) ? assigneeCollaboratorId : null,
         dueDate,
       })
       .returning();
 
     return NextResponse.json({ success: true, task: created }, { status: 201 });
-  } catch (err: any) {
-    console.error("[Tasks] POST Error:", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    const error = err as Error;
+    console.error("[Tasks] POST Error:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
@@ -112,8 +129,8 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    const orgId = auth.canonicalOrgId || 'pandoras';
-    const body = await request.json();
+    const orgId = auth.canonicalOrgId ?? 'pandoras';
+    const body = (await request.json().catch(() => ({}))) as TaskRequestBody;
     const { id, action } = body;
 
     if (!id || !action) {
@@ -121,7 +138,14 @@ export async function PATCH(request: Request) {
     }
 
     const now = new Date();
-    const updatePayload: any = { updatedAt: now };
+    const updatePayload: {
+      updatedAt: Date;
+      status?: string;
+      completedAt?: Date;
+      claimedAt?: Date;
+      cancelledAt?: Date;
+      assigneeCollaboratorId?: number;
+    } = { updatedAt: now };
 
     if (action === 'COMPLETE') {
       updatePayload.status = 'DONE';
@@ -144,8 +168,9 @@ export async function PATCH(request: Request) {
       .returning();
 
     return NextResponse.json({ success: true, task: updated });
-  } catch (err: any) {
-    console.error("[Tasks] PATCH Error:", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    const error = err as Error;
+    console.error("[Tasks] PATCH Error:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

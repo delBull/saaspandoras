@@ -22,6 +22,7 @@ export async function POST(request: NextRequest) {
       : null;
     let walletAddress: string | null = sessionAddress;
     let collaboratorUserId: string | null = null;
+    let resolvedCollaboratorId: number | null = null;
     
     // TMA fallback: if no JWT, try header (Thirdweb sets x-wallet-address) or nexus token
     const requestHeaders = await headers();
@@ -32,12 +33,38 @@ export async function POST(request: NextRequest) {
       if (headerWallet) walletAddress = headerWallet.toLowerCase();
     }
 
+    // Nexus Session & Token context check
+    if (!walletAddress) {
+      const { getNexusAuthContext } = await import('@saasfly/shared');
+      const nexusAuth = await getNexusAuthContext(requestHeaders);
+      if (nexusAuth.isAuthenticated) {
+        if (nexusAuth.wallet) {
+          walletAddress = nexusAuth.wallet.toLowerCase();
+        }
+        if (nexusAuth.collaboratorId) {
+          resolvedCollaboratorId = nexusAuth.collaboratorId;
+        } else if (nexusAuth.email) {
+          const [u] = await db
+            .select({ id: users.id, walletAddress: users.walletAddress })
+            .from(users)
+            .where(eq(users.email, nexusAuth.email.toLowerCase().trim()))
+            .limit(1);
+          if (u) {
+            collaboratorUserId = u.id;
+            if (u.walletAddress) walletAddress = u.walletAddress;
+          }
+        }
+      }
+    }
+
     // Check if called from Nexus TMA via session or collaborator token
     const collaboratorIdHeader = requestHeaders.get('x-collaborator-id');
     const cookieHeader = requestHeaders.get('cookie') ?? '';
     const tmaMatch = cookieHeader.match(/nexus_tma_session=([^;]+)/);
     
-    let resolvedCollaboratorId = collaboratorIdHeader ? parseInt(collaboratorIdHeader, 10) : null;
+    if (!resolvedCollaboratorId) {
+      resolvedCollaboratorId = collaboratorIdHeader ? parseInt(collaboratorIdHeader, 10) : null;
+    }
     if (!resolvedCollaboratorId && tmaMatch?.[1]) {
       try {
         const parsed = JSON.parse(decodeURIComponent(tmaMatch[1])) as { actorId?: string };
@@ -47,7 +74,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (resolvedCollaboratorId) {
+    if (resolvedCollaboratorId && !collaboratorUserId) {
       const [collab] = await db
         .select({ email: nexusCollaborators.email, telegramUserId: nexusCollaborators.telegramUserId })
         .from(nexusCollaborators)
@@ -64,6 +91,24 @@ export async function POST(request: NextRequest) {
           collaboratorUserId = userByEmail.id;
           if (!walletAddress && userByEmail.walletAddress) {
             walletAddress = userByEmail.walletAddress;
+          }
+        } else {
+          // If user doesn't exist yet, insert a placeholder in users
+          try {
+            const newId = `user_${Date.now()}`;
+            const [newUser] = await db
+              .insert(users)
+              .values({
+                id: newId,
+                email: collab.email,
+                name: collab.email.split('@')[0],
+                status: 'ACTIVE',
+                role: 'operator',
+              })
+              .returning({ id: users.id });
+            if (newUser) collaboratorUserId = newUser.id;
+          } catch {
+            // ignore
           }
         }
       }

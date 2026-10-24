@@ -30,18 +30,20 @@ export function AvatarEditor({ variant = 'desktop', onClose }: AvatarEditorProps
   ];
 
   const updateAvatar = async (avatarPath: string) => {
-    if (!account?.address) return;
-
     setUpdating(true);
     try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (account?.address) {
+        headers['x-wallet-address'] = account.address;
+        headers['x-thirdweb-address'] = account.address;
+        headers['x-user-address'] = account.address;
+      }
+
       const response = await fetch('/api/profile/update-avatar', {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-wallet-address': account.address,
-          'x-thirdweb-address': account.address,
-          'x-user-address': account.address,
-        },
+        headers,
         body: JSON.stringify({ image: avatarPath }),
       });
 
@@ -63,21 +65,21 @@ export function AvatarEditor({ variant = 'desktop', onClose }: AvatarEditorProps
   };
 
   const uploadCustomAvatar = async (file: File) => {
-    if (!account?.address) return;
-
     setUpdating(true);
     try {
       const formData = new FormData();
       formData.append('avatar', file);
 
+      const headers: Record<string, string> = {};
+      if (account?.address) {
+        headers['x-wallet-address'] = account.address;
+        headers['x-thirdweb-address'] = account.address;
+        headers['x-user-address'] = account.address;
+      }
+
       const response = await fetch('/api/profile/upload-avatar', {
         method: 'POST',
-        headers: {
-          'x-wallet-address': account.address,
-          'x-thirdweb-address': account.address,
-          'x-user-address': account.address,
-          // Don't set Content-Type for FormData - browser sets it automatically
-        },
+        headers,
         body: formData,
       });
 
@@ -114,7 +116,7 @@ export function AvatarEditor({ variant = 'desktop', onClose }: AvatarEditorProps
         <div className="relative">
           <div className="relative inline-block">
             <Image
-              src={resolveIpfsUrl(profile?.image) || '/images/avatars/onlybox2.png'}
+              src={resolveIpfsUrl(profile?.image) ?? '/images/avatars/onlybox2.png'}
               alt="Profile Avatar"
               width={64}
               height={64}
@@ -233,7 +235,7 @@ export function AvatarEditor({ variant = 'desktop', onClose }: AvatarEditorProps
       {/* Avatar Display */}
       <div className="relative mb-5">
         <Image
-          src={resolveIpfsUrl(profile?.image) || '/images/avatars/onlybox2.png'}
+          src={resolveIpfsUrl(profile?.image) ?? '/images/avatars/onlybox2.png'}
           alt="Profile Avatar"
           width={64}
           height={64}

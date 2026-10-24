@@ -27,10 +27,10 @@ export async function GET(request: Request) {
   const getWalletAddress = async (): Promise<string> => {
     // Try JWT session first (verified)
     const auth = await getAuth();
-    if (auth.isVerified && auth.session?.address) {
+    if (auth.isVerified && auth.session && 'address' in auth.session && typeof auth.session.address === 'string') {
       authMethod = 'session';
       verifiedSession = true;
-      return auth.session.address;
+      return auth.session.address as string;
     }
     
     // Fallback to header for backward compatibility (TMA)
@@ -42,6 +42,34 @@ export async function GET(request: Request) {
     if (headerWallet) {
       authMethod = 'header';
       return headerWallet.toLowerCase().trim();
+    }
+
+    // Nexus Session & Token context fallback
+    try {
+      const { getNexusAuthContext } = await import('@saasfly/shared');
+      const nexusAuth = await getNexusAuthContext(requestHeaders);
+      if (nexusAuth.isAuthenticated) {
+        if (nexusAuth.wallet) {
+          authMethod = 'session';
+          verifiedSession = true;
+          return nexusAuth.wallet.toLowerCase().trim();
+        }
+        if (nexusAuth.email) {
+          const userResult = (await db.execute(sql`
+            SELECT "walletAddress" FROM "users"
+            WHERE LOWER("email") = LOWER(${nexusAuth.email.toLowerCase().trim()})
+            LIMIT 1
+          `)) as unknown as Array<{ walletAddress?: string | null }>;
+          const foundAddress = userResult[0]?.walletAddress;
+          if (foundAddress && typeof foundAddress === 'string') {
+            authMethod = 'session';
+            verifiedSession = true;
+            return foundAddress.toLowerCase().trim();
+          }
+        }
+      }
+    } catch {
+      // ignore
     }
 
     throw new Error("No authorization found");

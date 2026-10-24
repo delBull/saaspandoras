@@ -3,37 +3,24 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
-  Mail,
-  Plus,
-  Trash2,
   ExternalLink,
-  Shield,
   ShieldCheck,
-  SlidersHorizontal,
-  Lock,
-  GraduationCap,
-  Handshake,
   Bot,
-  Settings,
   Eye,
-  EyeOff,
   X,
+  CreditCard,
+  User,
 } from "lucide-react";
-import type { NexusRole } from "@saasfly/shared";
 import { CognitiveAgentsManager } from "./CognitiveAgentsManager";
-import { NexusHermesTerminal } from "./NexusHermesTerminal";
 import { ConfigureAgendaButton } from "@/components/scheduler/ConfigureAgendaButton";
 import { DisplayControlsWidget } from "@pandoras/display-engine";
-import { CreditCard } from "lucide-react";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { PrivateTerminalClient } from "@/components/nexus/PrivateTerminalClient";
+import { AvatarEditor } from "@/components/AvatarEditor";
 
 export interface OperatorContext {
   name: string;
@@ -50,13 +37,22 @@ interface SettingsClientProps {
   onClose?: () => void;
 }
 
+interface BroadcastAlert {
+  id: string | number;
+  category?: string;
+  createdAt: string;
+  title: string;
+  message: string;
+  targetUrl?: string;
+}
+
 export default function NexusSettingsPage({ isUserAdmin = false, userRole = "OPERATOR", operatorContext = null, onClose }: SettingsClientProps) {
   // Drawer state
   const [isTerminalOpen, setIsTerminalOpen] = useState(false);
 
-  // Tabs state - SuperAdmin inicia en "team", los demás colaboradores inician en "agents"
-  const [activeTab, setActiveTab] = useState<"team" | "agents" | "display" | "alerts">("agents");
-  const [alertHistory, setAlertHistory] = useState<any[]>([]);
+  // Tabs state - Inicia en "agents", ahora con pestaña "profile" para avatar & perfil
+  const [activeTab, setActiveTab] = useState<"profile" | "team" | "agents" | "display" | "alerts">("agents");
+  const [alertHistory, setAlertHistory] = useState<BroadcastAlert[]>([]);
 
   const canManageAgenda = isUserAdmin || userRole === "ADMIN" || !!operatorContext?.permissions?.["calendar.manage"];
   const canManageAgents = isUserAdmin || userRole === "ADMIN" || !!operatorContext?.permissions?.["agents.manage"];
@@ -64,8 +60,8 @@ export default function NexusSettingsPage({ isUserAdmin = false, userRole = "OPE
   const loadAlerts = async () => {
     try {
       const res = await fetch("/api/nexus/broadcasts?all=true");
-      const data = await res.json();
-      if (data.success && data.broadcasts) {
+      const data = (await res.json().catch(() => ({}))) as { success?: boolean; broadcasts?: BroadcastAlert[] };
+      if (data.success && Array.isArray(data.broadcasts)) {
         setAlertHistory(data.broadcasts);
       }
     } catch (e) {
@@ -75,7 +71,7 @@ export default function NexusSettingsPage({ isUserAdmin = false, userRole = "OPE
 
   useEffect(() => {
     if (activeTab === "alerts") {
-      loadAlerts();
+      void loadAlerts();
     }
   }, [activeTab]);
 
@@ -177,6 +173,17 @@ export default function NexusSettingsPage({ isUserAdmin = false, userRole = "OPE
         {/* Tabs Navigation */}
         <div className="flex items-center gap-4 border-b border-zinc-800">
           <button
+            onClick={() => setActiveTab("profile")}
+            className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 ${
+              activeTab === "profile"
+                ? "border-amber-400 text-amber-400"
+                : "border-transparent text-zinc-500 hover:text-zinc-300"
+            }`}
+          >
+            <User className="w-4 h-4" />
+            Mi Perfil &amp; Avatar
+          </button>
+          <button
             onClick={() => setActiveTab("agents")}
             className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 ${
               activeTab === "agents"
@@ -211,7 +218,58 @@ export default function NexusSettingsPage({ isUserAdmin = false, userRole = "OPE
           </button>
         </div>
 
-        {activeTab === "agents" ? (
+        {activeTab === "profile" ? (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-6 bg-zinc-900/40 border border-zinc-800 p-6 rounded-2xl"
+          >
+            <div className="border-b border-zinc-800 pb-4">
+              <h2 className="text-base font-bold text-white flex items-center gap-2">
+                <User className="w-4 h-4 text-amber-400" />
+                Personalización de Avatar &amp; Operador
+              </h2>
+              <p className="text-xs text-zinc-400 mt-1">
+                Cambia o sube tu foto de avatar para mostrarla en el Nexus Roster, Transaction Rooms y canales de presencia.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+              <div className="md:col-span-5 bg-black/40 border border-white/5 p-6 rounded-xl flex flex-col items-center justify-center text-center space-y-4">
+                <AvatarEditor variant="desktop" />
+                <div>
+                  <h4 className="text-sm font-semibold text-white">{operatorContext?.name ?? "Operador Nexus"}</h4>
+                  <p className="text-xs text-zinc-400">{operatorContext?.email ?? "Sin email registrado"}</p>
+                  <span className="inline-block mt-2 px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase bg-amber-500/10 border border-amber-500/30 text-amber-400">
+                    {userRole}
+                  </span>
+                </div>
+              </div>
+
+              <div className="md:col-span-7 space-y-4 text-xs text-zinc-400 leading-relaxed">
+                <div className="bg-black/40 border border-white/5 p-4 rounded-xl space-y-2">
+                  <div className="flex items-center gap-2 font-bold text-amber-300 font-mono">
+                    <span>✨</span>
+                    <span>Sincronización en Tiempo Real</span>
+                  </div>
+                  <p>
+                    Al cambiar o subir tu avatar, se actualiza automáticamente en la presencia activa del Command Center, el Roster inferior y las salas de negociación.
+                  </p>
+                </div>
+
+                <div className="bg-black/40 border border-white/5 p-4 rounded-xl space-y-2">
+                  <div className="flex items-center gap-2 font-bold text-emerald-300 font-mono">
+                    <span>⚡</span>
+                    <span>Canales de Contacto Directo</span>
+                  </div>
+                  <p>
+                    Tus compañeros de equipo podrán hacer clic en tu tarjeta en el Roster para enviarte mensajes directos por Telegram o WhatsApp y asignarte tareas con un solo clic.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        ) : activeTab === "agents" ? (
           <CognitiveAgentsManager canManage={canManageAgents} />
         ) : activeTab === "display" ? (
           /* ── ACCESIBILIDAD & VISUALIZACIÓN TAB ── */
@@ -285,7 +343,7 @@ export default function NexusSettingsPage({ isUserAdmin = false, userRole = "OPE
                 alertHistory.map((alert) => (
                   <div key={alert.id} className="bg-white/5 border border-white/10 rounded-xl p-4">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="text-xs font-bold text-amber-400 uppercase tracking-wider">{alert.category || 'AVISO'}</span>
+                      <span className="text-xs font-bold text-amber-400 uppercase tracking-wider">{alert.category ?? 'AVISO'}</span>
                       <span className="text-xs text-zinc-500">{new Date(alert.createdAt).toLocaleDateString()}</span>
                     </div>
                     <h4 className="text-sm font-bold text-white mb-1">{alert.title}</h4>

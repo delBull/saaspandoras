@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server';
 import { headers } from 'next/headers';
 import crypto from 'crypto';
 import { db } from '@saasfly/db';
-import { nexusPresence, nexusCollaborators } from '@saasfly/db/schema';
+import { nexusPresence, nexusCollaborators, users } from '@saasfly/db/schema';
 import { eq, desc, sql } from "@saasfly/db-core";
 import { getNexusAuthContext } from '@saasfly/shared';
 
@@ -41,9 +41,13 @@ export async function GET() {
         name: nexusCollaborators.name,
         email: nexusCollaborators.email,
         role: nexusCollaborators.role,
+        whatsappPhone: nexusCollaborators.whatsappPhone,
+        telegramUsername: nexusCollaborators.telegramUsername,
+        image: users.image,
       })
       .from(nexusPresence)
-      .innerJoin(nexusCollaborators, eq(nexusPresence.collaboratorId, nexusCollaborators.id));
+      .innerJoin(nexusCollaborators, eq(nexusPresence.collaboratorId, nexusCollaborators.id))
+      .leftJoin(users, eq(users.email, nexusCollaborators.email));
 
     const presenceData = isHqOrg
       ? await baseQuery
