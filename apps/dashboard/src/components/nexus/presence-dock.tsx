@@ -71,8 +71,115 @@ export function PresenceDock({ hidden = false }: { hidden?: boolean }) {
   const [deals, setDeals] = useState<DealRoomItem[]>([]);
   const [isLoadingDeals, setIsLoadingDeals] = useState(false);
 
+  // Modal active tab: 'CHAT' | 'OVERVIEW'
+  const [modalTab, setModalTab] = useState<'CHAT' | 'OVERVIEW'>('CHAT');
+
+  // Internal Chat State
+  interface ChatMessage {
+    id: string;
+    senderEmail: string;
+    senderName: string;
+    receiverEmail: string;
+    content: string;
+    createdAt: string;
+  }
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatInput, setChatInput] = useState('');
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
+  const [isLoadingChat, setIsLoadingChat] = useState(false);
+  const [myEmail, setMyEmail] = useState<string>('');
+  const chatMessagesEndRef = useRef<HTMLDivElement>(null);
+
   const rosterRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
+
+  // Poll / fetch internal direct chat messages when collaborator is selected
+  useEffect(() => {
+    if (!selectedCollaborator?.email) {
+      setChatMessages([]);
+      return;
+    }
+
+    let isMounted = true;
+    setIsLoadingChat(true);
+
+    const fetchMessages = async () => {
+      try {
+        const res = await fetch(`/api/nexus/chat?targetEmail=${encodeURIComponent(selectedCollaborator.email)}`);
+        if (res.ok) {
+          const data = (await res.json().catch(() => ({}))) as {
+            ok?: boolean;
+            messages?: ChatMessage[];
+            myEmail?: string;
+          };
+          if (isMounted) {
+            if (data.myEmail) setMyEmail(data.myEmail);
+            if (Array.isArray(data.messages)) {
+              setChatMessages(data.messages);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to load direct messages', err);
+      } finally {
+        if (isMounted) setIsLoadingChat(false);
+      }
+    };
+
+    void fetchMessages();
+
+    // Auto-refresh messages every 6 seconds while the modal is open
+    const chatInterval = setInterval(() => {
+      void fetchMessages();
+    }, 6000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(chatInterval);
+    };
+  }, [selectedCollaborator]);
+
+  // Scroll to bottom when messages update
+  useEffect(() => {
+    if (modalTab === 'CHAT' && chatMessages.length > 0) {
+      chatMessagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [chatMessages, modalTab]);
+
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!chatInput.trim() || !selectedCollaborator || isSendingMessage) return;
+
+    const textToSend = chatInput.trim();
+    setIsSendingMessage(true);
+
+    try {
+      const res = await fetch('/api/nexus/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          receiverEmail: selectedCollaborator.email,
+          receiverName: selectedCollaborator.name,
+          content: textToSend,
+        }),
+      });
+
+      if (res.ok) {
+        setChatInput('');
+        const data = (await res.json().catch(() => ({}))) as { ok?: boolean; message?: ChatMessage };
+        if (data.message) {
+          setChatMessages((prev) => [...prev, data.message!]);
+        }
+      } else {
+        const err = (await res.json().catch(() => ({}))) as { error?: string; reason?: string };
+        toast.error(err.error ?? 'Error al enviar mensaje');
+      }
+    } catch {
+      toast.error('Error de conexión al enviar mensaje');
+    } finally {
+      setIsSendingMessage(false);
+    }
+  };
 
   // Heartbeat & presence polling
   useEffect(() => {
@@ -354,139 +461,256 @@ export function PresenceDock({ hidden = false }: { hidden?: boolean }) {
                 </button>
               </div>
 
-              {/* Modal Body */}
-              <div className="p-5 space-y-6 overflow-y-auto custom-scrollbar flex-1">
-                {/* 1. Direct Contact Channels */}
-                <div>
-                  <h4 className="text-[11px] font-mono font-bold uppercase tracking-wider text-white/60 mb-2.5 flex items-center gap-1.5">
-                    <MessageSquare className="w-3.5 h-3.5 text-amber-400" />
-                    Canales de Comunicación Directa
-                  </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                    {/* Telegram */}
-                    {selectedCollaborator.telegramUsername ? (
-                      <a
-                        href={`https://t.me/${selectedCollaborator.telegramUsername.replace('@', '')}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400 hover:bg-sky-500/20 text-xs font-semibold transition-all hover:scale-[1.02]"
-                      >
-                        <Send className="w-4 h-4" />
-                        <span>Telegram</span>
-                      </a>
-                    ) : (
-                      <div className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-white/5 border border-white/5 text-white/30 text-xs cursor-not-allowed">
-                        <Send className="w-4 h-4" />
-                        <span>Sin Telegram</span>
-                      </div>
-                    )}
-
-                    {/* WhatsApp */}
-                    {selectedCollaborator.whatsappPhone ? (
-                      <a
-                        href={`https://wa.me/${selectedCollaborator.whatsappPhone.replace(/[^0-9]/g, '')}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 text-xs font-semibold transition-all hover:scale-[1.02]"
-                      >
-                        <Phone className="w-4 h-4" />
-                        <span>WhatsApp</span>
-                      </a>
-                    ) : (
-                      <div className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-white/5 border border-white/5 text-white/30 text-xs cursor-not-allowed">
-                        <Phone className="w-4 h-4" />
-                        <span>Sin WhatsApp</span>
-                      </div>
-                    )}
-
-                    {/* Email */}
-                    <a
-                      href={`mailto:${selectedCollaborator.email}?subject=Nexus%20Follow-up`}
-                      className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/20 text-xs font-semibold transition-all hover:scale-[1.02]"
-                    >
-                      <Mail className="w-4 h-4" />
-                      <span>Email</span>
-                    </a>
-                  </div>
-                </div>
-
-                {/* 2. Quick Task Assignment */}
-                <div className="bg-black/30 border border-white/5 rounded-xl p-4">
-                  <h4 className="text-[11px] font-mono font-bold uppercase tracking-wider text-white/60 mb-2 flex items-center gap-1.5">
-                    <PlusCircle className="w-3.5 h-3.5 text-emerald-400" />
-                    Asignar Tarea Operativa
-                  </h4>
-                  <form onSubmit={(e) => void handleCreateTask(e)} className="space-y-3">
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={taskTitle}
-                        onChange={(e) => setTaskTitle(e.target.value)}
-                        placeholder={`Ej: Revisar contrato o llamar a cliente...`}
-                        className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder-white/30 focus:outline-none focus:border-amber-400/50 transition-colors"
-                      />
-                      <select
-                        value={taskPriority}
-                        onChange={(e) => setTaskPriority(e.target.value as 'NORMAL' | 'HIGH' | 'URGENT')}
-                        className="bg-zinc-900 border border-white/10 rounded-xl px-2.5 py-2 text-xs text-white/80 focus:outline-none focus:border-amber-400/50"
-                      >
-                        <option value="NORMAL">Normal</option>
-                        <option value="HIGH">Alta</option>
-                        <option value="URGENT">Urgente</option>
-                      </select>
-                      <button
-                        type="submit"
-                        disabled={isSubmittingTask || !taskTitle.trim()}
-                        className="bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-black text-xs font-bold px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
-                      >
-                        {isSubmittingTask ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
-                        <span>Asignar</span>
-                      </button>
-                    </div>
-                  </form>
-                </div>
-
-                {/* 3. Associated Deals & Rooms */}
-                <div>
-                  <h4 className="text-[11px] font-mono font-bold uppercase tracking-wider text-white/60 mb-2.5 flex items-center justify-between">
-                    <span className="flex items-center gap-1.5">
-                      <Briefcase className="w-3.5 h-3.5 text-purple-400" />
-                      Deal Rooms &amp; Contratos Vinculados
+              {/* Modal Tabs Header */}
+              <div className="flex border-b border-white/10 bg-black/20 px-5 pt-3 gap-6">
+                <button
+                  type="button"
+                  onClick={() => setModalTab('CHAT')}
+                  className={`pb-3 text-xs font-semibold flex items-center gap-2 border-b-2 transition-all cursor-pointer ${
+                    modalTab === 'CHAT'
+                      ? 'border-amber-400 text-amber-400'
+                      : 'border-transparent text-white/50 hover:text-white'
+                  }`}
+                >
+                  <MessageSquare className="w-3.5 h-3.5" />
+                  <span>Chat Interno</span>
+                  {chatMessages.length > 0 && (
+                    <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-amber-400/20 text-amber-300 font-mono">
+                      {chatMessages.length}
                     </span>
-                    <span className="text-[10px] text-white/40">{deals.length} salas</span>
-                  </h4>
-
-                  {isLoadingDeals ? (
-                    <div className="p-4 text-center text-xs text-white/40 flex items-center justify-center gap-2">
-                      <Loader2 className="w-4 h-4 animate-spin text-purple-400" />
-                      <span>Consultando Deal Rooms...</span>
-                    </div>
-                  ) : deals.length === 0 ? (
-                    <div className="p-4 text-center text-xs text-white/40 bg-white/[0.02] border border-white/5 rounded-xl">
-                      No hay salas de negociación activas vinculadas a este colaborador.
-                    </div>
-                  ) : (
-                    <div className="space-y-2 max-h-40 overflow-y-auto custom-scrollbar">
-                      {deals.map((room) => (
-                        <a
-                          key={room.id}
-                          href={`/nexus/rooms/${room.publicId ?? String(room.id)}`}
-                          className="flex items-center justify-between p-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-purple-500/30 transition-all group"
-                        >
-                          <div className="min-w-0 flex-1">
-                            <p className="text-xs font-semibold text-white group-hover:text-purple-300 transition-colors truncate">
-                              {room.title ?? `Deal Room #${room.id}`}
-                            </p>
-                            <p className="text-[10px] text-white/40 truncate">
-                              Rol: {room.myRole} • Estado: {room.status}
-                            </p>
-                          </div>
-                          <ExternalLink className="w-3.5 h-3.5 text-white/30 group-hover:text-white transition-colors shrink-0 ml-2" />
-                        </a>
-                      ))}
-                    </div>
                   )}
-                </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setModalTab('OVERVIEW')}
+                  className={`pb-3 text-xs font-semibold flex items-center gap-2 border-b-2 transition-all cursor-pointer ${
+                    modalTab === 'OVERVIEW'
+                      ? 'border-amber-400 text-amber-400'
+                      : 'border-transparent text-white/50 hover:text-white'
+                  }`}
+                >
+                  <Briefcase className="w-3.5 h-3.5" />
+                  <span>Canales &amp; Tareas</span>
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-5 overflow-y-auto custom-scrollbar flex-1 flex flex-col min-h-[380px] max-h-[460px]">
+                {modalTab === 'CHAT' ? (
+                  /* ── INTERNAL DIRECT CHAT TAB ── */
+                  <div className="flex flex-col flex-1 h-full justify-between">
+                    {/* Chat Messages Thread */}
+                    <div className="flex-1 space-y-3 overflow-y-auto pr-1 mb-4 custom-scrollbar max-h-[300px]">
+                      {isLoadingChat && chatMessages.length === 0 ? (
+                        <div className="flex items-center justify-center h-48 text-white/40 text-xs gap-2">
+                          <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
+                          <span>Conectando con el canal interno...</span>
+                        </div>
+                      ) : chatMessages.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center h-48 text-center p-6 bg-white/[0.02] border border-white/5 rounded-2xl">
+                          <div className="w-10 h-10 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 mb-2.5">
+                            <MessageSquare className="w-5 h-5" />
+                          </div>
+                          <p className="text-xs font-semibold text-white">Canal directo activo con {selectedCollaborator.name}</p>
+                          <p className="text-[11px] text-white/40 max-w-xs mt-1">
+                            Envía un mensaje rápido, confirmación o actualización de operaciones sin salir de la plataforma.
+                          </p>
+                        </div>
+                      ) : (
+                        chatMessages.map((msg) => {
+                          const isMe = msg.senderEmail.toLowerCase() === myEmail.toLowerCase();
+                          return (
+                            <div
+                              key={msg.id}
+                              className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}
+                            >
+                              <div className="flex items-center gap-1.5 mb-1 px-1">
+                                <span className="text-[10px] font-medium text-white/40">
+                                  {isMe ? 'Tú' : msg.senderName}
+                                </span>
+                                <span className="text-[9px] text-white/30 font-mono">
+                                  {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                              </div>
+                              <div
+                                className={`px-3.5 py-2 rounded-2xl text-xs max-w-[85%] break-words ${
+                                  isMe
+                                    ? 'bg-amber-500 text-black font-medium rounded-tr-xs shadow-md'
+                                    : 'bg-white/10 text-white border border-white/10 rounded-tl-xs'
+                                }`}
+                              >
+                                {msg.content}
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                      <div ref={chatMessagesEndRef} />
+                    </div>
+
+                    {/* Chat Quick Input Form */}
+                    <form onSubmit={(e) => void handleSendMessage(e)} className="pt-2 border-t border-white/10">
+                      <div className="flex gap-2 items-center">
+                        <input
+                          type="text"
+                          value={chatInput}
+                          onChange={(e) => setChatInput(e.target.value)}
+                          placeholder={`Escribe un mensaje directo a ${selectedCollaborator.name}...`}
+                          className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-white/30 focus:outline-none focus:border-amber-400/50 transition-colors"
+                        />
+                        <button
+                          type="submit"
+                          disabled={isSendingMessage || !chatInput.trim()}
+                          className="bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-black px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
+                          title="Enviar mensaje rápido"
+                        >
+                          {isSendingMessage ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Send className="w-3.5 h-3.5" />
+                          )}
+                          <span>Enviar</span>
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                ) : (
+                  /* ── EXTERNAL CHANNELS & TASKS TAB ── */
+                  <div className="space-y-6">
+                    {/* 1. Direct Contact Channels */}
+                    <div>
+                      <h4 className="text-[11px] font-mono font-bold uppercase tracking-wider text-white/60 mb-2.5 flex items-center gap-1.5">
+                        <Send className="w-3.5 h-3.5 text-sky-400" />
+                        Canales Externos
+                      </h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                        {/* Telegram */}
+                        {selectedCollaborator.telegramUsername ? (
+                          <a
+                            href={`https://t.me/${selectedCollaborator.telegramUsername.replace('@', '')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400 hover:bg-sky-500/20 text-xs font-semibold transition-all hover:scale-[1.02]"
+                          >
+                            <Send className="w-4 h-4" />
+                            <span>Telegram</span>
+                          </a>
+                        ) : (
+                          <div className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-white/5 border border-white/5 text-white/30 text-xs cursor-not-allowed">
+                            <Send className="w-4 h-4" />
+                            <span>Sin Telegram</span>
+                          </div>
+                        )}
+
+                        {/* WhatsApp */}
+                        {selectedCollaborator.whatsappPhone ? (
+                          <a
+                            href={`https://wa.me/${selectedCollaborator.whatsappPhone.replace(/[^0-9]/g, '')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 text-xs font-semibold transition-all hover:scale-[1.02]"
+                          >
+                            <Phone className="w-4 h-4" />
+                            <span>WhatsApp</span>
+                          </a>
+                        ) : (
+                          <div className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-white/5 border border-white/5 text-white/30 text-xs cursor-not-allowed">
+                            <Phone className="w-4 h-4" />
+                            <span>Sin WhatsApp</span>
+                          </div>
+                        )}
+
+                        {/* Email */}
+                        <a
+                          href={`mailto:${selectedCollaborator.email}?subject=Nexus%20Follow-up`}
+                          className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/20 text-xs font-semibold transition-all hover:scale-[1.02]"
+                        >
+                          <Mail className="w-4 h-4" />
+                          <span>Email</span>
+                        </a>
+                      </div>
+                    </div>
+
+                    {/* 2. Quick Task Assignment */}
+                    <div className="bg-black/30 border border-white/5 rounded-xl p-4">
+                      <h4 className="text-[11px] font-mono font-bold uppercase tracking-wider text-white/60 mb-2 flex items-center gap-1.5">
+                        <PlusCircle className="w-3.5 h-3.5 text-emerald-400" />
+                        Asignar Tarea Operativa
+                      </h4>
+                      <form onSubmit={(e) => void handleCreateTask(e)} className="space-y-3">
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={taskTitle}
+                            onChange={(e) => setTaskTitle(e.target.value)}
+                            placeholder={`Ej: Revisar contrato o llamar a cliente...`}
+                            className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder-white/30 focus:outline-none focus:border-amber-400/50 transition-colors"
+                          />
+                          <select
+                            value={taskPriority}
+                            onChange={(e) => setTaskPriority(e.target.value as 'NORMAL' | 'HIGH' | 'URGENT')}
+                            className="bg-zinc-900 border border-white/10 rounded-xl px-2.5 py-2 text-xs text-white/80 focus:outline-none focus:border-amber-400/50"
+                          >
+                            <option value="NORMAL">Normal</option>
+                            <option value="HIGH">Alta</option>
+                            <option value="URGENT">Urgente</option>
+                          </select>
+                          <button
+                            type="submit"
+                            disabled={isSubmittingTask || !taskTitle.trim()}
+                            className="bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-black text-xs font-bold px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
+                          >
+                            {isSubmittingTask ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                            <span>Asignar</span>
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+
+                    {/* 3. Associated Deals & Rooms */}
+                    <div>
+                      <h4 className="text-[11px] font-mono font-bold uppercase tracking-wider text-white/60 mb-2.5 flex items-center justify-between">
+                        <span className="flex items-center gap-1.5">
+                          <Briefcase className="w-3.5 h-3.5 text-purple-400" />
+                          Deal Rooms &amp; Contratos Vinculados
+                        </span>
+                        <span className="text-[10px] text-white/40">{deals.length} salas</span>
+                      </h4>
+
+                      {isLoadingDeals ? (
+                        <div className="p-4 text-center text-xs text-white/40 flex items-center justify-center gap-2">
+                          <Loader2 className="w-4 h-4 animate-spin text-purple-400" />
+                          <span>Consultando Deal Rooms...</span>
+                        </div>
+                      ) : deals.length === 0 ? (
+                        <div className="p-4 text-center text-xs text-white/40 bg-white/[0.02] border border-white/5 rounded-xl">
+                          No hay salas de negociación activas vinculadas a este colaborador.
+                        </div>
+                      ) : (
+                        <div className="space-y-2 max-h-40 overflow-y-auto custom-scrollbar">
+                          {deals.map((room) => (
+                            <a
+                              key={room.id}
+                              href={`/nexus/rooms/${room.publicId ?? String(room.id)}`}
+                              className="flex items-center justify-between p-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-purple-500/30 transition-all group"
+                            >
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs font-semibold text-white group-hover:text-purple-300 transition-colors truncate">
+                                  {room.title ?? `Deal Room #${room.id}`}
+                                </p>
+                                <p className="text-[10px] text-white/40 truncate">
+                                  Rol: {room.myRole} • Estado: {room.status}
+                                </p>
+                              </div>
+                              <ExternalLink className="w-3.5 h-3.5 text-white/30 group-hover:text-white transition-colors shrink-0 ml-2" />
+                            </a>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </motion.div>
           </div>

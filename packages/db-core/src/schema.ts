@@ -4793,6 +4793,28 @@ export const nexusPresence = pgTable('nexus_presence', {
 export type NexusPresence = typeof nexusPresence.$inferSelect;
 export type NewNexusPresence = typeof nexusPresence.$inferInsert;
 
+export const nexusDirectMessages = pgTable('nexus_direct_messages', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  canonicalOrgId: varchar('canonical_org_id', { length: 256 }).notNull().default('pandoras'),
+  senderEmail: varchar('sender_email', { length: 255 }).notNull(),
+  senderName: varchar('sender_name', { length: 128 }).notNull().default('Operador'),
+  receiverEmail: varchar('receiver_email', { length: 255 }).notNull(),
+  receiverName: varchar('receiver_name', { length: 128 }),
+  content: text('content').notNull(),
+  readAt: timestamp('read_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => {
+  return {
+    orgIdx: index('idx_nexus_dm_org').on(t.canonicalOrgId),
+    senderIdx: index('idx_nexus_dm_sender').on(t.senderEmail),
+    receiverIdx: index('idx_nexus_dm_receiver').on(t.receiverEmail),
+    createdIdx: index('idx_nexus_dm_created').on(t.createdAt),
+  };
+});
+
+export type NexusDirectMessage = typeof nexusDirectMessages.$inferSelect;
+export type NewNexusDirectMessage = typeof nexusDirectMessages.$inferInsert;
+
 /**
  * 🚀 Campaign Proposals
  */

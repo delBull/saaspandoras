@@ -158,7 +158,8 @@ export async function PATCH(request: Request) {
       updatePayload.status = 'CANCELLED';
       updatePayload.cancelledAt = now;
     } else {
-      return NextResponse.json({ error: `Unsupported action: ${action}` }, { status: 400 });
+      const unsupportedAction = String(action);
+      return NextResponse.json({ error: `Unsupported action: ${unsupportedAction}` }, { status: 400 });
     }
 
     const [updated] = await db
