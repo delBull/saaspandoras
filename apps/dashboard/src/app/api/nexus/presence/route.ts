@@ -47,7 +47,7 @@ export async function GET() {
       })
       .from(nexusPresence)
       .innerJoin(nexusCollaborators, eq(nexusPresence.collaboratorId, nexusCollaborators.id))
-      .leftJoin(users, eq(users.email, nexusCollaborators.email));
+      .leftJoin(users, sql`LOWER(${users.email}) = LOWER(${nexusCollaborators.email})`);
 
     const presenceData = isHqOrg
       ? await baseQuery

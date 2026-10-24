@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { 
   Command, 
@@ -186,10 +187,20 @@ export function NexusSidebar({ auth, onAction }: NexusSidebarProps) {
               title="Ver mi perfil y configuración"
               className="flex items-center gap-3 flex-1 min-w-0 text-left p-1.5 -ml-1.5 rounded-lg hover:bg-white/5 transition-all group cursor-pointer focus:outline-none focus:ring-1 focus:ring-amber-500/40"
             >
-              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-500/20 to-purple-500/20 border border-white/10 flex items-center justify-center shrink-0 group-hover:border-amber-500/40 group-hover:scale-105 transition-all">
-                <span className="text-xs font-bold text-white group-hover:text-amber-300">
-                  {auth.name ? auth.name.substring(0, 2).toUpperCase() : "OP"}
-                </span>
+              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-500/20 to-purple-500/20 border border-white/10 flex items-center justify-center shrink-0 group-hover:border-amber-500/40 group-hover:scale-105 transition-all overflow-hidden relative">
+                {auth.image ? (
+                  <Image
+                    src={auth.image}
+                    alt={auth.name ?? "Avatar"}
+                    fill
+                    className="object-cover"
+                    sizes="32px"
+                  />
+                ) : (
+                  <span className="text-xs font-bold text-white group-hover:text-amber-300">
+                    {auth.name ? auth.name.substring(0, 2).toUpperCase() : "OP"}
+                  </span>
+                )}
               </div>
               <div className="flex flex-col overflow-hidden flex-1 min-w-0">
                 <span className="text-sm text-white font-medium truncate group-hover:text-amber-200 transition-colors">{auth.name ?? "Operator"}</span>

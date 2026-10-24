@@ -27,25 +27,44 @@ export async function PATCH(request: NextRequest) {
     }
 
     let targetUserId: string | null = null;
-    if (!walletAddress) {
-      const { getNexusAuthContext } = await import('@saasfly/shared');
-      const nexusAuth = await getNexusAuthContext(request.headers);
-      if (nexusAuth.isAuthenticated) {
-        if (nexusAuth.wallet) walletAddress = nexusAuth.wallet.toLowerCase();
-        if (nexusAuth.email) {
-          const [u] = await db
-            .select({ id: users.id, walletAddress: users.walletAddress })
-            .from(users)
-            .where(eq(users.email, nexusAuth.email.toLowerCase().trim()))
-            .limit(1);
-          if (u) {
-            targetUserId = u.id;
-            if (u.walletAddress) walletAddress = u.walletAddress;
-          }
+    let targetUserEmail: string | null = null;
+
+    const { getNexusAuthContext } = await import('@saasfly/shared');
+    const nexusAuth = await getNexusAuthContext(request.headers);
+    if (nexusAuth.isAuthenticated) {
+      if (nexusAuth.wallet) walletAddress = nexusAuth.wallet.toLowerCase();
+      if (nexusAuth.email) targetUserEmail = nexusAuth.email.toLowerCase().trim();
+    }
+
+    if (targetUserEmail) {
+      const [u] = await db
+        .select({ id: users.id, walletAddress: users.walletAddress })
+        .from(users)
+        .where(eq(users.email, targetUserEmail))
+        .limit(1);
+      if (u) {
+        targetUserId = u.id;
+        if (!walletAddress && u.walletAddress) walletAddress = u.walletAddress;
+      } else {
+        // Auto-provision user record for the operator email so avatar persists
+        const newUserId = `user_${Date.now()}`;
+        const [newUser] = await db
+          .insert(users)
+          .values({
+            id: newUserId,
+            email: targetUserEmail,
+            name: nexusAuth.name ?? targetUserEmail.split('@')[0],
+            walletAddress: walletAddress ?? null,
+            status: 'ACTIVE',
+            role: nexusAuth.role === 'SUPER_ADMIN' ? 'super_admin' : 'operator',
+          })
+          .returning({ id: users.id });
+        if (newUser) {
+          targetUserId = newUser.id;
         }
       }
     }
-    
+
     if (!walletAddress && !targetUserId) {
       return NextResponse.json({ error: 'Wallet address or authenticated session required' }, { status: 401 });
     }
@@ -78,7 +97,7 @@ export async function PATCH(request: NextRequest) {
     // Update user profile in database
     const updateCondition = targetUserId 
       ? eq(users.id, targetUserId)
-      : eq(users.walletAddress, (walletAddress as string).toLowerCase());
+      : eq(users.walletAddress, walletAddress!.toLowerCase());
 
     const result = await db
       .update(users)

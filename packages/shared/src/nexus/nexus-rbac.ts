@@ -70,6 +70,7 @@ export interface NexusAuthContext {
   wallet?: string | null;
   email?: string | null;
   name?: string | null;
+  image?: string | null;
   collaboratorId?: number | null;
   canonicalOrgId?: string | null;
   whatsappPhone?: string | null;
@@ -346,13 +347,14 @@ export async function getNexusAuthContext(
         // Resolve completion fields for sovereign administrators so the registration gate
         // (!name && !whatsappPhone) never loops or blocks the operator.
         const [superUser] = await db
-          .select({ id: users.id, name: users.name, email: users.email, role: users.role })
+          .select({ id: users.id, name: users.name, email: users.email, role: users.role, image: users.image })
           .from(users)
           .where(eq(users.walletAddress, sessionWallet))
           .limit(1);
 
         let email: string | null = superUser?.email ?? null;
         let name: string | null = superUser?.name ?? null;
+        const image: string | null = superUser?.image ?? null;
         let whatsappPhone: string | null = null;
 
         // Resolve collaborator record via email or admin env list
@@ -401,6 +403,7 @@ export async function getNexusAuthContext(
           wallet: sessionWallet,
           email: email ?? process.env.ADMIN_EMAIL ?? 'admin@pandoras.finance',
           name: name ?? process.env.ADMIN_NAME ?? 'Admin',
+          image,
           whatsappPhone: whatsappPhone ?? process.env.ADMIN_WHATSAPP_PHONE ?? null,
           collaboratorId,
           canonicalOrgId: 'pandoras',
@@ -501,6 +504,7 @@ export async function getNexusAuthContext(
             wallet: sessionWallet,
             email: user.email,
             name: user.name,
+            image: user.image ?? null,
             whatsappPhone,
             collaboratorId,
             canonicalOrgId,
