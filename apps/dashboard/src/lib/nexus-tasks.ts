@@ -28,7 +28,11 @@ export const NEXUS_TASKS: NexusTask[] = [
   { id: "TSK-W3-01", week: "Semana 3", title: "Master Licensing Framework v1 (Holding ➔ USA LLC)", category: "Legal & Corporate", priority: "HIGH", completed: false, dueDate: "2026-08-18" },
   { id: "TSK-W3-02", week: "Semana 3", title: "Estructuración del Corporate Data Room en 5 Carpetas", category: "Legal & Corporate", priority: "MEDIUM", completed: false, dueDate: "2026-08-21" },
   { id: "TSK-W4-01", week: "Semana 4", title: "Due Diligence Readiness Audit & Investor Package", category: "Legal & Corporate", priority: "HIGH", completed: false, dueDate: "2026-08-28" },
+  { id: "TSK-CEL-01", week: "Semana 1", title: "Celeste: Enviar Mensaje de WhatsApp & Convocatoria de Diagnóstico", category: "Operaciones", priority: "HIGH", completed: false, dueDate: "2026-10-25" },
+  { id: "TSK-CEL-02", week: "Semana 1", title: "Celeste: Sesión de Diagnóstico Comercial en Sovereign Meet", category: "Operaciones", priority: "HIGH", completed: false, dueDate: "2026-10-27" },
+  { id: "TSK-CEL-03", week: "Semana 2", title: "Celeste: Estructuración Económica & Alcance del Piloto Preliminar", category: "Finanzas", priority: "MEDIUM", completed: false, dueDate: "2026-10-30" },
 ];
+
 
 export function taskTitle(taskRef?: string | null): string | null {
   if (!taskRef) return null;

@@ -1,13 +1,13 @@
 "use client";
 
 import React from "react";
-import { PresentationEngine, Slide } from "@/components/presentation/PresentationEngine";
+import { PresentationEngine } from "@/components/presentation/PresentationEngine";
+import type { Slide } from "@/components/presentation/PresentationEngine";
 import { 
   Building2, 
   ArrowRight, 
   Bot, 
   ShieldCheck, 
-  Database, 
   Sparkles,
   Layers,
   Calendar,
@@ -15,6 +15,7 @@ import {
   CheckCircle2,
   FileText
 } from "lucide-react";
+
 
 /**
  * PANDORA'S REAL ESTATE GROWTH INFRASTRUCTURE — MASTER PITCH DECK
@@ -49,7 +50,7 @@ const slides: Slide[] = [
         <div className="mt-8 pt-8 border-t border-white/10 flex items-center gap-8 text-sm text-zinc-400">
           <span className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            Desarrollo: <strong className="text-white">[Desarrollo Inmobiliario / Celeste]</strong>
+            Desarrollo: <strong className="text-white">Celeste Beach Residences &amp; Spa</strong>
           </span>
           <span>•</span>
           <span>Sesión de Diagnóstico y Expansión Comercial</span>
@@ -57,6 +58,7 @@ const slides: Slide[] = [
       </div>
     ),
   },
+
 
   // SLIDE 2: EL RETO COMERCIAL
   {

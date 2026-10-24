@@ -221,5 +221,42 @@ export const INITIAL_TASKS: TaskItem[] = [
     completed: false,
     dueDate: '2026-08-28',
     detail: 'Auditoría de validación para recepción de capital estratégico e inversionistas en Pandoras USA Operations LLC.'
+  },
+
+  // CLIENTES & PIPELINE: CELESTE BEACH RESIDENCES & SPA
+  {
+    id: 'TSK-CEL-01',
+    week: 'Semana 1',
+    title: 'Celeste: Enviar Mensaje de WhatsApp & Convocatoria de Diagnóstico',
+    category: 'Operaciones',
+    priority: 'HIGH',
+    completed: false,
+    dueDate: '2026-10-25',
+    detail: 'Enviar propuesta de llamada de 20-30 min a Eduardo para alinear números de captación, estancia de descubrimiento y alcance del piloto.',
+    evidenceType: 'enlace',
+    evidenceLink: '/DOCUMENTACIÓN/Clientes/Celeste_Huatulco/PROTOCOLO_SEGUIMIENTO_WHATSAPP_Y_AGENDA.md'
+  },
+  {
+    id: 'TSK-CEL-02',
+    week: 'Semana 1',
+    title: 'Celeste: Sesión de Diagnóstico Comercial en Sovereign Meet',
+    category: 'Operaciones',
+    priority: 'HIGH',
+    completed: false,
+    dueDate: '2026-10-27',
+    detail: 'Proyectar Real Estate Growth Deck (104 fracciones, ticket promedio $155k USD) y auditar Bloques A, B, C y D (conversión, pauta y estancia preferencial).',
+    evidenceType: 'enlace',
+    evidenceLink: '/pitch/real-estate-growth'
+  },
+  {
+    id: 'TSK-CEL-03',
+    week: 'Semana 2',
+    title: 'Celeste: Estructuración Económica & Alcance del Piloto Preliminar',
+    category: 'Finanzas',
+    priority: 'MEDIUM',
+    completed: false,
+    dueDate: '2026-10-30',
+    detail: 'Definir cuotas de setup e infraestructura (Modelo A/B), pauta fondeada por Celeste y esquema de incentivos por resultados con atribución estricta.'
   }
 ];
+
