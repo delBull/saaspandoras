@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Shield, User, Users, Lock, MoreHorizontal, Settings2, ShieldCheck, Mail, RefreshCw } from 'lucide-react';
+import { Shield, User, Users, Lock, Settings2, ShieldCheck, Mail, RefreshCw } from 'lucide-react';
 
 interface CollaboratorInfo {
   id: string;
@@ -12,33 +12,6 @@ interface CollaboratorInfo {
   status: 'ACTIVE' | 'PENDING' | 'SUSPENDED';
 }
 
-const MOCK_COLLABORATORS: CollaboratorInfo[] = [
-  {
-    id: 'user_1',
-    name: 'Matute',
-    email: 'matute@pandoras.finance',
-    role: 'SUPER_ADMIN',
-    capabilities: ['*'],
-    status: 'ACTIVE'
-  },
-  {
-    id: 'user_2',
-    name: 'Marco',
-    email: 'marco@pandoras.finance',
-    role: 'ADMIN',
-    capabilities: ['nexus.manage', 'growth.manage'],
-    status: 'ACTIVE'
-  },
-  {
-    id: 'user_3',
-    name: 'Marketing Team',
-    email: 'marketing@pandoras.finance',
-    role: 'EDITOR',
-    capabilities: ['growth.manage'],
-    status: 'PENDING'
-  }
-];
-
 export function OperationsCollaboratorsTab({ isAdmin }: { isAdmin: boolean }) {
   const [collaborators, setCollaborators] = useState<CollaboratorInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -46,21 +19,31 @@ export function OperationsCollaboratorsTab({ isAdmin }: { isAdmin: boolean }) {
   useEffect(() => {
     const fetchCollaborators = async () => {
       try {
-        const storedToken = typeof window !== 'undefined' ? (localStorage.getItem('pandoras_nexus_token') || localStorage.getItem('nexus_token')) : null;
+        const storedToken = typeof window !== 'undefined' ? (localStorage.getItem('pandoras_nexus_token') ?? localStorage.getItem('nexus_token')) : null;
         const res = await fetch('/api/nexus/collaborators/list', {
           headers: {
             ...(storedToken ? { 'x-nexus-token': storedToken } : {}),
           }
         });
-        const data = await res.json();
-        if (data.ok && data.collaborators) {
-          const mapped = data.collaborators.map((c: any) => ({
-            id: c.walletAddress || c.id || String(Math.random()),
-            name: c.name || c.email?.split('@')[0] || 'Unknown',
-            email: c.email || 'No email',
-            role: c.role || 'GUEST',
-            capabilities: Object.keys(c.permissions || {}).filter(k => c.permissions[k]),
-            status: c.isActive ? 'ACTIVE' : 'PENDING'
+        interface ApiCollab {
+          walletAddress?: string;
+          id?: string;
+          name?: string;
+          email?: string;
+          role?: string;
+          permissions?: Record<string, boolean>;
+          isActive?: boolean;
+          status?: string;
+        }
+        const data = (await res.json()) as { ok?: boolean; collaborators?: ApiCollab[] };
+        if (data.ok && Array.isArray(data.collaborators)) {
+          const mapped: CollaboratorInfo[] = data.collaborators.map((c) => ({
+            id: c.walletAddress ?? c.id ?? String(Math.random()),
+            name: c.name ?? c.email?.split('@')[0] ?? 'Unknown',
+            email: c.email ?? 'No email',
+            role: c.role ?? 'GUEST',
+            capabilities: Object.keys(c.permissions ?? {}).filter(k => c.permissions?.[k]),
+            status: (c.status === 'ACTIVE' || c.isActive) ? 'ACTIVE' : (c.status === 'SUSPENDED' ? 'SUSPENDED' : 'PENDING')
           }));
           setCollaborators(mapped);
         }
@@ -71,7 +54,7 @@ export function OperationsCollaboratorsTab({ isAdmin }: { isAdmin: boolean }) {
       }
     };
     if (isAdmin) {
-      fetchCollaborators();
+      void fetchCollaborators();
     } else {
       setIsLoading(false);
     }
@@ -97,9 +80,13 @@ export function OperationsCollaboratorsTab({ isAdmin }: { isAdmin: boolean }) {
           </p>
         </div>
         {isAdmin && (
-          <button className="px-3.5 py-1.5 rounded-lg border border-sky-500/30 bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 text-xs font-mono transition-colors shrink-0">
-            + INVITAR COLABORADOR
-          </button>
+          <a 
+            href="/nexus/settings"
+            className="px-3.5 py-1.5 rounded-lg border border-sky-500/30 bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 text-xs font-mono transition-colors shrink-0 text-center flex items-center gap-1.5"
+          >
+            <Users className="w-3.5 h-3.5" />
+            <span>+ INVITAR / GESTIONAR EN SETTINGS</span>
+          </a>
         )}
       </div>
 
@@ -120,9 +107,12 @@ export function OperationsCollaboratorsTab({ isAdmin }: { isAdmin: boolean }) {
                 </div>
                 <p className="text-[10px] text-zinc-500 font-mono">Role cap: {cohort.role}</p>
                 {isAdmin && (
-                  <button className={`mt-3 w-full py-1.5 rounded bg-${cohort.color}-500/10 hover:bg-${cohort.color}-500/20 text-${cohort.color}-300 border border-${cohort.color}-500/30 text-[10px] font-mono transition-colors`}>
-                    GESTIONAR COHORTE
-                  </button>
+                  <a 
+                    href="/nexus/settings"
+                    className={`mt-3 block text-center w-full py-1.5 rounded bg-${cohort.color}-500/10 hover:bg-${cohort.color}-500/20 text-${cohort.color}-300 border border-${cohort.color}-500/30 text-[10px] font-mono transition-colors`}
+                  >
+                    GESTIONAR COHORTE EN SETTINGS
+                  </a>
                 )}
               </div>
             ))}
@@ -187,9 +177,13 @@ export function OperationsCollaboratorsTab({ isAdmin }: { isAdmin: boolean }) {
                   </td>
                   <td className="px-4 py-3 text-right">
                     {isAdmin ? (
-                      <button className="p-1.5 text-zinc-400 hover:text-white hover:bg-white/10 rounded transition-colors">
+                      <a 
+                        href="/nexus/settings"
+                        title="Gestionar en Settings"
+                        className="inline-block p-1.5 text-zinc-400 hover:text-white hover:bg-white/10 rounded transition-colors"
+                      >
                         <Settings2 className="w-4 h-4" />
-                      </button>
+                      </a>
                     ) : (
                       <button className="p-1.5 text-zinc-600 cursor-not-allowed rounded" disabled title="Solo Admin">
                         <Lock className="w-4 h-4" />

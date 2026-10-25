@@ -81,6 +81,34 @@ export function NexusCommandCenter({ auth, initialTour, initialRole: _initialRol
     return INITIAL_TASKS;
   });
 
+  const handleToggleTask = async (taskId: string) => {
+    const targetTask = tasks.find((t) => t.id === taskId);
+    if (!targetTask) return;
+
+    const nextCompleted = !targetTask.completed;
+    setTasks((prev) =>
+      prev.map((t) => (t.id === taskId ? { ...t, completed: nextCompleted } : t))
+    );
+
+    try {
+      const storedToken = typeof window !== 'undefined' ? (localStorage.getItem('pandoras_nexus_token') ?? localStorage.getItem('nexus_token')) : null;
+      await fetch('/api/nexus/tasks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(storedToken ? { 'x-nexus-token': storedToken } : {}),
+        },
+        body: JSON.stringify({
+          kind: 'task-done',
+          taskId,
+          status: nextCompleted ? 'DONE' : 'OPEN',
+        }),
+      });
+    } catch (err) {
+      console.warn('[Nexus] Failed to persist task toggle:', err);
+    }
+  };
+
   // Sync server tasks from db (nexus_tasks table) to keep Web and TMA unified
   useEffect(() => {
     async function syncTasksFromServer() {
@@ -91,7 +119,7 @@ export function NexusCommandCenter({ auth, initialTour, initialRole: _initialRol
           credentials: 'include',
         });
         if (res.ok) {
-          const data = (await res.json()) as { tasks?: { id: string; title: string; priority?: string; status?: string; dueDate?: string; description?: string }[] };
+          const data = (await res.json()) as { tasks?: { id: string; title: string; priority?: string; status?: string; dueDate?: string; description?: string; assigneeName?: string; assigneeEmail?: string }[] };
           if (Array.isArray(data.tasks) && data.tasks.length > 0) {
             const serverTasks: TaskItem[] = data.tasks.map((t) => ({
               id: t.id,
@@ -103,6 +131,7 @@ export function NexusCommandCenter({ auth, initialTour, initialRole: _initialRol
               completed: t.status === 'DONE',
               dueDate: t.dueDate ? (new Date(t.dueDate).toISOString().split('T')[0] ?? '2026-10-30') : '2026-10-30',
               detail: t.description ?? 'Tarea sincronizada desde Nexus Core.',
+              assignee: t.assigneeName ?? t.assigneeEmail ?? undefined,
             }));
             setTasks(prev => {
               // Merge preserving unique IDs
@@ -117,6 +146,10 @@ export function NexusCommandCenter({ auth, initialTour, initialRole: _initialRol
       }
     }
     void syncTasksFromServer();
+
+    const handleRefresh = () => { void syncTasksFromServer(); };
+    window.addEventListener('nexus-tasks-updated', handleRefresh);
+    return () => window.removeEventListener('nexus-tasks-updated', handleRefresh);
   }, [auth?.canonicalOrgId]);
   
   useEffect(() => {
@@ -354,6 +387,7 @@ export function NexusCommandCenter({ auth, initialTour, initialRole: _initialRol
                 auth={auth} 
                 sidebarOpen={sidebarOpen} 
                 tasks={tasks}
+                onToggleTask={handleToggleTask}
                 onAction={(action) => {
                   if (action === 'hermes') {
                     setIsHermesAmbientOpen(true);

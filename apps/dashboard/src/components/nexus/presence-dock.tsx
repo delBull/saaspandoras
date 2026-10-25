@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import { 
@@ -70,6 +70,17 @@ export function PresenceDock({ hidden = false }: { hidden?: boolean }) {
   // Collaborator deals state
   const [deals, setDeals] = useState<DealRoomItem[]>([]);
   const [isLoadingDeals, setIsLoadingDeals] = useState(false);
+
+  // Collaborator tasks state
+  interface AssignedTask {
+    id: string;
+    title: string;
+    status: string;
+    priority: string;
+    dueDate?: string;
+  }
+  const [collabTasks, setCollabTasks] = useState<AssignedTask[]>([]);
+  const [isLoadingTasks, setIsLoadingTasks] = useState(false);
 
   // Modal active tab: 'CHAT' | 'OVERVIEW'
   const [modalTab, setModalTab] = useState<'CHAT' | 'OVERVIEW'>('CHAT');
@@ -372,10 +383,32 @@ export function PresenceDock({ hidden = false }: { hidden?: boolean }) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen]);
 
-  // Fetch deals when a collaborator is selected
+  // Fetch deals and assigned tasks when a collaborator is selected
+  const fetchCollabTasks = useCallback(async (collabId?: number | string) => {
+    if (!collabId) {
+      setCollabTasks([]);
+      return;
+    }
+    setIsLoadingTasks(true);
+    try {
+      const res = await fetch(`/api/nexus/tasks?assigneeCollaboratorId=${collabId}`);
+      const data = (await res.json()) as { tasks?: AssignedTask[] };
+      if (Array.isArray(data.tasks)) {
+        setCollabTasks(data.tasks);
+      } else {
+        setCollabTasks([]);
+      }
+    } catch {
+      setCollabTasks([]);
+    } finally {
+      setIsLoadingTasks(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (!selectedCollaborator?.email) {
       setDeals([]);
+      setCollabTasks([]);
       return;
     }
 
@@ -399,10 +432,15 @@ export function PresenceDock({ hidden = false }: { hidden?: boolean }) {
         if (isMounted) setIsLoadingDeals(false);
       });
 
+    const targetCollabId = selectedCollaborator.collaboratorId ?? selectedCollaborator.id;
+    if (targetCollabId) {
+      void fetchCollabTasks(targetCollabId);
+    }
+
     return () => {
       isMounted = false;
     };
-  }, [selectedCollaborator]);
+  }, [selectedCollaborator, fetchCollabTasks]);
 
   const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -410,13 +448,14 @@ export function PresenceDock({ hidden = false }: { hidden?: boolean }) {
 
     setIsSubmittingTask(true);
     try {
+      const targetCollabId = selectedCollaborator.collaboratorId ?? selectedCollaborator.id;
       const res = await fetch('/api/nexus/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           task: taskTitle.trim(),
           priority: taskPriority,
-          assigneeCollaboratorId: selectedCollaborator.collaboratorId ?? selectedCollaborator.id,
+          assigneeCollaboratorId: targetCollabId,
           details: `Asignado directamente desde Nexus Presence Roster a ${selectedCollaborator.name}`,
         }),
       });
@@ -424,6 +463,8 @@ export function PresenceDock({ hidden = false }: { hidden?: boolean }) {
       if (res.ok) {
         toast.success(`Tarea asignada a ${selectedCollaborator.name}`);
         setTaskTitle('');
+        if (targetCollabId) void fetchCollabTasks(targetCollabId);
+        window.dispatchEvent(new CustomEvent('nexus-tasks-updated'));
       } else {
         const err = (await res.json().catch(() => ({}))) as { error?: string };
         toast.error(`Error: ${err.error ?? 'No se pudo crear la tarea'}`);
@@ -766,7 +807,52 @@ export function PresenceDock({ hidden = false }: { hidden?: boolean }) {
                       </form>
                     </div>
 
-                    {/* 3. Associated Deals & Rooms */}
+                    {/* 3. Assigned Operative Tasks */}
+                    <div>
+                      <h4 className="text-[11px] font-mono font-bold uppercase tracking-wider text-white/60 mb-2.5 flex items-center justify-between">
+                        <span className="flex items-center gap-1.5">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                          Tareas Operativas Asignadas
+                        </span>
+                        <span className="text-[10px] text-white/40">{collabTasks.length} tareas</span>
+                      </h4>
+
+                      {isLoadingTasks ? (
+                        <div className="p-4 text-center text-xs text-white/40 flex items-center justify-center gap-2">
+                          <Loader2 className="w-4 h-4 animate-spin text-emerald-400" />
+                          <span>Cargando tareas asignadas...</span>
+                        </div>
+                      ) : collabTasks.length === 0 ? (
+                        <div className="p-4 text-center text-xs text-white/40 bg-white/[0.02] border border-white/5 rounded-xl">
+                          No hay tareas activas asignadas a este colaborador.
+                        </div>
+                      ) : (
+                        <div className="space-y-2 max-h-40 overflow-y-auto custom-scrollbar">
+                          {collabTasks.map((t) => (
+                            <div
+                              key={t.id}
+                              className="flex items-center justify-between p-2.5 rounded-xl bg-white/5 border border-white/5 hover:border-emerald-500/30 transition-all group"
+                            >
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs font-semibold text-white group-hover:text-emerald-300 transition-colors truncate">
+                                  {t.title}
+                                </p>
+                                <div className="flex items-center gap-2 text-[10px] text-white/40 mt-0.5">
+                                  <span className={`px-1.5 py-0.2 rounded font-mono text-[9px] ${
+                                    t.status === 'DONE' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'
+                                  }`}>
+                                    {t.status}
+                                  </span>
+                                  <span>Prioridad: {t.priority}</span>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 4. Associated Deals & Rooms */}
                     <div>
                       <h4 className="text-[11px] font-mono font-bold uppercase tracking-wider text-white/60 mb-2.5 flex items-center justify-between">
                         <span className="flex items-center gap-1.5">

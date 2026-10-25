@@ -13,9 +13,10 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
   try {
-    const isAdmin = await requireNexusAdmin(req);
-    if (!isAdmin) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 403 });
+    const { getNexusAuthContext } = await import('@saasfly/shared');
+    const auth = await getNexusAuthContext(req.headers);
+    if (!auth.isAuthenticated) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
     const email = req.nextUrl.searchParams.get('email');
@@ -33,10 +34,8 @@ export async function GET(req: NextRequest) {
 
     const signerRoomIds = signerRows.map((s) => s.roomId);
 
-    const { getNexusAuthContext } = await import('@saasfly/shared');
     const { and } = await import('@saasfly/db-core');
     const { nexusCollaborators } = await import('@saasfly/db/schema');
-    const auth = await getNexusAuthContext(req.headers);
     const orgId = auth.canonicalOrgId || 'pandoras';
 
     // Ensure target collaborator belongs to caller's canonicalOrgId

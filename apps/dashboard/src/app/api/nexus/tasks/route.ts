@@ -25,11 +25,16 @@ interface TaskRequestBody {
 export async function GET(request: Request) {
   try {
     const auth = await getNexusAuthContext(request.headers);
-    if (!auth.isAuthenticated || !auth.permissions.dealRoom) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    if (!auth.isAuthenticated) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     const orgId = auth.canonicalOrgId ?? 'pandoras';
-    const tasks = await getTasks(orgId);
+    
+    const url = new URL(request.url);
+    const assigneeParam = url.searchParams.get('assigneeCollaboratorId');
+    const assigneeId = assigneeParam ? parseInt(assigneeParam, 10) : undefined;
+
+    const tasks = await getTasks(orgId, typeof assigneeId === 'number' && !isNaN(assigneeId) ? assigneeId : undefined);
     return NextResponse.json({ tasks });
   } catch (err: unknown) {
     const error = err as Error;
@@ -41,8 +46,8 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const auth = await getNexusAuthContext(request.headers);
-    if (!auth.isAuthenticated || !auth.permissions.dealRoom) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    if (!auth.isAuthenticated) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const orgId = auth.canonicalOrgId ?? 'pandoras';
@@ -125,8 +130,8 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   try {
     const auth = await getNexusAuthContext(request.headers);
-    if (!auth.isAuthenticated || !auth.permissions.dealRoom) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    if (!auth.isAuthenticated) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const orgId = auth.canonicalOrgId ?? 'pandoras';
