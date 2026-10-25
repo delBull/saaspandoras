@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getNexusAuthContext } from '@saasfly/shared';
-import { db } from '@saasfly/db';
-import { nexusDirectMessages } from '@saasfly/db/schema';
-import { eq, and, or, asc } from '@saasfly/db-core';
+import { db, nexusDirectMessages, eq, and, or, asc, desc, sql } from '@saasfly/db-core';
+import type { NexusDirectMessage } from '@saasfly/db-core';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -26,15 +25,60 @@ export async function GET(req: Request) {
 
     const { searchParams } = new URL(req.url);
     const targetEmail = searchParams.get('targetEmail')?.toLowerCase().trim();
-
-    if (!targetEmail) {
-      return NextResponse.json({ error: 'targetEmail query parameter is required' }, { status: 400 });
-    }
+    const isUnreadQuery = searchParams.get('unread') === 'true';
 
     const myEmail = auth.email.toLowerCase().trim();
     const orgId = auth.canonicalOrgId ?? 'pandoras';
 
+    if (isUnreadQuery || !targetEmail) {
+      try {
+        const unreadMessages = await db
+          .select()
+          .from(nexusDirectMessages)
+          .where(
+            and(
+              eq(nexusDirectMessages.canonicalOrgId, orgId),
+              eq(nexusDirectMessages.receiverEmail, myEmail),
+              sql`${nexusDirectMessages.readAt} IS NULL`
+            )
+          )
+          .orderBy(desc(nexusDirectMessages.createdAt))
+          .limit(50);
+
+        return NextResponse.json({
+          ok: true,
+          myEmail,
+          unreadCount: unreadMessages.length,
+          messages: unreadMessages,
+        });
+      } catch (dbErr: unknown) {
+        const err = dbErr as { message?: string; cause?: { message?: string } };
+        const errorMessage = err?.message ?? '';
+        const causeMessage = err?.cause?.message ?? '';
+        if (
+          /relation "?nexus_direct_messages"? does not exist|undefined_table|_nexus_direct_messages/.test(errorMessage) ||
+          /relation "?nexus_direct_messages"? does not exist|undefined_table|_nexus_direct_messages/.test(causeMessage)
+        ) {
+          return NextResponse.json({ ok: true, myEmail, unreadCount: 0, messages: [] });
+        }
+        throw dbErr;
+      }
+    }
+
     try {
+      // Mark messages from targetEmail as read for myEmail
+      db.update(nexusDirectMessages)
+        .set({ readAt: new Date() })
+        .where(
+          and(
+            eq(nexusDirectMessages.canonicalOrgId, orgId),
+            eq(nexusDirectMessages.receiverEmail, myEmail),
+            eq(nexusDirectMessages.senderEmail, targetEmail),
+            sql`${nexusDirectMessages.readAt} IS NULL`
+          )
+        )
+        .catch(() => undefined);
+
       // Fetch messages exchanged between myEmail and targetEmail
       const messages = await db
         .select()
@@ -117,7 +161,7 @@ export async function POST(req: Request) {
     const orgId = auth.canonicalOrgId ?? 'pandoras';
 
     try {
-      const inserted = await db
+      const inserted: NexusDirectMessage[] = await db
         .insert(nexusDirectMessages)
         .values({
           canonicalOrgId: orgId,

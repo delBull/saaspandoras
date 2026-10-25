@@ -88,10 +88,83 @@ export function PresenceDock({ hidden = false }: { hidden?: boolean }) {
   const [isSendingMessage, setIsSendingMessage] = useState(false);
   const [isLoadingChat, setIsLoadingChat] = useState(false);
   const [myEmail, setMyEmail] = useState<string>('');
+  const [unreadMap, setUnreadMap] = useState<Record<string, number>>({});
+  const totalUnreadCount = Object.values(unreadMap).reduce((a, b) => a + b, 0);
+  const notifiedMessageIdsRef = useRef<Set<string>>(new Set());
   const chatMessagesEndRef = useRef<HTMLDivElement>(null);
 
   const rosterRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
+
+  // Poll / fetch unread incoming messages every 8s for live in-app notifications
+  useEffect(() => {
+    let isMounted = true;
+    const checkUnread = async () => {
+      try {
+        const res = await fetch('/api/nexus/chat?unread=true');
+        if (res.ok) {
+          const data = (await res.json().catch(() => ({}))) as {
+            ok?: boolean;
+            messages?: ChatMessage[];
+            myEmail?: string;
+          };
+          if (isMounted && data.ok) {
+            if (data.myEmail) setMyEmail(data.myEmail);
+            const messages = Array.isArray(data.messages) ? data.messages : [];
+            const newMap: Record<string, number> = {};
+            messages.forEach((msg) => {
+              const sender = msg.senderEmail.toLowerCase().trim();
+              newMap[sender] = (newMap[sender] ?? 0) + 1;
+
+              // Disparar toast de notificación in-app si no se ha notificado antes y no tenemos su chat abierto
+              if (!notifiedMessageIdsRef.current.has(msg.id)) {
+                notifiedMessageIdsRef.current.add(msg.id);
+                if (selectedCollaborator?.email.toLowerCase() !== sender) {
+                  toast(
+                    <div className="flex flex-col gap-0.5">
+                      <div className="flex items-center gap-1.5 font-bold text-amber-400 text-xs">
+                        <MessageSquare className="w-3.5 h-3.5" />
+                        <span>Mensaje de {msg.senderName || sender.split('@')[0]}</span>
+                      </div>
+                      <p className="text-xs text-zinc-300 line-clamp-2">{msg.content}</p>
+                    </div>,
+                    {
+                      duration: 5000,
+                      action: {
+                        label: 'Responder',
+                        onClick: () => {
+                          const collab = presenceList.find(
+                            (c) => c.email.toLowerCase().trim() === sender
+                          );
+                          if (collab) {
+                            setSelectedCollaborator(collab);
+                            setModalTab('CHAT');
+                          }
+                        },
+                      },
+                    }
+                  );
+                }
+              }
+            });
+            setUnreadMap(newMap);
+          }
+        }
+      } catch (err) {
+        console.warn('[ChatNotificationCheck]', err);
+      }
+    };
+
+    void checkUnread();
+    const unreadInterval = setInterval(() => {
+      void checkUnread();
+    }, 8000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(unreadInterval);
+    };
+  }, [presenceList, selectedCollaborator]);
 
   // Poll / fetch internal direct chat messages when collaborator is selected
   useEffect(() => {
@@ -116,6 +189,14 @@ export function PresenceDock({ hidden = false }: { hidden?: boolean }) {
             if (data.myEmail) setMyEmail(data.myEmail);
             if (Array.isArray(data.messages)) {
               setChatMessages(data.messages);
+              // Clear unread count for this selected collaborator
+              const targetKey = selectedCollaborator.email.toLowerCase().trim();
+              setUnreadMap((prev) => {
+                if (!prev[targetKey]) return prev;
+                const next = { ...prev };
+                delete next[targetKey];
+                return next;
+              });
             }
           }
         }
@@ -203,19 +284,23 @@ export function PresenceDock({ hidden = false }: { hidden?: boolean }) {
         if (res.ok) {
           const data = (await res.json().catch(() => ({}))) as { presence?: RawPresenceItem[] };
           if (mounted && Array.isArray(data.presence)) {
-            setPresenceList(data.presence.map((p: RawPresenceItem) => ({
-              id: p.id,
-              collaboratorId: p.collaboratorId,
-              name: p.name ?? p.email?.split('@')[0] ?? 'Unknown',
-              email: p.email ?? '',
-              role: p.role ?? 'COLLABORATOR',
-              status: p.status ?? 'ONLINE',
-              context: p.context,
-              preferredChannel: p.preferredChannel ?? 'NEXUS_CHAT',
-              whatsappPhone: p.whatsappPhone ?? null,
-              telegramUsername: p.telegramUsername ?? null,
-              image: p.image ?? null,
-            })));
+            setPresenceList(data.presence.map((p: RawPresenceItem) => {
+              const rawName = p.name ?? p.email?.split('@')[0] ?? 'Unknown';
+              const cleanName = rawName.replace(/\s*\((?:boss|jefe)\)\s*$/i, '').trim();
+              return {
+                id: p.id,
+                collaboratorId: p.collaboratorId,
+                name: cleanName || rawName,
+                email: p.email ?? '',
+                role: p.role ?? 'COLLABORATOR',
+                status: p.status ?? 'ONLINE',
+                context: p.context,
+                preferredChannel: p.preferredChannel ?? 'NEXUS_CHAT',
+                whatsappPhone: p.whatsappPhone ?? null,
+                telegramUsername: p.telegramUsername ?? null,
+                image: p.image ?? null,
+              };
+            }));
           }
         }
       } catch (err) {
@@ -410,7 +495,14 @@ export function PresenceDock({ hidden = false }: { hidden?: boolean }) {
         <div className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-[#121218] ${getStatusColor(p.status)}`} />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-xs font-semibold text-white truncate group-hover:text-amber-400 transition-colors">{p.name}</p>
+        <div className="flex items-center gap-1.5">
+          <p className="text-xs font-semibold text-white truncate group-hover:text-amber-400 transition-colors">{p.name}</p>
+          {(unreadMap[p.email.toLowerCase().trim()] ?? 0) > 0 && (
+            <span className="px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-amber-500 text-black animate-pulse">
+              {unreadMap[p.email.toLowerCase().trim()]}
+            </span>
+          )}
+        </div>
         <p className="text-[11px] text-white/50 truncate">
           {p.context ? p.context : getStatusText(p.status)}
         </p>
@@ -824,10 +916,16 @@ export function PresenceDock({ hidden = false }: { hidden?: boolean }) {
             )}
           </div>
 
-          {/* Online status text */}
+          {/* Online status text & Unread Chat badge */}
           <div className="flex items-center gap-1.5 font-mono text-[11px] text-white/80 font-medium">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             <span>{online.length > 0 ? `${online.length} en línea` : 'Roster'}</span>
+            {totalUnreadCount > 0 && (
+              <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-black flex items-center gap-1 shadow-lg shadow-amber-500/20 animate-bounce">
+                <MessageSquare className="w-2.5 h-2.5" />
+                <span>{totalUnreadCount}</span>
+              </span>
+            )}
           </div>
         </button>
       </div>

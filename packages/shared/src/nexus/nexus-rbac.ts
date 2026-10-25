@@ -378,10 +378,19 @@ export async function getNexusAuthContext(
               .where(eq(nexusCollaborators.email, candidate))
               .limit(1);
             if (collab) {
-              name = name ?? collab.name;
+              const cleanCollabName = collab.name?.replace(/\s*\((?:boss|jefe)\)\s*$/i, '').trim();
+              name = name ?? cleanCollabName ?? collab.name;
               email = email ?? collab.email;
               collaboratorId = collab.id;
               whatsappPhone = whatsappPhone ?? collab.whatsappPhone;
+
+              // Self-heal: If database record had '(Boss)' in collaborator name, update it cleanly
+              if (collab.name && /\s*\((?:boss|jefe)\)\s*$/i.test(collab.name)) {
+                db.update(nexusCollaborators)
+                  .set({ name: cleanCollabName || 'Marco Muñoz' })
+                  .where(eq(nexusCollaborators.id, collab.id))
+                  .catch(() => undefined);
+              }
               break;
             }
           } catch (collabErr) {
@@ -397,12 +406,14 @@ export async function getNexusAuthContext(
             .catch(() => undefined);
         }
 
+        const effectiveCleanName = (name ?? process.env.ADMIN_NAME ?? 'Marco Muñoz').replace(/\s*\((?:boss|jefe)\)\s*$/i, '').trim();
+
         return {
           isAuthenticated: true,
           role: 'SUPER_ADMIN',
           wallet: sessionWallet,
           email: email ?? process.env.ADMIN_EMAIL ?? 'admin@pandoras.finance',
-          name: name ?? process.env.ADMIN_NAME ?? 'Admin',
+          name: effectiveCleanName || 'Marco Muñoz',
           image,
           whatsappPhone: whatsappPhone ?? process.env.ADMIN_WHATSAPP_PHONE ?? null,
           collaboratorId,

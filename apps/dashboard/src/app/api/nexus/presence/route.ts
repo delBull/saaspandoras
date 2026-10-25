@@ -38,12 +38,12 @@ export async function GET() {
         context: nexusPresence.context,
         preferredChannel: nexusPresence.preferredChannel,
         lastSeenAt: nexusPresence.lastSeenAt,
-        name: nexusCollaborators.name,
+        name: sql<string>`TRIM(REGEXP_REPLACE(${nexusCollaborators.name}, '\\s*\\(boss\\)\\s*$', '', 'i'))`,
         email: nexusCollaborators.email,
         role: nexusCollaborators.role,
         whatsappPhone: nexusCollaborators.whatsappPhone,
         telegramUsername: nexusCollaborators.telegramUsername,
-        image: users.image,
+        image: sql<string | null>`COALESCE(${users.image}, (SELECT image FROM users WHERE LOWER(email) = LOWER(${nexusCollaborators.email}) AND image IS NOT NULL LIMIT 1), (CASE WHEN ${nexusCollaborators.role} IN ('SUPER_ADMIN', 'ADMIN') THEN (SELECT image FROM users WHERE role = 'super_admin' AND image IS NOT NULL LIMIT 1) ELSE NULL END))`,
       })
       .from(nexusPresence)
       .innerJoin(nexusCollaborators, eq(nexusPresence.collaboratorId, nexusCollaborators.id))
