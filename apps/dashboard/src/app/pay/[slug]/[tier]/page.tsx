@@ -27,11 +27,11 @@ export default async function CheckoutHubPage({
 
     // 🧭 Strict Tier Resolution: Resolve the phase and its active status.
     // Using centralized getRawPhases to support both V1 and V2 (artifact-based) projects.
-    const phases = getRawPhases(project);
+    const phases: Phase[] = getRawPhases(project) as Phase[];
 
     // Fetch current supply to accurately determine phase statuses
     let currentSupply = 0;
-    const resolvedContract = project.licenseContractAddress || project.contractAddress;
+    const resolvedContract = project.licenseContractAddress ?? project.contractAddress;
 
     if (resolvedContract && resolvedContract !== "0x0000000000000000000000000000000000000000") {
         try {
@@ -41,8 +41,8 @@ export default async function CheckoutHubPage({
 
             const contract = thirdweb.getContract({
                 client: twClient,
-                chain: defineChain(Number(project.chainId || 137)),
-                address: resolvedContract as any
+                chain: defineChain(Number(project.chainId ?? 137)),
+                address: resolvedContract as `0x${string}`
             });
 
             // Race against a 5s timeout so Vercel cold starts don't crash the page
@@ -57,8 +57,8 @@ export default async function CheckoutHubPage({
                 ),
             ]).catch(() => 0n);
 
-            currentSupply = (rawSupply as bigint) > BigInt(1e12)
-                ? Number((rawSupply as bigint) / BigInt(1e18))
+            currentSupply = rawSupply > BigInt(1e12)
+                ? Number(rawSupply / BigInt(1e18))
                 : Number(rawSupply);
         } catch (e) {
             console.warn("[CheckoutHub] Failed to fetch on-chain supply for phase resolution", e);
@@ -69,12 +69,12 @@ export default async function CheckoutHubPage({
     const { calculatePhaseStatus } = await import("@saasfly/shared");
 
     let accumulated = 0;
-    let foundActive = null;
-    let lastSoldOut = null;
+    let foundActive: Phase | null = null;
+    let lastSoldOut: Phase | null = null;
     const phasesWithStatus = [];
 
     for (const p of phases) {
-        const statusData = calculatePhaseStatus(p as any, currentSupply, accumulated);
+        const statusData = calculatePhaseStatus(p, currentSupply, accumulated);
         phasesWithStatus.push({
             phase: p,
             statusData
@@ -85,12 +85,12 @@ export default async function CheckoutHubPage({
         if (statusData.status === 'sold_out') {
             lastSoldOut = p;
         }
-        accumulated += Number(p.tokenAllocation || 0);
+        accumulated += Number(p.tokenAllocation ?? 0);
     }
 
     // Find the requested phase using the resilient matchPhase helper
-    let resolvedMatch = matchPhase(phases, tier);
-    let activePhase = null;
+    const resolvedMatch = matchPhase(phases, tier) as Phase | null;
+    let activePhase: Phase | null = null;
 
     if (resolvedMatch) {
         // Retrieve calculated status for the matched phase
@@ -110,7 +110,7 @@ export default async function CheckoutHubPage({
         console.log(`🧭 [CheckoutHub] Resilient dynamic resolution for "${tier}".`);
 
         // Strict resolution: Active > Last Sold Out > Last Phase (if upcoming)
-        const resolvedFallback = foundActive || lastSoldOut || phases[phases.length - 1];
+        const resolvedFallback: Phase | undefined = foundActive ?? lastSoldOut ?? phases[phases.length - 1];
         
         if (resolvedFallback) {
             activePhase = resolvedFallback;
