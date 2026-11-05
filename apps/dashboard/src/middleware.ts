@@ -345,7 +345,8 @@ export function middleware(request: NextRequest) {
       "frame-src 'self' https://telegram.org https://vercel.live https://*.thirdweb.com https://verify.walletconnect.org https://*.walletconnect.org https://8x8.vc https://*.8x8.vc",
       "base-uri 'self'",
       "form-action 'self'",
-      "frame-ancestors 'none'",
+      // Sin `frame-ancestors` global: /pay y /schedule son embebibles por diseño
+      // (el middleware exceptúa su X-Frame-Options: DENY).
       "worker-src 'self' blob:",
       "manifest-src 'self'",
       "upgrade-insecure-requests",

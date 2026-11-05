@@ -186,8 +186,10 @@ const nextConfig = {
               "object-src 'none'",
               "base-uri 'self'",
               "form-action 'self'",
-              // Coincide con el X-Frame-Options: DENY del middleware (defensa en profundidad).
-              "frame-ancestors 'none'",
+              // NO se declara `frame-ancestors` aquí a propósito: el middleware aplica
+              // `X-Frame-Options: DENY` en todas las rutas EXCEPTO /pay y /schedule
+              // (widgets embebibles). Un frame-ancestors global (aunque sea 'self')
+              // anularía esa excepción en navegadores modernos y rompería los embeds.
               "worker-src 'self' blob:",
               "manifest-src 'self'",
               "upgrade-insecure-requests",
