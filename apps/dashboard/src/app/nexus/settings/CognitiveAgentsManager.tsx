@@ -20,10 +20,9 @@ export function CognitiveAgentsManager({ canManage = true }: { canManage?: boole
   const [copied, setCopied] = useState(false);
 
   const getAuthHeaders = (): HeadersInit => {
-    const token = typeof window !== "undefined" ? localStorage.getItem("pandoras_nexus_token") : null;
-    return token
-      ? { "Content-Type": "application/json", "x-nexus-token": token, Authorization: `Bearer ${token}` }
-      : { "Content-Type": "application/json" };
+    // La sesión vive en una cookie httpOnly que el navegador envía sola.
+    // Nunca se adjunta un token desde JS (no hay ninguno accesible).
+    return { "Content-Type": "application/json" };
   };
 
   const loadAgents = async () => {

@@ -1,3 +1,4 @@
+import { validateAdminSession } from '@/lib/admin-auth';
 import { requireEnvUrl } from '@/lib/env-utils';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
@@ -5,6 +6,9 @@ import type { NextRequest } from 'next/server';
 const API_URL = requireEnvUrl(process.env.NEXT_PUBLIC_API_URL, 'NEXT_PUBLIC_API_URL', 'http://localhost:8080');
 
 export async function GET(request: NextRequest) {
+    // 🛡️ Autorización propia (el middleware sólo verifica presencia de cookie).
+    const { errorResponse } = await validateAdminSession(request.headers);
+    if (errorResponse) return errorResponse;
     try {
         const response = await fetch(`${API_URL}/tenants`, {
             headers: {
@@ -21,6 +25,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+    // 🛡️ Autorización propia (el middleware sólo verifica presencia de cookie).
+    const { errorResponse } = await validateAdminSession(request.headers);
+    if (errorResponse) return errorResponse;
     try {
         const body = await request.json();
         

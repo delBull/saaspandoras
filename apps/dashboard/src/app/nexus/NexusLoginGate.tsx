@@ -2,40 +2,61 @@
 
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Shield, Lock, Mail, ArrowRight, Wallet, CheckCircle2, AlertCircle, ChevronDown, MessageCircle } from "lucide-react";
+import { Shield, Lock, Mail, Wallet, CheckCircle2, AlertCircle, ChevronDown, MessageCircle } from "lucide-react";
 import { ConnectButton } from "thirdweb/react";
 import { client } from "@saasfly/shared/thirdweb-client";
+import {
+  NEXUS_DEFAULT_PHONE_COUNTRY_CODE,
+  describePhoneFailure,
+  normalizePhoneE164,
+} from "@saasfly/shared/nexus-phone";
 import { wallets } from "@/lib/wallets";
 import { config } from "@/config";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useRouter } from "next/navigation";
-
-// Helper: preserves a magic-link ?token= across same-origin fetches (the register
-// route authenticates token-based sessions via its own ?token= param).
-function sessionTokenQuery(): string {
-  if (typeof window === 'undefined') return '';
-  const token = new URLSearchParams(window.location.search).get('token');
-  return token ? `?token=${encodeURIComponent(token)}` : '';
-}
+import {
+  NEXUS_TOKEN_STORAGE_KEY,
+  exchangeNexusSession,
+  readNexusTokenFromUrl,
+  scrubNexusTokenFromUrl,
+} from "@/lib/nexus/session-client";
 
 interface NexusLoginGateProps {
   requireCompletion?: boolean;
-  initialAuth?: { address: string | null; email: string | null } | null;
+  initialAuth?: { address: string | null; email: string | null; whatsappPhone?: string | null } | null;
 }
 
-// E.164: permite + opcional, luego dígitos. Mínimo 7 dígitos tras quitar caracteres de formato.
-const E164_REGEX = /^\+?[1-9]\d{6,14}$/;
-function normalizePhone(raw: string): string {
-  return raw.replace(/[\s\-().]/g, '');
+const PHONE_OPTIONS = { defaultCountryCode: NEXUS_DEFAULT_PHONE_COUNTRY_CODE };
+
+interface NexusApiResult {
+  ok: boolean;
+  error: string | null;
 }
-function isValidPhone(raw: string): boolean {
-  return E164_REGEX.test(normalizePhone(raw));
+
+async function readApiResult(res: Response): Promise<NexusApiResult> {
+  let payload: unknown = null;
+  try {
+    payload = await res.json();
+  } catch {
+    payload = null;
+  }
+  const record =
+    payload !== null && typeof payload === "object" ? (payload as Record<string, unknown>) : {};
+  return {
+    ok: record.ok === true,
+    error: typeof record.error === "string" ? record.error : null,
+  };
+}
+
+function describeError(error: unknown, fallback: string): string {
+  return error instanceof Error && error.message ? error.message : fallback;
 }
 
 export function NexusLoginGate({ requireCompletion = false, initialAuth = null }: NexusLoginGateProps) {
   const [name, setName] = useState("");
-  const [email, setEmail] = useState(initialAuth?.email || "");
-  const [whatsappPhone, setWhatsappPhone] = useState("");
+  const [email, setEmail] = useState(initialAuth?.email ?? "");
+  // Prellenar el teléfono ya guardado evita que un re-registro lo borre.
+  const [whatsappPhone, setWhatsappPhone] = useState(initialAuth?.whatsappPhone ?? "");
   const [phoneError, setPhoneError] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ type: "success" | "error"; message: string } | null>(null);
@@ -44,56 +65,126 @@ export function NexusLoginGate({ requireCompletion = false, initialAuth = null }
   const { user, status } = useAuth();
   const router = useRouter();
 
-  // Auto-rehidratación simétrica: Si el usuario vuelve a /nexus desde otra subpágina,
-  // restaurar la sesión desde localStorage y sincronizar la cookie para entrar al Command Center
-  useEffect(() => {
-    try {
-      if (typeof window === "undefined") return;
-      const urlToken = new URLSearchParams(window.location.search).get("token");
-      const savedToken = localStorage.getItem("pandoras_nexus_token");
-      const tokenToUse = urlToken || savedToken;
+  // Interpretación visible del teléfono: si el número no trae código de país se
+  // asume México, y el operador VE el valor exacto que se va a guardar antes de
+  // enviarlo. Nada se reescribe de forma silenciosa.
+  const storedPhone = initialAuth?.whatsappPhone ?? "";
+  // Borrar el número es una acción explícita: sólo si había uno guardado y el
+  // operador vació el campo. Se declara en el payload y se avisa en pantalla.
+  const willClearStoredPhone = Boolean(storedPhone.trim()) && !whatsappPhone.trim();
+  const phonePreview = whatsappPhone.trim()
+    ? normalizePhoneE164(whatsappPhone, PHONE_OPTIONS)
+    : null;
+  const phoneHint = willClearStoredPhone
+    ? "Se eliminará el número de WhatsApp guardado al actualizar el registro."
+    : phonePreview
+      ? phonePreview.ok
+        ? phonePreview.assumedCountryCode
+          ? `Se guardará como ${phonePreview.value} (se asumió +${phonePreview.assumedCountryCode}; escribe +código si es otro país).`
+          : `Se guardará como ${phonePreview.value}.`
+        : describePhoneFailure(phonePreview.reason, PHONE_OPTIONS)
+      : null;
 
-      if (tokenToUse) {
-        document.cookie = `pandoras_nexus_token=${encodeURIComponent(tokenToUse)}; path=/; max-age=2592000; SameSite=Lax`;
-        if (!urlToken && !requireCompletion) {
-          window.location.replace(`/nexus?token=${encodeURIComponent(tokenToUse)}`);
-        }
-      }
-    } catch (e) {
-      console.warn("[NexusLoginGate] Auto-rehydration warning:", e);
-    }
-  }, [requireCompletion]);
-
+  // Canje del magic link por sesión: se hace UNA vez, con POST, y el token queda
+  // quemado en la base. A partir de aquí la credencial vive en una cookie httpOnly
+  // que JavaScript no puede leer (y por eso tampoco puede filtrar).
   useEffect(() => {
-    async function handleWeb3Registration() {
-      if (user && (status === "has_access" || status === "authenticated") && !requireCompletion && !hasRefreshed) {
-        setHasRefreshed(true);
-        // Interceptar login web3 para registrar datos obligatorios
-        if (name && email && whatsappPhone && user.address) {
-          try {
-            await fetch(`/api/nexus/collaborators/register${sessionTokenQuery()}`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ address: user.address, name, email, whatsappPhone }),
-            });
-          } catch (e) {
-            console.error("Failed to register Web3 user", e);
+    if (typeof window === "undefined") return;
+    let cancelled = false;
+
+    const bootstrap = async () => {
+      const urlToken = readNexusTokenFromUrl();
+      const storedToken = localStorage.getItem(NEXUS_TOKEN_STORAGE_KEY);
+      const token = urlToken ?? storedToken;
+
+      if (token) {
+        const established = await exchangeNexusSession(token);
+        if (cancelled) return;
+        if (established) {
+          // La copia en localStorage ya no es una credencial válida.
+          localStorage.removeItem(NEXUS_TOKEN_STORAGE_KEY);
+          if (urlToken) scrubNexusTokenFromUrl();
+          // Sin token en la URL el servidor renderizó esta página como no
+          // autenticada: hace falta un render nuevo. El token ya se borró de
+          // localStorage, así que no hay bucle posible.
+          if (!urlToken && !requireCompletion) {
+            window.location.replace("/nexus");
           }
         }
+      }
+    };
+
+    void bootstrap();
+    return () => {
+      cancelled = true;
+    };
+  }, [requireCompletion]);
+
+  // Registro automático al conectar wallet: NO es un camino silencioso. Si el
+  // servidor rechaza la petición, el operador ve el motivo en vez de un refresh
+  // que parece exitoso.
+  useEffect(() => {
+    async function handleWeb3Registration() {
+      if (!user || (status !== "has_access" && status !== "authenticated")) return;
+      if (requireCompletion || hasRefreshed) return;
+      setHasRefreshed(true);
+
+      if (!name || !email || !user.address) {
         router.refresh();
+        return;
+      }
+
+      let normalizedPhone: string | null = null;
+      if (whatsappPhone.trim()) {
+        const normalized = normalizePhoneE164(whatsappPhone, PHONE_OPTIONS);
+        if (!normalized.ok) {
+          setPhoneError(describePhoneFailure(normalized.reason, PHONE_OPTIONS));
+          return;
+        }
+        normalizedPhone = normalized.value;
+      }
+
+      try {
+        const res = await fetch("/api/nexus/collaborators/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: name.trim(),
+            email: email.trim(),
+            whatsappPhone: normalizedPhone,
+          }),
+        });
+        const data = await readApiResult(res);
+        if (!res.ok || !data.ok) {
+          setResult({
+            type: "error",
+            message: data.error ?? "No se pudo completar el registro automático de la wallet.",
+          });
+          return;
+        }
+        router.refresh();
+      } catch (error: unknown) {
+        setResult({
+          type: "error",
+          message: describeError(error, "Error de conexión al registrar tu wallet."),
+        });
       }
     }
-    handleWeb3Registration();
+    void handleWeb3Registration();
   }, [user, status, router, name, email, whatsappPhone, requireCompletion, hasRefreshed]);
 
   const handleRequestMagicLink = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
 
-    const cleanPhone = whatsappPhone.trim();
-    if (cleanPhone && !isValidPhone(cleanPhone)) {
-      setPhoneError('Ingresa un número válido con código de país (ej. +521234567890).');
-      return;
+    let normalizedPhone: string | undefined;
+    if (whatsappPhone.trim()) {
+      const normalized = normalizePhoneE164(whatsappPhone, PHONE_OPTIONS);
+      if (!normalized.ok) {
+        setPhoneError(describePhoneFailure(normalized.reason, PHONE_OPTIONS));
+        return;
+      }
+      normalizedPhone = normalized.value;
     }
     setPhoneError('');
     setLoading(true);
@@ -106,15 +197,17 @@ export function NexusLoginGate({ requireCompletion = false, initialAuth = null }
         body: JSON.stringify({
           name: name.trim() || undefined,
           email: email.trim(),
-          whatsappPhone: cleanPhone ? normalizePhone(cleanPhone) : undefined,
+          whatsappPhone: normalizedPhone,
         }),
       });
 
-      const data = await res.json();
+      const data = await readApiResult(res);
       if (res.ok && data.ok) {
         setResult({
           type: "success",
-          message: `Enlace de acceso soberano enviado a ${email}. Revisa tu bandeja de entrada.`,
+          // Copy condicional: la respuesta del servidor es idéntica exista o no el
+          // colaborador (anti-enumeración), así que no se afirma que se envió.
+          message: `Si ${email.trim()} está registrado como colaborador, recibirás un enlace de acceso.`,
         });
         setEmail("");
         setWhatsappPhone("");
@@ -122,13 +215,13 @@ export function NexusLoginGate({ requireCompletion = false, initialAuth = null }
       } else {
         setResult({
           type: "error",
-          message: data.error || "No se pudo generar el enlace de acceso.",
+          message: data.error ?? "No se pudo generar el enlace de acceso.",
         });
       }
-    } catch (err: any) {
+    } catch (error: unknown) {
       setResult({
         type: "error",
-        message: err.message || "Error de conexión al solicitar el acceso.",
+        message: describeError(error, "Error de conexión al solicitar el acceso."),
       });
     } finally {
       setLoading(false);
@@ -137,26 +230,36 @@ export function NexusLoginGate({ requireCompletion = false, initialAuth = null }
 
   const handleUpdateRegistration = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !email || !whatsappPhone) return;
+    if (!name || !email) return;
 
-    // Validación E.164 en cliente antes de llamar al server
-    if (!isValidPhone(whatsappPhone)) {
-      setPhoneError('Ingresa un número válido con código de país (ej. +521234567890).');
-      return;
+    let formattedPhone: string | null = null;
+    if (whatsappPhone.trim()) {
+      const normalized = normalizePhoneE164(whatsappPhone, PHONE_OPTIONS);
+      if (!normalized.ok) {
+        setPhoneError(describePhoneFailure(normalized.reason, PHONE_OPTIONS));
+        return;
+      }
+      formattedPhone = normalized.value;
     }
     setPhoneError('');
     setLoading(true);
     setResult(null);
 
     try {
-      const address = initialAuth?.address || (user?.address) || '0x0000000000000000000000000000000000000000';
-      const res = await fetch(`/api/nexus/collaborators/register${sessionTokenQuery()}`, {
+      // La billetera autoritativa la resuelve el servidor desde la sesión
+      // (`auth.wallet`); jamás se envía ni se fabrica una dirección desde el cliente.
+      const res = await fetch("/api/nexus/collaborators/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ address, name, email, whatsappPhone: normalizePhone(whatsappPhone) }),
+        body: JSON.stringify({
+          name: name.trim(),
+          email: email.trim(),
+          whatsappPhone: formattedPhone,
+          clearWhatsappPhone: willClearStoredPhone,
+        }),
       });
 
-      const data = await res.json();
+      const data = await readApiResult(res);
       if (res.ok && data.ok) {
         setResult({
           type: "success",
@@ -165,27 +268,23 @@ export function NexusLoginGate({ requireCompletion = false, initialAuth = null }
         // Hard navigation (full server render) instead of router.refresh():
         // guarantees NexusRootPage re-resolves auth fresh so the completion gate
         // actually clears (wallet/SUPER_ADMIN sessions previously looped forever).
-        const token = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '').get('token') 
-          || (typeof window !== 'undefined' ? localStorage.getItem('pandoras_nexus_token') : null);
-        if (token && typeof document !== 'undefined') {
-          document.cookie = `pandoras_nexus_token=${encodeURIComponent(token)}; path=/; max-age=2592000; SameSite=Lax`;
-        }
+        // La cookie ya la sincronizó el effect de hidratación; la URL de destino va
+        // limpia para no dejar el bearer en la barra de direcciones.
         setTimeout(() => {
-          const target = '/nexus' + (token ? `?token=${encodeURIComponent(token)}` : '');
-          if (typeof window !== 'undefined') {
-            window.location.assign(target);
+          if (typeof window !== "undefined") {
+            window.location.assign("/nexus");
           }
         }, 1200);
       } else {
         setResult({
           type: "error",
-          message: data.error || "Error al actualizar registro.",
+          message: data.error ?? "Error al actualizar registro.",
         });
       }
-    } catch (err: any) {
+    } catch (error: unknown) {
       setResult({
         type: "error",
-        message: err.message || "Error de conexión al guardar el registro.",
+        message: describeError(error, "Error de conexión al guardar el registro."),
       });
     } finally {
       setLoading(false);
@@ -262,13 +361,23 @@ export function NexusLoginGate({ requireCompletion = false, initialAuth = null }
                   type="tel"
                   value={whatsappPhone}
                   onChange={(e) => { setWhatsappPhone(e.target.value); setPhoneError(''); }}
-                  placeholder="+5215551234567 (WhatsApp - opcional)"
+                  placeholder="WhatsApp opcional (ej. +52 1 55 1234 5678)"
                   className={`w-full bg-zinc-900/80 border rounded-xl px-4 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none transition-colors ${
                     phoneError ? 'border-rose-500/60 focus:border-rose-500' : 'border-zinc-700/80 focus:border-amber-500/50'
                   }`}
                 />
-                {phoneError && (
-                  <p className="text-[10px] text-rose-400 font-mono pl-1">{phoneError}</p>
+                {(phoneError || phoneHint) && (
+                  <p
+                    className={`text-[10px] font-mono pl-1 ${
+                      phoneError || (phonePreview && !phonePreview.ok)
+                        ? "text-rose-400"
+                        : willClearStoredPhone
+                          ? "text-amber-400"
+                          : "text-zinc-500"
+                    }`}
+                  >
+                    {phoneError || phoneHint}
+                  </p>
                 )}
               </div>
               <button
@@ -349,8 +458,18 @@ export function NexusLoginGate({ requireCompletion = false, initialAuth = null }
                       phoneError ? 'border-rose-500/60 focus:border-rose-500' : 'border-zinc-700/80 focus:border-amber-500/50'
                     }`}
                   />
-                  {phoneError && (
-                    <p className="text-[10px] text-rose-400 font-mono pl-1">{phoneError}</p>
+                  {(phoneError || phoneHint) && (
+                    <p
+                      className={`text-[10px] font-mono pl-1 ${
+                        phoneError || (phonePreview && !phonePreview.ok)
+                          ? "text-rose-400"
+                          : willClearStoredPhone
+                            ? "text-amber-400"
+                            : "text-zinc-500"
+                      }`}
+                    >
+                      {phoneError || phoneHint}
+                    </p>
                   )}
                 </div>
                 <button

@@ -274,6 +274,7 @@ export * from './knowledge/portal-read-adapter';
 export * from './knowledge/registry-manifest';
 export * from './knowledge/registry';
 export * from './knowledge/service';
+export * from './knowledge/source-knowledge-projection';
 export * from './knowledge/vault-authorization-gate';
 export * from './knowledge-pack';
 export * from './marketplace/marketplace-api';

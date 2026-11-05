@@ -16,7 +16,14 @@ import { notifyProvisioningRequest } from '@/lib/nexus/provisioning';
 import { db } from '@saasfly/db';
 import { marketingLeads } from '@saasfly/db/schema';
 import { eq } from "@saasfly/db-core";
+import {
+  NEXUS_DEFAULT_PHONE_COUNTRY_CODE,
+  describePhoneFailure,
+  normalizePhoneE164,
+} from '@saasfly/shared/nexus-phone';
 import { authRateLimiter, getTrustedClientIp } from '@saasfly/shared';
+
+const PHONE_OPTIONS = { defaultCountryCode: NEXUS_DEFAULT_PHONE_COUNTRY_CODE };
 
 function isAllowedOrigin(origin: string | null): boolean {
   if (!origin) return false;
@@ -107,12 +114,14 @@ export async function POST(req: NextRequest) {
     const isAdminCaller = await requireNexusAdmin(req);
     const isAdminTarget = isNexusAdminEmail(cleanEmail);
 
-    // API Gate Hardening: Only admins can provision NEW collaborators via this endpoint.
-    // Non-admins can only request a magic link for an EXISTING collaborator.
+    // Anti-enumeración: la respuesta debe ser indistinguible exista o no el
+    // colaborador. Antes un 403 "No existe un colaborador con este correo"
+    // confirmaba qué correos están dados de alta (insumo perfecto para phishing
+    // dirigido). El enlace sólo se envía si el registro existe.
     if (!isExistingCollaborator && !isAdminCaller) {
       return NextResponse.json(
-        { error: 'Acceso denegado. No existe un colaborador con este correo.' },
-        { status: 403, headers: cors }
+        { ok: true, message: 'Si el correo está registrado como colaborador, recibirás un enlace de acceso.' },
+        { status: 200, headers: cors }
       );
     }
 
@@ -125,9 +134,21 @@ export async function POST(req: NextRequest) {
       : (existingCollaborator?.permissions || {});
 
     // Resolve WhatsApp: provided in payload, or fallback to existing stored number, or marketing leads
-    let effectiveWhatsapp = (whatsappPhone && typeof whatsappPhone === 'string' && whatsappPhone.trim())
-      ? whatsappPhone.trim()
-      : (existingCollaborator?.whatsappPhone || undefined);
+    // El cliente NO es autoridad de formato: normalizamos en servidor con la misma
+    // regla canónica que usa el formulario. Si no viene número, se conserva el
+    // existente sin reinterpretarlo (datos legacy no se reescriben).
+    let effectiveWhatsapp = existingCollaborator?.whatsappPhone ?? undefined;
+
+    if (whatsappPhone && typeof whatsappPhone === 'string' && whatsappPhone.trim()) {
+      const normalized = normalizePhoneE164(whatsappPhone, PHONE_OPTIONS);
+      if (!normalized.ok) {
+        return NextResponse.json(
+          { error: describePhoneFailure(normalized.reason, PHONE_OPTIONS) },
+          { status: 422, headers: cors }
+        );
+      }
+      effectiveWhatsapp = normalized.value;
+    }
 
     if (!effectiveWhatsapp) {
       try {
@@ -178,15 +199,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Misma forma de respuesta exista o no el colaborador (anti-enumeración).
     return NextResponse.json({
       ok: true,
-      message: 'Magic link sent to email',
-      collaborator: {
-        id: collaborator.id,
-        name: collaborator.name,
-        email: collaborator.email,
-        expiresAt: collaborator.expiresAt,
-      },
+      message: 'Si el correo está registrado como colaborador, recibirás un enlace de acceso.',
     }, { headers: cors });
   } catch (error: any) {
     console.error('[Nexus Collaborators Request] Error:', error);

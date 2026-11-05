@@ -16,7 +16,8 @@ import {
   Sparkles, 
   Plus, 
   Trash2, 
-  HelpCircle
+  HelpCircle,
+  AlertCircle
 } from 'lucide-react';
 import type { KnowledgeSourceView } from '@saasfly/shared';
 
@@ -28,7 +29,7 @@ export interface TeachPayload {
 
 interface TeachHermesDialogProps {
   onClose: () => void;
-  onSelect: (payload: TeachPayload) => Promise<unknown> | void;
+  onSelect: (payload: TeachPayload) => Promise<unknown>;
 }
 
 interface StandardOption {
@@ -44,6 +45,26 @@ interface FaqPair {
   answer: string;
 }
 
+/**
+ * Client-side pre-flight limits. The server is the authority (`MAX_KNOWLEDGE_CONTENT_CHARS`
+ * in `@saasfly/hermes-core`, enforced in POST /api/v1/hermes/knowledge); these values only
+ * exist to fail fast with an actionable message instead of a serverless body-limit error.
+ */
+const MAX_CLIENT_CONTENT_CHARS = 450_000;
+const MAX_CLIENT_FILE_BYTES = 900_000;
+
+const PAYLOAD_TOO_LARGE_MESSAGE =
+  'El contenido excede el límite admitido por la ingesta (≈450,000 caracteres / 900 KB). Divide el documento en partes más pequeñas o sube un resumen.';
+
+/**
+ * The body limit that actually fails is measured in bytes, not characters, so multi-byte
+ * text (acentos, CJK) must be measured after UTF-8 encoding.
+ */
+function exceedsClientPayloadLimit(text: string): boolean {
+  if (text.length > MAX_CLIENT_CONTENT_CHARS) return true;
+  return new TextEncoder().encode(text).length > MAX_CLIENT_FILE_BYTES;
+}
+
 export function TeachHermesDialog({ onClose, onSelect }: TeachHermesDialogProps) {
   const [mode, setMode] = useState<'SELECT_MODE' | 'STANDARD' | 'TERMINAL'>('SELECT_MODE');
   const [selectedType, setSelectedType] = useState<KnowledgeSourceView['type'] | null>(null);
@@ -52,9 +73,10 @@ export function TeachHermesDialog({ onClose, onSelect }: TeachHermesDialogProps)
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingStep, setProcessingStep] = useState<string>('');
   const [successInfo, setSuccessInfo] = useState<{ title: string; type: string } | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const standardOptions: StandardOption[] = [
-    { type: 'DOCUMENT', icon: <FileText className="w-5 h-5" />, title: 'Documento / Archivo', desc: 'Sube PDF, TXT, MD, CSV, JSON o arrastra directamente' },
+    { type: 'DOCUMENT', icon: <FileText className="w-5 h-5" />, title: 'Documento / Archivo', desc: 'Sube Markdown (.md), TXT, CSV, JSON o HTML' },
     { type: 'URL', icon: <Globe className="w-5 h-5" />, title: 'Página Web / URL', desc: 'Hermes analiza y extrae conocimiento desde enlaces' },
     { type: 'FAQ', icon: <MessageCircle className="w-5 h-5" />, title: 'Teach FAQ (Preguntas y Respuestas)', desc: 'Estructura preguntas frecuentes y respuestas o copia y pega' },
     { type: 'BUSINESS_INFO', icon: <Building2 className="w-5 h-5" />, title: 'Información del Negocio', desc: 'Describe tu modelo comercial, catálogo, precios y servicios' },
@@ -64,32 +86,35 @@ export function TeachHermesDialog({ onClose, onSelect }: TeachHermesDialogProps)
   const handleExecuteIngestion = async (payload: TeachPayload) => {
     setIsProcessing(true);
     setSuccessInfo(null);
+    setErrorMessage(null);
     setProcessingStep('Hermes analizando conocimiento...');
 
     const timer1 = setTimeout(() => {
-      setProcessingStep('Extrayendo entidades semánticas y clasificando...');
+      setProcessingStep('Clasificando y proyectando el conocimiento (governance)...');
     }, 700);
 
     const timer2 = setTimeout(() => {
-      setProcessingStep('Anclando datos en el Sovereign Knowledge Vault (K25)...');
+      setProcessingStep('Registrando la propuesta de conocimiento y su auditoría...');
     }, 1400);
 
     try {
       await onSelect(payload);
       clearTimeout(timer1);
       clearTimeout(timer2);
-      setProcessingStep('¡Conocimiento integrado exitosamente!');
+      setProcessingStep('Solicitud procesada por el Knowledge Runtime.');
       setSuccessInfo({ title: payload.title, type: payload.type });
 
       // Keep success state briefly so user sees the confirmation animation
       setTimeout(() => {
         setIsProcessing(false);
         onClose();
-      }, 1400);
-    } catch (err) {
+      }, 1500);
+    } catch (err: unknown) {
       clearTimeout(timer1);
       clearTimeout(timer2);
-      setIsProcessing(false);
+      const msg = err instanceof Error ? err.message : 'Error al inyectar conocimiento a Hermes. Verifica la conexión o el formato.';
+      setErrorMessage(msg);
+      setProcessingStep('Error en el procesamiento');
       console.error('Error al inyectar conocimiento a Hermes:', err);
     }
   };
@@ -100,7 +125,7 @@ export function TeachHermesDialog({ onClose, onSelect }: TeachHermesDialogProps)
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        onClick={() => { if (!isProcessing) onClose(); }}
+        onClick={() => { if (!isProcessing && !errorMessage) onClose(); }}
         className="absolute inset-0 bg-black/75 backdrop-blur-md"
       />
       <motion.div 
@@ -118,30 +143,54 @@ export function TeachHermesDialog({ onClose, onSelect }: TeachHermesDialogProps)
               exit={{ opacity: 0 }}
               className="absolute inset-0 z-50 bg-[#09090E]/95 backdrop-blur-md flex flex-col items-center justify-center p-8 text-center"
             >
-              <div className="relative mb-6">
-                <div className="w-20 h-20 rounded-full border-2 border-purple-500/30 border-t-purple-400 animate-spin" />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <Sparkles className="w-8 h-8 text-purple-400 animate-pulse" />
-                </div>
-              </div>
-              
-              <h3 className="text-xl font-medium text-white mb-2">
-                {successInfo ? 'Conocimiento Recibido' : 'Hermes Ingesting Knowledge'}
-              </h3>
-              
-              <p className="text-sm text-purple-300 font-mono animate-pulse max-w-md">
-                {processingStep}
-              </p>
+              {!errorMessage ? (
+                <>
+                  <div className="relative mb-6">
+                    <div className="w-20 h-20 rounded-full border-2 border-purple-500/30 border-t-purple-400 animate-spin" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <Sparkles className="w-8 h-8 text-purple-400 animate-pulse" />
+                    </div>
+                  </div>
+                  
+                  <h3 className="text-xl font-medium text-white mb-2">
+                    {successInfo ? 'Conocimiento Recibido' : 'Hermes Ingesting Knowledge'}
+                  </h3>
+                  
+                  <p className="text-sm text-purple-300 font-mono animate-pulse max-w-md">
+                    {processingStep}
+                  </p>
 
-              {successInfo && (
-                <motion.div 
-                  initial={{ scale: 0.8, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  className="mt-4 flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-mono"
-                >
-                  <CheckCircle2 className="w-4 h-4 shrink-0" />
-                  <span>{successInfo.title}</span>
-                </motion.div>
+                  {successInfo && (
+                    <motion.div 
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      className="mt-4 flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-mono"
+                    >
+                      <CheckCircle2 className="w-4 h-4 shrink-0" />
+                      <span>{successInfo.title}</span>
+                    </motion.div>
+                  )}
+                </>
+              ) : (
+                <div className="flex flex-col items-center max-w-md animate-in fade-in zoom-in-95 duration-300">
+                  <div className="p-4 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-400 mb-4">
+                    <AlertCircle className="w-10 h-10" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-white mb-2">Fallo en la Ingesta</h3>
+                  <p className="text-xs text-rose-300 font-mono mb-6 bg-rose-950/40 p-3 rounded-xl border border-rose-500/20 leading-relaxed text-left">
+                    {errorMessage}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsProcessing(false);
+                      setErrorMessage(null);
+                    }}
+                    className="px-6 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-mono transition-colors cursor-pointer"
+                  >
+                    Regresar e Intentar de Nuevo
+                  </button>
+                </div>
               )}
             </motion.div>
           )}
@@ -293,7 +342,7 @@ function TeachForm({
 }: { 
   type: KnowledgeSourceView['type']; 
   onBack: () => void; 
-  onSubmit: (payload: TeachPayload) => void;
+  onSubmit: (payload: TeachPayload) => Promise<unknown> | void;
 }) {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -301,6 +350,7 @@ function TeachForm({
   // Specific states for File upload
   const [fileName, setFileName] = useState<string | null>(null);
   const [fileSize, setFileSize] = useState<string | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -311,6 +361,28 @@ function TeachForm({
   ]);
 
   const handleFile = (file: File) => {
+    setFileError(null);
+    const lowerName = file.name.toLowerCase();
+
+    // Reject binary PDFs cleanly to avoid binary mojibake and payload exhaustion
+    if (lowerName.endsWith('.pdf')) {
+      setFileName(null);
+      setFileSize(null);
+      setContent('');
+      setFileError('Los archivos PDF contienen codificación binaria y no se procesan de forma limpia como texto plano. Por favor copia y pega el texto de tu documento o súbelo en formato Markdown (.md), TXT, CSV o JSON.');
+      return;
+    }
+
+    // Pre-flight size check: the server rejects > MAX_KNOWLEDGE_CONTENT_CHARS, and the
+    // serverless body limit is 1 MB. Fail here with an actionable message.
+    if (file.size > MAX_CLIENT_FILE_BYTES) {
+      setFileName(null);
+      setFileSize(null);
+      setContent('');
+      setFileError(PAYLOAD_TOO_LARGE_MESSAGE);
+      return;
+    }
+
     setFileName(file.name);
     setFileSize(`${(file.size / 1024).toFixed(1)} KB`);
     if (!title.trim()) {
@@ -319,6 +391,11 @@ function TeachForm({
     const reader = new FileReader();
     reader.onload = (e) => {
       const text = (e.target?.result as string) || '';
+      if (exceedsClientPayloadLimit(text)) {
+        setFileError(PAYLOAD_TOO_LARGE_MESSAGE);
+        setContent('');
+        return;
+      }
       setContent(text);
     };
     reader.readAsText(file);
@@ -388,7 +465,8 @@ function TeachForm({
     }
 
     if (title.trim() && finalContent.trim()) {
-      onSubmit({ type, title: title.trim(), content: finalContent.trim() });
+      // handleExecuteIngestion owns error reporting; it never rejects.
+      void onSubmit({ type, title: title.trim(), content: finalContent.trim() });
     }
   };
 
@@ -408,12 +486,14 @@ function TeachForm({
         ref={fileInputRef} 
         type="file" 
         className="hidden" 
-        accept=".txt,.md,.markdown,.csv,.json,.pdf,.html"
+        accept=".txt,.md,.markdown,.csv,.json,.html"
         onChange={(e) => {
           const pickedFile = e.target.files?.[0];
           if (pickedFile) {
             handleFile(pickedFile);
           }
+          // Reset so re-selecting the same file (e.g. after a rejection) fires onChange again.
+          e.target.value = '';
         }}
       />
 
@@ -507,7 +587,7 @@ function TeachForm({
                 {fileName ? `Archivo seleccionado: ${fileName} (${fileSize})` : 'Haz clic para seleccionar o arrastra el documento aquí'}
               </div>
               <div className="text-xs text-white/40 mt-1">
-                Formatos soportados: TXT, Markdown (.md), PDF, CSV, JSON, HTML
+                Formatos soportados: Markdown (.md), TXT, CSV, JSON, HTML
               </div>
               {fileName && (
                 <div className="mt-3 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs flex items-center gap-1.5">
@@ -516,6 +596,13 @@ function TeachForm({
                 </div>
               )}
             </button>
+
+            {fileError && (
+              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <span className="leading-relaxed">{fileError}</span>
+              </div>
+            )}
 
             {/* Optional manual fallback text preview */}
             <details className="mt-2 text-xs text-white/50">
@@ -712,7 +799,7 @@ function TeachTerminal({
   onSubmit 
 }: { 
   onBack: () => void; 
-  onSubmit: (payload: TeachPayload) => void;
+  onSubmit: (payload: TeachPayload) => Promise<unknown>;
 }) {
   const [messages, setMessages] = useState<{role: 'system' | 'user', text: string}[]>([
     { role: 'system', text: 'Hermes Nexus Terminal v1.1.0-sovereign' },
@@ -731,27 +818,45 @@ function TeachTerminal({
     scrollToBottom();
   }, [messages]);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!input.trim()) return;
     
     const currentInput = input;
     setMessages(prev => [...prev, { role: 'user', text: currentInput }]);
     setInput('');
 
-    setMessages(prev => [...prev, { role: 'system', text: `Analizando entrada y clasificando semántica...` }]);
+    setMessages(prev => [...prev, { role: 'system', text: `Clasificando la entrada y preparando la ingesta...` }]);
     
-    setTimeout(() => {
-      let type: KnowledgeSourceView['type'] = 'BUSINESS_INFO';
-      if (currentInput.startsWith('http://') || currentInput.startsWith('https://')) type = 'URL';
-      else if (currentInput.includes('?') || currentInput.toLowerCase().includes('faq')) type = 'FAQ';
-      else if (currentInput.length > 200) type = 'DOCUMENT';
+    let type: KnowledgeSourceView['type'] = 'BUSINESS_INFO';
+    if (currentInput.startsWith('http://') || currentInput.startsWith('https://')) type = 'URL';
+    else if (currentInput.includes('?') || currentInput.toLowerCase().includes('faq')) type = 'FAQ';
+    else if (currentInput.length > 200) type = 'DOCUMENT';
 
-      onSubmit({
+    if (exceedsClientPayloadLimit(currentInput)) {
+      setMessages(prev => [
+        ...prev,
+        { role: 'system', text: `✗ ${PAYLOAD_TOO_LARGE_MESSAGE}` }
+      ]);
+      return;
+    }
+
+    try {
+      await onSubmit({
         type,
         title: `Terminal Ingest (${type}) - ${new Date().toLocaleTimeString()}`,
         content: currentInput
       });
-    }, 600);
+      setMessages(prev => [
+        ...prev,
+        { role: 'system', text: `✓ Fuente procesada por el Knowledge Runtime. El hecho propuesto aparece en el panel de conocimiento (requiere aprobación si la política de governance lo exige).` }
+      ]);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error desconocido al inyectar conocimiento.';
+      setMessages(prev => [
+        ...prev,
+        { role: 'system', text: `✗ Error en la ingesta: ${msg}` }
+      ]);
+    }
   };
 
   const handleTerminalFile = (file: File) => {
@@ -760,21 +865,64 @@ function TeachTerminal({
       { role: 'user', text: `[Archivo cargado: ${file.name} (${(file.size / 1024).toFixed(1)} KB)]` }
     ]);
     
+    const isPdf = file.name.toLowerCase().endsWith('.pdf');
+    if (isPdf) {
+      setMessages(prev => [
+        ...prev,
+        { role: 'system', text: `✗ Rechazado: Los archivos PDF contienen codificación binaria y no se pueden parsear directamente. Por favor sube archivos Markdown (.md), TXT, CSV o JSON.` }
+      ]);
+      return;
+    }
+
+    if (file.size > MAX_CLIENT_FILE_BYTES) {
+      setMessages(prev => [
+        ...prev,
+        { role: 'system', text: `✗ ${PAYLOAD_TOO_LARGE_MESSAGE}` }
+      ]);
+      return;
+    }
+
     setMessages(prev => [
       ...prev, 
-      { role: 'system', text: `Extrayendo texto de ${file.name} y procesando para Hermes...` }
+      { role: 'system', text: `Leyendo ${file.name} y enviando la ingesta...` }
     ]);
 
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       const text = (e.target?.result as string) || '';
-      setTimeout(() => {
-        onSubmit({
+      if (!text.trim()) {
+        setMessages(prev => [
+          ...prev,
+          { role: 'system', text: `✗ Error: El archivo está vacío.` }
+        ]);
+        return;
+      }
+
+      if (exceedsClientPayloadLimit(text)) {
+        setMessages(prev => [
+          ...prev,
+          { role: 'system', text: `✗ ${PAYLOAD_TOO_LARGE_MESSAGE}` }
+        ]);
+        return;
+      }
+
+      try {
+        await onSubmit({
           type: 'DOCUMENT',
           title: `Documento: ${file.name}`,
-          content: text.trim() || `Contenido de archivo ${file.name}`
+          content: text.trim()
         });
-      }, 600);
+        setMessages(prev => [
+          ...prev,
+          { role: 'system', text: `✓ Archivo '${file.name}' recibido y procesado por el Knowledge Runtime (estado real visible en el panel de conocimiento).` }
+        ]);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'Error procesando el archivo.';
+        setMessages(prev => [
+          ...prev,
+          { role: 'system', text: `✗ Fallo al integrar archivo: ${msg}` }
+        ]);
+      }
     };
     reader.readAsText(file);
   };
@@ -795,7 +943,7 @@ function TeachTerminal({
         setIsTerminalDragging(false);
         const droppedTerminalFile = e.dataTransfer.files?.[0];
         if (droppedTerminalFile) {
-          handleTerminalFile(droppedTerminalFile);
+          void handleTerminalFile(droppedTerminalFile);
         }
       }}
     >
@@ -805,12 +953,14 @@ function TeachTerminal({
         ref={terminalFileInputRef} 
         type="file" 
         className="hidden" 
-        accept=".txt,.md,.markdown,.csv,.json,.pdf,.html"
+        accept=".txt,.md,.markdown,.csv,.json,.html"
         onChange={(e) => {
           const pickedTerminalFile = e.target.files?.[0];
           if (pickedTerminalFile) {
-            handleTerminalFile(pickedTerminalFile);
+            void handleTerminalFile(pickedTerminalFile);
           }
+          // Reset so re-selecting the same file (e.g. after a rejection) fires onChange again.
+          e.target.value = '';
         }}
       />
 
@@ -878,13 +1028,17 @@ function TeachTerminal({
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                void handleSend();
+              }
+            }}
             placeholder="Escribe conocimiento, pega una URL o sube un documento..."
             className="flex-1 bg-transparent text-white placeholder-white/30 focus:outline-none text-xs sm:text-sm font-mono"
           />
           <button 
             type="button"
-            onClick={handleSend}
+            onClick={() => void handleSend()}
             disabled={!input.trim()}
             className="p-2 text-white hover:text-purple-400 disabled:opacity-40 disabled:hover:text-white transition-colors bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 rounded-lg cursor-pointer"
           >

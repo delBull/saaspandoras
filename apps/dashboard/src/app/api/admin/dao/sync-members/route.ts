@@ -1,9 +1,13 @@
+import { validateAdminSession } from '@/lib/admin-auth';
 import { NextResponse } from 'next/server';
 import { db } from '@saasfly/db';
 import { gamificationEvents, daoMembers } from '@saasfly/db/schema';
 import { sql } from "@saasfly/db-core";
 
 export async function POST(req: Request) {
+    // 🛡️ Autorización propia (el middleware sólo verifica presencia de cookie).
+    const { errorResponse } = await validateAdminSession(req.headers);
+    if (errorResponse) return errorResponse;
     try {
         // 1. Fetch all membership-related events
         const events = await db.select()

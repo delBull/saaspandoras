@@ -165,6 +165,14 @@ const nextConfig = {
           { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
 
           // Content Security Policy — allows Thirdweb, IPFS, Vercel, and app domains.
+          //
+          // NOTA (deuda declarada): `script-src` conserva 'unsafe-inline' y
+          // 'unsafe-eval' porque Next.js inyecta scripts inline y las librerías de
+          // wallet (thirdweb / WalletConnect) usan eval. Quitarlos requiere migrar a
+          // CSP con nonce por request (middleware → header `x-nonce`), lo que no se
+          // hace a ciegas: un error ahí deja la app en blanco. Impacto actual
+          // acotado: ya no existe ninguna credencial de sesión legible por JS
+          // (cookie httpOnly), así que un XSS no puede exfiltrar el token.
           {
             key: 'Content-Security-Policy',
             value: [
@@ -178,6 +186,11 @@ const nextConfig = {
               "object-src 'none'",
               "base-uri 'self'",
               "form-action 'self'",
+              // Coincide con el X-Frame-Options: DENY del middleware (defensa en profundidad).
+              "frame-ancestors 'none'",
+              "worker-src 'self' blob:",
+              "manifest-src 'self'",
+              "upgrade-insecure-requests",
             ].join('; '),
           },
         ],

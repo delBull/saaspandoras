@@ -1,3 +1,4 @@
+import { validateAdminSession } from '@/lib/admin-auth';
 
 import { NextResponse } from 'next/server';
 import { db } from '@saasfly/db'; // Assuming Drizzle DB
@@ -10,6 +11,9 @@ import { sendDelayedDistributionAlert } from '@/lib/discord/alert-notifier';
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: Request) {
+    // 🛡️ Autorización propia (el middleware sólo verifica presencia de cookie).
+    const { errorResponse } = await validateAdminSession(req.headers);
+    if (errorResponse) return errorResponse;
     try {
         const { searchParams } = new URL(req.url);
         const force = searchParams.get('force') === 'true'; // Allow manual trigger

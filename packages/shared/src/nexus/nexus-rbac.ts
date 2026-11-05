@@ -394,7 +394,12 @@ export async function getNexusAuthContext(
               break;
             }
           } catch (collabErr) {
-            console.warn('[NexusRBAC] Non-blocking collaborator lookup warning:', collabErr);
+            // La autoridad aquí es `isAdmin(wallet)` (tabla administrators /
+            // users.role), que YA se resolvió arriba. Esta consulta sólo enriquece
+            // nombre y teléfono, así que un fallo no concede privilegio nuevo: el
+            // wallet seguiría siendo administrador de todas formas. Se registra a
+            // nivel error para que no pase inadvertido.
+            console.error('[NexusRBAC] Collaborator enrichment failed for admin wallet:', collabErr);
           }
         }
 
@@ -504,7 +509,17 @@ export async function getNexusAuthContext(
               }
             }
           } catch (collabErr) {
-            console.warn('[NexusRBAC] Non-blocking collaborator user lookup warning:', collabErr);
+            // 🛡️ Fail-Closed: si no podemos leer la denylist (REJECTED/DISABLED) el
+            // chequeo de revocación no puede garantizarse. Antes se continuaba y el
+            // rol se resolvía desde users.role → un revocado podía entrar durante un
+            // fallo de DB. Ahora se deniega.
+            console.error('[NexusRBAC] Collaborator lookup failed — denying session (fail-closed):', collabErr);
+            return {
+              isAuthenticated: false,
+              role: null,
+              surface,
+              permissions: DEFAULT_EMPTY_PERMISSIONS,
+            };
           }
         }
 

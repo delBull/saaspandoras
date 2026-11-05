@@ -4,6 +4,7 @@ import { OrganizationSDK } from '@saasfly/shared';
 import { SessionTokenService } from '@saasfly/hermes-core';
 import { checkTenantRateLimit, buildRateLimitHeaders } from '@saasfly/hermes-core';
 import { KnowledgeService } from '@saasfly/hermes-core';
+import { MAX_KNOWLEDGE_CONTENT_CHARS } from '@saasfly/hermes-core';
 import { TenantAuthorityService, CanonicalTenantIdentity } from '@saasfly/hermes-core';
 import type { 
   AddKnowledgeSourceRequestDTO,
@@ -139,6 +140,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ code: 'VALIDATION_ERROR', message: 'type, title and content required' }, { status: 400 });
     }
 
+    // Server-side payload ceiling (client is not authority). Also keeps the request under
+    // the Server Action / serverless body limit so the UI gets a real message instead of a 413.
+    if (typeof content !== 'string' || content.length > MAX_KNOWLEDGE_CONTENT_CHARS) {
+      return NextResponse.json({
+        code: 'PAYLOAD_TOO_LARGE',
+        message: `El contenido excede el límite de ${MAX_KNOWLEDGE_CONTENT_CHARS.toLocaleString('es-MX')} caracteres. Divide el documento o sube una versión resumida.`,
+      }, { status: 413 });
+    }
+
     const sourceId = await KnowledgeService.addKnowledgeSource(
       {
         sessionId: auth.sessionId,
@@ -148,7 +158,12 @@ export async function POST(req: NextRequest) {
       body
     );
 
-    return NextResponse.json({ success: true, sourceId: sourceId || 'src_created' }, { headers: rlHeaders });
+    if (!sourceId) {
+      // Never fabricate an identifier: without a real source id the operation is a failure.
+      return NextResponse.json({ code: 'INTERNAL_ERROR', message: 'Knowledge source was not created' }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true, sourceId }, { headers: rlHeaders });
   } catch (err: any) {
     console.error('[API /api/v1/hermes/knowledge POST] Error:', err);
     return NextResponse.json({ code: 'INTERNAL_ERROR', message: 'Failed to add knowledge source' }, { status: 500 });
@@ -176,7 +191,11 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ code: 'VALIDATION_ERROR', message: 'factId and valid status required' }, { status: 400 });
     }
 
-    const updated = await KnowledgeService.updateFactStatus(auth.canonicalTenant, factId, status);
+    const updated = await KnowledgeService.updateFactStatus(auth.canonicalTenant, factId, status, {
+      actorId: auth.actorId,
+      // Portal cookie sessions are human actors; bearer/service tokens are system actors.
+      actorType: auth.role === 'owner' ? 'USER' : 'SYSTEM',
+    });
     if (!updated) {
       return NextResponse.json({ code: 'NOT_FOUND', message: 'Fact not found or does not belong to authorized tenant.' }, { status: 404 });
     }

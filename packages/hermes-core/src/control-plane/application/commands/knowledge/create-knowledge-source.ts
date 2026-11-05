@@ -36,10 +36,12 @@ export class CreateKnowledgeSourceCommand {
       createdBy: ctx.actorId || 'system',
     });
 
-    // 3. Trigger Runtime Processing Asynchronously
-    // In a real distributed system this would be an event (PlatformEventBus).
-    // For Phase 6.4 MVP, we execute it concurrently without awaiting.
-    knowledgeRuntime.processVersion(scope.organizationId, sourceId, versionId).catch(console.error);
+    // 3. Process the version in the same request lifecycle.
+    // Previously this was fire-and-forget (`.catch(console.error)`), which in serverless
+    // could be killed after the response and silently left sources stuck in CREATED.
+    // The runtime is fail-closed: it marks the source FAILED and rethrows, so the caller
+    // (API → UI) receives the real outcome instead of a fabricated success.
+    await knowledgeRuntime.processVersion(scope.organizationId, sourceId, versionId);
 
     return sourceId;
   }

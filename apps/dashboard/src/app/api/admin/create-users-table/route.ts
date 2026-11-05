@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { Client } from 'pg';
+import { validateAdminSession } from '@/lib/admin-auth';
 
 export function GET() {
   return NextResponse.json({
@@ -9,7 +10,12 @@ export function GET() {
   });
 }
 
-export async function POST(_request: NextRequest) {
+export async function POST(request: NextRequest) {
+  // 🛡️ Autorización propia: esta ruta abre una conexión pg cruda con DATABASE_URL
+  // y ejecuta DDL. El middleware no valida la sesión, sólo su presencia.
+  const { errorResponse } = await validateAdminSession(request.headers);
+  if (errorResponse) return errorResponse;
+
   try {
     console.log('🔌 Intentando crear tabla users...');
 

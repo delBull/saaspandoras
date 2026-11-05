@@ -1,3 +1,4 @@
+import { validateAdminSession } from '@/lib/admin-auth';
 import { requireEnvUrl } from '@/lib/env-utils';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
@@ -8,6 +9,9 @@ export async function PATCH(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
+    // 🛡️ Autorización propia (el middleware sólo verifica presencia de cookie).
+    const { errorResponse } = await validateAdminSession(request.headers);
+    if (errorResponse) return errorResponse;
     try {
         const { id } = await params;
         const body = await request.json();
@@ -32,6 +36,9 @@ export async function DELETE(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
+    // 🛡️ Autorización propia (el middleware sólo verifica presencia de cookie).
+    const { errorResponse } = await validateAdminSession(request.headers);
+    if (errorResponse) return errorResponse;
     try {
         const { id } = await params;
         

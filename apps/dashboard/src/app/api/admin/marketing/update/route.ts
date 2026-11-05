@@ -1,3 +1,4 @@
+import { validateAdminSession } from '@/lib/admin-auth';
 
 import { NextResponse } from "next/server";
 import { db } from "@saasfly/db-core";
@@ -5,6 +6,9 @@ import { marketingCampaigns } from "@saasfly/db-core";
 import { eq } from "@saasfly/db-core";
 
 export async function POST(req: Request) {
+    // 🛡️ Autorización propia (el middleware sólo verifica presencia de cookie).
+    const { errorResponse } = await validateAdminSession(req.headers);
+    if (errorResponse) return errorResponse;
     try {
         const body = await req.json();
         const { id, name, isActive, config } = body;

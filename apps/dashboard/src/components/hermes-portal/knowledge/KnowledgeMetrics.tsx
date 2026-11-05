@@ -1,5 +1,6 @@
 import React from 'react';
 import type { KnowledgeOverviewView } from '@saasfly/shared';
+import { BUSINESS_ENTITY_DIMENSIONS } from '@saasfly/shared';
 
 export function KnowledgeMetrics({ overview }: { overview: KnowledgeOverviewView }) {
   // KnowledgeHealth resolution
@@ -54,14 +55,14 @@ export function KnowledgeMetrics({ overview }: { overview: KnowledgeOverviewView
       {/* Business Entities Card */}
       <div className="p-5 rounded-2xl border border-white/5 bg-white/[0.02] flex flex-col gap-2">
         <span className="text-white/60 text-xs font-mono uppercase tracking-wider">Business Entities</span>
-        <div className="text-2xl font-light text-white">{overview.facts.filter(f => ['DOMAIN', 'IDENTITY', 'business_info'].includes(f.dimension)).length || '—'}</div>
+        <div className="text-2xl font-light text-white">{overview.facts.filter(f => (BUSINESS_ENTITY_DIMENSIONS as readonly string[]).includes(f.dimension)).length}</div>
         <span className="text-white/40 text-sm">Semantic mappings</span>
       </div>
 
       {/* Verified Knowledge Card */}
       <div className="p-5 rounded-2xl border border-white/5 bg-white/[0.02] flex flex-col gap-2">
         <span className="text-white/60 text-xs font-mono uppercase tracking-wider">Verified Knowledge</span>
-        <div className="text-2xl font-light text-white">{overview.facts.length || '—'}</div>
+        <div className="text-2xl font-light text-white">{overview.facts.length}</div>
         <span className="text-white/40 text-sm">Indexed facts</span>
       </div>
     </div>

@@ -55,23 +55,58 @@ describe('🔒 RELEASE GATE: Nexus Production Closure Audit Suite', () => {
   // BLOCKER 2: Rate Limiting & Trusted Edge IP Resolution
   // =========================================================================
   describe('🛡️ Blocker 2: Edge IP Resolution & Anti-Spoofing', () => {
-    it('RG-01: Prioritizes platform-sealed x-real-ip over spoofed cf-connecting-ip and x-forwarded-for', () => {
+    it('RG-01: x-real-ip sólo se usa cuando la plataforma lo sella (Vercel); si no, es falsificable', () => {
       const headers = new Headers({
         'x-real-ip': '172.16.0.5',
         'cf-connecting-ip': '198.51.100.25',
         'x-forwarded-for': '10.0.0.1, 10.0.0.2',
       });
-      const ip = getTrustedClientIp(headers);
-      expect(ip).toBe('172.16.0.5');
+
+      const previousVercel = process.env.VERCEL;
+      const previousVercelEnv = process.env.VERCEL_ENV;
+      try {
+        delete process.env.VERCEL;
+        delete process.env.VERCEL_ENV;
+        // Fuera de Vercel, el cliente puede escribir x-real-ip: se ignora y se usa
+        // el último salto de la cadena de proxies.
+        expect(getTrustedClientIp(headers)).toBe('10.0.0.2');
+
+        process.env.VERCEL = '1';
+        // En Vercel el header lo sobrescribe el edge, así que es confiable.
+        expect(getTrustedClientIp(headers)).toBe('172.16.0.5');
+      } finally {
+        if (previousVercel === undefined) delete process.env.VERCEL;
+        else process.env.VERCEL = previousVercel;
+        if (previousVercelEnv === undefined) delete process.env.VERCEL_ENV;
+        else process.env.VERCEL_ENV = previousVercelEnv;
+      }
     });
 
-    it('RG-02: Falls back to cf-connecting-ip when x-real-ip is absent', () => {
-      const headers = new Headers({
-        'cf-connecting-ip': '198.51.100.25',
-        'x-forwarded-for': '1.1.1.1, 2.2.2.2',
-      });
-      const ip = getTrustedClientIp(headers);
-      expect(ip).toBe('198.51.100.25');
+    it('RG-02: cf-connecting-ip sólo es confiable acompañado de cf-ray (firma del proxy)', () => {
+      const previousVercel = process.env.VERCEL;
+      const previousVercelEnv = process.env.VERCEL_ENV;
+      try {
+        delete process.env.VERCEL;
+        delete process.env.VERCEL_ENV;
+
+        expect(
+          getTrustedClientIp(
+            new Headers({ 'cf-connecting-ip': '198.51.100.25', 'cf-ray': '8a1b2c3d4e5f', 'x-forwarded-for': '1.1.1.1, 2.2.2.2' })
+          )
+        ).toBe('198.51.100.25');
+
+        // Sin cf-ray el header puede ser falsificado → se ignora.
+        expect(
+          getTrustedClientIp(
+            new Headers({ 'cf-connecting-ip': '198.51.100.25', 'x-forwarded-for': '1.1.1.1, 2.2.2.2' })
+          )
+        ).toBe('2.2.2.2');
+      } finally {
+        if (previousVercel === undefined) delete process.env.VERCEL;
+        else process.env.VERCEL = previousVercel;
+        if (previousVercelEnv === undefined) delete process.env.VERCEL_ENV;
+        else process.env.VERCEL_ENV = previousVercelEnv;
+      }
     });
 
     it('RG-03: Never trusts the first entry in x-forwarded-for; resolves the closest proxy IP', () => {

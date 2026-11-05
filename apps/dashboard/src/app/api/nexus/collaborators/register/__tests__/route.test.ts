@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextRequest } from 'next/server';
+import { getNexusAuthContext } from '@saasfly/shared';
 
 let mockAuthContext: any = {
   isAuthenticated: true,
@@ -57,10 +58,12 @@ vi.mock('@saasfly/db', () => ({
     })),
     insert: vi.fn((table: any) => ({
       values: vi.fn((data: any) => {
-        if (data.whatsappPhone) {
-          collaboratorInsertCalls.push(data);
-        } else {
+        // `users` siempre lleva walletAddress; `nexusCollaborators` nunca lo lleva.
+        // Discriminar por `whatsappPhone` era incorrecto: el teléfono es opcional.
+        if (data.walletAddress) {
           userInsertCalls.push(data);
+        } else {
+          collaboratorInsertCalls.push(data);
         }
         return {
           onConflictDoNothing: vi.fn(async () => [data]),
@@ -296,5 +299,201 @@ describe('🛡️ P0 Security Suite: /api/nexus/collaborators/register Adversari
     const body = await resBlocked.json();
     expect(body.error).toContain('Demasiadas solicitudes de registro');
     expect(registerRateLimitCalls).toBeGreaterThan(0);
+  });
+
+  it('REG-P1-08: Re-registro SIN teléfono conserva el número ya guardado (no lo borra)', async () => {
+    mockAuthContext = {
+      isAuthenticated: true,
+      role: 'COLLABORATOR',
+      wallet: '0x7777777777777777777777777777777777777777',
+      email: 'operator@pandoras.finance',
+      provisionStatus: 'PENDING',
+      permissions: { 'users.manage': false },
+    };
+    mockExistingCollaborator = {
+      id: 42,
+      email: 'operator@pandoras.finance',
+      name: 'Legit Operator',
+      role: 'COLLABORATOR',
+      status: 'PENDING',
+      whatsappPhone: '+5219999999999',
+      statusChangedAt: null,
+    };
+
+    const req = new NextRequest('http://localhost/api/nexus/collaborators/register', {
+      method: 'POST',
+      headers: { 'x-forwarded-for': '10.0.0.7' },
+      body: JSON.stringify({ name: 'Legit Operator', email: 'operator@pandoras.finance' }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    // El mock de `select` devuelve la misma fila para cualquier tabla, así que el
+    // side-write de wallet→users también genera un update: filtramos por payload.
+    const collaboratorUpdates = updateCalls.filter((call) => 'whatsappPhone' in call);
+    expect(collaboratorUpdates.length).toBe(1);
+    // El teléfono existente se preserva: ausencia en el payload ≠ borrar el dato.
+    expect(collaboratorUpdates[0].whatsappPhone).toBe('+5219999999999');
+  });
+
+  it('REG-P1-09: Un colaborador nuevo sin teléfono guarda NULL, no un valor fabricado', async () => {
+    mockAuthContext = {
+      isAuthenticated: true,
+      role: null,
+      wallet: '0x8888888888888888888888888888888888888888',
+      email: null,
+      provisionStatus: 'PENDING',
+      permissions: { 'users.manage': false },
+    };
+
+    const req = new NextRequest('http://localhost/api/nexus/collaborators/register', {
+      method: 'POST',
+      headers: { 'x-forwarded-for': '10.0.0.8' },
+      body: JSON.stringify({ name: 'Sin Telefono', email: 'sin.telefono@company.com' }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    expect(collaboratorInsertCalls.length).toBe(1);
+    expect(collaboratorInsertCalls[0].whatsappPhone).toBeNull();
+  });
+
+  it('REG-P1-10: 10 dígitos nacionales se normalizan a +52 y se declara la suposición', async () => {
+    mockAuthContext = {
+      isAuthenticated: true,
+      role: null,
+      wallet: '0x9999999999999999999999999999999999999999',
+      email: null,
+      provisionStatus: 'PENDING',
+      permissions: { 'users.manage': false },
+    };
+
+    const req = new NextRequest('http://localhost/api/nexus/collaborators/register', {
+      method: 'POST',
+      headers: { 'x-forwarded-for': '10.0.0.9' },
+      body: JSON.stringify({
+        name: 'Nacional MX',
+        email: 'mx@company.com',
+        whatsappPhone: '3324158568',
+      }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    expect(collaboratorInsertCalls[0].whatsappPhone).toBe('+523324158568');
+  });
+
+  it('REG-P1-11: Un número con código de país explícito NO se reescribe como +52', async () => {
+    mockAuthContext = {
+      isAuthenticated: true,
+      role: null,
+      wallet: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      email: null,
+      provisionStatus: 'PENDING',
+      permissions: { 'users.manage': false },
+    };
+
+    const req = new NextRequest('http://localhost/api/nexus/collaborators/register', {
+      method: 'POST',
+      headers: { 'x-forwarded-for': '10.0.0.10' },
+      body: JSON.stringify({
+        name: 'US Operator',
+        email: 'us@company.com',
+        whatsappPhone: '+1 415 555 1234',
+      }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    expect(collaboratorInsertCalls[0].whatsappPhone).toBe('+14155551234');
+  });
+
+  it('REG-P1-12: Dígitos sin código de país se rechazan como ambiguos (nunca se adivina el país)', async () => {
+    mockAuthContext = {
+      isAuthenticated: true,
+      role: null,
+      wallet: '0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+      email: null,
+      provisionStatus: 'PENDING',
+      permissions: { 'users.manage': false },
+    };
+
+    const req = new NextRequest('http://localhost/api/nexus/collaborators/register', {
+      method: 'POST',
+      headers: { 'x-forwarded-for': '10.0.0.11' },
+      body: JSON.stringify({
+        name: 'Ambigue',
+        email: 'ambiguous@company.com',
+        whatsappPhone: '14155551234',
+      }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(422);
+    const body = await res.json();
+    expect(body.error).toContain('código de país');
+    expect(collaboratorInsertCalls.length).toBe(0);
+    expect(updateCalls.length).toBe(0);
+  });
+
+  it('REG-P1-14: El borrado explícito del teléfono SÍ elimina el número guardado', async () => {
+    mockAuthContext = {
+      isAuthenticated: true,
+      role: 'COLLABORATOR',
+      wallet: '0xcccccccccccccccccccccccccccccccccccccccc',
+      email: 'operator@pandoras.finance',
+      provisionStatus: 'PENDING',
+      permissions: { 'users.manage': false },
+    };
+    mockExistingCollaborator = {
+      id: 43,
+      email: 'operator@pandoras.finance',
+      name: 'Legit Operator',
+      role: 'COLLABORATOR',
+      status: 'PENDING',
+      whatsappPhone: '+5219999999999',
+      statusChangedAt: null,
+    };
+
+    const req = new NextRequest('http://localhost/api/nexus/collaborators/register', {
+      method: 'POST',
+      headers: { 'x-forwarded-for': '10.0.0.13' },
+      body: JSON.stringify({
+        name: 'Legit Operator',
+        email: 'operator@pandoras.finance',
+        whatsappPhone: null,
+        clearWhatsappPhone: true,
+      }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    const collaboratorUpdates = updateCalls.filter((call) => 'whatsappPhone' in call);
+    expect(collaboratorUpdates.length).toBe(1);
+    expect(collaboratorUpdates[0].whatsappPhone).toBeNull();
+  });
+
+  it('REG-P1-13: El token viaja por header y el response NO lo refleja en el body', async () => {
+    mockAuthContext = {
+      isAuthenticated: true,
+      role: 'COLLABORATOR',
+      wallet: null,
+      email: 'token@company.com',
+      provisionStatus: 'PENDING',
+      permissions: { 'users.manage': false },
+    };
+
+    const req = new NextRequest('http://localhost/api/nexus/collaborators/register', {
+      method: 'POST',
+      headers: { 'x-forwarded-for': '10.0.0.12', 'x-nexus-token': 'tok_header_123' },
+      body: JSON.stringify({ name: 'Token User', email: 'token@company.com' }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    expect(vi.mocked(getNexusAuthContext)).toHaveBeenCalledWith(null, 'tok_header_123');
+    const body = await res.json();
+    expect(body.ok).toBe(true);
+    expect(body.token).toBeUndefined();
   });
 });

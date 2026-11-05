@@ -124,8 +124,10 @@ export function NexusCommandPalette({ auth, onOpenSettings, onOpenHermes }: Nexu
                   {/* Logout */}
                   {(query === '' || 'logout'.includes(query.toLowerCase()) || 'salir'.includes(query.toLowerCase())) && (
                     <div
-                      onClick={() => {
+                      onClick={async () => {
                         setIsOpen(false);
+                        // Revocar en el servidor mientras la cookie todavía existe.
+                        await fetch('/api/auth/logout', { method: 'POST' }).catch(() => undefined);
                         localStorage.removeItem("pandoras_nexus_token");
                         document.cookie = "pandoras_nexus_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
                         window.location.href = '/';

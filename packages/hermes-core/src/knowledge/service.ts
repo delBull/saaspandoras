@@ -11,8 +11,9 @@
  */
 
 import { db } from '@saasfly/db-core';
-import { hermesKnowledge, knowledgeSources, knowledgeSourceVersions, knowledgeChunks } from '@saasfly/db-core/schema';
+import { hermesKnowledge, hermesGovernanceAudit, knowledgeSources, knowledgeSourceVersions, knowledgeChunks } from '@saasfly/db-core/schema';
 import { eq, or, and, desc } from "@saasfly/db-core";
+import { nanoid } from 'nanoid';
 import { CreateKnowledgeSourceCommand } from '../control-plane/application/commands/knowledge/create-knowledge-source';
 import { ControlPlaneContext } from '../control-plane/application/context';
 // @ts-ignore
@@ -163,12 +164,21 @@ export class KnowledgeService {
     const { type, title, content } = payload;
     const { canonicalTenant, sessionId, actorId } = authContext;
 
+    // The ControlPlaneContext authorizes the tenant the caller was resolved to, nothing else.
+    // `canonicalOrgId` (projects UUID) and `projectSlug` are two aliases of the SAME canonical
+    // tenant (see TenantAuthorityService.resolveCanonicalTenant + KnowledgeService.getTenantKnowledge),
+    // and the knowledge domain stores rows under the documented relational key (`projectSlug`).
+    // Authorizing only the UUID made `requireOrganizationScope(projectSlug)` throw AuthorizationError
+    // on every ingestion, so the portal endpoint always answered 500.
     const cpCtx = new ControlPlaneContext(
       sessionId,
       actorId,
       'admin',
       ['view_overview', 'change_policy'],
-      [{ organizationId: canonicalTenant.canonicalOrgId, role: 'admin' }]
+      [
+        { organizationId: canonicalTenant.canonicalOrgId, role: 'admin' },
+        { organizationId: canonicalTenant.projectSlug, role: 'admin' },
+      ]
     );
 
     const cmd = new CreateKnowledgeSourceCommand();
@@ -219,11 +229,16 @@ export class KnowledgeService {
 
   /**
    * Updates fact status, strictly validating tenant ownership to prevent ID tampering across tenants.
+   *
+   * Governance contract: every status mutation is written to `hermes_governance_audit`, and
+   * approving a candidate supersedes the previously ACTIVE knowledge of the same key
+   * (the `hermes_knowledge_unique_active` partial index allows only one ACTIVE per key).
    */
   public static async updateFactStatus(
     canonicalTenant: CanonicalTenantIdentity,
     factId: string,
-    status: 'ACTIVE' | 'REJECTED'
+    status: 'ACTIVE' | 'REJECTED',
+    actor?: { actorId?: string; actorType?: 'USER' | 'SYSTEM' }
   ): Promise<boolean> {
     // Gate 7: Enforce trial mutation allowed
     await HermesTrialPolicyService.assertTrialMutationAllowed(canonicalTenant.projectSlug);
@@ -231,21 +246,83 @@ export class KnowledgeService {
     const slug = canonicalTenant.projectSlug;
     const orgId = canonicalTenant.canonicalOrgId;
 
-    const updated = await db
-      .update(hermesKnowledge)
-      .set({ status, updatedAt: new Date() })
-      .where(
-        and(
-          eq(hermesKnowledge.id, factId),
-          or(
-            eq(hermesKnowledge.organizationId, slug),
-            eq(hermesKnowledge.organizationId, orgId),
-            eq(hermesKnowledge.organizationId, `org_${slug}`)
-          )
-        )
-      )
-      .returning({ id: hermesKnowledge.id });
+    const tenantScope = or(
+      eq(hermesKnowledge.organizationId, slug),
+      eq(hermesKnowledge.organizationId, orgId),
+      eq(hermesKnowledge.organizationId, `org_${slug}`)
+    );
 
-    return updated.length > 0;
+    const [existing] = await db
+      .select()
+      .from(hermesKnowledge)
+      .where(and(eq(hermesKnowledge.id, factId), tenantScope))
+      .limit(1);
+
+    if (!existing) return false;
+
+    const now = new Date();
+    const actorId = actor?.actorId?.trim() || 'knowledge_governance';
+    const actorType = actor?.actorType ?? 'USER';
+
+    const supersededIds = await db.transaction(async (tx) => {
+      let replaced: string[] = [];
+
+      if (status === 'ACTIVE') {
+        const activeSiblings = await tx
+          .select({ id: hermesKnowledge.id })
+          .from(hermesKnowledge)
+          .where(and(
+            eq(hermesKnowledge.organizationId, existing.organizationId),
+            eq(hermesKnowledge.dimension, existing.dimension),
+            eq(hermesKnowledge.key, existing.key),
+            eq(hermesKnowledge.status, 'ACTIVE')
+          ));
+
+        replaced = activeSiblings.map((s) => s.id).filter((id) => id !== factId);
+
+        if (replaced.length > 0) {
+          await tx.update(hermesKnowledge)
+            .set({ status: 'SUPERSEDED', updatedAt: now })
+            .where(and(
+              eq(hermesKnowledge.organizationId, existing.organizationId),
+              eq(hermesKnowledge.dimension, existing.dimension),
+              eq(hermesKnowledge.key, existing.key),
+              eq(hermesKnowledge.status, 'ACTIVE')
+            ));
+        }
+      }
+
+      await tx.update(hermesKnowledge)
+        .set({
+          status,
+          updatedAt: now,
+          // Provenance for the supersession chain: the fact this approval replaces.
+          ...(status === 'ACTIVE' && replaced.length > 0 ? { supersedesId: replaced[0] } : {}),
+        })
+        .where(and(eq(hermesKnowledge.id, factId), tenantScope));
+
+      await tx.insert(hermesGovernanceAudit).values({
+        id: `aud_${nanoid(18)}`,
+        organizationId: existing.organizationId,
+        knowledgeId: factId,
+        version: existing.version,
+        eventType: status === 'ACTIVE' ? 'APPROVE' : 'REJECT',
+        actorId,
+        actorType,
+        oldStatus: existing.status,
+        newStatus: status,
+        reason: null,
+        metadata: { supersededKnowledgeIds: replaced, via: 'KnowledgeService.updateFactStatus' },
+        createdAt: now,
+      });
+
+      return replaced;
+    });
+
+    if (supersededIds.length > 0) {
+      console.log(`[KnowledgeService] Approved ${factId}, superseded: ${supersededIds.join(', ')}`);
+    }
+
+    return true;
   }
 }

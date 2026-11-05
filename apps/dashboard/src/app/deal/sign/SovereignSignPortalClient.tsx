@@ -11,6 +11,7 @@ import {
   Fingerprint, Mail, LogOut, ShieldAlert, Check
 } from 'lucide-react';
 import { SigningPolicy, SignerRole } from '@/lib/deal-signing/types';
+import { exchangeNexusSession } from '@/lib/nexus/session-client';
 
 interface SignerInput {
   name: string;
@@ -77,51 +78,41 @@ export function SovereignSignPortalClient() {
     const wallet = localStorage.getItem('snarai_wallet') || localStorage.getItem('user_wallet') || localStorage.getItem('walletAddress');
     if (wallet) headers['x-wallet-address'] = wallet;
 
-    if (tokenParam) {
-      // Auto-verify token from URL using unified endpoint
-      fetch(`/api/v1/nexus/auth/me?token=${tokenParam}`, { headers })
-        .then(res => res.json())
-        .then(data => {
-          if (data.ok && data.auth?.isAuthenticated) {
-            setSession({ email: data.auth.email, isAdmin: data.auth.role === 'SUPER_ADMIN' || data.auth.role === 'ADMIN' });
-            localStorage.setItem('pandoras_nexus_token', tokenParam);
-            if (data.auth.email) {
-              setSigners([{ name: data.auth.email.split('@')[0], email: data.auth.email, role: 'SIGNER' }]);
-            }
-            // Clean up token from URL
-            router.replace('/deal/sign');
-          } else {
-            router.replace('/nexus');
-          }
-        })
-        .catch(err => {
-          console.error('Error verifying token:', err);
+    const resolveSession = async () => {
+      if (tokenParam) {
+        // El token del enlace se canjea UNA vez por una cookie httpOnly (token de
+        // un solo uso). Nunca se guarda en localStorage ni viaja en la URL de la API.
+        const established = await exchangeNexusSession(tokenParam);
+        if (!established) {
           router.replace('/nexus');
-        })
-        .finally(() => setIsCheckingAuth(false));
-    } else {
-      // Check unified session (cookie/headers/local token)
-      const localToken = localStorage.getItem('pandoras_nexus_token');
-      const url = `/api/v1/nexus/auth/me${localToken ? `?token=${localToken}` : ''}`;
-      
-      fetch(url, { headers })
-        .then(res => res.json())
-        .then(data => {
-          if (data.ok && data.auth?.isAuthenticated) {
-            setSession({ email: data.auth.email, isAdmin: data.auth.role === 'SUPER_ADMIN' || data.auth.role === 'ADMIN' });
-            if (data.auth.email) {
-              setSigners([{ name: data.auth.email.split('@')[0], email: data.auth.email, role: 'SIGNER' }]);
-            }
-          } else {
-            router.replace('/nexus');
-          }
-        })
-        .catch(err => {
-          console.error('Session check failed:', err);
-          router.replace('/nexus');
-        })
-        .finally(() => setIsCheckingAuth(false));
-    }
+          return;
+        }
+        router.replace('/deal/sign');
+      }
+
+      const res = await fetch('/api/v1/nexus/auth/me', { headers });
+      const data: unknown = await res.json().catch(() => null);
+      const auth =
+        data !== null && typeof data === 'object'
+          ? (data as { auth?: { isAuthenticated?: boolean; email?: string | null; role?: string | null } }).auth
+          : undefined;
+
+      if (auth?.isAuthenticated) {
+        setSession({ email: auth.email ?? '', isAdmin: auth.role === 'SUPER_ADMIN' || auth.role === 'ADMIN' });
+        if (auth.email) {
+          setSigners([{ name: auth.email.split('@')[0] ?? auth.email, email: auth.email, role: 'SIGNER' }]);
+        }
+      } else {
+        router.replace('/nexus');
+      }
+    };
+
+    resolveSession()
+      .catch((err: unknown) => {
+        console.error('Session check failed:', err);
+        router.replace('/nexus');
+      })
+      .finally(() => setIsCheckingAuth(false));
   }, [searchParams, router]);
 
   // Fetch recent envelopes when switching to LOOKUP or logging in
