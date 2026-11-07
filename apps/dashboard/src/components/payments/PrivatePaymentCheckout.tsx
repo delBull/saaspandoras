@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { client } from "@saasfly/shared/thirdweb-client";
 import { defineChain, getContract } from "thirdweb";
 import { transfer } from "thirdweb/extensions/erc20";
@@ -326,6 +326,32 @@ export function PrivatePaymentCheckout({ id, payerCountry = "MX" }: { id: string
     if (first === "card" || first === "crypto") setMethod(first);
   }, [data]);
 
+  /**
+   * Monto CONGELADO para el checkout con tarjeta.
+   *
+   * El widget de thirdweb re-cotiza cada vez que cambian sus props. `rates` se
+   * actualiza por WebSocket (~1/s), así que pasarle un monto recalculado en vivo
+   * provocaba un ciclo de recotización infinito (el "blink" que se quedaba
+   * cargando). Se fija la conversión con las tasas del primer render y se
+   * memoiza para que la identidad del objeto sea estable.
+   */
+  const cardLink = useMemo(() => {
+    if (!data) return null;
+    const amount = Number(data.amount);
+    const currency = (data.currency || "USD") as StoredCurrency;
+    const frozenUsdc = Number(computeAll(amount, currency, rates).usdc.toFixed(2));
+    return {
+      id: String(data.id),
+      title: String(data.title ?? "Cobro"),
+      description: (data.description as string | null) ?? null,
+      amount: String(frozenUsdc),
+      currency: "USD",
+      destinationWallet: String(data.destinationWallet),
+      networkChainId: Number(data.networkChainId ?? 8453),
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- congelamos las tasas a propósito (ver comentario)
+  }, [data]);
+
   const Screen = ({ children }: { children: React.ReactNode }) => (
     <div className="w-full max-w-md flex flex-col" style={{ maxHeight: "calc(100dvh - 1.5rem)" }}>
       {children}
@@ -504,18 +530,13 @@ export function PrivatePaymentCheckout({ id, payerCountry = "MX" }: { id: string
 
         {method === "card" ? (
           <div className="px-4 pb-2 flex-shrink-0">
-            <CardCheckoutPanel
-              country={payerCountry}
-              link={{
-                id: data.id,
-                title: data.title,
-                description: data.description ?? null,
-                amount: String(usdcAmount),
-                currency: "USD",
-                destinationWallet: data.destinationWallet,
-                networkChainId: chainId,
-              }}
-            />
+            {cardLink ? (
+              <CardCheckoutPanel
+                country={payerCountry}
+                link={cardLink}
+                onFallback={methods.includes("crypto") ? () => setMethod("crypto") : undefined}
+              />
+            ) : null}
             <p className="mt-2 text-center text-[9px] leading-relaxed text-zinc-600">
               Pago con tarjeta procesado por la rampa de thirdweb · liquidación en USDC a la wallet del cobrador.
             </p>

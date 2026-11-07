@@ -36,7 +36,15 @@ interface SettleResponse {
  * el flujo salta directo a la selección de proveedor y se queda sin opciones
  * (el modal aparece y se cierra).
  */
-export function CardCheckoutPanel({ link, country }: { link: CardCheckoutLink; country: string }) {
+export function CardCheckoutPanel({
+  link,
+  country,
+  onFallback,
+}: {
+  link: CardCheckoutLink;
+  country: string;
+  onFallback?: () => void;
+}) {
   const [phase, setPhase] = useState<Phase>('idle');
   const [detail, setDetail] = useState<string | null>(null);
 
@@ -93,19 +101,30 @@ export function CardCheckoutPanel({ link, country }: { link: CardCheckoutLink; c
     return (
       <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-5 text-center">
         <AlertTriangle className="mx-auto h-7 w-7 text-rose-400" />
-        <h3 className="mt-2 text-sm font-semibold text-rose-200">No se pudo completar el pago</h3>
+        <h3 className="mt-2 text-sm font-semibold text-rose-200">No se pudo completar el pago con tarjeta</h3>
         <p className="mt-1 text-[11px] text-rose-200/70">No se realizó ningún cargo confirmado.</p>
         {detail ? <p className="mt-2 break-all font-mono text-[10px] text-rose-200/50">{detail}</p> : null}
-        <button
-          type="button"
-          onClick={() => {
-            setPhase('idle');
-            setDetail(null);
-          }}
-          className="mt-3 rounded-lg border border-white/10 px-3 py-1.5 text-[11px] text-zinc-300 hover:bg-white/5"
-        >
-          Reintentar
-        </button>
+        <div className="mt-3 flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setPhase('idle');
+              setDetail(null);
+            }}
+            className="rounded-lg border border-white/10 px-3 py-1.5 text-[11px] text-zinc-300 hover:bg-white/5"
+          >
+            Reintentar con tarjeta
+          </button>
+          {onFallback ? (
+            <button
+              type="button"
+              onClick={onFallback}
+              className="rounded-lg border border-lime-400/40 bg-lime-400/10 px-3 py-1.5 text-[11px] font-semibold text-lime-300 hover:bg-lime-400/20"
+            >
+              Pagar con USDC en su lugar
+            </button>
+          ) : null}
+        </div>
       </div>
     );
   }
@@ -173,6 +192,8 @@ export function CardCheckoutPanel({ link, country }: { link: CardCheckoutLink; c
           setDetail(failures.join(' · ') || 'Sin transacciones verificables.');
         }}
         onError={(error) => {
+          // Diagnóstico: este mensaje es el que hay que mirar en la consola del navegador.
+          console.error('[Nexus CardCheckout] widget error:', error.message, error);
           setPhase('error');
           setDetail(error.message);
         }}
