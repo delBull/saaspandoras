@@ -47,6 +47,15 @@ export async function GET(
         destinationWallet: link.destinationWallet,
         networkChainId: link.networkChainId,
         settlementToken: link.settlementToken,
+        // Métodos permitidos por el link (los define el cobrador al crearlo).
+        methods: (() => {
+          const raw = (link.metadata as Record<string, unknown> | null)?.methods;
+          if (Array.isArray(raw)) {
+            const allowed = raw.filter((m): m is string => typeof m === 'string');
+            if (allowed.length > 0) return allowed;
+          }
+          return ['crypto'];
+        })(),
       },
     });
   } catch (error: any) {

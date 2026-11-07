@@ -36,7 +36,7 @@ export const SECTIONS: NexusSection[] = [
     cap: "nexus.manage",
     links: [
       { label: "Deal Room & Transaction Rooms", note: "Redacción, revisión y firma de propuestas y acuerdos institucionales.", href: "/nexus/rooms" },
-      { label: "Cobros con Tarjeta (Piloto)", note: "Genera links de cobro con tarjeta que liquidan a la wallet configurada.", href: "/payments", cap: "nexus.manage", superAdminOnly: true },
+      { label: "Private Pay & Finance Terminal", note: "Cobros directos con tarjeta o USDC, liquidados a la wallet que elijas.", href: "/nexus/private-terminal", cap: "nexus.manage", superAdminOnly: true },
       { label: "Institutional Data Room", note: "Due diligence y compliance institucional.", href: "https://pandoras.finance/institutional-book", external: true },
       { label: "Books Vault Constitucional", note: "Constitución y Libros Fundacionales I-IX con doble capa criptográfica.", href: "https://pandoras.finance/libros/constitucion", external: true },
       { label: "Onboarding Unificado", note: "Wizard de provisioning de operadores.", href: "/onboarding" },

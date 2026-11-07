@@ -33,6 +33,8 @@ export function PrivateTerminalClient({ inModal = false }: { inModal?: boolean }
   const [currency, setCurrency] = useState<LinkCurrency>("USD");
   const [destinationWallet, setDestinationWallet] = useState("");
   const [expiresInDays, setExpiresInDays] = useState("30");
+  // Cobro con tarjeta (thirdweb Checkout) habilitado por defecto en la Terminal Privada.
+  const [allowCard, setAllowCard] = useState(true);
 
   useEffect(() => {
     if (account?.address && !destinationWallet) {
@@ -65,6 +67,10 @@ export function PrivateTerminalClient({ inModal = false }: { inModal?: boolean }
       const json = await res.json();
       if (json.success) {
         setLinks(json.links || []);
+        // Wallet del entorno como valor por defecto (no autoridad: el cobrador puede cambiarla).
+        if (json.defaultDestinationWallet) {
+          setDestinationWallet((prev) => prev || json.defaultDestinationWallet);
+        }
       }
     } catch (e) {
       console.error(e);
@@ -100,6 +106,8 @@ export function PrivateTerminalClient({ inModal = false }: { inModal?: boolean }
           destinationWallet: destinationWallet.trim(),
           networkChainId: 8453, // Base
           expiresInDays: expiresInDays ? parseInt(expiresInDays) : undefined,
+          // 'card' habilita el CheckoutWidget de thirdweb en el link público.
+          methods: allowCard ? ["card", "crypto"] : ["crypto"],
         }),
       });
 
@@ -263,6 +271,24 @@ export function PrivateTerminalClient({ inModal = false }: { inModal?: boolean }
                   onChange={(e) => setExpiresInDays(e.target.value)}
                   className="bg-[#12121A] border-white/10 text-white text-xs rounded-xl focus:border-lime-500/50"
                 />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="flex items-start gap-2.5 rounded-xl border border-white/10 bg-[#12121A] p-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={allowCard}
+                    onChange={(e) => setAllowCard(e.target.checked)}
+                    className="mt-0.5 h-3.5 w-3.5 accent-lime-400"
+                  />
+                  <span className="space-y-0.5">
+                    <span className="block text-xs font-medium text-zinc-200">Permitir pago con tarjeta</span>
+                    <span className="block text-[10px] leading-tight text-zinc-400">
+                      Habilita el checkout de thirdweb en el link. El cargo se liquida en USDC a la wallet receptora.
+                      Las comisiones de la rampa las paga quien paga.
+                    </span>
+                  </span>
+                </label>
               </div>
 
               <Button

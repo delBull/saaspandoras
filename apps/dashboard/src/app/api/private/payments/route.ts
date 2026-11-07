@@ -3,6 +3,7 @@ import { db } from "@saasfly/db-core";
 import { privatePaymentLinks } from "@saasfly/db-core";
 import { validateAdminSession } from "@/lib/admin-auth";
 import { getNexusAuthContext } from '@saasfly/shared';
+import { resolveTreasuryWallet } from '@/lib/payments/treasury';
 import { z } from "zod";
 import { desc } from "@saasfly/db-core";
 
@@ -17,6 +18,8 @@ const CreatePrivateLinkSchema = z.object({
   networkChainId: z.number().default(8453), // Default to Base
   settlementToken: z.string().regex(/^0x[a-fA-F0-9]{40}$/i).optional().nullable(),
   expiresInDays: z.number().min(1).max(365).optional(),
+  // Métodos habilitados en el checkout público. 'card' usa el CheckoutWidget de thirdweb.
+  methods: z.array(z.enum(["crypto", "wire", "card"])).min(1).default(["crypto"]),
 });
 
 /**
@@ -64,10 +67,14 @@ export async function GET(req: NextRequest) {
       limit: 50,
     });
 
+    const treasury = resolveTreasuryWallet();
+
     return NextResponse.json({
       success: true,
       links,
       admin: address,
+      // Wallet del entorno: la terminal la usa como valor por defecto, no como autoridad.
+      defaultDestinationWallet: treasury.ok ? treasury.wallet : null,
     });
   } catch (error: any) {
     console.error("[PrivatePayments API] Error listing links:", error);
@@ -99,6 +106,7 @@ export async function POST(req: NextRequest) {
       networkChainId,
       settlementToken,
       expiresInDays,
+      methods,
     } = parsed.data;
 
     let expiresAt: Date | null = null;
@@ -122,6 +130,7 @@ export async function POST(req: NextRequest) {
         metadata: {
           createdByUser: address,
           createdByWallet: address,
+          methods,
         },
       })
       .returning();
