@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { client } from "@saasfly/shared/thirdweb-client";
 import { defineChain, getContract } from "thirdweb";
 import { transfer } from "thirdweb/extensions/erc20";
@@ -311,6 +311,10 @@ export function PrivatePaymentCheckout({ id, payerCountry = "MX" }: { id: string
   const rates = useRealtimeRates();
   const payUrl = typeof window !== "undefined" ? window.location.href : "";
 
+  // Callback estable: evita que el panel memoizado de tarjeta se re-renderice con
+  // cada tick de las tasas en vivo.
+  const handleCardFallback = useCallback(() => setMethod("crypto"), []);
+
   useEffect(() => {
     fetch(`/api/private/pay/${id}`)
       .then(async (res) => { const j = await res.json(); if (!res.ok) throw new Error(j.error || "Error"); setData(j.data); })
@@ -534,7 +538,7 @@ export function PrivatePaymentCheckout({ id, payerCountry = "MX" }: { id: string
               <CardCheckoutPanel
                 country={payerCountry}
                 link={cardLink}
-                onFallback={methods.includes("crypto") ? () => setMethod("crypto") : undefined}
+                onFallback={methods.includes("crypto") ? handleCardFallback : undefined}
               />
             ) : null}
             <p className="mt-2 text-center text-[9px] leading-relaxed text-zinc-600">

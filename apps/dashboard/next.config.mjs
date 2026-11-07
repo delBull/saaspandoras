@@ -182,7 +182,10 @@ const nextConfig = {
               "font-src 'self' https://fonts.gstatic.com",
               "img-src 'self' data: blob: https: ipfs:",
               "connect-src 'self' https: wss: data:",
-              "frame-src 'self' https://*.thirdweb.com https://*.pandoras.finance https://verify.walletconnect.org https://*.walletconnect.org https://8x8.vc https://*.8x8.vc https://meet.jit.si",
+              // Proveedores de rampa (tarjeta) que thirdweb embebe durante el checkout.
+              // Sin esto el modal del proveedor se abre y el navegador lo bloquea
+              // (síntoma: "aparece y se quita" / queda cargando).
+              "frame-src 'self' https://*.thirdweb.com https://*.pandoras.finance https://verify.walletconnect.org https://*.walletconnect.org https://8x8.vc https://*.8x8.vc https://meet.jit.si https://*.transak.com https://*.moonpay.com https://pay.coinbase.com https://ramp.stripe.com https://*.mercuryo.io https://*.banxa.com https://*.onramper.com",
               "object-src 'none'",
               "base-uri 'self'",
               "form-action 'self'",

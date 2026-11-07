@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { CheckoutWidget } from 'thirdweb/react';
 import { base } from 'thirdweb/chains';
 import { client } from '@saasfly/shared/thirdweb-client';
@@ -36,7 +36,7 @@ interface SettleResponse {
  * el flujo salta directo a la selección de proveedor y se queda sin opciones
  * (el modal aparece y se cierra).
  */
-export function CardCheckoutPanel({
+function CardCheckoutPanelBase({
   link,
   country,
   onFallback,
@@ -205,3 +205,10 @@ export function CardCheckoutPanel({
     </div>
   );
 }
+
+/**
+ * Memoizado a propósito: el checkout público re-renderiza cada segundo por las
+ * tasas en vivo. Sin esto, el widget de thirdweb recibía props nuevas en cada
+ * tick y reiniciaba su cotización (el "blink" que nunca terminaba de cargar).
+ */
+export const CardCheckoutPanel = memo(CardCheckoutPanelBase);
