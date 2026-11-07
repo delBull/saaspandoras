@@ -44,6 +44,8 @@ vi.mock('@saasfly/auth-sdk', () => ({
     return { session: null, isVerified: false };
   }),
   isAdmin: vi.fn(async () => false),
+  // El RBAC resuelve el admin de plataforma con isSuperAdmin (wallet soberana).
+  isSuperAdmin: vi.fn(() => false),
 }));
 
 describe('🔒 RELEASE GATE: Nexus Production Closure Audit Suite', () => {
