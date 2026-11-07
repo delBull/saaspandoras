@@ -9,7 +9,7 @@
 import { db } from '@saasfly/db-core';
 import { users, nexusCollaborators, projectCollaborators, projects, type NexusPermissionsOverride, type NexusProvisionStatus } from '@saasfly/db-core/schema';
 import { eq, and, gt, asc, sql } from "@saasfly/db-core";
-import { getAuth, isAdmin } from '@saasfly/auth-sdk';
+import { getAuth, isSuperAdmin } from '@saasfly/auth-sdk';
 import crypto from 'crypto';
 
 // Dynamic require for next/headers without triggering direct-eval bundler warning
@@ -341,10 +341,10 @@ export async function getNexusAuthContext(
     const sessionWallet = typeof rawWallet === 'string' ? rawWallet.toLowerCase() : null;
 
     if (sessionWallet && isVerified) {
-      const isPlatformAdmin = await isAdmin(sessionWallet);
+      const isSuperAdminWallet = isSuperAdmin(sessionWallet);
 
-      if (isPlatformAdmin) {
-        // Resolve completion fields for sovereign administrators so the registration gate
+      if (isSuperAdminWallet) {
+        // Resolve completion fields for sovereign SUPER_ADMINISTRATOR so the registration gate
         // (!name && !whatsappPhone) never loops or blocks the operator.
         const [superUser] = await db
           .select({ id: users.id, name: users.name, email: users.email, role: users.role, image: users.image })
@@ -394,11 +394,6 @@ export async function getNexusAuthContext(
               break;
             }
           } catch (collabErr) {
-            // La autoridad aquí es `isAdmin(wallet)` (tabla administrators /
-            // users.role), que YA se resolvió arriba. Esta consulta sólo enriquece
-            // nombre y teléfono, así que un fallo no concede privilegio nuevo: el
-            // wallet seguiría siendo administrador de todas formas. Se registra a
-            // nivel error para que no pase inadvertido.
             console.error('[NexusRBAC] Collaborator enrichment failed for admin wallet:', collabErr);
           }
         }
