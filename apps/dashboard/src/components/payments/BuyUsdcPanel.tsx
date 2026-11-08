@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { BuyWidget } from 'thirdweb/react';
 import { base } from 'thirdweb/chains';
 import { client } from '@saasfly/shared/thirdweb-client';
@@ -22,7 +22,7 @@ type Phase = 'idle' | 'funded' | 'error';
  * No se usa un checkout de comercio (receiver = vendedor) porque ahí la rampa
  * tiene que enrutar pago directo y falla según proveedor/país.
  */
-export function BuyUsdcPanel({
+function BuyUsdcPanelBase({
   amount,
   onFunded,
 }: {
@@ -114,3 +114,9 @@ export function BuyUsdcPanel({
     </div>
   );
 }
+
+/**
+ * Memoizado: el checkout se re-renderiza cada segundo por las tasas en vivo y el
+ * widget de compra se reiniciaría en cada tick.
+ */
+export const BuyUsdcPanel = memo(BuyUsdcPanelBase);

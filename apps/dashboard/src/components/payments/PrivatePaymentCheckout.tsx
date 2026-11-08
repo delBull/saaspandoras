@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useRef, useCallback } from "react";
+import { memo, useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { client } from "@saasfly/shared/thirdweb-client";
 import { defineChain, getContract } from "thirdweb";
 import { transfer } from "thirdweb/extensions/erc20";
@@ -232,7 +232,7 @@ function AmountPanel({ amount, currency, rates }: {
 }
 
 // ── Pay Section ───────────────────────────────────────────────────────────────
-function PaySection({ data, tokenContract, txStep, setTxStep, setCompletedTx, usdcAmount }: {
+const PaySection = memo(function PaySection({ data, tokenContract, txStep, setTxStep, setCompletedTx, usdcAmount }: {
   data: any; tokenContract: any; txStep: TxStep;
   setTxStep: (s: TxStep) => void; setCompletedTx: (tx: string) => void; usdcAmount: number;
 }) {
@@ -260,7 +260,7 @@ function PaySection({ data, tokenContract, txStep, setTxStep, setCompletedTx, us
       )}
     </div>
   );
-}
+});
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 function NexusHeader() {
@@ -312,10 +312,23 @@ export function PrivatePaymentCheckout({ id }: { id: string }) {
   const [completedTx, setCompletedTx] = useState<string | null>(null);
   const [txStep, setTxStep]           = useState<TxStep>("idle");
   const [showBuy, setShowBuy]         = useState(false);
+  // Monto a pagar CONGELADO: las tasas se actualizan cada segundo y el importe de
+  // una transferencia no puede cambiar mientras el pagador firma. Congelarlo
+  // también evita que el botón de pago (y su modal) se reinicien cada tick.
+  const [frozenUsdcAmount, setFrozenUsdcAmount] = useState<number | null>(null);
   const rates = useRealtimeRates();
 
   // Callback estable (evita re-renders por el tick de tasas en vivo).
   const handleFunded = useCallback(() => setShowBuy(false), []);
+
+  useEffect(() => {
+    if (frozenUsdcAmount !== null || !data) return;
+    const amount = Number((data as { amount?: unknown }).amount);
+    if (!Number.isFinite(amount) || amount <= 0) return;
+    const currency = String((data as { currency?: unknown }).currency ?? 'USD') as StoredCurrency;
+    setFrozenUsdcAmount(computeAll(amount, currency, rates).usdc);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- sólo se fija una vez
+  }, [data, rates, frozenUsdcAmount]);
 
   useEffect(() => {
     fetch(`/api/private/pay/${id}`)
@@ -392,11 +405,18 @@ export function PrivatePaymentCheckout({ id }: { id: string }) {
   const storedCurrency = (data.currency || "USD") as StoredCurrency;
   const all            = computeAll(storedAmount, storedCurrency, rates);
   const usdcAmount     = all.usdc;
+  // Importe que se cobra/firma: fijo desde el primer cálculo (no baila con las tasas).
+  const payableUsdc    = frozenUsdcAmount ?? usdcAmount;
 
   const chainId       = data.networkChainId || 8453;
   const isBase        = chainId === 8453;
   const tokenAddress  = data.settlementToken || (chainId === 11155111 ? USDC_SEPOLIA : USDC_BASE);
-  const tokenContract = getContract({ client, chain: defineChain(chainId), address: tokenAddress });
+  // Identidad estable: si se recrea en cada render, el botón de pago (y su modal)
+  // se reinician cada segundo por el tick de tasas.
+  const tokenContract = useMemo(
+    () => getContract({ client, chain: defineChain(chainId), address: tokenAddress }),
+    [chainId, tokenAddress]
+  );
   const explorerBase  = isBase ? "https://basescan.org" : "https://sepolia.etherscan.io";
 
 
@@ -486,7 +506,7 @@ export function PrivatePaymentCheckout({ id }: { id: string }) {
             <div className="px-3 pb-3 space-y-2">
               <div className="flex items-center justify-center rounded-lg bg-white p-2">
                 <QRCode
-                  value={`ethereum:${data.destinationWallet}@${chainId}/transfer?address=${tokenAddress}&uint256=${BigInt(Math.round(usdcAmount * 1e6)).toString()}`}
+                  value={`ethereum:${data.destinationWallet}@${chainId}/transfer?address=${tokenAddress}&uint256=${BigInt(Math.round(payableUsdc * 1e6)).toString()}`}
                   size={128}
                   bgColor="#ffffff"
                   fgColor="#070707"
@@ -498,7 +518,7 @@ export function PrivatePaymentCheckout({ id }: { id: string }) {
                 <CopyBtn value={data.destinationWallet} />
               </div>
               <p className="text-[10px] leading-relaxed text-zinc-500">
-                Envía exactamente <span className="font-mono text-zinc-300">{fmt(usdcAmount, 4)} USDC</span> en{' '}
+                Envía exactamente <span className="font-mono text-zinc-300">{fmt(payableUsdc, 4)} USDC</span> en{' '}
                 {isBase ? 'Base' : 'Sepolia'} a esa dirección. Cualquier wallet sirve (MetaMask, Rabby, exchange).
               </p>
             </div>
@@ -509,13 +529,13 @@ export function PrivatePaymentCheckout({ id }: { id: string }) {
 
         <div className="flex-1 min-h-0" />
 
-        <PaySection data={data} tokenContract={tokenContract} txStep={txStep} setTxStep={setTxStep} setCompletedTx={setCompletedTx} usdcAmount={usdcAmount} />
+        <PaySection data={data} tokenContract={tokenContract} txStep={txStep} setTxStep={setTxStep} setCompletedTx={setCompletedTx} usdcAmount={payableUsdc} />
 
         {/* Mismo modelo que admin: se conecta (wallet o login social) y paga.
             Si no tiene USDC, puede comprarlo con tarjeta en SU wallet y volver. */}
         <div className="px-4 pb-2 flex-shrink-0">
           {showBuy ? (
-            <BuyUsdcPanel amount={cardLink ? cardLink.amount : String(usdcAmount)} onFunded={handleFunded} />
+            <BuyUsdcPanel amount={cardLink ? cardLink.amount : String(payableUsdc)} onFunded={handleFunded} />
           ) : (
             <button
               type="button"
