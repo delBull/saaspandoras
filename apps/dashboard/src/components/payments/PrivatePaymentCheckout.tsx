@@ -12,7 +12,7 @@ import {
 import { toast } from "sonner";
 import QRCode from "react-qr-code";
 import { wallets } from "@/lib/wallets";
-import { CardCheckoutPanel } from "./CardCheckoutPanel";
+import { BuyUsdcPanel } from "./BuyUsdcPanel";
 
 const USDC_BASE    = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 const USDC_SEPOLIA = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238";
@@ -301,7 +301,7 @@ function NexusFooter() {
 }
 
 // ── Main Checkout ─────────────────────────────────────────────────────────────
-export function PrivatePaymentCheckout({ id, payerCountry = "MX" }: { id: string; payerCountry?: string }) {
+export function PrivatePaymentCheckout({ id }: { id: string }) {
   const [data, setData]               = useState<any>(null);
   const [loading, setLoading]         = useState(true);
   const [error, setError]             = useState<string | null>(null);
@@ -489,7 +489,7 @@ export function PrivatePaymentCheckout({ id, payerCountry = "MX" }: { id: string
                     : "border-zinc-800 bg-zinc-900/40 text-zinc-400 hover:text-zinc-200"
                 }`}
               >
-                <CreditCard className="w-3.5 h-3.5" /> Tarjeta
+                <CreditCard className="w-3.5 h-3.5" /> Con tarjeta
               </button>
               <button
                 type="button"
@@ -500,7 +500,7 @@ export function PrivatePaymentCheckout({ id, payerCountry = "MX" }: { id: string
                     : "border-zinc-800 bg-zinc-900/40 text-zinc-400 hover:text-zinc-200"
                 }`}
               >
-                <Zap className="w-3.5 h-3.5" /> Cripto (USDC)
+                <Zap className="w-3.5 h-3.5" /> Con USDC
               </button>
             </div>
           </div>
@@ -550,15 +550,10 @@ export function PrivatePaymentCheckout({ id, payerCountry = "MX" }: { id: string
         {method === "card" ? (
           <div className="px-4 pb-2 flex-shrink-0">
             {cardLink ? (
-              <CardCheckoutPanel
-                country={payerCountry}
-                link={cardLink}
-                onFallback={methods.includes("crypto") ? handleCardFallback : undefined}
-              />
+              // Modelo probado de admin: la tarjeta fondea la wallet del PAGADOR
+              // (smart wallet del login social) y luego se transfiere al cobrador.
+              <BuyUsdcPanel amount={cardLink.amount} onFunded={handleCardFallback} />
             ) : null}
-            <p className="mt-2 text-center text-[9px] leading-relaxed text-zinc-600">
-              Pago con tarjeta procesado por la rampa de thirdweb · liquidación en USDC a la wallet del cobrador.
-            </p>
           </div>
         ) : (
           <PaySection data={data} tokenContract={tokenContract} txStep={txStep} setTxStep={setTxStep} setCompletedTx={setCompletedTx} usdcAmount={usdcAmount} />
