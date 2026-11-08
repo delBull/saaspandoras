@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@saasfly/db-core";
 import { privatePaymentLinks } from "@saasfly/db-core";
 import { eq } from "@saasfly/db-core";
+import { getPaymentLimits, usableMethods, type PaymentMethod } from "@/lib/payments/limits";
 
 export const runtime = "nodejs";
 
@@ -36,6 +37,16 @@ export async function GET(
       return NextResponse.json({ error: "Este link ha expirado" }, { status: 410 });
     }
 
+    // Métodos permitidos por el link, filtrados por los mínimos de cada método.
+    // Así el pagador no ve una pestaña que la rampa va a rechazar.
+    const rawMethods = (link.metadata as Record<string, unknown> | null)?.methods;
+    const declared = Array.isArray(rawMethods)
+      ? rawMethods.filter(
+          (m): m is PaymentMethod => m === "crypto" || m === "wire" || m === "card"
+        )
+      : (["crypto"] as PaymentMethod[]);
+    const { usable, blocked } = usableMethods(declared, Number(link.amount), link.currency);
+
     return NextResponse.json({
       success: true,
       data: {
@@ -47,15 +58,10 @@ export async function GET(
         destinationWallet: link.destinationWallet,
         networkChainId: link.networkChainId,
         settlementToken: link.settlementToken,
-        // Métodos permitidos por el link (los define el cobrador al crearlo).
-        methods: (() => {
-          const raw = (link.metadata as Record<string, unknown> | null)?.methods;
-          if (Array.isArray(raw)) {
-            const allowed = raw.filter((m): m is string => typeof m === 'string');
-            if (allowed.length > 0) return allowed;
-          }
-          return ['crypto'];
-        })(),
+        // Métodos realmente utilizables para este monto (ya filtrados por mínimos).
+        methods: usable,
+        blockedMethods: blocked,
+        limits: getPaymentLimits(),
       },
     });
   } catch (error: any) {

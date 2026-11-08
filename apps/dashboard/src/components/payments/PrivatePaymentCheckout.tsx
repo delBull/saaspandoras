@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import QRCode from "react-qr-code";
+import { wallets } from "@/lib/wallets";
 import { CardCheckoutPanel } from "./CardCheckoutPanel";
 
 const USDC_BASE    = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
@@ -240,8 +241,8 @@ function PaySection({ data, tokenContract, txStep, setTxStep, setCompletedTx, us
     <div className="px-4 pt-3 pb-1 flex-shrink-0">
       {!account ? (
         <>
-          <p className="text-[11px] text-zinc-500 text-center mb-2">Conecta tu wallet para pagar</p>
-          <ConnectButton client={client} theme="dark"
+          <p className="text-[11px] text-zinc-500 text-center mb-2">Conecta con wallet o inicio de sesión social</p>
+          <ConnectButton client={client} theme="dark" wallets={wallets}
             connectButton={{ label: "Conectar Wallet para Pagar", style: { width: "100%", background: "#a3e635", color: "#000", fontWeight: "900", fontSize: "0.9rem", padding: "0.85rem", borderRadius: "0.75rem", border: "none", touchAction: "manipulation" } }} />
         </>
       ) : (
@@ -357,7 +358,9 @@ export function PrivatePaymentCheckout({ id, payerCountry = "MX" }: { id: string
   }, [data]);
 
   const Screen = ({ children }: { children: React.ReactNode }) => (
-    <div className="w-full max-w-md flex flex-col" style={{ maxHeight: "calc(100dvh - 1.5rem)" }}>
+    // Sin maxHeight fijo: en móvil el contenido (métodos + widget) crece y la
+    // página hace scroll. Antes se recortaba y no había forma de ver el botón.
+    <div className="w-full max-w-md flex flex-col">
       {children}
     </div>
   );
@@ -411,6 +414,11 @@ export function PrivatePaymentCheckout({ id, payerCountry = "MX" }: { id: string
     availableMethods.length > 0 ? availableMethods : (["crypto"] as Array<"crypto" | "card">);
   const showMethodSwitch = methods.includes("crypto") && methods.includes("card");
 
+  // Métodos bloqueados por mínimo (los informa el servidor).
+  const blockedMethods: Array<{ method: string; reason: string }> = Array.isArray(data.blockedMethods)
+    ? (data.blockedMethods as Array<{ method: string; reason: string }>)
+    : [];
+
   if (completedTx) return (
     <Screen>
       <NexusHeader />
@@ -462,6 +470,13 @@ export function PrivatePaymentCheckout({ id, payerCountry = "MX" }: { id: string
         </div>
 
         {/* Método de pago (sólo si el cobrador habilitó ambos) */}
+        {blockedMethods.length > 0 && (
+          <div className="px-4 pt-2 flex-shrink-0">
+            <p className="rounded-lg border border-amber-500/25 bg-amber-500/10 px-2.5 py-1.5 text-[10px] leading-relaxed text-amber-300">
+              {blockedMethods.map((b) => b.reason).join(' · ')}
+            </p>
+          </div>
+        )}
         {showMethodSwitch && (
           <div className="px-4 pt-3 flex-shrink-0">
             <div className="grid grid-cols-2 gap-2">

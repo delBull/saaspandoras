@@ -330,8 +330,8 @@ export function middleware(request: NextRequest) {
     || (process.env.VERCEL_ENV === undefined && process.env.NODE_ENV === 'production');
 
   const connectSrc = isProduction
-    ? "'self' https://*.thirdweb.com wss://*.thirdweb.com https://api.telegram.org https://dash.pandoras.finance https://app.pandoras.org https://blob.vercel-storage.com"
-    : "'self' https://*.thirdweb.com wss://*.thirdweb.com https://api.telegram.org https://*.pandoras.finance https://*.pandoras.org https://blob.vercel-storage.com";
+    ? "'self' https://*.thirdweb.com wss://*.thirdweb.com https://api.telegram.org https://dash.pandoras.finance https://app.pandoras.org https://blob.vercel-storage.com https://open.er-api.com wss://stream.binance.com:9443 https://bridge.thirdweb.com"
+    : "'self' https://*.thirdweb.com wss://*.thirdweb.com https://api.telegram.org https://*.pandoras.finance https://*.pandoras.org https://blob.vercel-storage.com https://open.er-api.com wss://stream.binance.com:9443 https://bridge.thirdweb.com";
 
   response.headers.set(
     'Content-Security-Policy-Report-Only',

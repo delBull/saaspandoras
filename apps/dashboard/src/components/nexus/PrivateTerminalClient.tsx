@@ -8,7 +8,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Loader2, Copy, Check, ExternalLink, ShieldCheck, Wallet, Plus, ArrowUpRight } from "lucide-react";
+import { Loader2, Copy, Check, ExternalLink, ShieldCheck, Wallet, Plus, ArrowUpRight, Trash2 } from "lucide-react";
+
+interface PrivateLinkRow {
+  id: string;
+  title: string;
+  description: string | null;
+  amount: string;
+  currency: string;
+  destinationWallet: string;
+  status: string;
+  createdAt?: string;
+  expiresAt?: string | null;
+  metadata?: unknown;
+}
 
 type LinkCurrency = "USD" | "MXN" | "USDT" | "USDC";
 const CURRENCY_LABELS: Record<LinkCurrency, string> = {
@@ -21,10 +34,11 @@ const CURRENCY_SYMBOL: Record<LinkCurrency, string> = { USD: "$", MXN: "$", USDT
 
 export function PrivateTerminalClient({ inModal = false }: { inModal?: boolean }) {
   const account = useActiveAccount();
-  const [links, setLinks] = useState<any[]>([]);
+  const [links, setLinks] = useState<PrivateLinkRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // Form State
   const [title, setTitle] = useState("");
@@ -35,6 +49,7 @@ export function PrivateTerminalClient({ inModal = false }: { inModal?: boolean }
   const [expiresInDays, setExpiresInDays] = useState("30");
   // Cobro con tarjeta (thirdweb Checkout) habilitado por defecto en la Terminal Privada.
   const [allowCard, setAllowCard] = useState(true);
+  const [cardMinUsd, setCardMinUsd] = useState(5);
 
   useEffect(() => {
     if (account?.address && !destinationWallet) {
@@ -66,11 +81,12 @@ export function PrivateTerminalClient({ inModal = false }: { inModal?: boolean }
       }
       const json = await res.json();
       if (json.success) {
-        setLinks(json.links || []);
+        setLinks((json.links ?? []) as PrivateLinkRow[]);
         // Wallet del entorno como valor por defecto (no autoridad: el cobrador puede cambiarla).
         if (json.defaultDestinationWallet) {
           setDestinationWallet((prev) => prev || json.defaultDestinationWallet);
         }
+        if (json.limits?.cardMinUsd) setCardMinUsd(Number(json.limits.cardMinUsd));
       }
     } catch (e) {
       console.error(e);
@@ -83,10 +99,41 @@ export function PrivateTerminalClient({ inModal = false }: { inModal?: boolean }
     loadLinks();
   }, [account?.address]);
 
+
+  const handleDelete = async (link: Pick<PrivateLinkRow, "id" | "title" | "status">) => {
+    if (link.status === "completed") {
+      toast.error("No se puede eliminar un cobro pagado (es evidencia contable).");
+      return;
+    }
+    if (typeof window === "undefined") return;
+    if (!window.confirm(`¿Eliminar el link "${link.title}"? Esta acción no se puede deshacer.`)) return;
+
+    setDeletingId(link.id);
+    try {
+      const res = await fetch(`/api/private/payments/${link.id}`, {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(json?.error || `No se pudo eliminar (HTTP ${res.status})`);
+      setLinks((prev) => prev.filter((item) => item.id !== link.id));
+      toast.success("Link eliminado");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "No se pudo eliminar el link");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !amount || !destinationWallet) {
       toast.error("Por favor completa los campos requeridos");
+      return;
+    }
+    // Mínimo de la rampa de tarjeta: evita crear links que la rampa rechazará.
+    if (allowCard && currency === "USD" && parseFloat(amount) < cardMinUsd) {
+      toast.error(`El mínimo para cobrar con tarjeta es ${cardMinUsd} USD. Sube el monto o desactiva la tarjeta.`);
       return;
     }
 
@@ -285,7 +332,7 @@ export function PrivateTerminalClient({ inModal = false }: { inModal?: boolean }
                     <span className="block text-xs font-medium text-zinc-200">Permitir pago con tarjeta</span>
                     <span className="block text-[10px] leading-tight text-zinc-400">
                       Habilita el checkout de thirdweb en el link. El cargo se liquida en USDC a la wallet receptora.
-                      Las comisiones de la rampa las paga quien paga.
+                      Las comisiones de la rampa las paga quien paga. Mínimo: ${cardMinUsd} USD.
                     </span>
                   </span>
                 </label>
@@ -341,6 +388,15 @@ export function PrivateTerminalClient({ inModal = false }: { inModal?: boolean }
                       <span className="text-[9px] px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-lime-400 font-mono">
                         Base
                       </span>
+                      <span
+                        className={`text-[9px] px-1.5 py-0.5 rounded border font-mono ${
+                          link.status === "completed"
+                            ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
+                            : "bg-zinc-900 border-zinc-800 text-zinc-400"
+                        }`}
+                      >
+                        {link.status === "completed" ? "PAGADO" : String(link.status || "activo").toUpperCase()}
+                      </span>
                     </div>
                     <div className="text-[11px] text-zinc-400 font-mono">
                       Destino: {link.destinationWallet.slice(0, 6)}...{link.destinationWallet.slice(-4)}
@@ -378,6 +434,24 @@ export function PrivateTerminalClient({ inModal = false }: { inModal?: boolean }
                         className="h-7 px-2 text-zinc-400 hover:text-white hover:bg-white/5 rounded-lg cursor-pointer"
                       >
                         <ExternalLink className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => void handleDelete(link)}
+                        disabled={deletingId === link.id || link.status === "completed"}
+                        title={
+                          link.status === "completed"
+                            ? "No se puede eliminar un cobro pagado"
+                            : "Eliminar este link"
+                        }
+                        className="h-7 px-2 text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                      >
+                        {deletingId === link.id ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-3.5 h-3.5" />
+                        )}
                       </Button>
                     </div>
                   </div>

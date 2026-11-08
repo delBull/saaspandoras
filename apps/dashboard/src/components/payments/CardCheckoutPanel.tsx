@@ -148,7 +148,10 @@ function CardCheckoutPanelBase({
         seller={link.destinationWallet as `0x${string}`}
         name={link.title}
         description={link.description ?? undefined}
-        currency="USD"
+        // Moneda fiat de la rampa: debe coincidir con el país del pagador. En México
+        // la mayoría de proveedores cotizan en MXN; pedir USD desde MX hace que
+        // /v1/onramp/prepare responda 400 para todos los proveedores.
+        currency={country === 'MX' ? 'MXN' : 'USD'}
         country={country}
         paymentMethods={['card']}
         // El comprador paga las comisiones de la rampa: así el importe on-chain
