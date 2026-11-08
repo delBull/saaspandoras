@@ -2,7 +2,7 @@
 
 import { memo, useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { client } from "@saasfly/shared/thirdweb-client";
-import { defineChain, getContract } from "thirdweb";
+import { defineChain, getContract, type Chain } from "thirdweb";
 import { transfer } from "thirdweb/extensions/erc20";
 import { TransactionButton, ConnectButton, useActiveAccount } from "thirdweb/react";
 import {
@@ -232,18 +232,21 @@ function AmountPanel({ amount, currency, rates }: {
 }
 
 // ── Pay Section ───────────────────────────────────────────────────────────────
-const PaySection = memo(function PaySection({ data, tokenContract, txStep, setTxStep, setCompletedTx, usdcAmount }: {
+const PaySection = memo(function PaySection({ data, tokenContract, txStep, setTxStep, setCompletedTx, usdcAmount, chain }: {
   data: any; tokenContract: any; txStep: TxStep;
   setTxStep: (s: TxStep) => void; setCompletedTx: (tx: string) => void; usdcAmount: number;
+  chain: Chain;
 }) {
   const account = useActiveAccount();
   return (
     <div className="px-4 pt-3 pb-1 flex-shrink-0">
       {!account ? (
         <>
-          <p className="text-[11px] text-zinc-500 text-center mb-2">Conecta con wallet o inicio de sesión social</p>
+          <p className="text-[11px] text-zinc-500 text-center mb-2">Con wallet o con tu cuenta (Google, email, Telegram)</p>
           <ConnectButton client={client} theme="dark" wallets={wallets}
-            connectButton={{ label: "Conectar Wallet para Pagar", style: { width: "100%", background: "#a3e635", color: "#000", fontWeight: "900", fontSize: "0.9rem", padding: "0.85rem", borderRadius: "0.75rem", border: "none", touchAction: "manipulation" } }} />
+            // `chain` es obligatoria: sin ella el inAppWallet (EIP-7702) falla al conectar.
+            chain={chain}
+            connectButton={{ label: "Continuar con wallet o login social", style: { width: "100%", background: "#a3e635", color: "#000", fontWeight: "900", fontSize: "0.9rem", padding: "0.85rem", borderRadius: "0.75rem", border: "none", touchAction: "manipulation" } }} />
         </>
       ) : (
         <TransactionButton
@@ -381,9 +384,10 @@ export function PrivatePaymentCheckout({ id }: { id: string }) {
   const payTokenAddress =
     String((data as { settlementToken?: string | null } | null)?.settlementToken ?? '') ||
     (payChainId === 11155111 ? USDC_SEPOLIA : USDC_BASE);
+  const payChain = useMemo(() => defineChain(payChainId), [payChainId]);
   const payTokenContract = useMemo(
-    () => (data ? getContract({ client, chain: defineChain(payChainId), address: payTokenAddress }) : null),
-    [data, payChainId, payTokenAddress]
+    () => (data ? getContract({ client, chain: payChain, address: payTokenAddress }) : null),
+    [data, payChain, payTokenAddress]
   );
 
   if (loading) return (
@@ -540,7 +544,7 @@ export function PrivatePaymentCheckout({ id }: { id: string }) {
 
         <div className="flex-1 min-h-0" />
 
-        <PaySection data={data} tokenContract={tokenContract} txStep={txStep} setTxStep={setTxStep} setCompletedTx={setCompletedTx} usdcAmount={payableUsdc} />
+        <PaySection data={data} tokenContract={tokenContract} txStep={txStep} setTxStep={setTxStep} setCompletedTx={setCompletedTx} usdcAmount={payableUsdc} chain={payChain} />
 
         {/* Mismo modelo que admin: se conecta (wallet o login social) y paga.
             Si no tiene USDC, puede comprarlo con tarjeta en SU wallet y volver. */}
@@ -553,7 +557,7 @@ export function PrivatePaymentCheckout({ id }: { id: string }) {
               onClick={() => setShowBuy(true)}
               className="flex w-full items-center justify-center gap-1.5 py-1.5 text-[10px] text-zinc-500 hover:text-lime-400 transition-colors"
             >
-              <CreditCard className="w-3 h-3" /> ¿No tienes USDC? Cómpralo con tarjeta
+              <CreditCard className="w-3 h-3" /> Pagar con tarjeta
             </button>
           )}
         </div>

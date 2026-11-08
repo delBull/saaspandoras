@@ -83,6 +83,9 @@ function BuyUsdcPanelBase({
 
   return (
     <div className="overflow-hidden rounded-xl border border-zinc-800">
+      <p className="border-b border-zinc-800/60 bg-zinc-900/40 px-3 py-2 text-[10px] leading-relaxed text-zinc-400">
+        Paga con tarjeta. No necesitas wallet: se crea al instante con tu email o tu cuenta de Google.
+      </p>
       <BuyWidget
         client={client}
         chain={base}
@@ -93,7 +96,9 @@ function BuyUsdcPanelBase({
         currency="USD"
         // Login social (Google/email/Telegram/passkey) además de wallets externas:
         // la smart wallet se crea al vuelo, igual que en el modelo de admin.
-        connectOptions={{ wallets }}
+        // `chain` es obligatoria para el inAppWallet en modo EIP-7702; sin ella el
+        // login social falla. BuyWidget la reenvía al connect interno.
+        connectOptions={{ wallets, chain: base }}
         theme="dark"
         showThirdwebBranding={false}
         onSuccess={() => setPhase('funded')}
@@ -108,8 +113,8 @@ function BuyUsdcPanelBase({
         }}
       />
       <p className="border-t border-zinc-800/60 px-3 py-2 text-center text-[9px] leading-relaxed text-zinc-500">
-        Compra USDC en tu propia wallet (se crea con tu login social si no tienes una). Después pagas el cobro con
-        ese saldo. Si la ventana del proveedor no abre, permite ventanas emergentes.
+        El importe se convierte a USDC en tu wallet (creada automáticamente si no tienes una). Después completas el
+        cobro con el botón de pago. Si la ventana del proveedor no abre, permite ventanas emergentes.
       </p>
     </div>
   );
