@@ -148,10 +148,13 @@ function CardCheckoutPanelBase({
         seller={link.destinationWallet as `0x${string}`}
         name={link.title}
         description={link.description ?? undefined}
-        // Moneda fiat de la rampa: debe coincidir con el país del pagador. En México
-        // la mayoría de proveedores cotizan en MXN; pedir USD desde MX hace que
-        // /v1/onramp/prepare responda 400 para todos los proveedores.
-        currency={country === 'MX' ? 'MXN' : 'USD'}
+        // Moneda fiat de la rampa. Medido contra bridge.thirdweb.com con este
+        // Client ID + USDC en Base + país MX:
+        //   USD → transak ✅, rampnow ✅ | coinbase ❌ (moneda), stripe ❌ (sin ruta)
+        //   MXN → transak ✅, rampnow 💥500 | coinbase ❌ (moneda), stripe ❌
+        // USD deja más proveedores disponibles. Los 400 de coinbase/stripe son
+        // esperados: no soportan USDC en Base.
+        currency="USD"
         country={country}
         paymentMethods={['card']}
         // El comprador paga las comisiones de la rampa: así el importe on-chain
@@ -205,6 +208,10 @@ function CardCheckoutPanelBase({
           setDetail(null);
         }}
       />
+      <p className="border-t border-zinc-800/60 px-3 py-2 text-center text-[9px] leading-relaxed text-zinc-500">
+        Al confirmar, se abre la página del proveedor para pagar con tarjeta. Si no se abre, permite las ventanas
+        emergentes para este sitio y reintenta.
+      </p>
     </div>
   );
 }
