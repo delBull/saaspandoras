@@ -295,6 +295,10 @@ function NexusFooter() {
         className="inline-flex items-center gap-1 text-[10px] text-zinc-600 hover:text-zinc-400 transition-colors">
         Powered by <span className="text-lime-400/70 font-semibold ml-0.5">Pandoras Nexus</span>
         <ArrowUpRight className="w-2.5 h-2.5" />
+        {/* Marcador de build: sirve para saber qué versión está desplegada. */}
+        <span className="ml-1 text-zinc-700 font-mono">
+          · {process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? 'local'}
+        </span>
       </a>
     </div>
   );
@@ -307,14 +311,11 @@ export function PrivatePaymentCheckout({ id }: { id: string }) {
   const [error, setError]             = useState<string | null>(null);
   const [completedTx, setCompletedTx] = useState<string | null>(null);
   const [txStep, setTxStep]           = useState<TxStep>("idle");
-  const [showQR, setShowQR]           = useState(false);
-  const [method, setMethod]           = useState<"crypto" | "card">("crypto");
+  const [showBuy, setShowBuy]         = useState(false);
   const rates = useRealtimeRates();
-  const payUrl = typeof window !== "undefined" ? window.location.href : "";
 
-  // Callback estable: evita que el panel memoizado de tarjeta se re-renderice con
-  // cada tick de las tasas en vivo.
-  const handleCardFallback = useCallback(() => setMethod("crypto"), []);
+  // Callback estable (evita re-renders por el tick de tasas en vivo).
+  const handleFunded = useCallback(() => setShowBuy(false), []);
 
   useEffect(() => {
     fetch(`/api/private/pay/${id}`)
@@ -322,14 +323,6 @@ export function PrivatePaymentCheckout({ id }: { id: string }) {
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, [id]);
-
-  // Método inicial: el primero que habilitó el cobrador (si habilitó tarjeta, abre en tarjeta).
-  useEffect(() => {
-    if (!data) return;
-    const raw: unknown = data.methods;
-    const first = Array.isArray(raw) && typeof raw[0] === "string" ? raw[0] : "crypto";
-    if (first === "card" || first === "crypto") setMethod(first);
-  }, [data]);
 
   /**
    * Monto CONGELADO para el checkout con tarjeta.
@@ -406,18 +399,6 @@ export function PrivatePaymentCheckout({ id }: { id: string }) {
   const tokenContract = getContract({ client, chain: defineChain(chainId), address: tokenAddress });
   const explorerBase  = isBase ? "https://basescan.org" : "https://sepolia.etherscan.io";
 
-  // Métodos que el cobrador habilitó al crear el link. 'card' = CheckoutWidget thirdweb.
-  const rawMethods: unknown = data.methods;
-  const availableMethods: Array<"crypto" | "card"> = (Array.isArray(rawMethods) ? rawMethods : ["crypto"])
-    .filter((m: unknown): m is "crypto" | "card" => m === "crypto" || m === "card");
-  const methods: Array<"crypto" | "card"> =
-    availableMethods.length > 0 ? availableMethods : (["crypto"] as Array<"crypto" | "card">);
-  const showMethodSwitch = methods.includes("crypto") && methods.includes("card");
-
-  // Métodos bloqueados por mínimo (los informa el servidor).
-  const blockedMethods: Array<{ method: string; reason: string }> = Array.isArray(data.blockedMethods)
-    ? (data.blockedMethods as Array<{ method: string; reason: string }>)
-    : [];
 
   if (completedTx) return (
     <Screen>
@@ -469,43 +450,6 @@ export function PrivatePaymentCheckout({ id }: { id: string }) {
           <AmountPanel amount={storedAmount} currency={storedCurrency} rates={rates} />
         </div>
 
-        {/* Método de pago (sólo si el cobrador habilitó ambos) */}
-        {blockedMethods.length > 0 && (
-          <div className="px-4 pt-2 flex-shrink-0">
-            <p className="rounded-lg border border-amber-500/25 bg-amber-500/10 px-2.5 py-1.5 text-[10px] leading-relaxed text-amber-300">
-              {blockedMethods.map((b) => b.reason).join(' · ')}
-            </p>
-          </div>
-        )}
-        {showMethodSwitch && (
-          <div className="px-4 pt-3 flex-shrink-0">
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setMethod("card")}
-                className={`flex items-center justify-center gap-1.5 rounded-xl border py-2 text-[11px] font-semibold transition-colors ${
-                  method === "card"
-                    ? "border-lime-400/60 bg-lime-400/10 text-lime-300"
-                    : "border-zinc-800 bg-zinc-900/40 text-zinc-400 hover:text-zinc-200"
-                }`}
-              >
-                <CreditCard className="w-3.5 h-3.5" /> Con tarjeta
-              </button>
-              <button
-                type="button"
-                onClick={() => setMethod("crypto")}
-                className={`flex items-center justify-center gap-1.5 rounded-xl border py-2 text-[11px] font-semibold transition-colors ${
-                  method === "crypto"
-                    ? "border-lime-400/60 bg-lime-400/10 text-lime-300"
-                    : "border-zinc-800 bg-zinc-900/40 text-zinc-400 hover:text-zinc-200"
-                }`}
-              >
-                <Zap className="w-3.5 h-3.5" /> Con USDC
-              </button>
-            </div>
-          </div>
-        )}
-
         {/* Network + wallet */}
         <div className="px-4 pt-2 flex-shrink-0">
           <div className="flex items-center justify-between py-2 border-b border-zinc-800/30">
@@ -527,37 +471,61 @@ export function PrivatePaymentCheckout({ id }: { id: string }) {
           </div>
         </div>
 
-        {/* QR (sólo tiene sentido para el pago on-chain) */}
-        {method === "crypto" && (
-          <div className="px-4 flex-shrink-0">
-            <button onClick={() => setShowQR((v) => !v)} style={{ touchAction: "manipulation" }}
-              className="flex items-center gap-1 text-[10px] text-zinc-700 hover:text-lime-400 transition-colors py-1">
-              <Link2 className="w-2.5 h-2.5" />
-              {showQR ? "Ocultar" : "QR"} enlace de pago
-            </button>
-            {showQR && (
-              <div className="mb-2 p-3 rounded-xl bg-white flex items-center justify-center">
-                <QRCode value={payUrl || `https://nexus.pandoras.finance/pay/private/${id}`} size={120} bgColor="#ffffff" fgColor="#070707" level="M" />
+        {/* Alternativa que NO depende de thirdweb: enviar USDC directo a la
+            dirección del cobrador. Si el widget falla, el cobro se puede completar
+            igual desde cualquier wallet y el settle lo verifica on-chain. */}
+        <div className="px-4 flex-shrink-0">
+          <details className="group rounded-xl border border-zinc-800/70 bg-zinc-900/30">
+            <summary className="cursor-pointer list-none flex items-center justify-between px-3 py-2 text-[10px] text-zinc-400 hover:text-lime-400 transition-colors">
+              <span className="flex items-center gap-1.5">
+                <Link2 className="w-3 h-3" /> Pagar desde otra wallet (QR)
+              </span>
+              <span className="text-[9px] text-zinc-600 group-open:hidden">abrir</span>
+              <span className="hidden text-[9px] text-zinc-600 group-open:inline">cerrar</span>
+            </summary>
+            <div className="px-3 pb-3 space-y-2">
+              <div className="flex items-center justify-center rounded-lg bg-white p-2">
+                <QRCode
+                  value={`ethereum:${data.destinationWallet}@${chainId}/transfer?address=${tokenAddress}&uint256=${BigInt(Math.round(usdcAmount * 1e6)).toString()}`}
+                  size={128}
+                  bgColor="#ffffff"
+                  fgColor="#070707"
+                  level="M"
+                />
               </div>
-            )}
-          </div>
-        )}
+              <div className="flex items-center justify-between gap-2 rounded-lg border border-zinc-800 bg-zinc-950 px-2 py-1.5">
+                <span className="truncate font-mono text-[10px] text-zinc-300">{data.destinationWallet}</span>
+                <CopyBtn value={data.destinationWallet} />
+              </div>
+              <p className="text-[10px] leading-relaxed text-zinc-500">
+                Envía exactamente <span className="font-mono text-zinc-300">{fmt(usdcAmount, 4)} USDC</span> en{' '}
+                {isBase ? 'Base' : 'Sepolia'} a esa dirección. Cualquier wallet sirve (MetaMask, Rabby, exchange).
+              </p>
+            </div>
+          </details>
+        </div>
 
-        {method === "crypto" && txStep !== "idle" && <div className="px-4 flex-shrink-0"><TxProgress step={txStep} /></div>}
+        {txStep !== "idle" && <div className="px-4 flex-shrink-0"><TxProgress step={txStep} /></div>}
 
         <div className="flex-1 min-h-0" />
 
-        {method === "card" ? (
-          <div className="px-4 pb-2 flex-shrink-0">
-            {cardLink ? (
-              // Modelo probado de admin: la tarjeta fondea la wallet del PAGADOR
-              // (smart wallet del login social) y luego se transfiere al cobrador.
-              <BuyUsdcPanel amount={cardLink.amount} onFunded={handleCardFallback} />
-            ) : null}
-          </div>
-        ) : (
-          <PaySection data={data} tokenContract={tokenContract} txStep={txStep} setTxStep={setTxStep} setCompletedTx={setCompletedTx} usdcAmount={usdcAmount} />
-        )}
+        <PaySection data={data} tokenContract={tokenContract} txStep={txStep} setTxStep={setTxStep} setCompletedTx={setCompletedTx} usdcAmount={usdcAmount} />
+
+        {/* Mismo modelo que admin: se conecta (wallet o login social) y paga.
+            Si no tiene USDC, puede comprarlo con tarjeta en SU wallet y volver. */}
+        <div className="px-4 pb-2 flex-shrink-0">
+          {showBuy ? (
+            <BuyUsdcPanel amount={cardLink ? cardLink.amount : String(usdcAmount)} onFunded={handleFunded} />
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowBuy(true)}
+              className="flex w-full items-center justify-center gap-1.5 py-1.5 text-[10px] text-zinc-500 hover:text-lime-400 transition-colors"
+            >
+              <CreditCard className="w-3 h-3" /> ¿No tienes USDC? Cómpralo con tarjeta
+            </button>
+          )}
+        </div>
 
         <SecurityBand />
 
