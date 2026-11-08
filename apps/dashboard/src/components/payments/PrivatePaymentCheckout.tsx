@@ -305,6 +305,16 @@ function NexusFooter() {
 }
 
 // ── Main Checkout ─────────────────────────────────────────────────────────────
+/**
+ * Contenedor estable. Debe vivir FUERA del componente: definirlo dentro crea un
+ * tipo nuevo en cada render, React desmonta/remonta todo el subárbol (incluido el
+ * modal de thirdweb) y el botón parece "parpadear" sin poder usarse.
+ */
+function Screen({ children }: { children: React.ReactNode }) {
+  // Sin maxHeight fijo: en móvil el contenido crece y la página hace scroll.
+  return <div className="w-full max-w-md flex flex-col">{children}</div>;
+}
+
 export function PrivatePaymentCheckout({ id }: { id: string }) {
   const [data, setData]               = useState<any>(null);
   const [loading, setLoading]         = useState(true);
@@ -363,12 +373,17 @@ export function PrivatePaymentCheckout({ id }: { id: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- congelamos las tasas a propósito (ver comentario)
   }, [data]);
 
-  const Screen = ({ children }: { children: React.ReactNode }) => (
-    // Sin maxHeight fijo: en móvil el contenido (métodos + widget) crece y la
-    // página hace scroll. Antes se recortaba y no había forma de ver el botón.
-    <div className="w-full max-w-md flex flex-col">
-      {children}
-    </div>
+  /**
+   * Contrato del token memoizado y declarado ANTES de los returns tempranos:
+   * los hooks no pueden ejecutarse condicionalmente (React #310).
+   */
+  const payChainId = Number((data as { networkChainId?: number } | null)?.networkChainId ?? 8453);
+  const payTokenAddress =
+    String((data as { settlementToken?: string | null } | null)?.settlementToken ?? '') ||
+    (payChainId === 11155111 ? USDC_SEPOLIA : USDC_BASE);
+  const payTokenContract = useMemo(
+    () => (data ? getContract({ client, chain: defineChain(payChainId), address: payTokenAddress }) : null),
+    [data, payChainId, payTokenAddress]
   );
 
   if (loading) return (
@@ -411,12 +426,8 @@ export function PrivatePaymentCheckout({ id }: { id: string }) {
   const chainId       = data.networkChainId || 8453;
   const isBase        = chainId === 8453;
   const tokenAddress  = data.settlementToken || (chainId === 11155111 ? USDC_SEPOLIA : USDC_BASE);
-  // Identidad estable: si se recrea en cada render, el botón de pago (y su modal)
-  // se reinician cada segundo por el tick de tasas.
-  const tokenContract = useMemo(
-    () => getContract({ client, chain: defineChain(chainId), address: tokenAddress }),
-    [chainId, tokenAddress]
-  );
+  // Ya memoizado arriba (antes de los returns) para no romper el orden de hooks.
+  const tokenContract = payTokenContract;
   const explorerBase  = isBase ? "https://basescan.org" : "https://sepolia.etherscan.io";
 
 
