@@ -27,6 +27,8 @@ import {
 } from '@saasfly/db-core/schema';
 import { eq, and, desc } from "@saasfly/db-core";
 import { RunPodServerlessService } from '../compute/runpod-serverless.service';
+import { IpfsPinningService } from './ipfs-pinning.service';
+import { resolveTenantPinningConfig } from './tenant-pinning';
 import { TenantCreditLedgerService } from '../compute/tenant-credit-ledger.service';
 import { A2AOutboundDispatcher } from "../a2a/a2a-outbound-dispatcher";
 import { CapabilityGrantService } from "../a2a/capability-grant-service";
@@ -571,10 +573,34 @@ export class HermesMediaOrchestratorService {
     options?: Record<string, any>;
     endpointId?: string;
   }): Promise<{ artifactId: string; artifact: any; financialBreakdown: any }> {
-    const rawAsset = params.output?.images?.[0] || params.output?.image || params.output?.imageUrl || params.output?.url || params.output?.cid || 'mock_bafkrei_rendered_image_payload';
-    const contentToHash = typeof rawAsset === 'string' ? rawAsset : JSON.stringify(rawAsset);
-    const sha256 = crypto.createHash('sha256').update(contentToHash).digest('hex');
-    const cid = params.output?.cid || `mock_bafkrei_${sha256.slice(0, 32)}`;
+    // ── Almacenamiento real del artefacto (sin CIDs inventados) ────────────────
+    const output = params.output ?? {};
+    const providedCidRaw = typeof output.cid === 'string' ? output.cid.trim() : '';
+    const providedCid = /^(bafy|Qm)[a-zA-Z0-9]+$/.test(providedCidRaw) ? providedCidRaw : null;
+    const sourceUrl =
+      output.images?.[0] || output.image || output.imageUrl || output.url || null;
+
+    let cid: string | null = providedCid;
+    let sha256 = '';
+    let sizeBytes = 0;
+
+    const pinningConfig = await resolveTenantPinningConfig(params.tenantId);
+    if (!cid && typeof sourceUrl === 'string' && pinningConfig) {
+      const pinned = await IpfsPinningService.pinFromUrl(sourceUrl, pinningConfig);
+      if (pinned) {
+        cid = pinned.cid;
+        sha256 = pinned.sha256;
+        sizeBytes = pinned.sizeBytes;
+      }
+    }
+
+    if (!sha256) {
+      // Sin bytes propios: se huella la referencia del proveedor (documentado).
+      const contentToHash = typeof sourceUrl === 'string' ? sourceUrl : JSON.stringify(output);
+      sha256 = crypto.createHash('sha256').update(contentToHash).digest('hex');
+      sizeBytes = Buffer.byteLength(contentToHash, 'utf8');
+    }
+
     const artifactId = `art_${params.requestId}`;
 
     const artifactRecord = {
@@ -586,11 +612,17 @@ export class HermesMediaOrchestratorService {
       artifactType: 'image',
       title: (params.options?.title as string) || `Media Asset for ${params.tenantId}`,
       cid,
-      ipfsUri: `ipfs://${cid}`,
+      ipfsUri: cid ? `ipfs://${cid}` : null,
       sha256,
       mimeType: 'image/png',
-      sizeBytes: Buffer.byteLength(contentToHash, 'utf8'),
-      metadataJson: { prompt: params.prompt, capability: params.capability, options: params.options },
+      sizeBytes,
+      metadataJson: {
+        prompt: params.prompt,
+        capability: params.capability,
+        options: params.options,
+        storage: cid ? 'IPFS_PINNED' : 'UNPINNED',
+        providerAssetUrl: typeof sourceUrl === 'string' ? sourceUrl : null,
+      },
       createdAt: new Date(),
     };
 

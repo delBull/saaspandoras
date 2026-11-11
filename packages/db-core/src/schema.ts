@@ -4305,7 +4305,8 @@ export const hermesArtifacts = pgTable("hermes_artifacts", {
   producer: varchar("producer", { length: 64 }).default('pixel'),
   artifactType: varchar("artifact_type", { length: 64 }).notNull(), // 'image', 'video', 'copy', 'newsletter', 'podcast', 'research_report'
   title: varchar("title", { length: 256 }),
-  cid: varchar("cid", { length: 256 }).notNull(),
+  // Nullable: un artefacto puede existir sin estar pinneado. NUNCA se inventa un CID.
+  cid: varchar("cid", { length: 256 }),
   ipfsUri: varchar("ipfs_uri", { length: 512 }),
   sha256: varchar("sha256", { length: 128 }).notNull(),
   mimeType: varchar("mime_type", { length: 128 }).notNull().default('image/png'),
@@ -4470,6 +4471,27 @@ export const hermesTenantCredits = pgTable("hermes_tenant_credits", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 }, (t) => ({
   tenantIdx: uniqueIndex("hermes_tenant_credits_tenant_unique").on(t.tenantId),
+}));
+
+export const hermesCreditDeposits = pgTable("hermes_credit_deposits", {
+  id: varchar("id", { length: 128 }).primaryKey(),
+  tenantId: varchar("tenant_id", { length: 128 }).notNull(),
+  amountUsd: decimal("amount_usd", { precision: 12, scale: 4 }).notNull(),
+  isSandbox: boolean("is_sandbox").notNull().default(false),
+  chainId: integer("chain_id"),
+  tokenAddress: varchar("token_address", { length: 42 }),
+  // Unicidad global: un mismo pago on-chain sólo puede acreditarse una vez.
+  txHash: varchar("tx_hash", { length: 80 }).notNull(),
+  fromAddress: varchar("from_address", { length: 42 }),
+  toAddress: varchar("to_address", { length: 42 }),
+  blockNumber: varchar("block_number", { length: 32 }),
+  creditedBy: varchar("credited_by", { length: 160 }).notNull(),
+  note: text("note"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  txUniqueIdx: uniqueIndex("hermes_credit_deposits_tx_unique").on(t.txHash),
+  tenantIdx: index("hermes_credit_deposits_tenant_idx").on(t.tenantId),
+  createdIdx: index("hermes_credit_deposits_created_idx").on(t.createdAt),
 }));
 
 export const hermesComputeUsageEvents = pgTable("hermes_compute_usage_events", {

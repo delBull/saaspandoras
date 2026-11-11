@@ -45,6 +45,9 @@ vi.mock('@saasfly/shared', () => ({
   OrganizationSDK: {
     resolve: vi.fn().mockResolvedValue({ organizationId: 'org_pandoras', name: "Pandora's Growth OS" }),
   },
+  // El contrato de conocimiento (dash-contracts) exporta estas dimensiones y el
+  // módulo que se carga aquí las importa; sin ellas el mock rompe el suite.
+  BUSINESS_ENTITY_DIMENSIONS: ['IDENTITY', 'PRODUCT', 'PRICING', 'OPERATIONS', 'CUSTOMERS', 'MARKET', 'COMPLIANCE', 'OTHER'],
 }));
 
 describe('Piloto #1 — Hermes Telegram Webhook (/api/hermes/bot/webhook)', () => {

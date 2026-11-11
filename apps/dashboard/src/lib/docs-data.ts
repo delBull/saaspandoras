@@ -1509,6 +1509,170 @@ For questions about platform operations:
     icon: "Code",
     sections: [
       {
+        id: "hermes-content-api",
+        title: "Hermes Content API (Media Co)",
+        content: `# Content API de Hermes (Media Co)
+
+API Server-to-Server para generar **imagen, video y copy**, leer los assets y registrar aprobaciones. Todo el contenido pertenece al tenant de la API key.
+
+## Autenticación
+
+\`\`\`bash
+Authorization: Bearer sk_live_...
+\`\`\`
+
+- La key es **secreta** (\`sk_\`). Las públicas (\`pk_\`) no pueden usar esta API.
+- La key está atada a un proyecto: **el tenant lo resuelve el servidor**, nunca lo envíes en el body.
+- Permisos: \`content.asset.read\`, \`content.asset.create\`, \`content.asset.approve\`.
+
+## Base URL
+
+\`\`\`
+https://dash.pandoras.finance
+\`\`\`
+
+## 1. Crear un job
+
+\`\`\`http
+POST /api/v1/content/jobs
+\`\`\`
+
+\`\`\`json
+{
+  "title": "Hero Q4",
+  "type": "image",
+  "parameters": { "prompt": "retail hero shot, golden hour" },
+  "provider": "runpod",
+  "endpointId": "tu-runpod-endpoint-id",
+  "wait": true
+}
+\`\`\`
+
+**\`endpointId\`** (opcional): Endpoint ID de RunPod para ese job. Si no lo envías se usa el default del servidor; si no existe ninguno, la API responde \`422 RUNPOD_ENDPOINT_REQUIRED\` (no se inventa un endpoint).
+
+**Tipos válidos:** \`image\`, \`image_render\`, \`poster\` · \`video\`, \`video_render\`, \`reel\` · \`copy\`, \`copy_render\`, \`caption\` · \`editorial\`, \`newsletter\` · \`audio\`, \`podcast\` · \`research\`, \`research_report\`.
+
+- \`wait: true\` (default) devuelve el resultado real: \`artifactId\`, \`artifact.cid\`, \`sha256\` y \`financialBreakdown\`.
+- \`wait: false\` responde **202** y se consulta con el jobId.
+- Idempotencia: envía el header \`Idempotency-Key\` (mismo key ⇒ mismo job, sin doble cobro).
+
+## 2. Consultar un job
+
+\`\`\`http
+GET /api/v1/content/jobs/:jobId
+\`\`\`
+
+Devuelve \`status\` (\`REQUESTED | PROCESSING | COMPLETED | FAILED | UNKNOWN\`), \`provider\`, \`artifactId\` y el motivo de fallo si aplica. Un job de otro tenant responde **404**.
+
+## 3. Listar assets
+
+\`\`\`http
+GET /api/v1/content/assets?limit=25&offset=0&type=image
+\`\`\`
+
+Cada asset incluye \`cid\`, \`sha256\`, \`mimeType\`, \`sizeBytes\`, \`approval\` y:
+
+- \`publicUrl\`: URL pública (\`<base>/<cid>\`) lista para publicar en redes.
+- \`publicUrlUnavailableReason\`: \`TENANT_BASE_URL_NOT_CONFIGURED\` o \`ARTIFACT_NOT_PINNED\`.
+
+## 4. Aprobar / rechazar
+
+\`\`\`http
+POST /api/v1/content/assets/:assetId/approval
+\`\`\`
+
+\`\`\`json
+{ "status": "approved", "note": "OK para publicar" }
+\`\`\`
+
+Queda registrado quién y cuándo. El anclaje on-chain (Knowledge Vault) aún no está habilitado en este endpoint.
+
+## 5. Entrega pública por tenant
+
+Cada tenant declara su propia base pública (no se comparte infraestructura entre tenants):
+
+\`\`\`http
+GET  /api/v1/content/settings
+PUT  /api/v1/content/settings
+\`\`\`
+
+\`\`\`json
+{ "assetsPublicBaseUrl": "https://cdn.tu-dominio.com" }
+\`\`\`
+
+Debe ser HTTPS, sin barra final, y servir \`/ipfs/<cid>\` (o \`<cid>\` según tu configuración).
+
+## 6. Almacenamiento IPFS: gestionado o propio
+
+### A) Gestionado (por defecto)
+
+Hermes pinnea el artefacto en su nodo y lo sirve por su gateway. Se factura **por GB-mes** de almacenamiento. No tienes que configurar nada.
+
+### B) Propio (BYO)
+
+Si ya operas IPFS, puedes pinear en tu nodo. Requisitos:
+
+1. Endpoint **HTTPS** compatible con Kubo: \`POST /api/v0/add?pin=true&cid-version=1\`.
+2. Token Bearer para ese endpoint (Hermes lo guarda **cifrado** con AES-256-GCM; nunca se loguea ni se devuelve).
+3. Gateway público propio que sirva \`/ipfs/<cid>\`.
+4. Declararlo tú mismo (no hace falta pedirlo a soporte):
+
+\`\`\`bash
+curl -X PUT https://dash.pandoras.finance/api/v1/content/settings \\
+  -H "Authorization: Bearer sk_live_..." \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "assetsPublicBaseUrl": "https://ipfs.tu-dominio.com",
+    "ipfsPinning": {
+      "mode": "byo",
+      "pinApiUrl": "https://ipfs.tu-dominio.com/api/v0",
+      "pinApiToken": "tu-token-bearer"
+    }
+  }'
+\`\`\`
+
+\`GET /api/v1/content/settings\` devuelve \`ipfsPinning: { mode, pinApiUrl, hasPinToken }\`: **nunca** el token.
+
+Para volver al almacenamiento gestionado: \`{"ipfsPinning":{"mode":"managed"}}\`.
+
+### Comparativa rápida
+
+| | Gestionado | BYO |
+|---|---|---|
+| Quién opera el nodo | Hermes | Tú |
+| Configuración | Ninguna | \`pinApiUrl\` + token |
+| Entrega | Gateway de Hermes | Tu gateway (\`assetsPublicBaseUrl\`) |
+| Costo | **GB-mes** en tu factura | $0 de storage (pagas tu infraestructura) |
+| Aislamiento | Namespace por tenant (nodo dedicado opcional) | Total (tu nodo) |
+
+Si no hay almacenamiento configurado, el job devuelve el artefacto como \`UNPINNED\` (sin CID) y con \`providerAssetUrl\` para que lo pinees tú. **Nunca inventamos un CID.**
+
+Sin almacenamiento configurado, el artefacto se registra como \`UNPINNED\` (**sin CID inventado**) y se entrega \`providerAssetUrl\` para que lo pines tú.
+
+## 7. Saldo y facturación
+
+- Saldo **por tenant**; mínimo de recarga **$5.00 USD**.
+- Sin saldo suficiente la generación se rechaza (\`Insufficient credits\`): no se ejecuta nada.
+- **Sandbox**: saldo de prueba sin costo, para integrar.
+- **Producción**: el saldo se acredita al verificar un pago **USDC on-chain** contra la wallet de tesorería. Un \`txHash\` sólo puede acreditarse **una vez**. Se hace desde el Portal (Media Studio → Añadir saldo).
+- El margen de plataforma es interno y **no se comparte** con el tenant.
+
+## 8. Límites y errores
+
+- \`20\` generaciones por minuto por tenant (las que consumen cómputo).
+- \`401\` key inválida · \`403\` permiso/capability no otorgada · \`422\` tipo o payload inválido · \`429\` rate limit · \`500\` fallo del proveedor · \`Insufficient credits\` sin saldo.
+
+## 9. Ejemplo completo (Forge)
+
+\`\`\`bash
+export BASE=https://dash.pandoras.finance
+export FORGE_SK=sk_live_...
+
+curl -X POST $BASE/api/v1/content/jobs   -H "Authorization: Bearer $FORGE_SK"   -H "Content-Type: application/json"   -H "Idempotency-Key: forge-img-0001"   -d '{"title":"Hero Q4","type":"image","provider":"runpod","parameters":{"prompt":"retail hero shot"},"wait":true}'
+\`\`\`
+`
+      },
+      {
         id: "api-docs",
         title: "API Documentation",
         content: `# API Documentation

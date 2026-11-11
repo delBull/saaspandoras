@@ -1,35 +1,67 @@
-import { NextResponse } from 'next/server';
-import { IntegrationKeyService } from '@/lib/integrations/auth';
-import { db } from '@/db';
+import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@saasfly/db';
+import { hermesMediaRequests } from '@saasfly/db/schema';
+import { and, eq } from '@saasfly/db-core';
+import { authorizeContentClient } from '@/lib/content/tenant-authority';
 
-export async function GET(req: Request, { params }: { params: Promise<{ jobId: string }> }) {
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
+/**
+ * GET /api/v1/content/jobs/:jobId
+ *
+ * Estado real de un job de producción. Se consulta SIEMPRE acotado al tenant de
+ * la API key: un job de otro tenant responde 404 (no se filtra existencia).
+ */
+export async function GET(req: NextRequest, { params }: { params: Promise<{ jobId: string }> }) {
+  const auth = await authorizeContentClient(req, ['content.asset.read', 'content.asset.create']);
+  if (!auth.ok) {
+    return NextResponse.json({ success: false, error: auth.error, code: auth.code }, { status: auth.status });
+  }
+  const { client } = auth;
+
+  const { jobId } = await params;
+  if (!jobId) {
+    return NextResponse.json({ success: false, error: 'Missing jobId.' }, { status: 400 });
+  }
+
   try {
-    const { jobId } = await params;
-    const authHeader = req.headers.get('Authorization');
-    const apiKey = authHeader?.replace('Bearer ', '');
-    
-    if (!apiKey) {
-      return NextResponse.json({ error: 'Missing Authorization header' }, { status: 401 });
+    const [job] = await db
+      .select()
+      .from(hermesMediaRequests)
+      .where(
+        and(
+          eq(hermesMediaRequests.id, jobId),
+          eq(hermesMediaRequests.tenantId, client.tenantId)
+        )
+      )
+      .limit(1);
+
+    if (!job) {
+      return NextResponse.json({ success: false, error: 'Job not found.' }, { status: 404 });
     }
 
-    const client = await IntegrationKeyService.validateKey(apiKey);
-    if (!client) {
-      return NextResponse.json({ error: 'Invalid API Key' }, { status: 401 });
-    }
-
-    const permissions = (client.permissions as string[]) || [];
-    if (!permissions.includes('content.asset.read')) {
-      return NextResponse.json({ error: 'Missing required permission: content.asset.read' }, { status: 403 });
-    }
-
-    // Mock implementation for Phase 1
-    return NextResponse.json({ 
-      success: true, 
-      jobId,
-      status: 'completed'
+    return NextResponse.json({
+      success: true,
+      job: {
+        id: job.id,
+        status: job.status,
+        provider: job.provider,
+        capability: job.capability,
+        artifactId: job.artifactId ?? null,
+        failureCode: job.failureCode ?? null,
+        failureMessage: job.failureMessage ?? null,
+        createdAt: job.createdAt,
+        completedAt: job.completedAt ?? null,
+        // `briefJson` contiene el payload saneado + metadatos de ejecución.
+        brief: (job.briefJson as Record<string, unknown> | null) ?? null,
+      },
     });
-  } catch (error: any) {
-    console.error('[ContentAPI] GET /jobs/:jobId error:', error);
-    return NextResponse.json({ error: error.message }, { status: 401 });
+  } catch (error: unknown) {
+    console.error('[ContentAPI] GET /jobs/:jobId failed:', error);
+    return NextResponse.json(
+      { success: false, error: error instanceof Error ? error.message : 'Internal error reading job.' },
+      { status: 500 }
+    );
   }
 }

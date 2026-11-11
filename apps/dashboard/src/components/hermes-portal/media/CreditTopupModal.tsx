@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -42,12 +42,33 @@ export function CreditTopupModal({
   const [isSandbox, setIsSandbox] = useState<boolean>(defaultSandbox);
   const [processing, setProcessing] = useState<boolean>(false);
   const [status, setStatus] = useState<{ ok: boolean; message: string } | null>(null);
+  const [txHash, setTxHash] = useState<string>('');
+  const [chainId, setChainId] = useState<number>(8453);
+  const [treasury, setTreasury] = useState<{ treasury: string | null; usdc: string; chainId: number; minTopupUsd: number } | null>(null);
 
   const activeAmount = customAmount ? parseFloat(customAmount) : selectedAmount;
   const isValidAmount = !isNaN(activeAmount) && activeAmount >= 5.0;
 
+  useEffect(() => {
+    if (!isOpen || isSandbox) return;
+    let cancelled = false;
+    fetch(`/api/v1/hermes/billing/deposit?tenantId=${encodeURIComponent(tenantId)}`)
+      .then(async (res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled || !data?.ok) return;
+        setTreasury({ treasury: data.treasury, usdc: data.usdc, chainId: data.chainId, minTopupUsd: data.minTopupUsd });
+        setChainId(data.chainId ?? 8453);
+      })
+      .catch(() => undefined);
+    return () => { cancelled = true; };
+  }, [isOpen, isSandbox, tenantId]);
+
   const handleDeposit = async () => {
     if (!isValidAmount) return;
+    if (!isSandbox && !/^0x[a-fA-F0-9]{64}$/.test(txHash.trim())) {
+      setStatus({ ok: false, message: 'Pega el txHash (0x + 64 caracteres) del pago on-chain.' });
+      return;
+    }
     setProcessing(true);
     setStatus(null);
 
@@ -59,7 +80,8 @@ export function CreditTopupModal({
           tenantId,
           amountUsd: activeAmount,
           isSandbox,
-          paymentMethod: 'thirdweb_pay',
+          txHash: isSandbox ? undefined : txHash.trim(),
+          chainId,
         }),
       });
 
@@ -189,6 +211,34 @@ export function CreditTopupModal({
             </div>
           </div>
 
+          {/* Pago on-chain (saldo real) */}
+          {!isSandbox && (
+            <div className="space-y-2 rounded-xl border border-emerald-500/25 bg-emerald-500/[0.06] p-3">
+              <p className="text-[11px] leading-relaxed text-emerald-200">
+                Transfiere{' '}
+                <strong>${isValidAmount ? activeAmount.toFixed(2) : '0.00'} USDC</strong> en Base a la wallet de
+                tesorería y pega el hash:
+              </p>
+              <p className="break-all rounded-lg bg-zinc-950/70 border border-emerald-500/20 px-2 py-1.5 font-mono text-[10px] text-emerald-100">
+                {treasury?.treasury ?? 'Tesorería no configurada — contacta a soporte'}
+              </p>
+              <input
+                value={txHash}
+                onChange={(e) => setTxHash(e.target.value)}
+                placeholder="0x… (txHash del pago)"
+                spellCheck={false}
+                className={`w-full px-3 py-2 rounded-lg bg-zinc-950/80 border font-mono text-[11px] text-white placeholder-zinc-600 focus:outline-none ${
+                  txHash && !/^0x[a-fA-F0-9]{64}$/.test(txHash.trim())
+                    ? 'border-rose-500/60'
+                    : 'border-zinc-800 focus:border-emerald-500/60'
+                }`}
+              />
+              <p className="text-[10px] leading-relaxed text-emerald-200/60">
+                El saldo se acredita cuando el pago se verifica on-chain. Un txHash sólo puede usarse una vez.
+              </p>
+            </div>
+          )}
+
           {/* Resumen de Cómputo Estimado */}
           <div className="p-3.5 rounded-xl bg-zinc-900/40 border border-zinc-800/80 text-xs space-y-1.5">
             <div className="flex items-center justify-between">
@@ -239,7 +289,9 @@ export function CreditTopupModal({
             ) : (
               <>
                 <CreditCard className="w-4 h-4" />
-                Pagar con Thirdweb Pay (${isValidAmount ? activeAmount.toFixed(2) : '0.00'} USD)
+                {isSandbox
+                  ? `Acreditar saldo de prueba ($${isValidAmount ? activeAmount.toFixed(2) : '0.00'})`
+                  : `Verificar pago y acreditar ($${isValidAmount ? activeAmount.toFixed(2) : '0.00'})`}
               </>
             )}
           </Button>

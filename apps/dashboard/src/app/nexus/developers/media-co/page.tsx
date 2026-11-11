@@ -99,7 +99,7 @@ export default async function MediaCoApiReferencePage({ searchParams }: { search
           3. Content API (Media Co)
         </h2>
         <p className="text-zinc-400">
-          Esta API permite al agente leer el calendario de contenido, crear tareas de producción de assets y registrar aprobaciones criptográficas on-chain (Knowledge Vault).
+          Esta API permite al agente leer el calendario de contenido, crear tareas de producción de assets y registrar aprobaciones editoriales. Las aprobaciones quedan auditadas en el sistema (quién y cuándo); el anclaje criptográfico on-chain en el Knowledge Vault aún no está habilitado en este endpoint.
         </p>
 
         {/* Assets Endpoint */}

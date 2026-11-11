@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { IntegrationKeyService } from '@/lib/integrations/auth';
-import { db } from '@/db';
+import { db } from '@saasfly/db';
 import { projects } from '@saasfly/db/schema';
 import { eq } from '@saasfly/db-core';
 
