@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import crypto from 'crypto';
 import { db } from '@saasfly/db';
 import { projects, installedProducts, users, accessRequests, marketingLeads } from '@saasfly/db/schema';
 import { eq, desc, or, sql } from "@saasfly/db-core";
@@ -203,7 +204,11 @@ export async function POST(req: NextRequest) {
     const destination = safeReturn || (activeProjectSlug ? `/onboarding/${activeProjectSlug}` : '/portal');
     const magicLink = `${baseUrl}/portal/login?token=${token}&return=${encodeURIComponent(destination)}`;
 
-    console.info(`[MagicLink API] Magic Link generated for ${cleanEmail} (Target: ${destination}): ${magicLink}`);
+    // Nunca se loguea el enlace: contiene un token válido de un solo uso.
+    const linkFingerprint = crypto.createHash('sha256').update(token).digest('hex').slice(0, 12);
+    console.info(
+      `[MagicLink API] Magic link generado para ${cleanEmail} (destino: ${destination}, fingerprint: ${linkFingerprint})`
+    );
 
     // Send the magic link via Resend with mobile-optimized email design
     try {
@@ -291,7 +296,18 @@ export async function POST(req: NextRequest) {
       });
       console.info(`[MagicLink API] Email dispatched for ${cleanEmail}:`, emailRes);
     } catch (e) {
-      console.warn('[MagicLink API] Email dispatch failed:', e);
+      console.error('[MagicLink API] Email dispatch failed:', e);
+      // Fail-closed: sin email no hay acceso. El enlace se genera pero no se entrega.
+      if (process.env.NODE_ENV !== 'development') {
+        return NextResponse.json(
+          {
+            error:
+              'No se pudo enviar el correo de acceso. El servicio de email no está disponible; contacta a soporte.',
+            code: 'EMAIL_DELIVERY_FAILED',
+          },
+          { status: 502 }
+        );
+      }
     }
 
 

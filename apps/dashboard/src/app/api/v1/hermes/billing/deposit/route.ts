@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { createPublicClient, decodeEventLog, erc20Abi, http, parseUnits, type Chain, type Hash } from 'viem';
+import { createPublicClient, decodeEventLog, erc20Abi, formatUnits, http, type Chain, type Hash } from 'viem';
 import { base, baseSepolia } from 'viem/chains';
 import { db } from '@saasfly/db';
 import { hermesCreditDeposits } from '@saasfly/db/schema';
 import { eq } from '@saasfly/db-core';
-import { TenantBillingService } from '@saasfly/hermes-core';
+import { TenantBillingService, TenantCreditLedgerService } from '@saasfly/hermes-core';
+import { notifyPendingDeposit } from '@/lib/alerts/deposit-review-notifier';
 import { resolveTreasuryWallet } from '@/lib/payments/treasury';
 
 export const dynamic = 'force-dynamic';
@@ -31,7 +32,7 @@ export const runtime = 'nodejs';
 
 const USDC_BASE = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
 const USDC_SEPOLIA = '0x036CbD53842c5426634e7929541eC2318f3dCF7e';
-const MIN_TOPUP_USD = 5;
+const MIN_TOPUP_USD = TenantCreditLedgerService.MIN_TOPUP_AMOUNT_USD;
 
 const CHAINS: Record<number, { chain: Chain; usdc: `0x${string}` }> = {
   8453: { chain: base, usdc: USDC_BASE },
@@ -55,8 +56,10 @@ async function verifyOnChainDeposit(params: {
   txHash: Hash;
   chainId: number;
   treasury: string;
-  amountUsd: number;
-}): Promise<{ ok: true; blockNumber: string; from: string | null } | { ok: false; reason: string }> {
+}): Promise<
+  | { ok: true; blockNumber: string; from: string | null; amountUsd: number }
+  | { ok: false; reason: string }
+> {
   const cfg = CHAINS[params.chainId];
   if (!cfg) return { ok: false, reason: `Unsupported chainId: ${params.chainId}` };
 
@@ -71,8 +74,8 @@ async function verifyOnChainDeposit(params: {
     if (!receipt) return { ok: false, reason: 'TRANSACTION_NOT_FOUND' };
     if (receipt.status === 'reverted') return { ok: false, reason: 'TRANSACTION_REVERTED' };
 
-    const expected = parseUnits(params.amountUsd.toFixed(4), 6); // USDC 6 decimales
-    let from: string | null = null;
+    // El importe NO lo declara el cliente: se lee del log Transfer.
+    const matches: Array<{ from: string; value: bigint }> = [];
 
     for (const log of receipt.logs) {
       if (log.address.toLowerCase() !== cfg.usdc.toLowerCase()) continue;
@@ -81,15 +84,34 @@ async function verifyOnChainDeposit(params: {
         if (decoded.eventName !== 'Transfer') continue;
         const args = decoded.args as unknown as { from: string; to: string; value: bigint };
         if (args.to.toLowerCase() !== params.treasury.toLowerCase()) continue;
-        if (args.value < expected) continue;
-        from = args.from.toLowerCase();
-        return { ok: true, blockNumber: receipt.blockNumber.toString(), from };
+        matches.push({ from: args.from.toLowerCase(), value: args.value });
       } catch {
         // log no ERC-20: se ignora
       }
     }
 
-    return { ok: false, reason: 'NO_MATCHING_TRANSFER_TO_TREASURY_FOR_AMOUNT' };
+    if (matches.length === 0) {
+      return { ok: false, reason: 'NO_MATCHING_TRANSFER_TO_TREASURY' };
+    }
+
+    // Varias transferencias al treasury en la misma tx ⇒ atribución ambigua.
+    // Fail-closed: se resuelve a mano, no se inventa un importe.
+    if (matches.length > 1) {
+      return { ok: false, reason: 'AMBIGUOUS_MULTIPLE_TRANSFERS_TO_TREASURY' };
+    }
+
+    const [only] = matches;
+    const amountUsd = Number(formatUnits(only!.value, 6));
+    if (!Number.isFinite(amountUsd) || amountUsd <= 0) {
+      return { ok: false, reason: 'INVALID_TRANSFER_AMOUNT' };
+    }
+
+    return {
+      ok: true,
+      blockNumber: receipt.blockNumber.toString(),
+      from: only!.from,
+      amountUsd,
+    };
   } catch (error: unknown) {
     console.error('[HermesDeposit] On-chain verification failed:', error);
     return { ok: false, reason: 'VERIFICATION_ERROR' };
@@ -165,16 +187,17 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const amountUsd = Number(body.amountUsd);
-  if (!Number.isFinite(amountUsd) || amountUsd < MIN_TOPUP_USD) {
+  const isSandbox = body.isSandbox === true;
+  const declaredAmountUsd = Number(body.amountUsd);
+  const note = typeof body.note === 'string' ? body.note.trim().slice(0, 400) : null;
+
+  // En dinero real el importe sale de la cadena (abajo). Sólo sandbox lo declara.
+  if (isSandbox && (!Number.isFinite(declaredAmountUsd) || declaredAmountUsd < MIN_TOPUP_USD)) {
     return NextResponse.json(
       { ok: false, error: `El monto mínimo de recarga es de $${MIN_TOPUP_USD.toFixed(2)} USD.` },
       { status: 422 }
     );
   }
-
-  const isSandbox = body.isSandbox === true;
-  const note = typeof body.note === 'string' ? body.note.trim().slice(0, 400) : null;
 
   try {
     // ── Sandbox: dinero de prueba, sin pago ────────────────────────────────────
@@ -183,7 +206,7 @@ export async function POST(req: NextRequest) {
       await db.insert(hermesCreditDeposits).values({
         id: `dep_${crypto.randomUUID()}`,
         tenantId: authorizedTenant,
-        amountUsd: amountUsd.toFixed(4),
+        amountUsd: declaredAmountUsd.toFixed(4),
         isSandbox: true,
         txHash: sandboxTx,
         creditedBy: 'portal:sandbox',
@@ -192,7 +215,7 @@ export async function POST(req: NextRequest) {
 
       const result = await TenantBillingService.processDeposit({
         tenantId: authorizedTenant,
-        amountUsd,
+        amountUsd: declaredAmountUsd,
         isSandbox: true,
         paymentMethod: 'manual',
         transactionHash: sandboxTx,
@@ -201,7 +224,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ...result, ok: true, sandbox: true });
     }
 
-    // ── Saldo real: pago on-chain verificado ───────────────────────────────────
+    // ── Saldo real: pago on-chain verificado → queda PENDIENTE de aprobación ──
     const treasury = resolveTreasuryWallet();
     if (!treasury.ok) {
       return NextResponse.json(
@@ -229,9 +252,12 @@ export async function POST(req: NextRequest) {
 
     const normalizedHash = txHash.toLowerCase();
 
-    // Idempotencia: si el tx ya se acreditó, no se vuelve a abonar.
+    // Idempotencia: si el tx ya está reservado (pendiente o acreditado), no se reusa.
     const [already] = await db
-      .select({ id: hermesCreditDeposits.id })
+      .select({
+        id: hermesCreditDeposits.id,
+        status: hermesCreditDeposits.status,
+      })
       .from(hermesCreditDeposits)
       .where(eq(hermesCreditDeposits.txHash, normalizedHash))
       .limit(1);
@@ -240,18 +266,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           ok: false,
-          error: 'Este pago ya fue acreditado. Un txHash sólo puede usarse una vez.',
-          code: 'TX_ALREADY_CREDITED',
+          error:
+            already.status === 'pending'
+              ? 'Este pago ya está en revisión. Te avisamos cuando se acredite.'
+              : 'Este pago ya fue procesado. Un txHash sólo puede usarse una vez.',
+          code: 'TX_ALREADY_REGISTERED',
+          status: already.status,
         },
         { status: 409 }
       );
     }
 
+    // El importe es el que movió la cadena, no el que declare el cliente.
     const verification = await verifyOnChainDeposit({
       txHash: normalizedHash as Hash,
       chainId,
       treasury: treasury.wallet,
-      amountUsd,
     });
     if (!verification.ok) {
       return NextResponse.json(
@@ -260,12 +290,36 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const verifiedAmountUsd = Number(verification.amountUsd.toFixed(4));
+    if (verifiedAmountUsd < MIN_TOPUP_USD) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: `El importe verificado ($${verifiedAmountUsd.toFixed(2)}) es menor al mínimo de $${MIN_TOPUP_USD.toFixed(2)} USD.`,
+          code: 'BELOW_MIN_TOPUP',
+          amountUsd: verifiedAmountUsd,
+        },
+        { status: 422 }
+      );
+    }
+
+    if (
+      Number.isFinite(declaredAmountUsd) &&
+      declaredAmountUsd > 0 &&
+      Math.abs(declaredAmountUsd - verifiedAmountUsd) > 0.0001
+    ) {
+      // Traza: el cliente declaró otra cifra. Se acredita la de la cadena.
+      console.warn(
+        `[HermesDeposit] Declared $${declaredAmountUsd} != on-chain $${verifiedAmountUsd} for ${normalizedHash}; using on-chain amount.`
+      );
+    }
+
     const depositId = `dep_${crypto.randomUUID()}`;
     try {
       await db.insert(hermesCreditDeposits).values({
         id: depositId,
         tenantId: authorizedTenant,
-        amountUsd: amountUsd.toFixed(4),
+        amountUsd: verifiedAmountUsd.toFixed(4),
         isSandbox: false,
         chainId,
         tokenAddress: chainCfg.usdc.toLowerCase(),
@@ -275,46 +329,49 @@ export async function POST(req: NextRequest) {
         blockNumber: verification.blockNumber,
         creditedBy: 'portal:onchain',
         note,
+        status: 'pending',
       });
     } catch (insertError: unknown) {
-      // Violación del índice único = pago ya acreditado (replay).
+      // Violación del índice único ⇒ otro request reservó el mismo pago.
       console.warn('[HermesDeposit] Replay or duplicate txHash rejected:', insertError);
       return NextResponse.json(
         {
           ok: false,
-          error: 'Este pago ya fue acreditado. Un txHash sólo puede usarse una vez.',
-          code: 'TX_ALREADY_CREDITED',
+          error: 'Este pago ya fue registrado. Un txHash sólo puede usarse una vez.',
+          code: 'TX_ALREADY_REGISTERED',
         },
         { status: 409 }
       );
     }
 
-    try {
-      const result = await TenantBillingService.processDeposit({
-        tenantId: authorizedTenant,
-        amountUsd,
-        isSandbox: false,
-        paymentMethod: 'crypto',
-        transactionHash: normalizedHash,
-        payerWallet: verification.from ?? undefined,
-      });
+    // Alerta operativa (no bloquea: si Discord falla, el depósito sigue pendiente).
+    const notice = await notifyPendingDeposit({
+      depositId,
+      tenantId: authorizedTenant,
+      amountUsd: verifiedAmountUsd,
+      txHash: normalizedHash,
+      chainId,
+      fromAddress: verification.from,
+      blockNumber: verification.blockNumber,
+    });
 
-      return NextResponse.json({
-        ...result,
+    return NextResponse.json(
+      {
         ok: true,
+        status: 'PENDING_REVIEW',
+        credited: false,
+        depositId,
+        tenantId: authorizedTenant,
+        amountUsd: verifiedAmountUsd,
         txHash: normalizedHash,
         chainId,
         blockNumber: verification.blockNumber,
-      });
-    } catch (creditError: unknown) {
-      // Compensación: si no se pudo abonar, se libera el txHash para reintentar.
-      await db
-        .delete(hermesCreditDeposits)
-        .where(eq(hermesCreditDeposits.id, depositId))
-        .catch(() => undefined);
-      console.error('[HermesDeposit] Credit failed, deposit record rolled back:', depositId, creditError);
-      throw creditError;
-    }
+        notified: notice.sent,
+        message:
+          'Pago verificado on-chain. Queda pendiente de aprobación; el saldo se acredita cuando un administrador lo autoriza.',
+      },
+      { status: 202 }
+    );
   } catch (error: unknown) {
     console.error('[HermesDeposit] Failed:', error);
     return NextResponse.json(

@@ -28,7 +28,7 @@ interface CreditTopupModalProps {
   onSuccess?: () => void;
 }
 
-const PRESET_AMOUNTS = [5, 10, 25, 50, 100];
+const PRESET_AMOUNTS = [10, 25, 50, 100, 250];
 
 export function CreditTopupModal({
   isOpen,
@@ -47,7 +47,9 @@ export function CreditTopupModal({
   const [treasury, setTreasury] = useState<{ treasury: string | null; usdc: string; chainId: number; minTopupUsd: number } | null>(null);
 
   const activeAmount = customAmount ? parseFloat(customAmount) : selectedAmount;
-  const isValidAmount = !isNaN(activeAmount) && activeAmount >= 5.0;
+  // El mínimo lo manda el servidor (HERMES_MIN_TOPUP_USD); no se duplica aquí.
+  const minTopupUsd = treasury?.minTopupUsd ?? 10;
+  const isValidAmount = !isNaN(activeAmount) && activeAmount >= minTopupUsd;
 
   useEffect(() => {
     if (!isOpen || isSandbox) return;
@@ -87,7 +89,13 @@ export function CreditTopupModal({
 
       const data = await res.json();
 
-      if (res.ok && data.ok) {
+      if (res.ok && data.ok && data.status === 'PENDING_REVIEW') {
+        // Verificado on-chain pero NO acreditado: requiere aprobación de un admin.
+        setStatus({
+          ok: true,
+          message: `⏳ Pago de $${Number(data.amountUsd ?? activeAmount).toFixed(2)} verificado on-chain. Queda pendiente de aprobación; el saldo se acredita al autorizarse.`,
+        });
+      } else if (res.ok && data.ok) {
         setStatus({
           ok: true,
           message: `✅ Recarga de $${activeAmount.toFixed(2)} USD acreditada exitosamente.`,
@@ -128,7 +136,7 @@ export function CreditTopupModal({
             </DialogTitle>
           </div>
           <DialogDescription className="text-xs text-zinc-400">
-            Powered by Thirdweb Pay • Tarjeta de crédito, débito y cripto con scale-to-zero serverless.
+            Transferencia USDC en Base a la treasury de Pandora's. El saldo se acredita al verificarse el pago.
           </DialogDescription>
         </DialogHeader>
 
@@ -176,7 +184,7 @@ export function CreditTopupModal({
           {/* Selector de Monto */}
           <div className="space-y-2">
             <label className="text-[11px] font-mono uppercase tracking-wider text-zinc-400">
-              Monto a Recargar (Mínimo $5.00 USD)
+              {`Monto a Recargar (Mínimo $${minTopupUsd.toFixed(2)} USD)`}
             </label>
             <div className="grid grid-cols-5 gap-1.5">
               {PRESET_AMOUNTS.map(amt => (

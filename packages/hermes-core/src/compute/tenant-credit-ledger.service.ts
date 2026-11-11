@@ -62,7 +62,9 @@ export interface ReservationResult {
 
 export class TenantCreditLedgerService {
   public static readonly DEFAULT_MARKUP_PERCENTAGE = Number(process.env.HERMES_DEFAULT_MARKUP_PERCENTAGE || 35);
-  public static readonly MIN_TOPUP_AMOUNT_USD = 5.0000; // $5 USD mínimo de recarga permitido
+  // Mínimo de recarga: umbral operativo (conciliación on-chain + revisión manual).
+  // Configurable sin redeploy de código; $10 por defecto.
+  public static readonly MIN_TOPUP_AMOUNT_USD = Number(process.env.HERMES_MIN_TOPUP_USD || 10);
   private static inMemoryCredits: Map<string, TenantCreditsDTO> = new Map();
   private static inMemoryTrialCredits: Map<string, {
     grantedCredits: number;

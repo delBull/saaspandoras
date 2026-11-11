@@ -4487,11 +4487,18 @@ export const hermesCreditDeposits = pgTable("hermes_credit_deposits", {
   blockNumber: varchar("block_number", { length: 32 }),
   creditedBy: varchar("credited_by", { length: 160 }).notNull(),
   note: text("note"),
+  // Ciclo de revisión: `pending` reserva el txHash pero NO acredita saldo.
+  // Las filas históricas quedan `credited` (default) para no reinterpretar datos.
+  status: varchar("status", { length: 24 }).notNull().default("credited"),
+  reviewedBy: varchar("reviewed_by", { length: 160 }),
+  reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+  rejectionReason: text("rejection_reason"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (t) => ({
   txUniqueIdx: uniqueIndex("hermes_credit_deposits_tx_unique").on(t.txHash),
   tenantIdx: index("hermes_credit_deposits_tenant_idx").on(t.tenantId),
   createdIdx: index("hermes_credit_deposits_created_idx").on(t.createdAt),
+  statusIdx: index("hermes_credit_deposits_status_idx").on(t.status),
 }));
 
 export const hermesComputeUsageEvents = pgTable("hermes_compute_usage_events", {

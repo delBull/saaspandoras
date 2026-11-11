@@ -1651,10 +1651,13 @@ Sin almacenamiento configurado, el artefacto se registra como \`UNPINNED\` (**si
 
 ## 7. Saldo y facturación
 
-- Saldo **por tenant**; mínimo de recarga **$5.00 USD**.
+- Saldo **por tenant**; mínimo de recarga **$10.00 USD**.
 - Sin saldo suficiente la generación se rechaza (\`Insufficient credits\`): no se ejecuta nada.
 - **Sandbox**: saldo de prueba sin costo, para integrar.
-- **Producción**: el saldo se acredita al verificar un pago **USDC on-chain** contra la wallet de tesorería. Un \`txHash\` sólo puede acreditarse **una vez**. Se hace desde el Portal (Media Studio → Añadir saldo).
+- **Producción**: pagas **USDC en Base (chainId 8453)** a la wallet de tesorería y declaras el \`txHash\`. Hermes verifica el recibo on-chain y **toma el importe del evento \`Transfer\`** (no del body: no declares el monto, se ignora si difiere). Si el importe verificado es menor al mínimo, se rechaza.
+- Tras verificar, el depósito queda **pendiente de aprobación** de un administrador y el saldo se acredita al autorizarse. La respuesta es \`202\` con \`status: "PENDING_REVIEW"\` y \`credited: false\`.
+- Un \`txHash\` sólo puede registrarse **una vez** (reintentarlo devuelve \`409\`). Si se rechaza, el hash queda reservado: contacta a soporte, no lo reenvíes.
+- La recarga se hace desde el Portal (Media Studio → Añadir saldo) o con acceso al Portal del tenant.
 - El margen de plataforma es interno y **no se comparte** con el tenant.
 
 ## 8. Límites y errores
