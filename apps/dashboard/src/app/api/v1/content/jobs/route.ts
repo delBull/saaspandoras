@@ -10,6 +10,9 @@ import { authorizeContentClient, resolveContentCapability } from '@/lib/content/
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
+// Generación de imagen (~20 s) + cold start del worker: el default de Vercel
+// (10-60 s) aborta antes de que RunPod termine.
+export const maxDuration = 300;
 
 /**
  * POST /api/v1/content/jobs

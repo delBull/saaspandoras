@@ -497,20 +497,26 @@ export class HermesMediaOrchestratorService {
         prompt: params.prompt,
         ...(params.options || {}),
       },
-      timeoutMs: 35000,
+      // Presupuesto configurable: cubre generación (~20 s) y cold start.
+      timeoutMs: Number(process.env.RUNPOD_JOB_BUDGET_MS || 120000),
     });
 
     if (!runpodRes.success) {
       await this.updateAttempt(runpodAttemptId, {
         status: 'FAILED',
-        errorCode: 'RUNPOD_EXECUTION_FAILED',
+        errorCode: runpodRes.errorCode || 'RUNPOD_EXECUTION_FAILED',
         errorMessage: runpodRes.error,
         computeSeconds: (runpodRes.executionTimeMs / 1000).toFixed(3),
         rawCostUsd: runpodRes.rawCostUsd.toFixed(5),
       });
 
       await TenantCreditLedgerService.releaseReservation(reservationId, normalizedTenant, runpodRes.error);
-      await this.markRequestFailed(normalizedTenant, requestId, 'RUNPOD_FAILED', runpodRes.error);
+      await this.markRequestFailed(
+        normalizedTenant,
+        requestId,
+        runpodRes.errorCode || 'RUNPOD_FAILED',
+        runpodRes.error
+      );
 
       return {
         ok: false,
@@ -580,6 +586,24 @@ export class HermesMediaOrchestratorService {
     const sourceUrl =
       output.images?.[0] || output.image || output.imageUrl || output.url || null;
 
+    // Algunos workers (p. ej. vLLM-Omni) devuelven la imagen inline en base64:
+    // { data: [{ b64_json }] }. Se decodifica para tener bytes reales.
+    const inlineB64Raw =
+      (Array.isArray(output.data) && typeof output.data[0]?.b64_json === 'string'
+        ? output.data[0].b64_json
+        : null) ??
+      (typeof output.b64_json === 'string' ? output.b64_json : null);
+
+    let inlineBytes: Uint8Array | null = null;
+    if (inlineB64Raw) {
+      try {
+        inlineBytes = new Uint8Array(Buffer.from(inlineB64Raw, 'base64'));
+      } catch (error: unknown) {
+        console.warn('[HermesMediaOrchestrator] Invalid base64 image payload:', error);
+        inlineBytes = null;
+      }
+    }
+
     let cid: string | null = providedCid;
     let sha256 = '';
     let sizeBytes = 0;
@@ -591,6 +615,21 @@ export class HermesMediaOrchestratorService {
         cid = pinned.cid;
         sha256 = pinned.sha256;
         sizeBytes = pinned.sizeBytes;
+      }
+    }
+
+    // Bytes propios (inline) sin pinning: se huella el contenido real, no el JSON.
+    if (inlineBytes) {
+      sha256 = crypto.createHash('sha256').update(Buffer.from(inlineBytes)).digest('hex');
+      sizeBytes = inlineBytes.byteLength;
+
+      if (!cid && pinningConfig) {
+        const pinned = await IpfsPinningService.pinBytes(
+          inlineBytes,
+          `generated_${params.requestId}.png`,
+          pinningConfig
+        );
+        if (pinned) cid = pinned.cid;
       }
     }
 
@@ -622,6 +661,8 @@ export class HermesMediaOrchestratorService {
         options: params.options,
         storage: cid ? 'IPFS_PINNED' : 'UNPINNED',
         providerAssetUrl: typeof sourceUrl === 'string' ? sourceUrl : null,
+        outputEncoding: inlineBytes ? 'INLINE_B64' : typeof sourceUrl === 'string' ? 'REMOTE_URL' : 'UNKNOWN',
+        bytesDiscarded: Boolean(inlineBytes) && !cid,
       },
       createdAt: new Date(),
     };

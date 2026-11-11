@@ -24,6 +24,7 @@ export interface RunPodJobResult {
   rawCostUsd: number;
   output?: any;
   error?: string;
+  errorCode?: string;
   isMock?: boolean;
 }
 
@@ -64,58 +65,107 @@ export class RunPodServerlessService {
       };
     }
 
-    const url = `${this.RUNPOD_BASE_URL}/${req.endpointId}/runsync`;
+    // ── Encolar + sondear ────────────────────────────────────────────────────
+    // Antes: `/runsync` con 35 s. Con modelos de imagen (~20 s) y cold start de
+    // varios minutos, eso abortaba y se perdía el id del job. Ahora se encola
+    // (`/run`), se conserva el id y se sondea hasta agotar el presupuesto.
+    const base = `${this.RUNPOD_BASE_URL}/${req.endpointId}`;
+    const budgetMs = Number(req.timeoutMs || process.env.RUNPOD_JOB_BUDGET_MS || 120000);
     const startTime = Date.now();
+    const elapsed = () => Date.now() - startTime;
+    const cost = (ms: number) => Number(((ms / 1000) * perSecondCost).toFixed(5));
+
+    let runpodJobId: string | undefined;
 
     try {
-      const controller = new AbortController();
-      const timeoutTimer = setTimeout(() => controller.abort(), req.timeoutMs || 45000);
+      const enqueueController = new AbortController();
+      const enqueueTimer = setTimeout(() => enqueueController.abort(), 20000);
 
-      const response = await fetch(url, {
+      const response = await fetch(`${base}/run`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${apiKey}`,
         },
         body: JSON.stringify({ input: req.input }),
-        signal: controller.signal,
+        signal: enqueueController.signal,
       });
 
-      clearTimeout(timeoutTimer);
+      clearTimeout(enqueueTimer);
 
-      const data = await response.json();
-      const executionTimeMs = data.executionTimeMs || (Date.now() - startTime);
-      const executionSeconds = executionTimeMs / 1000;
-      const rawCostUsd = Number((executionSeconds * perSecondCost).toFixed(5));
-
-      if (!response.ok || data.status === 'FAILED') {
+      if (!response.ok) {
         return {
           success: false,
-          jobId: data.id || `failed_${Date.now()}`,
-          executionTimeMs,
-          rawCostUsd,
-          error: data.error || `RunPod API responded with status ${response.status}`,
+          jobId: `failed_${Date.now()}`,
+          executionTimeMs: elapsed(),
+          rawCostUsd: cost(elapsed()),
+          error: `RunPod enqueue failed with status ${response.status}`,
+          errorCode: 'RUNPOD_ENQUEUE_FAILED',
         };
       }
 
-      return {
-        success: true,
-        jobId: data.id,
-        executionTimeMs,
-        rawCostUsd,
-        output: data.output,
-      };
+      const enqueued = (await response.json()) as { id?: string };
+      runpodJobId = enqueued.id;
+      if (!runpodJobId) {
+        return {
+          success: false,
+          jobId: `failed_${Date.now()}`,
+          executionTimeMs: elapsed(),
+          rawCostUsd: cost(elapsed()),
+          error: 'RunPod did not return a job id',
+          errorCode: 'RUNPOD_ENQUEUE_FAILED',
+        };
+      }
     } catch (err: any) {
-      const executionTimeMs = Date.now() - startTime;
-      const executionSeconds = executionTimeMs / 1000;
       return {
         success: false,
         jobId: `err_${Date.now()}`,
-        executionTimeMs,
-        rawCostUsd: Number((executionSeconds * perSecondCost).toFixed(5)),
-        error: err.name === 'AbortError' ? 'RunPod execution timed out' : (err.message || 'RunPod connection failed'),
+        executionTimeMs: elapsed(),
+        rawCostUsd: cost(elapsed()),
+        error: err?.name === 'AbortError' ? 'RunPod enqueue timed out' : (err?.message || 'RunPod connection failed'),
+        errorCode: 'RUNPOD_CONNECTION_FAILED',
       };
     }
+
+    let delayMs = 1500;
+    while (elapsed() < budgetMs) {
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+      delayMs = Math.min(Math.round(delayMs * 1.4), 5000);
+
+      const status = await this.checkJobStatus(req.endpointId, runpodJobId);
+
+      if (status.status === 'COMPLETED') {
+        return {
+          success: true,
+          jobId: runpodJobId,
+          executionTimeMs: status.executionTimeMs ?? elapsed(),
+          rawCostUsd: status.rawCostUsd ?? cost(elapsed()),
+          output: status.output,
+        };
+      }
+
+      if (status.status === 'FAILED' || status.status === 'NOT_FOUND') {
+        return {
+          success: false,
+          jobId: runpodJobId,
+          executionTimeMs: elapsed(),
+          rawCostUsd: cost(elapsed()),
+          error: status.error || `RunPod job ${status.status.toLowerCase()}`,
+          errorCode: 'RUNPOD_JOB_FAILED',
+        };
+      }
+    }
+
+    // Presupuesto agotado: el job puede seguir corriendo en RunPod (se cobra).
+    // Se devuelve el id para poder consultarlo, sin fingir éxito.
+    return {
+      success: false,
+      jobId: runpodJobId,
+      executionTimeMs: elapsed(),
+      rawCostUsd: cost(elapsed()),
+      error: `RunPod job ${runpodJobId} did not finish within ${budgetMs}ms (cold start or slow model). Check /status/${runpodJobId}.`,
+      errorCode: 'RUNPOD_JOB_BUDGET_EXCEEDED',
+    };
   }
 
   /**
