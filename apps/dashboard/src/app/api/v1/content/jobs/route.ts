@@ -266,13 +266,26 @@ export async function POST(req: NextRequest) {
       actorId: `integration_client:${client.clientId}`,
     });
 
-    const httpStatus = result.ok ? 200 : result.status === 'UNKNOWN' ? 504 : 500;
+    // Mapeo explícito: no todo fallo es un error del servidor.
+    //  - 402: el tenant no tiene saldo (no reintentar igual, hay que recargar)
+    //  - 403: capability no otorgada (governance)
+    //  - 504: resultado desconocido (Sofía no confirmó)
+    const httpStatus = result.ok
+      ? 200
+      : result.failureCode === 'INSUFFICIENT_CREDITS'
+        ? 402
+        : result.failureCode === 'CAPABILITY_NOT_GRANTED'
+          ? 403
+          : result.status === 'UNKNOWN'
+            ? 504
+            : 500;
 
     return NextResponse.json(
       {
         success: result.ok,
         jobId: request.id,
         status: result.status,
+        code: result.ok ? undefined : result.failureCode ?? null,
         provider: result.provider,
         attemptCount: result.attemptCount,
         artifactId: result.artifactId ?? null,

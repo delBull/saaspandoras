@@ -49,6 +49,8 @@ export interface CreateMediaRequestParams {
 
 export interface MediaGenerationResult {
   ok: boolean;
+  /** Código determinista del fallo (para mapear HTTP en la API). */
+  failureCode?: string;
   requestId: string;
   status: 'REQUESTED' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'UNKNOWN';
   provider: 'sofia' | 'runpod';
@@ -270,6 +272,7 @@ export class HermesMediaOrchestratorService {
         requestId,
         status: 'FAILED',
         provider: 'sofia',
+        failureCode: 'CAPABILITY_NOT_GRANTED',
         attemptCount: 0,
         error: `Capability '${params.capability}' is not granted for tenant '${normalizedTenant}'.`,
       };
@@ -292,6 +295,7 @@ export class HermesMediaOrchestratorService {
         requestId,
         status: 'FAILED',
         provider: 'sofia',
+        failureCode: 'INSUFFICIENT_CREDITS',
         attemptCount: 0,
         error: reservation.error || 'Insufficient credits for generation reservation.',
       };

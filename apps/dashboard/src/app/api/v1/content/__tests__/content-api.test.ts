@@ -252,6 +252,41 @@ describe('Content API (Media Co) — sin mocks, acotada al tenant', () => {
     expect(executeCalls[0][0]).toBe('forge');
   });
 
+  it('JOB-11: saldo insuficiente → 402 (no 500) con código', async () => {
+    generationResult = {
+      ok: false,
+      status: 'FAILED',
+      provider: 'sofia',
+      failureCode: 'INSUFFICIENT_CREDITS',
+      attemptCount: 0,
+      error: 'Saldo insuficiente para reservar cómputo. Saldo disponible: $0.0000 USD, requerido: $0.0270 USD.',
+      isIdempotentReplay: false,
+    };
+
+    const res = await createJob(post({ title: 'Render', type: 'image' }));
+    const body = await res.json();
+
+    expect(res.status).toBe(402);
+    expect(body.success).toBe(false);
+    expect(body.code).toBe('INSUFFICIENT_CREDITS');
+    expect(body.jobId).toBe('req_real_1');
+  });
+
+  it('JOB-12: capability no otorgada por el orquestador → 403', async () => {
+    generationResult = {
+      ok: false,
+      status: 'FAILED',
+      provider: 'sofia',
+      failureCode: 'CAPABILITY_NOT_GRANTED',
+      attemptCount: 0,
+      error: "Capability 'Media.Image' is not granted.",
+      isIdempotentReplay: false,
+    };
+
+    const res = await createJob(post({ title: 'Render', type: 'image' }));
+    expect(res.status).toBe(403);
+  });
+
   // ── GET /jobs/:id ──────────────────────────────────────────────────────────
   it('JOB-08: job de otro tenant → 404 (no filtra existencia)', async () => {
     jobRow = null; // el where incluye tenantId; el mock devuelve vacío
