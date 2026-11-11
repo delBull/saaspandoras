@@ -1,60 +1,30 @@
 import { NextResponse } from 'next/server';
-import { getNexusAuthContext } from '@saasfly/shared';
-import { db } from '@saasfly/db';
-import { eq, and } from "@saasfly/db-core";
-import { nexusActionRequests, purchases } from '@saasfly/db/schema';
 
-export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  try {
-    const { id } = await params;
-    const authCtx = await getNexusAuthContext();
-    
-    if (!authCtx.isAuthenticated || !authCtx.collaboratorId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Require finance capability
-    if (!authCtx.permissions['finance.manage']) {
-      return NextResponse.json({ error: 'Forbidden. Requires finance execution capability.' }, { status: 403 });
-    }
-
-    const depositId = id;
-    if (!depositId) {
-      return NextResponse.json({ error: 'Deposit ID is required' }, { status: 400 });
-    }
-
-    // In a real flow we would check the attention item or action request, but since we're using params.id
-    // we assume the user is approving the deposit directly. We'll mock the verification step.
-
-    // 2. Domain Execution Delegation (Mocking Treasury Service for SPEI)
-    // In production, this invokes TreasuryService.approveDeposit(actionRequest.targetResource)
-    let domainSuccess = false;
-    try {
-      if (depositId) {
-        // Execute the real financial mutation
-        await db.update(purchases)
-          .set({ status: 'completed' })
-          .where(eq(purchases.id, depositId));
-        domainSuccess = true;
-      } else {
-        // Fallback for demo purposes if targetResource is missing
-        domainSuccess = true;
-      }
-    } catch (e) {
-      console.error('[TreasuryDomain] Execution failed:', e);
-      domainSuccess = false;
-    }
-
-    // 3. Mark ActionRequest based on Domain Execution
-    if (domainSuccess) {
-      // Assuming a generic success response, as we aren't tracking action requests here natively
-      return NextResponse.json({ success: true, message: 'Deposit approved successfully via Domain Handler' });
-    } else {
-      return NextResponse.json({ error: 'Domain execution failed' }, { status: 500 });
-    }
-    
-  } catch (error) {
-    console.error('[NexusFinanceDepositsApproveAPI] Error:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
-  }
+/**
+ * ⛔ RETIRADO — /api/v1/nexus/finance/deposits/[id]/approve
+ *
+ * Esta ruta (legacy) aprobaba un `purchases.id` **enviado por el cliente** con
+ * sólo `finance.manage`, sin verificar pertenencia ni estado, y su propio
+ * comentario admitía que la verificación era simulada. No toca créditos de
+ * Hermes y no tiene llamadores en el repo.
+ *
+ * Se deja fail-closed en lugar de borrarla, para que cualquier integración
+ * antigua falle de forma explícita y no mute datos.
+ *
+ * Camino correcto para depósitos de Hermes:
+ *   POST /api/v1/hermes/billing/deposit      (verificación on-chain, estado `pending`)
+ *   /admin/finance/deposits                  (aprobación humana)
+ */
+export async function POST(
+  _request: Request,
+  _context: { params: Promise<{ id: string }> }
+) {
+  return NextResponse.json(
+    {
+      error:
+        'Endpoint retirado. No muta datos. Usa /api/v1/hermes/billing/deposit y la bandeja /admin/finance/deposits.',
+      code: 'ENDPOINT_RETIRED',
+    },
+    { status: 410 }
+  );
 }

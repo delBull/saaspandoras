@@ -22,7 +22,7 @@
 
 import { db } from '@saasfly/db-core';
 import { hermesTenantCredits, hermesComputeUsageEvents } from '@saasfly/db-core/schema';
-import { eq, desc } from "@saasfly/db-core";
+import { and, desc, eq, sql } from "@saasfly/db-core";
 import { TenantCreditLedgerService } from './tenant-credit-ledger.service';
 
 export interface DepositRequest {
@@ -114,31 +114,78 @@ export class TenantBillingService {
 
     const newTotalDeposited = currentCredits.totalDepositedUsd + amountUsd;
 
-    try {
-      if (db) {
-        // Actualizar balance atómicamente
-        if (isSandbox) {
-          await db
-            .update(hermesTenantCredits)
-            .set({
-              sandboxBalanceUsd: newBalanceUsd.toFixed(4),
-              totalDepositedUsd: newTotalDeposited.toFixed(4),
-              updatedAt: new Date(),
-            })
-            .where(eq(hermesTenantCredits.tenantId, normalizedTenant));
-        } else {
-          await db
-            .update(hermesTenantCredits)
-            .set({
-              creditBalanceUsd: newBalanceUsd.toFixed(4),
-              totalDepositedUsd: newTotalDeposited.toFixed(4),
-              updatedAt: new Date(),
-            })
-            .where(eq(hermesTenantCredits.tenantId, normalizedTenant));
+    // ── Persistencia (transaccional, atómica, idempotente) ────────────────────
+    // Antes: read-modify-write + `catch { console.error }` → pérdida de abonos y
+    // fallos silenciosos. Ahora: incremento atómico en SQL, eventos y saldo en la
+    // misma transacción, y el error se propaga al llamador.
+    if (db) {
+      await db.transaction(async (tx: any) => {
+        // 0) Bloqueo de la fila de saldo: serializa depósitos concurrentes del
+        //    mismo tenant (evita el doble abono por carrera, no sólo por status).
+        const [locked] = await tx
+          .select({
+            credit: hermesTenantCredits.creditBalanceUsd,
+            sandbox: hermesTenantCredits.sandboxBalanceUsd,
+          })
+          .from(hermesTenantCredits)
+          .where(eq(hermesTenantCredits.tenantId, normalizedTenant))
+          .for('update')
+          .limit(1);
+
+        if (!locked) {
+          throw new Error(
+            `[TenantBillingService] El tenant '${normalizedTenant}' no existe en hermes_tenant_credits; no se acredita.`
+          );
         }
 
-        // Registrar evento auditado de fondeo para la Contabilidad Interna de Hermes
-        await db.insert(hermesComputeUsageEvents).values({
+        // 1) Idempotencia por pago: un mismo txHash no se acredita dos veces.
+        if (!isSandbox && transactionHash) {
+          const [already] = await tx
+            .select({ id: hermesComputeUsageEvents.id })
+            .from(hermesComputeUsageEvents)
+            .where(
+              and(
+                eq(hermesComputeUsageEvents.capability, 'billing.credit.deposit'),
+                sql`${hermesComputeUsageEvents.metadataJson}->>'transactionHash' = ${transactionHash}`
+              )
+            )
+            .limit(1);
+
+          if (already) {
+            newBalanceUsd = Number(isSandbox ? locked.sandbox : locked.credit) || newBalanceUsd;
+            return; // ya acreditado: no se vuelve a sumar
+          }
+        }
+
+        // 2) Incremento atómico (`col = col + n`), sin leer-y-escribir.
+        const balanceColumn = isSandbox
+          ? hermesTenantCredits.sandboxBalanceUsd
+          : hermesTenantCredits.creditBalanceUsd;
+
+        const [updated] = await tx
+          .update(hermesTenantCredits)
+          .set({
+            [isSandbox ? 'sandboxBalanceUsd' : 'creditBalanceUsd']: sql`${balanceColumn} + ${amountUsd}`,
+            totalDepositedUsd: sql`${hermesTenantCredits.totalDepositedUsd} + ${amountUsd}`,
+            updatedAt: new Date(),
+          })
+          .where(eq(hermesTenantCredits.tenantId, normalizedTenant))
+          .returning({
+            balance: balanceColumn,
+            total: hermesTenantCredits.totalDepositedUsd,
+          });
+
+        if (!updated) {
+          throw new Error(
+            `[TenantBillingService] No se pudo acreditar el saldo: el tenant '${normalizedTenant}' no existe en hermes_tenant_credits.`
+          );
+        }
+
+        newBalanceUsd = Number(updated.balance);
+        const persistedTotal = Number(updated.total);
+
+        // 3) Evento auditado de fondeo (misma transacción que el saldo).
+        await tx.insert(hermesComputeUsageEvents).values({
           id: depositId,
           tenantId: normalizedTenant,
           requestId: depositId,
@@ -159,12 +206,11 @@ export class TenantBillingService {
             netComputeUsd,
             reason: `Fondeo de créditos ${isSandbox ? 'Sandbox (Pruebas)' : 'Producción'} con margen ${markupPct}%`,
             fundedAt: new Date().toISOString(),
+            totalDepositedUsd: persistedTotal,
           },
           createdAt: new Date(),
         });
-      }
-    } catch (err: any) {
-      console.error('[TenantBillingService] Error saving deposit to DB:', err);
+      });
     }
 
     // Always mirror to in-memory ledger for immediate audit resilience
