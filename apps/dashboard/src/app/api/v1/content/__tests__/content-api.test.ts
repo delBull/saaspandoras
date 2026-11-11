@@ -183,11 +183,17 @@ describe('Content API (Media Co) — sin mocks, acotada al tenant', () => {
 
   it('JOB-04a: sin endpointId y sin RUNPOD_DEFAULT_ENDPOINT → 422 fail-closed', async () => {
     delete process.env.RUNPOD_DEFAULT_ENDPOINT;
-    const res = await createJob(post({ title: 'Render', type: 'image' }));
+    const res = await createJob(post({ title: 'Render', type: 'image', provider: 'runpod' }));
     expect(res.status).toBe(422);
     const body = await res.json();
     expect(body.code).toBe('RUNPOD_ENDPOINT_REQUIRED');
     expect(executeCalls.length).toBe(0);
+  });
+
+  it('JOB-04d: sin provider ni endpointId → usa Sofía por defecto', async () => {
+    const res = await createJob(post({ title: 'Render', type: 'image' }));
+    expect(res.status).toBe(200);
+    expect(executeCalls[0][2]?.provider).toBe('sofia');
   });
 
   it('JOB-04b: endpointId con formato inválido → 422 sin ejecutar', async () => {
@@ -199,7 +205,7 @@ describe('Content API (Media Co) — sin mocks, acotada al tenant', () => {
   it('JOB-04c: RUNPOD_DEFAULT_ENDPOINT configurado permite no enviar endpointId', async () => {
     process.env.RUNPOD_DEFAULT_ENDPOINT = 'epdefault01';
     try {
-      const res = await createJob(post({ title: 'Render', type: 'image' }));
+      const res = await createJob(post({ title: 'Render', type: 'image', provider: 'runpod' }));
       expect(res.status).toBe(200);
       expect(executeCalls.length).toBe(1);
       expect(executeCalls[0][2]?.endpointId).toBeUndefined();

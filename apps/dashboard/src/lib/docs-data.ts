@@ -1542,13 +1542,12 @@ POST /api/v1/content/jobs
   "title": "Hero Q4",
   "type": "image",
   "parameters": { "prompt": "retail hero shot, golden hour" },
-  "provider": "runpod",
-  "endpointId": "tu-runpod-endpoint-id",
+  "provider": "sofia",
   "wait": true
 }
 \`\`\`
 
-**\`endpointId\`** (opcional): Endpoint ID de RunPod para ese job. Si no lo envías se usa el default del servidor; si no existe ninguno, la API responde \`422 RUNPOD_ENDPOINT_REQUIRED\` (no se inventa un endpoint).
+**\`provider\`**: por defecto \`sofia\` (la ruta de media operativa). Usa \`runpod\` sólo si vas a aportar un Endpoint ID de cómputo (en ese caso \`endpointId\` es obligatorio si el servidor no tiene default). \`auto\` intenta Sofía primero y sólo cae a RunPod si Sofía no responde en el pre-ACK.
 
 **Tipos válidos:** \`image\`, \`image_render\`, \`poster\` · \`video\`, \`video_render\`, \`reel\` · \`copy\`, \`copy_render\`, \`caption\` · \`editorial\`, \`newsletter\` · \`audio\`, \`podcast\` · \`research\`, \`research_report\`.
 

@@ -126,7 +126,24 @@ export async function POST(req: NextRequest) {
         : '';
   const prompt = (explicitPrompt || parameterPrompt || title).slice(0, 8000);
 
-  const providerInput = typeof body.provider === 'string' ? body.provider : 'auto';
+  // Endpoint de cómputo por job (RunPod). Se resuelve antes del proveedor para
+  // poder inferirlo: si el cliente manda endpointId sin `provider`, es runpod.
+  const endpointFromBody = typeof body.endpointId === 'string' ? body.endpointId.trim() : '';
+  const endpointFromParams =
+    typeof parameters.endpointId === 'string' ? String(parameters.endpointId).trim() : '';
+  const endpointId = endpointFromBody || endpointFromParams || undefined;
+
+  if (endpointId && !/^[A-Za-z0-9]{6,64}$/.test(endpointId)) {
+    return NextResponse.json(
+      { success: false, error: "endpointId inválido: usa el Endpoint ID de RunPod (alfanumérico)." },
+      { status: 422 }
+    );
+  }
+
+  // Proveedor por defecto: SOFÍA (la ruta de media operativa). `runpod` sólo
+  // cuando se pide explícitamente o se envía un endpointId.
+  const providerInput =
+    typeof body.provider === 'string' ? body.provider : endpointId ? 'runpod' : 'sofia';
   if (!PROVIDERS.includes(providerInput as MediaProviderOption)) {
     return NextResponse.json(
       { success: false, error: `Invalid provider '${providerInput}'. Allowed: auto, sofia, runpod.` },
@@ -177,21 +194,9 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Endpoint de RunPod por job (sin depender de RUNPOD_DEFAULT_ENDPOINT global).
-  const endpointFromBody = typeof body.endpointId === 'string' ? body.endpointId.trim() : '';
-  const endpointFromParams =
-    typeof parameters.endpointId === 'string' ? String(parameters.endpointId).trim() : '';
-  const endpointId = endpointFromBody || endpointFromParams || undefined;
-
-  if (endpointId && !/^[A-Za-z0-9]{6,64}$/.test(endpointId)) {
-    return NextResponse.json(
-      { success: false, error: "endpointId inválido: usa el Endpoint ID de RunPod (alfanumérico)." },
-      { status: 422 }
-    );
-  }
-
   const hasDefaultEndpoint = Boolean(process.env.RUNPOD_DEFAULT_ENDPOINT?.trim());
-  if (provider !== 'sofia' && !endpointId && !hasDefaultEndpoint) {
+  // Sólo RunPod explícito exige endpoint. `auto` intenta Sofía primero.
+  if (provider === 'runpod' && !endpointId && !hasDefaultEndpoint) {
     return NextResponse.json(
       {
         success: false,

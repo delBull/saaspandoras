@@ -790,8 +790,33 @@ export class HermesMediaOrchestratorService {
               rawCostUsd: Number(dbAttempt.rawCostUsd || 0.02),
             };
           }
-        } catch {
-          // ignore transient select error during polling
+
+          // Respaldo: el callback escribe primero el request. Si el intento no
+          // quedó cerrado (versión antigua del handler, reintento, etc.), el
+          // request COMPLETED con artifactId es evidencia suficiente para
+          // liquidar sin dejar el job en UNKNOWN.
+          const [doneReq] = await db
+            .select({
+              artifactId: hermesMediaRequests.artifactId,
+              status: hermesMediaRequests.status,
+            })
+            .from(hermesMediaRequests)
+            .where(
+              and(
+                eq(hermesMediaRequests.id, requestId),
+                eq(hermesMediaRequests.tenantId, tenantId)
+              )
+            )
+            .limit(1);
+
+          if (doneReq?.status === 'COMPLETED' && doneReq.artifactId) {
+            const art = await this.getArtifact(tenantId, doneReq.artifactId);
+            return { output: art, computeSeconds: 3.0, rawCostUsd: 0.02 };
+          }
+        } catch (error: unknown) {
+          // Un fallo transitorio de lectura no debe abortar el sondeo, pero sí
+          // quedar visible (nada de silencios en el camino del dinero).
+          console.error('[HermesMediaOrchestrator] Post-ACK poll query failed:', error);
         }
       }
     }
@@ -835,8 +860,12 @@ export class HermesMediaOrchestratorService {
       if (db) {
         await db.insert(hermesGenerationAttempts).values(record).onConflictDoNothing();
       }
-    } catch (err) {
-      console.warn('[HermesMediaOrchestrator] Notice recording attempt:', err);
+    } catch (error: unknown) {
+      // Evidencia de ejecución: no puede desaparecer en silencio.
+      console.error(
+        `[HermesMediaOrchestrator] Could not persist attempt ${attempt?.id} (request ${attempt?.requestId}):`,
+        error
+      );
     }
   }
 
@@ -855,8 +884,8 @@ export class HermesMediaOrchestratorService {
           .set({ ...updates, updatedAt: new Date() })
           .where(eq(hermesGenerationAttempts.id, attemptId));
       }
-    } catch (err) {
-      console.warn('[HermesMediaOrchestrator] Notice updating attempt:', err);
+    } catch (error: unknown) {
+      console.error(`[HermesMediaOrchestrator] Could not update attempt ${attemptId}:`, error);
     }
   }
 

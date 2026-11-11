@@ -42,6 +42,7 @@ export * from './tenants/tenant-provisioner';
 export * from './packs/real-estate-pack';
 export * from './packs/real-estate-doctrine';
 export * from './a2a/a2a-message-handler';
+export * from './a2a/artifact-attempt-link';
 export * from './a2a/a2a-outbound-dispatcher';
 export * from './a2a/a2a-security-validator';
 export * from './a2a/agent-registry';
