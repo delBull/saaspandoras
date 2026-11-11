@@ -47,6 +47,7 @@ describe('⚡ HERMES SOVEREIGN MEDIA GENERATION (FASE 5)', () => {
       prompt: 'A futuristic cybernetic garden',
       status: 'COMPLETED',
       provider: 'runpod',
+      endpointId: 'ep_test_flux',
       idempotencyKey: 'idemp_key_alpha_1',
       artifactId: existingArtifactId,
       correlationId: 'corr_001',
@@ -86,6 +87,7 @@ describe('⚡ HERMES SOVEREIGN MEDIA GENERATION (FASE 5)', () => {
       prompt: 'A futuristic cybernetic garden',
       options: {},
       provider: 'auto',
+      endpointId: 'ep_test_flux',
       idempotencyKey: 'idemp_key_alpha_1',
       isSandbox: true,
     });
@@ -109,6 +111,7 @@ describe('⚡ HERMES SOVEREIGN MEDIA GENERATION (FASE 5)', () => {
       prompt: 'Hyperrealistic architectural rendering',
       status: 'PENDING',
       provider: 'auto',
+      endpointId: 'ep_test_flux',
       idempotencyKey: 'idemp_key_failover_002',
       correlationId: 'corr_002',
       createdAt: new Date(),
@@ -196,6 +199,7 @@ describe('⚡ HERMES SOVEREIGN MEDIA GENERATION (FASE 5)', () => {
       prompt: 'Hyperrealistic architectural rendering',
       options: {},
       provider: 'auto',
+      endpointId: 'ep_test_flux',
       isSandbox: true,
     });
 
@@ -226,6 +230,7 @@ describe('⚡ HERMES SOVEREIGN MEDIA GENERATION (FASE 5)', () => {
       prompt: 'Private luxury penthouse floorplan 3D',
       status: 'PENDING',
       provider: 'auto',
+      endpointId: 'ep_test_flux',
       correlationId: 'corr_003',
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -287,6 +292,7 @@ describe('⚡ HERMES SOVEREIGN MEDIA GENERATION (FASE 5)', () => {
       prompt: 'Private luxury penthouse floorplan 3D',
       options: {},
       provider: 'auto',
+      endpointId: 'ep_test_flux',
       isSandbox: true,
     });
 
@@ -375,6 +381,7 @@ describe('⚡ HERMES SOVEREIGN MEDIA GENERATION (FASE 5)', () => {
       prompt: 'Sovereign cloud direct generation',
       status: 'PENDING',
       provider: 'runpod',
+      endpointId: 'ep_test_flux',
       correlationId: 'corr_005',
     };
 
@@ -445,6 +452,7 @@ describe('⚡ HERMES SOVEREIGN MEDIA GENERATION (FASE 5)', () => {
       prompt: 'Sovereign cloud direct generation',
       options: {},
       provider: 'runpod',
+      endpointId: 'ep_test_flux',
       isSandbox: true,
     });
 
@@ -492,6 +500,7 @@ describe('⚡ HERMES SOVEREIGN MEDIA GENERATION (FASE 5)', () => {
       requestId: 'r1',
       capability: 'media.image.generate',
       provider: 'runpod',
+      endpointId: 'ep_test_flux',
       estimatedRawCostUsd: 0.03,
       isSandbox: true,
     });
@@ -499,6 +508,7 @@ describe('⚡ HERMES SOVEREIGN MEDIA GENERATION (FASE 5)', () => {
       requestId: 'r2',
       capability: 'media.image.generate',
       provider: 'runpod',
+      endpointId: 'ep_test_flux',
       estimatedRawCostUsd: 0.03,
       isSandbox: true,
     });
@@ -535,6 +545,7 @@ describe('⚡ HERMES SOVEREIGN MEDIA GENERATION (FASE 5)', () => {
       prompt: 'High-res villa aerial',
       status: 'PENDING',
       provider: 'runpod',
+      endpointId: 'ep_test_flux',
       correlationId: 'corr_008',
     };
 
@@ -604,6 +615,7 @@ describe('⚡ HERMES SOVEREIGN MEDIA GENERATION (FASE 5)', () => {
       prompt: 'High-res villa aerial',
       options: {},
       provider: 'runpod',
+      endpointId: 'ep_test_flux',
       isSandbox: true,
     });
 
@@ -625,6 +637,7 @@ describe('⚡ HERMES SOVEREIGN MEDIA GENERATION (FASE 5)', () => {
       prompt: 'Unified architecture test',
       status: 'REQUESTED',
       provider: 'auto',
+      endpointId: 'ep_test_flux',
       idempotencyKey: 'idemp_unified_009',
       correlationId: 'corr_009',
       createdAt: new Date(),
@@ -654,6 +667,7 @@ describe('⚡ HERMES SOVEREIGN MEDIA GENERATION (FASE 5)', () => {
       prompt: 'Unified architecture test',
       options: {},
       provider: 'auto',
+      endpointId: 'ep_test_flux',
       idempotencyKey: 'idemp_unified_009',
       isSandbox: true,
     });
@@ -689,6 +703,7 @@ describe('⚡ HERMES SOVEREIGN MEDIA GENERATION (FASE 5)', () => {
       prompt: 'Confidential project plans',
       options: {},
       provider: 'auto',
+      endpointId: 'ep_test_flux',
       isSandbox: true,
     });
 
@@ -705,6 +720,7 @@ describe('⚡ HERMES SOVEREIGN MEDIA GENERATION (FASE 5)', () => {
       prompt: 'A flourishing vertical forest penthouse in Mexico City',
       status: 'PENDING',
       provider: 'auto',
+      endpointId: 'ep_test_flux',
       correlationId: 'corr_011',
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -780,6 +796,7 @@ describe('⚡ HERMES SOVEREIGN MEDIA GENERATION (FASE 5)', () => {
       prompt: 'A flourishing vertical forest penthouse in Mexico City',
       options: {},
       provider: 'auto',
+      endpointId: 'ep_test_flux',
       isSandbox: true,
     });
 

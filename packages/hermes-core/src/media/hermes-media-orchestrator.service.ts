@@ -74,10 +74,20 @@ export interface MediaGenerationResult {
   isIdempotentReplay?: boolean;
 }
 
+function readTimeout(envName: string, fallbackMs: number): number {
+  const raw = Number(process.env[envName]);
+  return Number.isFinite(raw) && raw > 0 ? raw : fallbackMs;
+}
+
 export class HermesMediaOrchestratorService {
-  public static PRE_ACK_TIMEOUT_MS = 2500;
-  public static POST_ACK_TIMEOUT_MS = 15000;
-  private static readonly RUNPOD_DEFAULT_ENDPOINT = process.env.RUNPOD_DEFAULT_ENDPOINT || 'ep_comfyui_serverless_flux';
+  // Pre-ACK: tiempo que Sofía tiene para aceptar el trabajo. Medido en producción:
+  // ~1.1 s de latencia base; 5 s deja margen sin colgar la petición.
+  public static PRE_ACK_TIMEOUT_MS = readTimeout('SOFIA_PRE_ACK_TIMEOUT_MS', 5000);
+  // Post-ACK: espera del resultado real (imagen ~20 s + callback). 15 s era
+  // insuficiente y dejaba el job en UNKNOWN aunque Sofía terminara.
+  public static POST_ACK_TIMEOUT_MS = readTimeout('SOFIA_POST_ACK_TIMEOUT_MS', 120000);
+  // Fail-closed: sin endpoint configurado NO se inventa uno.
+  private static readonly RUNPOD_DEFAULT_ENDPOINT = process.env.RUNPOD_DEFAULT_ENDPOINT || '';
   private static inMemoryRequests: Map<string, any> = new Map();
   private static inMemoryAttempts: Map<string, any[]> = new Map();
   private static inMemoryArtifacts: Map<string, any> = new Map();
@@ -86,8 +96,8 @@ export class HermesMediaOrchestratorService {
     this.inMemoryRequests.clear();
     this.inMemoryAttempts.clear();
     this.inMemoryArtifacts.clear();
-    this.PRE_ACK_TIMEOUT_MS = 2500;
-    this.POST_ACK_TIMEOUT_MS = 15000;
+    this.PRE_ACK_TIMEOUT_MS = readTimeout('SOFIA_PRE_ACK_TIMEOUT_MS', 5000);
+    this.POST_ACK_TIMEOUT_MS = readTimeout('SOFIA_POST_ACK_TIMEOUT_MS', 120000);
   }
 
   /**
@@ -321,7 +331,10 @@ export class HermesMediaOrchestratorService {
       try {
         // Pre-ACK bounded handshake (<= 2500ms)
         const timeoutPromise = new Promise<{ success: false; timeout: true }>((_, reject) =>
-          setTimeout(() => reject(new Error('Sofia pre-ACK timeout (2500ms exceeded)')), this.PRE_ACK_TIMEOUT_MS)
+          setTimeout(
+            () => reject(new Error(`Sofia pre-ACK timeout (${this.PRE_ACK_TIMEOUT_MS}ms exceeded)`)),
+            this.PRE_ACK_TIMEOUT_MS
+          )
         );
 
         const dispatchPromise = A2AOutboundDispatcher.sendToSofia('capability.request', {
@@ -493,6 +506,37 @@ export class HermesMediaOrchestratorService {
     });
 
     const endpointId = params.endpointId || this.RUNPOD_DEFAULT_ENDPOINT;
+
+    // Fail-closed: sin endpoint real no se llama a RunPod (antes había un id
+    // inventado por defecto, lo que producía fallos opacos).
+    if (!endpointId) {
+      await this.updateAttempt(runpodAttemptId, {
+        status: 'FAILED',
+        errorCode: 'RUNPOD_ENDPOINT_REQUIRED',
+        errorMessage: 'No compute endpoint configured for this job.',
+      });
+      await TenantCreditLedgerService.releaseReservation(
+        reservationId,
+        normalizedTenant,
+        'RunPod endpoint not configured'
+      );
+      await this.markRequestFailed(
+        normalizedTenant,
+        requestId,
+        'RUNPOD_ENDPOINT_REQUIRED',
+        'No compute endpoint configured.'
+      );
+
+      return {
+        ok: false,
+        requestId,
+        status: 'FAILED',
+        provider: 'runpod',
+        failureCode: 'RUNPOD_ENDPOINT_REQUIRED',
+        attemptCount: runpodAttemptNumber,
+        error: 'No compute endpoint configured for this job.',
+      };
+    }
 
     // Execute RunPod Serverless GPU Inference
     const runpodRes = await RunPodServerlessService.executeSync({
