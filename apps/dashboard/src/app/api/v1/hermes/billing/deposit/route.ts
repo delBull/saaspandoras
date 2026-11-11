@@ -46,6 +46,8 @@ interface DepositBody {
   txHash?: unknown;
   chainId?: unknown;
   note?: unknown;
+  /** Vía de pago: 'card' (thirdweb Checkout) o 'crypto' (transferencia). */
+  rail?: unknown;
 }
 
 function isTxHash(value: unknown): value is Hash {
@@ -314,6 +316,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Vía de pago para contabilidad: tarjeta (thirdweb) vs transferencia.
+    // Sólo etiqueta: el abono y su importe no dependen de este dato.
+    const rail = body.rail === 'card' ? 'card' : 'crypto';
+
     const depositId = `dep_${crypto.randomUUID()}`;
     try {
       await db.insert(hermesCreditDeposits).values({
@@ -327,7 +333,7 @@ export async function POST(req: NextRequest) {
         fromAddress: verification.from,
         toAddress: treasury.wallet,
         blockNumber: verification.blockNumber,
-        creditedBy: 'portal:onchain',
+        creditedBy: rail === 'card' ? 'portal:thirdweb' : 'portal:onchain',
         note,
         status: 'pending',
       });
@@ -365,6 +371,7 @@ export async function POST(req: NextRequest) {
         amountUsd: verifiedAmountUsd,
         txHash: normalizedHash,
         chainId,
+        rail,
         blockNumber: verification.blockNumber,
         notified: notice.sent,
         message:

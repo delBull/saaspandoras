@@ -1657,6 +1657,10 @@ Sin almacenamiento configurado, el artefacto se registra como \`UNPINNED\` (**si
 - Tras verificar, el depósito queda **pendiente de aprobación** de un administrador y el saldo se acredita al autorizarse. La respuesta es \`202\` con \`status: "PENDING_REVIEW"\` y \`credited: false\`.
 - Un \`txHash\` sólo puede registrarse **una vez** (reintentarlo devuelve \`409\`). Si se rechaza, el hash queda reservado: contacta a soporte, no lo reenvíes.
 - La recarga se hace desde el Portal (Media Studio → Añadir saldo) o con acceso al Portal del tenant.
+- **Métodos de pago del Portal:**
+  - **Tarjeta / Apple Pay / Google Pay** (thirdweb Checkout): el pago se convierte a **USDC en Base** y llega a la wallet de tesorería. El abono se verifica on-chain exactamente igual que una transferencia.
+  - **USDC** por transferencia directa: aportas el \`txHash\`.
+  - En ambos casos el saldo **no** se acredita al instante: queda \`pending\` hasta que un administrador autoriza (anti-abuso y conciliación). El importe acreditado es siempre el que llegó on-chain.
 - El margen de plataforma es interno y **no se comparte** con el tenant.
 
 ## 8. Límites y errores

@@ -9,6 +9,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { CreditCheckout } from '@/components/payments/CreditCheckout';
 import {
   Coins,
   CreditCard,
@@ -43,6 +44,8 @@ export function CreditTopupModal({
   const [processing, setProcessing] = useState<boolean>(false);
   const [status, setStatus] = useState<{ ok: boolean; message: string } | null>(null);
   const [txHash, setTxHash] = useState<string>('');
+  // 'card' = thirdweb Checkout (tarjeta/Apple Pay/crypto gestionado), 'crypto' = transferencia manual + txHash
+  const [method, setMethod] = useState<'card' | 'crypto'>('card');
   const [chainId, setChainId] = useState<number>(8453);
   const [treasury, setTreasury] = useState<{ treasury: string | null; usdc: string; chainId: number; minTopupUsd: number } | null>(null);
 
@@ -65,10 +68,11 @@ export function CreditTopupModal({
     return () => { cancelled = true; };
   }, [isOpen, isSandbox, tenantId]);
 
-  const handleDeposit = async () => {
+  const submitDeposit = async (opts?: { txHash?: string; rail?: 'card' | 'crypto'; note?: string }) => {
     if (!isValidAmount) return;
-    if (!isSandbox && !/^0x[a-fA-F0-9]{64}$/.test(txHash.trim())) {
-      setStatus({ ok: false, message: 'Pega el txHash (0x + 64 caracteres) del pago on-chain.' });
+    const hash = (opts?.txHash ?? txHash).trim();
+    if (!isSandbox && !/^0x[a-fA-F0-9]{64}$/.test(hash)) {
+      setStatus({ ok: false, message: 'Falta el txHash (0x + 64 caracteres) del pago on-chain.' });
       return;
     }
     setProcessing(true);
@@ -82,8 +86,10 @@ export function CreditTopupModal({
           tenantId,
           amountUsd: activeAmount,
           isSandbox,
-          txHash: isSandbox ? undefined : txHash.trim(),
+          txHash: isSandbox ? undefined : hash,
           chainId,
+          rail: opts?.rail ?? (method === 'card' ? 'card' : 'crypto'),
+          note: opts?.note,
         }),
       });
 
@@ -219,8 +225,61 @@ export function CreditTopupModal({
             </div>
           </div>
 
-          {/* Pago on-chain (saldo real) */}
+          {/* Método de pago (sólo producción) */}
           {!isSandbox && (
+            <div className="grid grid-cols-2 gap-1.5 rounded-xl border border-zinc-800 bg-zinc-900/50 p-1">
+              <button
+                type="button"
+                onClick={() => setMethod('card')}
+                className={`py-2 rounded-lg text-xs font-semibold transition-all ${
+                  method === 'card' ? 'bg-purple-500/20 text-purple-200 border border-purple-500/40' : 'text-zinc-400'
+                }`}
+              >
+                Tarjeta / Apple Pay
+              </button>
+              <button
+                type="button"
+                onClick={() => setMethod('crypto')}
+                className={`py-2 rounded-lg text-xs font-semibold transition-all ${
+                  method === 'crypto' ? 'bg-emerald-500/20 text-emerald-200 border border-emerald-500/40' : 'text-zinc-400'
+                }`}
+              >
+                USDC (transferencia)
+              </button>
+            </div>
+          )}
+
+          {/* Tarjeta: thirdweb Checkout (convierte a USDC en Base a la treasury) */}
+          {!isSandbox && method === 'card' && (
+            <div className="space-y-2">
+              {treasury?.treasury ? (
+                <CreditCheckout
+                  amountUsd={isValidAmount ? activeAmount : minTopupUsd}
+                  treasury={treasury.treasury}
+                  onTransaction={(hash, paymentId) => {
+                    setTxHash(hash);
+                    void submitDeposit({
+                      txHash: hash,
+                      rail: 'card',
+                      note: paymentId ? `thirdweb:${paymentId}` : undefined,
+                    });
+                  }}
+                  onError={(message) => setStatus({ ok: false, message })}
+                />
+              ) : (
+                <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200">
+                  Tesorería no configurada en el servidor: la recarga con tarjeta está deshabilitada.
+                </p>
+              )}
+              <p className="text-[10px] leading-relaxed text-zinc-500">
+                El pago se convierte a <strong>USDC en Base</strong> y llega a la treasury. Acreditamos el importe
+                que se verifica on-chain; un administrador lo autoriza.
+              </p>
+            </div>
+          )}
+
+          {/* Cripto: transferencia manual + txHash */}
+          {!isSandbox && method === 'crypto' && (
             <div className="space-y-2 rounded-xl border border-emerald-500/25 bg-emerald-500/[0.06] p-3">
               <p className="text-[11px] leading-relaxed text-emerald-200">
                 Transfiere{' '}
@@ -286,7 +345,7 @@ export function CreditTopupModal({
           {/* Action Button */}
           <Button
             disabled={!isValidAmount || processing}
-            onClick={handleDeposit}
+            onClick={() => void submitDeposit()}
             className="w-full py-5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-medium rounded-xl shadow-lg shadow-purple-900/20 disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
           >
             {processing ? (

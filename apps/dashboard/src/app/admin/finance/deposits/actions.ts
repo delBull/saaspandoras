@@ -92,7 +92,8 @@ export async function approveDeposit(depositId: string) {
       tenantId: deposit.tenantId,
       amountUsd,
       isSandbox: false,
-      paymentMethod: 'crypto',
+      // Contabilidad: distingue tarjeta (thirdweb) de transferencia on-chain.
+      paymentMethod: String(deposit.creditedBy ?? '').includes('thirdweb') ? 'thirdweb_pay' : 'crypto',
       transactionHash: deposit.txHash,
       payerWallet: deposit.fromAddress ?? undefined,
     });

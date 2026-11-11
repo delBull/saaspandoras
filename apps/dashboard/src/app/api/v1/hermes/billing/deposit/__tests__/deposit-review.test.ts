@@ -114,6 +114,7 @@ describe('Depósito on-chain → revisión', () => {
     expect(processDeposit).not.toHaveBeenCalled();
     expect(inserted).toHaveLength(1);
     expect(inserted[0].status).toBe('pending');
+    expect(inserted[0].creditedBy).toBe('portal:onchain');
     expect(notifyPendingDeposit).toHaveBeenCalledTimes(1);
   });
 
@@ -124,6 +125,24 @@ describe('Depósito on-chain → revisión', () => {
     expect(res.status).toBe(202);
     expect(body.amountUsd).toBe(10); // declaró 5; la cadena movió 10
     expect(inserted[0].amountUsd).toBe('10.0000');
+  });
+
+  it('DEP-R5: rail=card se registra como thirdweb (contabilidad), no cambia el importe', async () => {
+    const res = await deposit(
+      request({ tenantId: 'forge', txHash: TX, chainId: 8453, rail: 'card', note: 'thirdweb:pay_123' })
+    );
+    const body = await res.json();
+
+    expect(res.status).toBe(202);
+    expect(body.rail).toBe('card');
+    expect(inserted[0].creditedBy).toBe('portal:thirdweb');
+    expect(inserted[0].note).toBe('thirdweb:pay_123');
+    expect(inserted[0].amountUsd).toBe('10.0000'); // el importe sigue saliendo de la cadena
+  });
+
+  it('DEP-R6: un rail desconocido no se acepta como tarjeta (cae a crypto)', async () => {
+    await deposit(request({ tenantId: 'forge', txHash: TX, chainId: 8453, rail: 'bitcoin_magic' }));
+    expect(inserted[0].creditedBy).toBe('portal:onchain');
   });
 
   it('DEP-R3: pago por debajo del mínimo → 422 y no se registra', async () => {
