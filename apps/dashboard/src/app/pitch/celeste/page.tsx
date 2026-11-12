@@ -331,6 +331,18 @@ function PriceCard({ label, value, note, accent }: { label: string; value: strin
   );
 }
 
-export default function CelestePitchPage() {
-  return <PresentationEngine slides={slides} />;
+export default async function CelestePitchPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ meet?: string; host?: string; presentation?: string }>;
+}) {
+  const { meet, host, presentation } = await searchParams;
+  return (
+    <PresentationEngine
+      slides={slides}
+      meetId={meet}
+      host={host === '1'}
+      presentationId={presentation || 'celeste'}
+    />
+  );
 }

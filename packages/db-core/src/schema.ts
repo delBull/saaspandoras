@@ -1636,7 +1636,8 @@ export const meetings = pgTable("meetings", {
   hostCollaboratorId: integer("host_collaborator_id").references(() => nexusCollaborators.id), // The actual owner/host
   
   jitsiRoomId: text("jitsi_room_id"), // Sovereign Jitsi Meet ID
-  presentationId: text("presentation_id"), // ID to link to Fullscreen Pitch Template
+  presentationId: text("presentation_id"), // slug del deck (p. ej. "celeste")
+  dealRoomId: text("deal_room_id"), // Deal Room asociado (para enviar el documento tras la meet)
 
   
   status: meetingStatusEnum("status").default("scheduled").notNull(),
@@ -1658,11 +1659,25 @@ export const meetingFollowUpStatusEnum = pgEnum("meeting_follow_up_status", [
   "no_action"
 ]);
 
+/**
+ * Estado de la presentación en vivo de una reunión (slide actual).
+ * El host publica el índice; los invitados lo siguen por polling.
+ */
+export const meetingPresentationState = pgTable("meeting_presentation_state", {
+  meetingId: text("meeting_id").primaryKey(),
+  presentationId: text("presentation_id").notNull(),
+  slideIndex: integer("slide_index").notNull().default(0),
+  updatedBy: text("updated_by"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
 export const meetingParticipants = pgTable("meeting_participants", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   meetingId: text("meeting_id").references(() => meetings.id).notNull(),
   identityId: varchar("identity_id", { length: 255 }), // Can be null for anonymous guests
   
+  // Email para invitar y enviar el documento de aceptación (nullable: invitados anónimos).
+  email: varchar("email", { length: 255 }),
   participantType: participantTypeEnum("participant_type").default("anonymous_guest").notNull(),
   role: participantRoleEnum("role").default("guest").notNull(),
   

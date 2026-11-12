@@ -95,14 +95,24 @@ export function SovereignMeetRoom({
                 </div>
             )}
             
-            {isHost && presentationId && (
-                <div className="absolute top-4 left-4 z-20">
+            {presentationId && (
+                <div className="absolute top-4 left-4 z-20 flex flex-wrap items-center gap-2">
+                    {isHost && (
+                        <button
+                            onClick={() =>
+                                window.open(`/pitch/${presentationId}?meet=${roomName}&host=1`, '_blank')
+                            }
+                            className="bg-lime-500 text-black px-4 py-2 rounded-full font-bold text-xs uppercase tracking-wider hover:bg-lime-400 transition-colors flex items-center gap-2 shadow-lg shadow-lime-500/20 border border-lime-400/50"
+                        >
+                            <span>🚀</span>
+                            Presentar en vivo
+                        </button>
+                    )}
                     <button
-                        onClick={() => window.open(`/pitch/${presentationId}`, '_blank')}
-                        className="bg-lime-500 text-black px-4 py-2 rounded-full font-bold text-xs uppercase tracking-wider hover:bg-lime-400 transition-colors flex items-center gap-2 shadow-lg shadow-lime-500/20 border border-lime-400/50"
+                        onClick={() => window.open(`/pitch/${presentationId}?meet=${roomName}`, '_blank')}
+                        className="bg-white/10 text-white px-4 py-2 rounded-full font-semibold text-xs uppercase tracking-wider hover:bg-white/20 transition-colors border border-white/20 backdrop-blur"
                     >
-                        <span>🚀</span>
-                        Lanzar Pitch Deck
+                        Ver presentación
                     </button>
                 </div>
             )}

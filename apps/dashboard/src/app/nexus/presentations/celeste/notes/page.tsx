@@ -1,6 +1,9 @@
 import React from 'react';
 import { getNexusAuthContext } from '@saasfly/shared';
 import { redirect } from 'next/navigation';
+import { db } from '@saasfly/db';
+import { nexusDealRooms } from '@saasfly/db/schema';
+import { and, eq, ilike } from '@saasfly/db-core';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,6 +21,18 @@ export default async function CelesteNotesPage() {
   const auth = await getNexusAuthContext(await headers);
   if (!auth.isAuthenticated) redirect('/auth?return=/nexus/presentations/celeste/notes');
 
+  // Deal Rooms en DRAFT para este cliente: acceso directo desde la guía.
+  let draftRooms: Array<{ publicId: string; company: string | null; status: string }> = [];
+  try {
+    draftRooms = await db
+      .select({ publicId: nexusDealRooms.publicId, company: nexusDealRooms.company, status: nexusDealRooms.status })
+      .from(nexusDealRooms)
+      .where(and(eq(nexusDealRooms.status, 'DRAFT'), ilike(nexusDealRooms.company, '%Celeste%')))
+      .limit(5);
+  } catch (error: unknown) {
+    console.error('[CelesteNotes] Deal rooms lookup failed:', error);
+  }
+
   return (
     <div className="mx-auto max-w-4xl space-y-10 px-6 py-10 text-zinc-200">
       <header className="space-y-2 border-b border-white/10 pb-6">
@@ -28,6 +43,33 @@ export default async function CelesteNotesPage() {
           Reunión: Sovereign Meet (botón «Presentar» abre el deck)
         </p>
       </header>
+
+      <Section title="Deal Room (borrador)">
+        {draftRooms.length === 0 ? (
+          <p className="text-sm text-zinc-400">No hay Deal Room en DRAFT para este cliente.</p>
+        ) : (
+          <ul className="space-y-2 text-sm">
+            {draftRooms.map((room) => (
+              <li key={room.publicId} className="flex flex-wrap items-center gap-3">
+                <span className="font-mono text-emerald-300">{room.publicId}</span>
+                <span className="text-zinc-500">{room.company}</span>
+                <a
+                  className="text-sky-300 underline underline-offset-2"
+                  href={`https://dash.pandoras.finance/deal/${room.publicId}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Abrir Deal Room →
+                </a>
+              </li>
+            ))}
+          </ul>
+        )}
+        <p className="mt-3 text-xs text-zinc-500">
+          Al añadir participantes con email en la reunión, se crea el cliente en el CRM y se les envía
+          automáticamente el enlace al Deal Room (con el documento de aceptación).
+        </p>
+      </Section>
 
       <Section title="1. Datos confirmados (usar tal cual)">
         <ul className="list-disc space-y-1 pl-5 text-sm">

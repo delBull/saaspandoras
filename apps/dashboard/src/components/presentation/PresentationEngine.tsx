@@ -20,10 +20,56 @@ export interface Slide {
 
 interface PresentationEngineProps {
   slides: Slide[];
+  /** Reunión: activa la sincronización del slide con los invitados. */
+  meetId?: string;
+  /** Host: publica el slide actual. Invitado: lo sigue. */
+  host?: boolean;
+  /** Slug del deck (para el estado compartido). */
+  presentationId?: string;
 }
 
-export function PresentationEngine({ slides }: PresentationEngineProps) {
+export function PresentationEngine({ slides, meetId, host = false, presentationId = 'celeste' }: PresentationEngineProps) {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [live, setLive] = useState(false);
+
+  // Host: publica el slide actual (idempotente; el invitado nunca escribe).
+  useEffect(() => {
+    if (!meetId || !host) return;
+    const id = setTimeout(() => {
+      void fetch(`/api/v1/meet/${meetId}/presentation`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slideIndex: currentSlide, presentationId }),
+      }).catch(() => undefined);
+    }, 250);
+    return () => clearTimeout(id);
+  }, [currentSlide, meetId, host, presentationId]);
+
+  // Invitado: sigue el slide del host por polling (2s).
+  useEffect(() => {
+    if (!meetId || host) return;
+    let cancelled = false;
+    const tick = async () => {
+      try {
+        const res = await fetch(`/api/v1/meet/${meetId}/presentation`, { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (cancelled) return;
+        if (typeof data.slideIndex === 'number') {
+          setCurrentSlide((prev) => (data.slideIndex === prev ? prev : data.slideIndex));
+          setLive(true);
+        }
+      } catch {
+        // sin conexión: se mantiene el slide actual
+      }
+    };
+    void tick();
+    const timer = setInterval(tick, 2000);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [meetId, host]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -58,6 +104,12 @@ export function PresentationEngine({ slides }: PresentationEngineProps) {
           {slides[currentSlide]?.content}
         </motion.div>
       </AnimatePresence>
+
+      {meetId && (
+        <div className="absolute top-4 left-4 z-20 rounded-full border border-white/15 bg-black/50 px-3 py-1 text-[10px] uppercase tracking-widest text-zinc-300">
+          {host ? 'Presentando en vivo' : live ? 'En vivo' : 'Conectando…'} · {currentSlide + 1}/{slides.length}
+        </div>
+      )}
 
       {/* Progress indicators */}
       <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-2 z-20">
