@@ -6,11 +6,23 @@ import { MonitorPlay, ArrowRight, Building2, Cpu, Calendar, Presentation } from 
 
 const PRESENTATIONS = [
   {
+    slug: "celeste",
+    title: "Celeste Beach Residences & Spa",
+    subtitle: "Sistema de captación y conversión comercial: captar, atender y llevar a la visita.",
+    category: "Hospitalidad & Copropiedad",
+    tags: ["Celeste Huatulco", "Propuesta 90 días", "Deal Room", "Discovery $250"],
+    href: "/pitch/celeste",
+    status: "Activo / Cliente",
+    accent: "from-emerald-500/20 to-emerald-900/10",
+    border: "border-emerald-500/30",
+    icon: Building2
+  },
+  {
     slug: "real-estate-growth",
     title: "Real Estate Growth Infrastructure",
     subtitle: "Infraestructura inteligente para adquisición, gestión y conversión comercial inmobiliaria.",
     category: "Hospitalidad & Copropiedad",
-    tags: ["Celeste Huatulco", "Fraccional 1/8 & 1/16", "Deal Room", "Hermes 24/7"],
+    tags: ["Celeste Huatulco", "Fraccional", "Deal Room", "Piloto 90 días"],
     href: "/pitch/real-estate-growth",
     status: "Activo / Master",
     accent: "from-purple-500/20 to-purple-900/10",
