@@ -4509,6 +4509,30 @@ export const hermesCreditDeposits = pgTable("hermes_credit_deposits", {
  * Actividad del Portal por tenant: "quién está dentro".
  * Una fila por tenant con el último acceso (actualizado con throttle).
  */
+/**
+ * Suscripción mensual del tenant (acceso a los productos instalados).
+ * Independiente del saldo de créditos de media.
+ */
+export const tenantSubscriptions = pgTable("tenant_subscriptions", {
+  tenantId: varchar("tenant_id", { length: 128 }).primaryKey(),
+  status: varchar("status", { length: 24 }).notNull().default("active"), // active | grace | suspended | canceled
+  amountUsd: decimal("amount_usd", { precision: 12, scale: 2 }).notNull().default("0.00"),
+  currency: varchar("currency", { length: 8 }).notNull().default("USD"),
+  currentPeriodStart: timestamp("current_period_start", { withTimezone: true }),
+  currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }),
+  graceEndsAt: timestamp("grace_ends_at", { withTimezone: true }),
+  lastPaymentTx: varchar("last_payment_tx", { length: 80 }),
+  lastPaidAt: timestamp("last_paid_at", { withTimezone: true }),
+  lastPaidAmountUsd: decimal("last_paid_amount_usd", { precision: 12, scale: 2 }),
+  suspendedAt: timestamp("suspended_at", { withTimezone: true }),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  statusIdx: index("tenant_subscriptions_status_idx").on(t.status),
+  periodEndIdx: index("tenant_subscriptions_period_end_idx").on(t.currentPeriodEnd),
+}));
+
 export const hermesPortalActivity = pgTable("hermes_portal_activity", {
   tenantId: varchar("tenant_id", { length: 128 }).primaryKey(),
   lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).defaultNow().notNull(),

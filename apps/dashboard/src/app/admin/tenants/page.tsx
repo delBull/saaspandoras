@@ -41,6 +41,9 @@ export default async function AdminTenantsPage() {
       p.tenant_type,
       p.trial_ends_at,
       coalesce(c.credit_balance_usd, 0) as balance_usd,
+      s.status as sub_status,
+      s.amount_usd as sub_amount,
+      s.current_period_end as sub_period_end,
       a.last_seen_at,
       coalesce(u.today_usd, 0) as today_usd,
       coalesce(u.yesterday_usd, 0) as yesterday_usd,
@@ -55,6 +58,7 @@ export default async function AdminTenantsPage() {
     from projects p
     left join hermes_tenant_credits c on c.tenant_id = p.slug
     left join hermes_portal_activity a on a.tenant_id = lower(p.slug)
+    left join tenant_subscriptions s on s.tenant_id = p.slug
     left join (
       select tenant_id,
         sum(case when created_at >= date_trunc('day', now()) then total_charged_usd else 0 end) as today_usd,
@@ -92,6 +96,7 @@ export default async function AdminTenantsPage() {
             <tr>
               <th className="px-4 py-2 font-medium">Tenant</th>
               <th className="px-4 py-2 font-medium">Productos</th>
+              <th className="px-4 py-2 font-medium">Plan</th>
               <th className="px-4 py-2 font-medium">Saldo</th>
               <th className="px-4 py-2 font-medium">Periodo</th>
               <th className="px-4 py-2 font-medium">Último acceso</th>
@@ -103,7 +108,7 @@ export default async function AdminTenantsPage() {
           <tbody className="divide-y divide-white/5 text-zinc-300">
             {rows.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-4 py-6 text-zinc-500">
+                <td colSpan={9} className="px-4 py-6 text-zinc-500">
                   Sin datos.
                 </td>
               </tr>
@@ -119,6 +124,19 @@ export default async function AdminTenantsPage() {
                   </div>
                 </td>
                 <td className="px-4 py-2 text-zinc-400">{r.products}</td>
+                <td className="px-4 py-2">
+                  {r.sub_status ? (
+                    <span>
+                      ${Number(r.sub_amount ?? 0).toFixed(2)}/mes ·{' '}
+                      <span className={
+                        r.sub_status === 'active' ? 'text-emerald-300'
+                          : r.sub_status === 'grace' ? 'text-amber-300' : 'text-rose-300'
+                      }>{r.sub_status}</span>
+                    </span>
+                  ) : (
+                    <span className="text-zinc-600">—</span>
+                  )}
+                </td>
                 <td className="px-4 py-2 font-mono">{fmtUsd(r.balance_usd)}</td>
                 <td className="px-4 py-2">{trialLeft(r.trial_ends_at)}</td>
                 <td className="px-4 py-2">{fmtDate(r.last_seen_at)}</td>

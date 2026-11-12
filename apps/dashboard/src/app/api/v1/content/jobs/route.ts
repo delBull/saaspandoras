@@ -179,6 +179,28 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Plan mensual vencido sin regularizar ⇒ solo lectura (la generación se bloquea).
+  // El pago del plan es independiente del saldo de créditos.
+  try {
+    const { getOrCreateSubscription } = await import('@/lib/billing/subscription');
+    const subscription = await getOrCreateSubscription(client.tenantId);
+    if (subscription?.state.isReadOnly) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            'Tu plan mensual está suspendido (solo lectura). Regulariza el plan para volver a generar.',
+          code: 'SUBSCRIPTION_SUSPENDED',
+          planStatus: subscription.state.status,
+        },
+        { status: 402 }
+      );
+    }
+  } catch (error: unknown) {
+    // No bloquear por un fallo leyendo la suscripción; se registra para revisión.
+    console.error('[ContentAPI] Subscription check failed:', error);
+  }
+
   // El tenant debe tener la capability habilitada (governance de Hermes).
   const isGranted = await CapabilityGrantService.isCapabilityGranted(client.tenantId, capability).catch(
     () => false

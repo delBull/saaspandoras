@@ -1,13 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { createPublicClient, decodeEventLog, erc20Abi, formatUnits, http, type Chain, type Hash } from 'viem';
-import { base, baseSepolia } from 'viem/chains';
+import type { Hash } from 'viem';
 import { db } from '@saasfly/db';
 import { hermesCreditDeposits } from '@saasfly/db/schema';
 import { eq } from '@saasfly/db-core';
 import { TenantBillingService, TenantCreditLedgerService } from '@saasfly/hermes-core';
 import { notifyPendingDeposit } from '@/lib/alerts/deposit-review-notifier';
 import { resolveTreasuryWallet } from '@/lib/payments/treasury';
+import {
+  SUPPORTED_CHAINS as CHAINS,
+  USDC_BASE,
+  USDC_SEPOLIA,
+  isTxHash,
+  verifyOnChainUsdcTransfer,
+} from '@/lib/payments/onchain-verify';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -30,14 +36,7 @@ export const runtime = 'nodejs';
  * Sandbox: crédito de prueba, sin txHash; se registra con `txHash = sandbox_…`.
  */
 
-const USDC_BASE = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
-const USDC_SEPOLIA = '0x036CbD53842c5426634e7929541eC2318f3dCF7e';
 const MIN_TOPUP_USD = TenantCreditLedgerService.MIN_TOPUP_AMOUNT_USD;
-
-const CHAINS: Record<number, { chain: Chain; usdc: `0x${string}` }> = {
-  8453: { chain: base, usdc: USDC_BASE },
-  11155111: { chain: baseSepolia, usdc: USDC_SEPOLIA },
-};
 
 interface DepositBody {
   tenantId?: unknown;
@@ -50,105 +49,6 @@ interface DepositBody {
   rail?: unknown;
 }
 
-function isTxHash(value: unknown): value is Hash {
-  return typeof value === 'string' && /^0x[a-fA-F0-9]{64}$/.test(value);
-}
-
-async function verifyOnChainDeposit(params: {
-  txHash: Hash;
-  chainId: number;
-  treasury: string;
-}): Promise<
-  | { ok: true; blockNumber: string; from: string | null; amountUsd: number }
-  | { ok: false; reason: string }
-> {
-  const cfg = CHAINS[params.chainId];
-  if (!cfg) return { ok: false, reason: `Unsupported chainId: ${params.chainId}` };
-
-  const isProduction = process.env.NODE_ENV === 'production';
-  if (isProduction && params.chainId !== 8453) {
-    return { ok: false, reason: 'En producción los depósitos sólo se aceptan en Base mainnet (8453).' };
-  }
-
-  try {
-    const publicClient = createPublicClient({ chain: cfg.chain, transport: http() });
-    const receipt = await publicClient.getTransactionReceipt({ hash: params.txHash });
-    if (!receipt) return { ok: false, reason: 'TRANSACTION_NOT_FOUND' };
-    if (receipt.status === 'reverted') return { ok: false, reason: 'TRANSACTION_REVERTED' };
-
-    // El importe NO lo declara el cliente: se lee del log Transfer.
-    const matches: Array<{ from: string; value: bigint }> = [];
-
-    for (const log of receipt.logs) {
-      if (log.address.toLowerCase() !== cfg.usdc.toLowerCase()) continue;
-      try {
-        const decoded = decodeEventLog({ abi: erc20Abi, data: log.data, topics: log.topics });
-        if (decoded.eventName !== 'Transfer') continue;
-        const args = decoded.args as unknown as { from: string; to: string; value: bigint };
-        if (args.to.toLowerCase() !== params.treasury.toLowerCase()) continue;
-        matches.push({ from: args.from.toLowerCase(), value: args.value });
-      } catch {
-        // log no ERC-20: se ignora
-      }
-    }
-
-    if (matches.length === 0) {
-      return { ok: false, reason: 'NO_MATCHING_TRANSFER_TO_TREASURY' };
-    }
-
-    // Varias transferencias al treasury en la misma tx ⇒ atribución ambigua.
-    // Fail-closed: se resuelve a mano, no se inventa un importe.
-    if (matches.length > 1) {
-      return { ok: false, reason: 'AMBIGUOUS_MULTIPLE_TRANSFERS_TO_TREASURY' };
-    }
-
-    const [only] = matches;
-    const amountUsd = Number(formatUnits(only!.value, 6));
-    if (!Number.isFinite(amountUsd) || amountUsd <= 0) {
-      return { ok: false, reason: 'INVALID_TRANSFER_AMOUNT' };
-    }
-
-    return {
-      ok: true,
-      blockNumber: receipt.blockNumber.toString(),
-      from: only!.from,
-      amountUsd,
-    };
-  } catch (error: unknown) {
-    console.error('[HermesDeposit] On-chain verification failed:', error);
-    return { ok: false, reason: 'VERIFICATION_ERROR' };
-  }
-}
-
-/**
- * GET /api/v1/hermes/billing/deposit
- * Datos para que el portal muestre a dónde pagar (wallet de tesorería + red).
- * Requiere sesión de portal.
- */
-export async function GET(req: NextRequest) {
-  const tenant = new URL(req.url).searchParams.get('tenantId') ?? '';
-  try {
-    const { tryResolvePortalContext } = await import('@/lib/portal/resolve-portal-context');
-    const portalCtx = tenant ? await tryResolvePortalContext(tenant) : null;
-    if (!portalCtx && process.env.NODE_ENV === 'production') {
-      return NextResponse.json({ ok: false, error: 'Sesión de portal requerida.' }, { status: 403 });
-    }
-  } catch {
-    if (process.env.NODE_ENV === 'production') {
-      return NextResponse.json({ ok: false, error: 'Sesión de portal requerida.' }, { status: 403 });
-    }
-  }
-
-  const treasury = resolveTreasuryWallet();
-  return NextResponse.json({
-    ok: true,
-    minTopupUsd: MIN_TOPUP_USD,
-    chainId: process.env.NODE_ENV === 'production' ? 8453 : 11155111,
-    treasury: treasury.ok ? treasury.wallet : null,
-    usdc: process.env.NODE_ENV === 'production' ? USDC_BASE : USDC_SEPOLIA,
-    treasuryConfigured: treasury.ok,
-  });
-}
 
 export async function POST(req: NextRequest) {
   let body: DepositBody = {};
@@ -280,10 +180,11 @@ export async function POST(req: NextRequest) {
     }
 
     // El importe es el que movió la cadena, no el que declare el cliente.
-    const verification = await verifyOnChainDeposit({
+    const verification = await verifyOnChainUsdcTransfer({
       txHash: normalizedHash as Hash,
       chainId,
       treasury: treasury.wallet,
+      context: 'deposit',
     });
     if (!verification.ok) {
       return NextResponse.json(

@@ -23,11 +23,20 @@ export interface CreditCheckoutProps {
   amountUsd: number;
   treasury: string;
   title?: string;
+  /** Texto del checkout (por defecto, recarga de créditos de media). */
+  description?: string;
   onTransaction: (txHash: string, paymentId?: string) => void;
   onError?: (message: string) => void;
 }
 
-export function CreditCheckout({ amountUsd, treasury, title, onTransaction, onError }: CreditCheckoutProps) {
+export function CreditCheckout({
+  amountUsd,
+  treasury,
+  title,
+  description,
+  onTransaction,
+  onError,
+}: CreditCheckoutProps) {
   if (!treasury || !/^0x[a-fA-F0-9]{40}$/.test(treasury)) {
     return (
       <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200">
@@ -46,7 +55,7 @@ export function CreditCheckout({ amountUsd, treasury, title, onTransaction, onEr
         amount={amountUsd.toFixed(2)}
         seller={treasury as `0x${string}`}
         name={title ?? "Pandora's — Créditos Hermes"}
-        description={`Recarga de $${amountUsd.toFixed(2)} USD en créditos de cómputo`}
+        description={description ?? `Recarga de $${amountUsd.toFixed(2)} USD en créditos de cómputo`}
         paymentMethods={['card', 'crypto']}
         onSuccess={(data) => {
           // El widget devuelve las transacciones ejecutadas; nos interesa la de

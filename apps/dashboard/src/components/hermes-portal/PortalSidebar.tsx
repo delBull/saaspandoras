@@ -27,6 +27,7 @@ import {
   Boxes,
   Sparkles,
   Target,
+  CreditCard,
   Landmark,
   Code2,
   Users
@@ -130,6 +131,13 @@ const FOOTER_ITEMS: NavItem[] = [
     href: '/developers',
     icon: Code2,
     requiredPermission: 'developer.api',
+    section: 'footer',
+  },
+  {
+    label: 'Plan y facturación',
+    href: '/billing',
+    icon: CreditCard,
+    requiredPermission: 'settings.read',
     section: 'footer',
   },
   {
