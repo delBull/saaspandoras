@@ -249,7 +249,10 @@ export class TenantProvisioningService {
               product: productRecordName,
               productFamily,
               plan: 'starter',
-              status: 'trial',
+              // El proyecto se crea 'approved' (no draft): el producto debe
+              // estar activo o el portal bloqueará la sesión por boundary
+              // trial↔producción.
+              status: 'active',
               bindingMode: 'provisioned',
               hermesInstanceId: `hermes_inst_${projectId}`,
               capabilities: {},
