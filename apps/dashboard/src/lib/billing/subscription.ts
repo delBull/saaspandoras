@@ -3,6 +3,7 @@ import { installedProducts, projects, tenantSubscriptions } from '@saasfly/db/sc
 import { eq } from '@saasfly/db-core';
 import { PRODUCT_REGISTRY } from '@saasfly/shared';
 import { createTenantNotification } from '@/lib/notifications/tenant-notifications';
+import { sendEmail } from '@/lib/email/client';
 
 /**
  * Suscripción mensual del tenant (acceso a los productos instalados).
@@ -237,6 +238,101 @@ export async function markSubscriptionPaid(params: {
 
   const snapshot = await getOrCreateSubscription(normalized);
   return { ok: true, snapshot: snapshot ?? undefined };
+}
+
+export type SubscriptionReminderStage = 'D3' | 'D0' | null;
+
+/**
+ * Recordatorios de cobro:
+ *   · 3 días antes del vencimiento → D3
+ *   · el último día (0 o menos)    → D0
+ * Con redondeo: 2.6 días ⇒ 3; 0.4 ⇒ 0.
+ */
+export function computeSubscriptionReminderStage(
+  currentPeriodEnd: Date | string | null | undefined,
+  now: Date = new Date()
+): SubscriptionReminderStage {
+  if (!currentPeriodEnd) return null;
+  const end = currentPeriodEnd instanceof Date ? currentPeriodEnd : new Date(currentPeriodEnd);
+  if (Number.isNaN(end.getTime())) return null;
+
+  const daysLeft = Math.round((end.getTime() - now.getTime()) / 86_400_000);
+  if (daysLeft === 3) return 'D3';
+  if (daysLeft <= 0) return 'D0';
+  return null;
+}
+
+const REMINDER_COPY: Record<Exclude<SubscriptionReminderStage, null>, { title: string; body: string }> = {
+  D3: {
+    title: 'Tu plan vence en 3 días',
+    body: 'Renueva tu plan para no entrar en el periodo de gracia (7 días) y evitar pasar a solo lectura.',
+  },
+  D0: {
+    title: 'Hoy vence tu plan',
+    body: 'Hoy es el último día del periodo. Tras la gracia de 7 días el portal queda en solo lectura (tus datos se conservan).',
+  },
+};
+
+/**
+ * Crea el aviso in-app y envía el email del recordatorio de cobro.
+ * Idempotente por (periodo, etapa). Nunca lanza: un fallo de email no rompe el cron.
+ */
+export async function sendSubscriptionReminder(params: {
+  tenantId: string;
+  stage: Exclude<SubscriptionReminderStage, null>;
+  amountUsd: number;
+  currentPeriodEnd: Date | string;
+  now?: Date;
+}): Promise<{ notified: boolean; emailed: boolean }> {
+  const tenantId = params.tenantId.toLowerCase().trim();
+  const cycle = new Date(params.currentPeriodEnd).toISOString().slice(0, 10);
+  const copy = REMINDER_COPY[params.stage];
+  const link = `/portal/${tenantId}/billing`;
+
+  const created = await createTenantNotification({
+    tenantId,
+    kind: 'SYSTEM',
+    severity: params.stage === 'D0' ? 'critical' : 'warning',
+    title: copy.title,
+    body: copy.body,
+    link,
+    dedupeKey: `subscription:reminder:${params.stage}:${cycle}`,
+    metadata: { stage: params.stage, amountUsd: params.amountUsd, currentPeriodEnd: cycle },
+  });
+
+  let emailed = false;
+  try {
+    const [project] = await db
+      .select({ email: projects.applicantEmail, title: projects.title })
+      .from(projects)
+      .where(eq(projects.slug, tenantId))
+      .limit(1);
+
+    if (project?.email) {
+      await sendEmail({
+        to: project.email,
+        from: "Pandora's Group <hello@pandoras.finance>",
+        subject: `${copy.title} — ${project.title ?? tenantId}`,
+        html: `
+          <div style="font-family:Helvetica,Arial,sans-serif;background:#0b0b12;color:#e5e7eb;padding:28px;border-radius:14px">
+            <p style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#a78bfa;margin:0 0 10px">Pandora's · Hermes</p>
+            <h1 style="font-size:20px;margin:0 0 10px;color:#fff">${copy.title}</h1>
+            <p style="font-size:14px;line-height:1.6;margin:0 0 14px">${copy.body}</p>
+            <p style="font-size:14px;margin:0 0 18px">Plan mensual: <strong>$${params.amountUsd.toFixed(2)} USD</strong></p>
+            <a href="https://dash.pandoras.finance${link}"
+               style="display:inline-block;background:#7c3aed;color:#fff;text-decoration:none;padding:10px 18px;border-radius:999px;font-size:13px;font-weight:700">
+              Pagar el plan
+            </a>
+            <p style="font-size:11px;color:#6b7280;margin-top:18px">El plan es independiente de los créditos de media.</p>
+          </div>`,
+      });
+      emailed = true;
+    }
+  } catch (error: unknown) {
+    console.error('[Subscription] Reminder email failed:', error);
+  }
+
+  return { notified: created, emailed };
 }
 
 /**

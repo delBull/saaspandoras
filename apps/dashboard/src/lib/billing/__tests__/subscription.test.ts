@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { computeSubscriptionState, monthlyFeeForProducts } from '../subscription';
+import { computeSubscriptionReminderStage, computeSubscriptionState, monthlyFeeForProducts } from '../subscription';
 
 const NOW = new Date('2026-11-12T12:00:00Z');
 const days = (n: number) => new Date(NOW.getTime() + n * 86_400_000);
@@ -73,5 +73,27 @@ describe('estado de la suscripción', () => {
 
   it('cancelado es solo lectura', () => {
     expect(computeSubscriptionState({ status: 'canceled' }, NOW).isReadOnly).toBe(true);
+  });
+});
+
+describe('recordatorios de cobro', () => {
+  it('3 días antes → D3', () => {
+    expect(computeSubscriptionReminderStage(days(3), NOW)).toBe('D3');
+    expect(computeSubscriptionReminderStage(new Date(NOW.getTime() + 2.6 * 86_400_000), NOW)).toBe('D3');
+  });
+
+  it('el último día (0 o vencido) → D0', () => {
+    expect(computeSubscriptionReminderStage(days(0), NOW)).toBe('D0');
+    expect(computeSubscriptionReminderStage(days(-1), NOW)).toBe('D0');
+  });
+
+  it('fuera de ventana no envía', () => {
+    expect(computeSubscriptionReminderStage(days(5), NOW)).toBeNull();
+    expect(computeSubscriptionReminderStage(days(2), NOW)).toBeNull();
+  });
+
+  it('sin periodo no envía', () => {
+    expect(computeSubscriptionReminderStage(null, NOW)).toBeNull();
+    expect(computeSubscriptionReminderStage('no-es-fecha', NOW)).toBeNull();
   });
 });
