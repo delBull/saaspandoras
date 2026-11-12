@@ -40,6 +40,19 @@ cobran por tamaño aunque el servicio esté dormido.
 > recrear y re-inicializar las DBs cada vez que se necesite staging. No borrar sin
 > volver a decidirlo.
 
+### ForgeFitness (`a5062c49-d800-4788-aa69-b4f06b8814d7`) — revisado 2026-11-11
+Coste: **$2.00/mes** (7.4% del total). No había grasa grande, sólo dos ajustes:
+
+| Servicio | Antes | Ahora | Motivo |
+|---|---|---|---|
+| `forge_fitness` | siempre despierto, 139 MB, **2 requests/7 días** | **App Sleeping ON** | Ahorra ~$1.3/mes; cold start irrelevante con ese tráfico |
+| `social-render` | límite **8 GB** (usaba 1-33 MB) | límite **1 GB** | No cambia el coste actual; evita un pico de hasta ~$80/mes |
+| `Postgres` | 72 MB + volumen 5 GB (241 MB usados) | sin cambios | Necesario; el volumen no se puede encoger |
+| `whatsapp-poller` | sin deployment | sin cambios | $0; pendiente decidir si se borra |
+
+`serviceInstanceLimits` de `social-render` confirma `memoryBytes: 1e9`; el contenedor en marcha
+mantiene el límite anterior hasta el próximo deploy/restart.
+
 ## 3. Encender / apagar staging
 
 ```bash
