@@ -50,6 +50,7 @@ export * from './phase-utils';
 export * from './platform/organization-sdk';
 export * from './platform/portal-auth';
 export * from './platform/product-registry';
+export * from './platform/product-catalog';
 export * from './portal/permissions';
 export * from './portal/portal-types';
 export * from './portal/catalog-types';

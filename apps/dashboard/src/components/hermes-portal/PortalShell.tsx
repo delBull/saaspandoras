@@ -114,6 +114,7 @@ export function PortalShell({ context, children, activeModules = [] }: PortalShe
           onToggle={toggleSidebar}
           organizationSlug={context.organization.slug}
           onNavClick={() => setMobileMenuOpen(false)}
+          installedProducts={context.organization.installedProducts}
         />
       </div>
 
@@ -133,7 +134,13 @@ export function PortalShell({ context, children, activeModules = [] }: PortalShe
         <TrialReadinessBanner
           organizationSlug={context.organization.slug}
           organizationName={context.organization.name}
-          currentVertical="HERMES"
+          currentVertical={
+              context.organization.activeProduct === 'GROWTH_OS'
+                ? 'GROWTH_OS'
+                : context.organization.activeProduct === 'TOKENIZATION'
+                  ? 'PANDORAS_RWA'
+                  : 'HERMES'
+            }
         />
 
         {/* Trial Cockpit & Live Upgrade Banner */}

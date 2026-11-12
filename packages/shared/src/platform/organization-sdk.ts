@@ -21,6 +21,7 @@ import {
   getDefaultCapabilities,
   getDefaultConnectors,
 } from '../index';
+import { normalizeProductKey } from './product-catalog';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -185,9 +186,16 @@ export const OrganizationSDK = {
     });
 
     // 4. Resolve active product
-    const activeProduct = productKey
-      ? enrichedProducts.find(p => p.product === productKey) ?? null
-      : enrichedProducts[0] ?? null;
+    //    - Se normaliza la key (alias legacy + mayúsculas): la DB mezcla
+    //      'HERMES' y 'HERMES_OS' y el token podía traer 'hermes'.
+    //    - Si el producto pedido no está instalado, se cae al primero instalado
+    //      en vez de devolver null (que dejaba el portal sin capacidades).
+    const requestedKey = normalizeProductKey(typeof productKey === 'string' ? productKey : null);
+    const matched = requestedKey
+      ? enrichedProducts.find(p => normalizeProductKey(p.product) === requestedKey)
+      : undefined;
+
+    const activeProduct = matched ?? enrichedProducts[0] ?? null;
 
     return {
       projectId: project.id,

@@ -1524,6 +1524,7 @@ Content-Type: application/json
   "name": "Forge",
   "slug": "forge",
   "ownerEmail": "mkt@forgeos.fitness",
+  "products": ["HERMES", "GROWTH_OS"],
   "capabilities": ["Media.Image", "Media.Video", "Media.Copy"]
 }
 \`\`\`
@@ -1538,11 +1539,33 @@ Respuesta \`201\`:
   "keyFingerprint": "sk_live_ab12...",
   "permissions": ["content.asset.read", "content.asset.create", "content.asset.approve", "media:generate", "hermes_a2a", "events:write"],
   "capabilities": ["Media.Image", "Media.Video", "Media.Copy"],
+  "products": ["HERMES", "GROWTH_OS"],
+  "productEntries": [
+    { "product": "HERMES",    "family": "GROWTH_OS", "path": "/portal/forge/overview" },
+    { "product": "GROWTH_OS", "family": "GROWTH_OS", "path": "/portal/forge/growth" }
+  ],
   "credits": { "balanceUsd": 0, "markupPercentage": 35 },
-  "portalUrl": "/portal/forge/media",
+  "portalUrl": "/portal/forge/overview",
   "next": { "step1": "…", "step2": "…", "step3": "…" }
 }
 \`\`\`
+
+### Elige los productos del tenant
+
+\`products\` es la lista de productos que se instalan. **Sólo se aprovisiona lo que el tenant elige**:
+
+| Key | Producto | Entrada en el hub |
+|---|---|---|
+| \`HERMES\` | Hermes Runtime (agentes, media, conocimiento) | \`/portal/<slug>/overview\` |
+| \`GROWTH_OS\` | Growth OS (campañas, audiencias, contenido) | \`/portal/<slug>/growth\` |
+| \`TOKENIZATION\` | RWA / Tokenización | \`/ecosystem/<slug>/capital\` |
+| \`MEDIA_CO\` | Pandora's Media Co. | \`/portal/<slug>/media\` |
+
+- Acepta alias: \`HERMES_OS\` → HERMES, \`RWA\` → TOKENIZATION, \`MEDIA\` → MEDIA_CO.
+- Si se omite ⇒ \`["HERMES"]\`.
+- Un producto desconocido ⇒ \`400 INVALID_PRODUCT\` (no se instala nada).
+
+**El tenant aterriza en el hub** (\`portalUrl\`) y desde ahí entra a los productos que tenga. La navegación se filtra por producto: si no tiene RWA, no ve RWA.
 
 ### Qué se crea
 - Proyecto con el \`slug\` normalizado (3-40 caracteres, \`[a-z0-9-]\`).

@@ -41,8 +41,10 @@ const OK_RESULT = {
   keyFingerprint: 'sk_live_abc...',
   permissions: ['content.asset.read'],
   capabilities: ['Media.Image'],
+  products: ['HERMES'],
+  productEntries: [{ product: 'HERMES', family: 'GROWTH_OS', path: '/portal/forge/overview' }],
   credits: { balanceUsd: 0, markupPercentage: 35 },
-  portalUrl: '/portal/forge/media',
+  portalUrl: '/portal/forge/overview',
 };
 
 describe('POST /integrations/tenants/provision', () => {
@@ -81,8 +83,8 @@ describe('POST /integrations/tenants/provision', () => {
 
     expect(res.status).toBe(201);
     expect(body.apiKey).toBe('sk_live_abc');
-    expect(body.portalUrl).toBe('/portal/forge/media');
-    expect(body.next.step1).toContain('/portal/forge/media');
+    expect(body.portalUrl).toBe('/portal/forge/overview');
+    expect(body.next.step1).toContain('/portal/forge/overview');
     expect(provisionTenant).toHaveBeenCalledWith(
       expect.objectContaining({ slug: 'forge', ownerEmail: 'mkt@forgeos.fitness' })
     );
@@ -98,6 +100,44 @@ describe('POST /integrations/tenants/provision', () => {
 
     expect(res.status).toBe(409);
     expect(body.code).toBe('SLUG_TAKEN');
+  });
+
+  it('PROV-07: reenvía los productos elegidos (multi-producto)', async () => {
+    provisionTenant.mockResolvedValue({
+      ...OK_RESULT,
+      products: ['HERMES', 'GROWTH_OS'],
+      productEntries: [
+        { product: 'HERMES', family: 'GROWTH_OS', path: '/portal/forge/overview' },
+        { product: 'GROWTH_OS', family: 'GROWTH_OS', path: '/portal/forge/growth' },
+      ],
+      portalUrl: '/portal/forge/overview',
+    });
+
+    const res = await POST(
+      req({ name: 'Forge', slug: 'forge', ownerEmail: 'a@b.com', products: ['HERMES', 'GROWTH_OS'] })
+    );
+    const body = await res.json();
+
+    expect(res.status).toBe(201);
+    expect(body.products).toEqual(['HERMES', 'GROWTH_OS']);
+    expect(body.productEntries).toHaveLength(2);
+    expect(provisionTenant).toHaveBeenCalledWith(
+      expect.objectContaining({ products: ['HERMES', 'GROWTH_OS'] })
+    );
+  });
+
+  it('PROV-08: producto desconocido → 400 INVALID_PRODUCT', async () => {
+    provisionTenant.mockRejectedValue(
+      new TenantProvisioningError('INVALID_PRODUCT', 'Producto(s) desconocido(s): NFT_LAB', 400)
+    );
+
+    const res = await POST(
+      req({ name: 'Forge', slug: 'forge', ownerEmail: 'a@b.com', products: ['NFT_LAB'] })
+    );
+    const body = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(body.code).toBe('INVALID_PRODUCT');
   });
 
   it('PROV-06: slug inválido → 400', async () => {

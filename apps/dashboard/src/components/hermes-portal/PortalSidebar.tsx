@@ -12,6 +12,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { PortalPermission } from '@saasfly/shared';
+import { tenantHasProduct } from '@saasfly/shared';
 import type { PortalOrganization } from '@saasfly/shared';
 import type { LucideIcon } from 'lucide-react';
 import {
@@ -26,6 +27,7 @@ import {
   Boxes,
   Sparkles,
   Target,
+  Landmark,
   Code2,
   Users
 } from 'lucide-react';
@@ -37,6 +39,8 @@ interface NavItem {
   requiredPermission: PortalPermission;
   section?: 'primary' | 'footer' | 'internal';
   externalUrl?: (slug: string) => string;
+  /** Productos que habilitan el ítem. Sin esto, siempre visible. */
+  requiredProducts?: string[];
 }
 
 const NAV_ITEMS: NavItem[] = [
@@ -53,6 +57,7 @@ const NAV_ITEMS: NavItem[] = [
     icon: Sparkles,
     requiredPermission: 'organization.read',
     section: 'primary',
+    requiredProducts: ['HERMES'],
   },
   {
     label: 'Knowledge Base',
@@ -60,6 +65,7 @@ const NAV_ITEMS: NavItem[] = [
     icon: BookOpen,
     requiredPermission: 'knowledge.read',
     section: 'primary',
+    requiredProducts: ['HERMES'],
   },
   {
     label: 'Audience & Ops',
@@ -67,6 +73,7 @@ const NAV_ITEMS: NavItem[] = [
     icon: Users,
     requiredPermission: 'identity.read',
     section: 'primary',
+    requiredProducts: ['HERMES', 'GROWTH_OS'],
   },
   {
     label: 'Growth OS',
@@ -75,6 +82,24 @@ const NAV_ITEMS: NavItem[] = [
     requiredPermission: 'growth.market_attack',
     section: 'internal',
     externalUrl: (slug: string) => `/growth-os/organizations/${slug}`,
+    requiredProducts: ['GROWTH_OS'],
+  },
+  {
+    label: 'Media Studio',
+    href: '/media',
+    icon: Sparkles,
+    requiredPermission: 'organization.read',
+    section: 'primary',
+    requiredProducts: ['HERMES', 'MEDIA_CO'],
+  },
+  {
+    label: 'RWA / Tokenización',
+    href: '/capital',
+    icon: Landmark,
+    requiredPermission: 'organization.read',
+    section: 'primary',
+    externalUrl: (slug: string) => `/ecosystem/${slug}/capital`,
+    requiredProducts: ['TOKENIZATION'],
   },
   {
     label: 'Activity',
@@ -123,6 +148,8 @@ interface PortalSidebarProps {
   onToggle: () => void;
   organizationSlug: string;
   onNavClick?: () => void;
+  /** Productos instalados del tenant (keys canónicas). Filtra la navegación. */
+  installedProducts?: string[];
 }
 
 export function PortalSidebar({
@@ -132,9 +159,17 @@ export function PortalSidebar({
   onToggle,
   organizationSlug,
   onNavClick,
+  installedProducts,
 }: PortalSidebarProps) {
   const pathname = usePathname();
   const basePath = `/portal/${organizationSlug}`;
+
+  // Sin lista (compatibilidad) se muestra todo; con lista, sólo lo instalado.
+  const isVisible = (item: NavItem): boolean => {
+    if (!item.requiredProducts?.length) return true;
+    if (!installedProducts || installedProducts.length === 0) return true;
+    return item.requiredProducts.some((p) => tenantHasProduct(installedProducts, p as any));
+  };
 
   const isActive = (href: string) => {
     const fullPath = `${basePath}${href}`;
@@ -144,9 +179,9 @@ export function PortalSidebar({
     return pathname.startsWith(fullPath);
   };
 
-  const visiblePrimary = NAV_ITEMS;
+  const visiblePrimary = NAV_ITEMS.filter(isVisible);
   
-  const visibleFooter = FOOTER_ITEMS;
+  const visibleFooter = FOOTER_ITEMS.filter(isVisible);
 
   const primaryItems = visiblePrimary.filter((i) => i.section === 'primary' || !i.section);
   const internalItems = visiblePrimary.filter((i) => i.section === 'internal');

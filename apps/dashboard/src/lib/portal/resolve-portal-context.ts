@@ -66,7 +66,7 @@ export async function resolvePortalContext(
         const isTenantAuthorized = await isWalletAuthorizedForTenant(callerWallet, requestedOrganizationSlug);
 
         if (isUserAdmin || isTenantAuthorized) {
-          const organization = await OrganizationSDK.resolve(requestedOrganizationSlug, 'HERMES');
+          const organization = await OrganizationSDK.resolve(requestedOrganizationSlug);
           const role: PortalRole = 'owner';
           const permissions = PORTAL_ROLE_PERMISSIONS[role];
 
@@ -79,13 +79,16 @@ export async function resolvePortalContext(
             permissions,
           };
 
+          const installedProducts = organization.installedProducts.map((p) => p.product);
+
           const portalOrg: PortalOrganization = {
             id: organization.organizationId,
             slug: organization.slug,
             name: organization.name,
             logoUrl: organization.logoUrl ?? null,
             projectId: organization.projectId,
-            activeProduct: 'HERMES',
+            activeProduct: organization.activeProduct?.product ?? null,
+            installedProducts,
           };
 
           return { tenant, organization: portalOrg };
@@ -158,13 +161,17 @@ export async function resolvePortalContext(
     permissions,
   };
 
+  const installedProducts = organization.installedProducts.map((p) => p.product);
+
   const portalOrg: PortalOrganization = {
     id: organization.organizationId,
     slug: organization.slug,
     name: organization.name,
     logoUrl: organization.logoUrl ?? null,
     projectId: organization.projectId,
-    activeProduct: session.product,
+    // Producto activo ya normalizado por el SDK (nunca 'hermes' en minúsculas).
+    activeProduct: organization.activeProduct?.product ?? null,
+    installedProducts,
     isSimulationMode: organization.isSimulationMode ?? null,
   };
 

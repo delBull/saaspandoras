@@ -3,7 +3,7 @@ import crypto from 'crypto';
 import { db } from '@saasfly/db';
 import { projects, installedProducts, users, accessRequests, marketingLeads } from '@saasfly/db/schema';
 import { eq, desc, or, sql } from "@saasfly/db-core";
-import { generatePortalToken } from '@saasfly/shared';
+import { generatePortalToken, normalizeProductKey } from '@saasfly/shared';
 import { sendEmail } from '@/lib/email/client';
 
 const MAGIC_LINK_EMAIL_DAILY_LIMIT = 3;
@@ -161,6 +161,9 @@ export async function POST(req: NextRequest) {
 
     let token = '';
     let isBootstrapWorkspace = false;
+    // Producto con el que se firma la sesión: el del producto instalado real
+    // (normalizado), nunca el literal 'hermes' en minúsculas.
+    let portalProduct = 'HERMES';
     let activeProjectId = project?.id;
     let activeProjectSlug = project?.slug;
 
@@ -170,6 +173,7 @@ export async function POST(req: NextRequest) {
         const products = await db.select().from(installedProducts).where(eq(installedProducts.projectId, activeProjectId)).limit(1);
         if (products && products.length > 0) {
           installedId = products[0]!.id;
+          portalProduct = normalizeProductKey(products[0]!.product) ?? 'HERMES';
         } else {
           const [newProduct] = await db.insert(installedProducts).values({
             projectId: activeProjectId,
@@ -184,7 +188,7 @@ export async function POST(req: NextRequest) {
         }
       }
       
-      token = generatePortalToken(installedId, activeProjectId, 'hermes');
+      token = generatePortalToken(installedId, activeProjectId, portalProduct.toLowerCase());
     } else {
       // Auto-provision their bootstrap workspace (usuario sin tenant todavía)
       isBootstrapWorkspace = true;

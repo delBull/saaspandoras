@@ -14,8 +14,13 @@ export const runtime = 'nodejs';
  *
  * Auth: `Authorization: Bearer <sk_live>` con permiso `tenant.provision`.
  *
+ * Body: { name, slug, ownerEmail, products?: string[], capabilities?: string[] }
+ *   `products` acepta HERMES | GROWTH_OS | TOKENIZATION | MEDIA_CO (alias: RWA,
+ *   HERMES_OS, MEDIA). Si se omite ⇒ ['HERMES'].
+ *
  * Respuesta:
- *   { tenant, apiKey, portalUrl, ... }   ← `apiKey` se muestra UNA sola vez
+ *   { tenant, apiKey, portalUrl, products, productEntries, ... }
+ *   ← `apiKey` se muestra UNA sola vez
  *
  * Antes esta ruta sólo creaba la fila de `projects`, así que el tenant quedaba
  * sin email, sin usuario y sin key propia: no podía entrar al Portal ni llamar
@@ -55,6 +60,9 @@ export async function POST(req: Request) {
     const capabilities = Array.isArray(body.capabilities)
       ? body.capabilities.filter((c): c is string => typeof c === 'string')
       : undefined;
+    const products = Array.isArray(body.products)
+      ? body.products.filter((c): c is string => typeof c === 'string')
+      : undefined;
 
     if (!name || !slug) {
       return NextResponse.json({ error: 'Name and slug are required' }, { status: 400 });
@@ -74,6 +82,7 @@ export async function POST(req: Request) {
       slug,
       ownerEmail,
       description,
+      products,
       capabilities,
       actor: `integration_client:${client.id}`,
     });
@@ -91,11 +100,13 @@ export async function POST(req: Request) {
         keyFingerprint: result.keyFingerprint,
         permissions: result.permissions,
         capabilities: result.capabilities,
+        products: result.products ?? [],
+        productEntries: result.productEntries ?? [],
         credits: result.credits,
-        // El tenant no necesita conocer rutas: esto es a donde debe entrar.
+        // Hub del tenant: desde aquí entra a cualquier producto instalado.
         portalUrl: result.portalUrl,
         next: {
-          step1: `Abre ${result.portalUrl} e inicia sesión con ${result.ownerEmail} (enlace mágico, sin contraseña).`,
+          step1: `Abre ${result.portalUrl} e inicia sesión con ${result.ownerEmail} (enlace mágico, sin contraseña). Verás solo los productos instalados: ${(result.products ?? []).join(', ') || 'HERMES'}.`,
           step2: 'Recarga saldo (tarjeta o USDC, mínimo $10) desde el Media Studio.',
           step3: 'Guarda la apiKey ahora: no se vuelve a mostrar. Úsala como Authorization: Bearer.',
         },

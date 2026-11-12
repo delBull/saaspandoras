@@ -9,6 +9,13 @@ import {
 } from '@saasfly/db/schema';
 import { and, eq } from '@saasfly/db-core';
 import { CapabilityGrantService } from '@saasfly/hermes-core';
+import {
+  DEFAULT_PROVISION_PRODUCT,
+  getProductEntryPath,
+  normalizeProductList,
+  productFamilyOf,
+  type ProvisionableProduct,
+} from '@saasfly/shared';
 
 /**
  * Aprovisionamiento de un tenant con acceso completo:
@@ -38,6 +45,9 @@ export const PROVISION_DEFAULT_PERMISSIONS = [
 ] as const;
 
 export const DEFAULT_CAPABILITIES = ['Media.Image', 'Media.Video', 'Media.Copy'] as const;
+
+/** Productos para los que tienen sentido las capabilities de media. */
+const MEDIA_PRODUCTS: ProvisionableProduct[] = ['HERMES', 'MEDIA_CO'];
 
 /** Slugs con significado propio en la plataforma: no se pueden apropiar. */
 const RESERVED_SLUGS = new Set([
@@ -109,6 +119,8 @@ export interface ProvisionTenantInput {
   slug: string;
   ownerEmail: string;
   description?: string;
+  /** Productos a instalar. Si se omite o llega vacío ⇒ ['HERMES']. */
+  products?: string[];
   capabilities?: string[];
   actor?: string;
 }
@@ -123,7 +135,11 @@ export interface ProvisionTenantResult {
   permissions: string[];
   capabilities: string[];
   credits: { balanceUsd: number; markupPercentage: number };
-  /** Ruta del Portal a la que debe ir el tenant (no necesita conocerla de antemano). */
+  /** Productos realmente instalados (keys canónicas). */
+  products: ProvisionableProduct[];
+  /** Entrada por producto para el hub. */
+  productEntries: Array<{ product: ProvisionableProduct; family: string; path: string }>;
+  /** Hub del tenant: aquí aterriza, sin conocer rutas. */
   portalUrl: string;
 }
 
@@ -138,7 +154,30 @@ export async function provisionTenant(input: ProvisionTenantInput): Promise<Prov
   assertValidSlug(slug);
   assertValidOwnerEmail(ownerEmail);
 
-  const capabilities = (input.capabilities?.length ? input.capabilities : [...DEFAULT_CAPABILITIES])
+  // Productos a instalar: se normalizan alias (HERMES_OS, RWA, …) y se
+  // deduplican. Lista vacía/ausente ⇒ HERMES por defecto. Desconocido ⇒ 400.
+  const requestedProducts = normalizeProductList(input.products);
+  const invalidProducts = Array.isArray(input.products)
+    ? input.products.filter(
+        (raw) => typeof raw === 'string' && raw.trim().length > 0 && !normalizeProductList([raw]).length
+      )
+    : [];
+  if (invalidProducts.length > 0) {
+    throw new TenantProvisioningError(
+      'INVALID_PRODUCT',
+      `Producto(s) desconocido(s): ${invalidProducts.join(', ')}. Válidos: HERMES, GROWTH_OS, TOKENIZATION, MEDIA_CO.`
+    );
+  }
+  const products: ProvisionableProduct[] =
+    requestedProducts.length > 0 ? requestedProducts : [DEFAULT_PROVISION_PRODUCT];
+
+  const mediaEnabled = products.some((p) => MEDIA_PRODUCTS.includes(p));
+  const capabilities = (input.capabilities?.length
+    ? input.capabilities
+    : mediaEnabled
+      ? [...DEFAULT_CAPABILITIES]
+      : []
+  )
     .map((c) => c.trim())
     .filter(Boolean);
 
@@ -197,25 +236,27 @@ export async function provisionTenant(input: ProvisionTenantInput): Promise<Prov
       });
     }
 
-    // Producto instalado (HERMES) para que el Portal tenga contexto.
-    const [product] = await tx
-      .select({ id: installedProducts.id })
-      .from(installedProducts)
-      .where(
-        and(eq(installedProducts.projectId, created.id), eq(installedProducts.product, 'HERMES'))
-      )
-      .limit(1);
+    // Instalar SOLO los productos elegidos por el tenant.
+    for (const product of products) {
+      const [existingProduct] = await tx
+        .select({ id: installedProducts.id })
+        .from(installedProducts)
+        .where(
+          and(eq(installedProducts.projectId, created.id), eq(installedProducts.product, product))
+        )
+        .limit(1);
 
-    if (!product) {
-      await tx.insert(installedProducts).values({
-        projectId: created.id,
-        product: 'HERMES',
-        productFamily: 'GROWTH_OS',
-        plan: 'trial',
-        status: 'trial',
-        config: { email: ownerEmail, companyName: title },
-        runtimeManifest: { context: { adminEmail: ownerEmail } },
-      });
+      if (!existingProduct) {
+        await tx.insert(installedProducts).values({
+          projectId: created.id,
+          product,
+          productFamily: productFamilyOf(product),
+          plan: 'trial',
+          status: 'trial',
+          config: { email: ownerEmail, companyName: title },
+          runtimeManifest: { context: { adminEmail: ownerEmail } },
+        });
+      }
     }
 
     await tx.insert(hermesTenantCredits).values({
@@ -261,6 +302,13 @@ export async function provisionTenant(input: ProvisionTenantInput): Promise<Prov
     permissions,
     capabilities: granted,
     credits: { balanceUsd: 0, markupPercentage: 35 },
-    portalUrl: `/portal/${project.slug}/media`,
+    products,
+    productEntries: products.map((product) => ({
+      product,
+      family: productFamilyOf(product),
+      path: getProductEntryPath(product, project.slug),
+    })),
+    // El hub: desde aquí se entra a cualquier producto instalado.
+    portalUrl: `/portal/${project.slug}/overview`,
   };
 }
