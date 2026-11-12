@@ -30,9 +30,12 @@ Consecuencia: lo que manda es **RAM encendida 24/7** y **GB provisionados de vol
 | ~~IPFS BioGuard Server~~ | — | **ELIMINADO** | Producto discontinuado; volumen en borrado (`isPendingDeletion`) |
 | Pandoras Finance Bot · bullslab-webhooks | — | sin deployment | $0 |
 
-### pandoras-staging — **APAGADO POR DEFECTO**
-Todos los servicios están detenidos (`deploymentStopped`), incluidos Postgres y Redis.
-**No se apaga automáticamente:** si lo enciendes, **tú lo apagas** (ver §3).
+### pandoras-staging — **APAGADO + APP SLEEPING EN TODOS**
+Los 7 servicios tienen `sleepApplication: true` **y** sus deployments están detenidos
+(`SLEEPING`/`FAILED`, ninguno `RUNNING`). Coste de cómputo ≈ $0.
+**Único coste residual:** los 2 volúmenes (9.8 GB provisionados ≈ **$1.47/mes**), que se
+cobran por tamaño aunque el servicio esté dormido. Para $0 absoluto habría que borrarlos
+(se pierde el dato de staging).
 
 ## 3. Encender / apagar staging
 
@@ -56,18 +59,26 @@ done
 **Regla de oro:** al terminar de probar en staging → ejecutar el bloque de APAGAR y avisar en el canal del equipo.
 Alternativa recomendada para staging: activar **App Sleeping** en los servicios web (se duermen solos, sin cold start de datos en DBs, que se quedan encendidas).
 
-## 4. Volúmenes (ahorro sin riesgo)
+## 4. Volúmenes (importante: NO se pueden reducir)
 
-Los 5 volúmenes están provisionados a **4.9 GB** y sólo usan **0.15–0.23 GB** → se paga ~96% de espacio vacío.
+Los volúmenes están provisionados a **4.9 GB** y sólo usan **0.15–0.23 GB**, pero Railway:
 
-**Reducir a 1 GB (no se pierde data; el dato actual <1 GB):**
-1. Railway → proyecto → servicio con volumen → pestaña **Storage** (o Variables → Volume).
-2. Seleccionar el volumen → **Resize** → `1024 MB` → confirmar.
-3. Verificar que el servicio arranca y los datos siguen ahí.
+- **No expone el tamaño en la API pública** (ni CLI): no se puede automatizar.
+- En el dashboard el único control es **Live Resize**, y según la documentación sirve para
+  **ampliar**, no para reducir. No hay "shrink" in-place.
 
-> La API pública de Railway (v1) **no expone el tamaño del volumen**; por eso este paso es manual en el dashboard.
+Cómo llegar a la pantalla: canvas del proyecto → clic en el **nodo del volumen** (conectado al
+servicio) → **Live Resize** → seguir el prompt.
 
-Volúmenes existentes: `pandoras-production` → postgres-volume, redis-volume · `pandoras-staging` → Postgres, Redis.
+**Si de verdad se quiere bajar el tamaño**, hay que recrear el volumen:
+1. Exportar el dato (`pg_dump` para Postgres, `railway volume files download` para ficheros).
+2. Borrar el volumen y crear uno de **1 GB**.
+3. Restaurar el dato y volver a montarlo.
+
+No vale la pena hoy: el ahorro máximo son ~$2.9/mes a cambio de downtime + riesgo de datos.
+
+Volúmenes existentes: `pandoras-production` → postgres-volume, redis-volume ·
+`pandoras-staging` → Postgres, Redis (borrables si el dato de staging es desechable: **−$1.47/mes**).
 
 ## 5. Consultar el gasto
 
