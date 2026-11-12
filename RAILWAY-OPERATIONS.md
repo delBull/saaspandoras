@@ -34,8 +34,11 @@ Consecuencia: lo que manda es **RAM encendida 24/7** y **GB provisionados de vol
 Los 7 servicios tienen `sleepApplication: true` **y** sus deployments están detenidos
 (`SLEEPING`/`FAILED`, ninguno `RUNNING`). Coste de cómputo ≈ $0.
 **Único coste residual:** los 2 volúmenes (9.8 GB provisionados ≈ **$1.47/mes**), que se
-cobran por tamaño aunque el servicio esté dormido. Para $0 absoluto habría que borrarlos
-(se pierde el dato de staging).
+cobran por tamaño aunque el servicio esté dormido.
+
+> **DECISIÓN (2026-11-11): se conservan.** $1.47/mes es aceptable frente a tener que
+> recrear y re-inicializar las DBs cada vez que se necesite staging. No borrar sin
+> volver a decidirlo.
 
 ## 3. Encender / apagar staging
 
