@@ -9,6 +9,7 @@
 import { db } from '@saasfly/db';
 import { projects, installedProducts, marketingLeads, operationalIntents } from '@saasfly/db/schema';
 import { eq, or, and, count } from "@saasfly/db-core";
+import { installedProductInAny } from '@/lib/platform/product-matching';
 import type { 
   GrowthCapabilityKey, 
   GrowthCapabilityDefinition, 
@@ -143,9 +144,9 @@ export class CapabilityRegistryService {
 
     // 1. Query real commercial plan from installedProducts
     const productRecord = await db.query.installedProducts.findFirst({
-      where: or(
-        and(eq(installedProducts.projectId, project.id), eq(installedProducts.productFamily, 'GROWTH_OS')),
-        and(eq(installedProducts.projectId, project.id), eq(installedProducts.productFamily, 'HERMES'))
+      where: and(
+        eq(installedProducts.projectId, project.id),
+        installedProductInAny(['GROWTH_OS', 'HERMES'])
       ),
     });
 
