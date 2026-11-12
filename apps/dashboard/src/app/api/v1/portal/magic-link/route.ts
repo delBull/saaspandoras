@@ -189,7 +189,9 @@ export async function POST(req: NextRequest) {
             product: 'HERMES',
             productFamily: 'GROWTH_OS',
             plan: 'sandbox',
-            status: 'trial',
+            // Un tenant live no puede tener el producto en 'trial' (el portal lo
+            // bloquea por boundary trial↔producción).
+            status: project.status === 'live' ? 'active' : 'trial',
             config: { email: cleanEmail, companyName: project.title },
             runtimeManifest: { context: { adminEmail: cleanEmail } },
           }).returning({ id: installedProducts.id });

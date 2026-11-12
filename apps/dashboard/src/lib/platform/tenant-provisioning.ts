@@ -251,8 +251,12 @@ export async function provisionTenant(input: ProvisionTenantInput): Promise<Prov
           projectId: created.id,
           product,
           productFamily: productFamilyOf(product),
-          plan: 'trial',
-          status: 'trial',
+          // El proyecto nace 'live' con tenant_type PRODUCTION (default de la DB).
+          // Si el producto quedara en trial, el portal lo rechazaría con
+          // "sesión trial sobre tenant de producción". Pay-as-you-go ⇒ plan
+          // sandbox + status active.
+          plan: 'sandbox',
+          status: 'active',
           config: { email: ownerEmail, companyName: title },
           runtimeManifest: { context: { adminEmail: ownerEmail } },
         });
