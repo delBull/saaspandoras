@@ -9,6 +9,7 @@ import {
 } from '@saasfly/db/schema';
 import { and, eq } from '@saasfly/db-core';
 import { CapabilityGrantService } from '@saasfly/hermes-core';
+import { TRIAL_DURATION_DAYS } from '@/lib/notifications/tenant-notifications';
 import {
   DEFAULT_PROVISION_PRODUCT,
   getProductEntryPath,
@@ -210,6 +211,14 @@ export async function provisionTenant(input: ProvisionTenantInput): Promise<Prov
         description: input.description ?? 'Tenant aprovisionado vía API (Media Co / Content API)',
         status: 'live',
         isSimulationMode: false,
+        // Periodo de gracia de 7 días. Un tenant TRIAL puede tener producto en
+        // 'trial' sin que el portal lo bloquee; al activar el plan se pasa a
+        // PRODUCTION + producto 'active'.
+        tenantType: 'TRIAL' as any,
+        trialStartedAt: new Date(),
+        trialEndsAt: new Date(Date.now() + TRIAL_DURATION_DAYS * 24 * 60 * 60 * 1000),
+        trialStatus: 'ACTIVE',
+        trialTier: 'SOFTWARE_ONLY',
         // El email del dueño es lo que habilita el login por magic link.
         applicantEmail: ownerEmail,
       })
@@ -251,12 +260,11 @@ export async function provisionTenant(input: ProvisionTenantInput): Promise<Prov
           projectId: created.id,
           product,
           productFamily: productFamilyOf(product),
-          // El proyecto nace 'live' con tenant_type PRODUCTION (default de la DB).
-          // Si el producto quedara en trial, el portal lo rechazaría con
-          // "sesión trial sobre tenant de producción". Pay-as-you-go ⇒ plan
-          // sandbox + status active.
+          // Tenant TRIAL ⇒ producto 'trial' (el portal lo permite porque
+          // isTrialOrg es true). Al convertir a PRODUCTION se activa el producto.
           plan: 'sandbox',
-          status: 'active',
+          status: 'trial',
+          trialEndsAt: new Date(Date.now() + TRIAL_DURATION_DAYS * 24 * 60 * 60 * 1000),
           config: { email: ownerEmail, companyName: title },
           runtimeManifest: { context: { adminEmail: ownerEmail } },
         });

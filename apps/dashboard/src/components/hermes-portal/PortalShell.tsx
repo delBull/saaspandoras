@@ -19,6 +19,7 @@ import { Menu, X } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { InspectorProvider } from './InspectorContext';
 import { TrialCockpitBanner } from './trial/TrialCockpitBanner';
+import { TenantNotificationsBanner } from '@/components/portal/TenantNotificationsBanner';
 import { TrialReadinessBanner } from '@/components/ecosystem/TrialReadinessBanner';
 import { SimulationAlert } from './SimulationAlert';
 import { PortalProvider } from '@pandoras/display-engine';
@@ -121,6 +122,8 @@ export function PortalShell({ context, children, activeModules = [] }: PortalShe
       {/* Main content area (including Header and Inspector) */}
       <div className="flex-1 flex flex-col h-full max-h-full w-full relative pt-14 md:pt-0 overflow-hidden min-w-0">
         
+        <TenantNotificationsBanner organizationSlug={context.organization.slug} />
+
         {/* Global Top Bar (Spans full width above Inspector) */}
         <div className="hidden md:block z-30 shrink-0 border-b border-white/[0.06]">
           <SovereignHeader

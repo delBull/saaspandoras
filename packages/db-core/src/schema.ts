@@ -4501,6 +4501,27 @@ export const hermesCreditDeposits = pgTable("hermes_credit_deposits", {
   statusIdx: index("hermes_credit_deposits_status_idx").on(t.status),
 }));
 
+/**
+ * Notificaciones in-app por tenant (avisos de trial, aprobaciones, avisos de plataforma).
+ * Idempotentes por (tenant_id, dedupe_key): el mismo aviso no se duplica.
+ */
+export const hermesTenantNotifications = pgTable("hermes_tenant_notifications", {
+  id: varchar("id", { length: 128 }).primaryKey(),
+  tenantId: varchar("tenant_id", { length: 128 }).notNull(),
+  kind: varchar("kind", { length: 64 }).notNull(), // TRIAL_REMINDER | APPROVAL | SYSTEM
+  severity: varchar("severity", { length: 16 }).notNull().default("info"), // info | warning | critical
+  title: varchar("title", { length: 200 }).notNull(),
+  body: text("body").notNull(),
+  link: varchar("link", { length: 300 }),
+  dedupeKey: varchar("dedupe_key", { length: 160 }).notNull(),
+  metadataJson: jsonb("metadata_json"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  readAt: timestamp("read_at", { withTimezone: true }),
+}, (t) => ({
+  tenantDedupeUnique: uniqueIndex("hermes_tenant_notifications_dedupe_idx").on(t.tenantId, t.dedupeKey),
+  tenantCreatedIdx: index("hermes_tenant_notifications_tenant_idx").on(t.tenantId, t.createdAt),
+}));
+
 export const hermesComputeUsageEvents = pgTable("hermes_compute_usage_events", {
   id: varchar("id", { length: 128 }).primaryKey(),
   tenantId: varchar("tenant_id", { length: 128 }).notNull(),
