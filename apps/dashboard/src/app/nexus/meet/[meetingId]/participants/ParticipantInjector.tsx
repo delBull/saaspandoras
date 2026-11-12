@@ -6,6 +6,7 @@ export function ParticipantInjector({ meetingId }: { meetingId: string }) {
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [dealRoomPublicId, setDealRoomPublicId] = useState('');
+  const [presentationId, setPresentationId] = useState('celeste');
   const [busy, setBusy] = useState(false);
   const [log, setLog] = useState<Array<{ ok: boolean; message: string }>>([]);
 
@@ -20,6 +21,7 @@ export function ParticipantInjector({ meetingId }: { meetingId: string }) {
           email,
           name: name || undefined,
           dealRoomPublicId: dealRoomPublicId || undefined,
+          presentationId: presentationId || undefined,
         }),
       });
       const data = await res.json();
@@ -69,6 +71,15 @@ export function ParticipantInjector({ meetingId }: { meetingId: string }) {
             />
           </label>
         </div>
+        <label className="block text-xs text-zinc-400">
+          Deck (slug)
+          <input
+            value={presentationId}
+            onChange={(e) => setPresentationId(e.target.value)}
+            placeholder="celeste"
+            className="mt-1 w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-zinc-600"
+          />
+        </label>
         <label className="block text-xs text-zinc-400">
           Deal Room (publicId, opcional)
           <input

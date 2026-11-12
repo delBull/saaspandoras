@@ -28,7 +28,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ mee
     return NextResponse.json({ ok: false, error: 'Sesión de Nexus requerida' }, { status: 401 });
   }
 
-  let body: { email?: unknown; name?: unknown; role?: unknown; dealRoomPublicId?: unknown } = {};
+  let body: { email?: unknown; name?: unknown; role?: unknown; dealRoomPublicId?: unknown; presentationId?: unknown } = {};
   try {
     body = (await req.json()) as typeof body;
   } catch {
@@ -52,6 +52,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ mee
     .limit(1);
 
   if (!meeting) return NextResponse.json({ ok: false, error: 'Reunión no encontrada' }, { status: 404 });
+
+  // Deck asociado (p. ej. "celeste") para el botón "Presentar en vivo".
+  if (typeof body.presentationId === 'string' && body.presentationId.trim()) {
+    await db.update(meetings).set({ presentationId: body.presentationId.trim() }).where(eq(meetings.id, meetingId));
+  }
 
   // Si el host indica el Deal Room por su publicId, se asocia a la reunión.
   let dealRoomId = meeting.dealRoomId;
