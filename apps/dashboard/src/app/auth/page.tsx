@@ -117,13 +117,11 @@ function AuthContent() {
                 } catch (e) {
                     console.error("Failed to construct return URL", e);
                 }
-            } else if (isSuccess) {
-                // DIRECT TAB ACCESS: Si entra directamente por URL (sin popup ni origin), redirigir al Dashboard
-                console.log("🛡️ [Auth] Direct tab access: redirecting to Dashboard...");
-                closeTimeout = setTimeout(() => {
-                    router.replace('/');
-                }, 1000);
             }
+            // NOTA: antes aquí había un auto-redirect a '/' a los 1s. Como thirdweb
+            // auto-conecta la wallet de la sesión anterior, la página saltaba sola
+            // al onboarding sin dejar al usuario elegir. El avance ahora es explícito
+            // (botón "Entrar al Dashboard →" cuando hay sesión).
         }
 
         return () => {
@@ -224,10 +222,11 @@ function AuthContent() {
                         href="/portal/login"
                         className="flex w-full items-center justify-center gap-2 rounded-full border border-zinc-700 bg-zinc-900/60 px-5 py-3 text-[11px] font-black uppercase tracking-widest text-zinc-200 transition-colors hover:border-zinc-500 hover:text-white"
                     >
-                        Entrar con mi correo
+                        Portal de clientes (email)
                     </Link>
                     <p className="text-[10px] leading-relaxed text-zinc-500 text-center">
-                        Soy cliente / empresa: entro con mi email (enlace de acceso), sin billetera.
+                        Distinto del acceso con wallet/email de arriba: aquí entran los <strong>tenants</strong> con el
+                        correo con el que fueron dados de alta (enlace mágico, sin billetera).
                     </p>
                 </div>
 
