@@ -147,20 +147,29 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const isApproved = Boolean(
-      project ||
-      user || 
-      (approvedRequest && (approvedRequest.status === 'approved' || approvedRequest.status === 'granted'))
-    );
+    // Sólo entra quien tiene TENANT (proyecto resuelto) o una solicitud aprobada
+    // CON proyecto. Tener una fila en `users` NO basta: antes eso auto-creaba un
+    // workspace bootstrap y mandaba al onboarding a quien sólo quería el Portal.
+    const isApproved =
+      Boolean(project) ||
+      Boolean(
+        approvedRequest &&
+          (approvedRequest.status === 'approved' || approvedRequest.status === 'granted')
+      );
 
-    if (!isApproved) {
-      return NextResponse.json({ 
-        error: 'Si tu acceso ya fue aprobado, recibirás tu enlace en tu correo. Si no lo recibes, contacta a soporte en la página principal.' 
-      }, { status: 403 });
+    if (!isApproved || !project) {
+      return NextResponse.json(
+        {
+          error:
+            'Este correo no está registrado como cliente (tenant). Si tu empresa ya fue dada de alta, pide que verifiquen el email de contacto. Si eres fundador/operador, entra con tu wallet.',
+          code: 'NOT_PROVISIONED',
+          alternative: '/auth',
+        },
+        { status: 403 }
+      );
     }
 
     let token = '';
-    let isBootstrapWorkspace = false;
     // Producto con el que se firma la sesión: el del producto instalado real
     // (normalizado), nunca el literal 'hermes' en minúsculas.
     let portalProduct = 'HERMES';
@@ -189,34 +198,17 @@ export async function POST(req: NextRequest) {
       }
       
       token = generatePortalToken(installedId, activeProjectId, portalProduct.toLowerCase());
-    } else {
-      // Auto-provision their bootstrap workspace (usuario sin tenant todavía)
-      isBootstrapWorkspace = true;
-      const { ensureInitialWorkspace } = await import('@/lib/platform/workspace-bootstrap');
-      const bootstrap = await ensureInitialWorkspace(cleanEmail);
-      token = bootstrap.portalToken;
-      activeProjectId = bootstrap.projectId;
-      activeProjectSlug = bootstrap.projectSlug;
-      project = {
-        id: bootstrap.projectId,
-        slug: bootstrap.projectSlug,
-        title: 'Workspace',
-        status: 'draft',
-      } as any;
     }
+    // Sin proyecto no se genera token: el flujo devuelve 403 NOT_PROVISIONED arriba.
+    // (Antes se auto-creaba un workspace bootstrap y se mandaba al onboarding a
+    // cualquiera que sólo quería entrar al Portal.)
 
     // 4. Generate Magic Link with proper return destination
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://dash.pandoras.finance';
     // Un tenant existente va DIRECTO al Portal (nunca al onboarding, que crearía
     // otra organización y chocaría con el slug). El onboarding queda sólo para
     // el workspace bootstrap recién creado.
-    const destination =
-      safeReturn ||
-      (activeProjectSlug
-        ? isBootstrapWorkspace
-          ? `/onboarding/${activeProjectSlug}`
-          : `/portal/${activeProjectSlug}/media`
-        : '/portal');
+    const destination = safeReturn || `/portal/${activeProjectSlug}/media`;
     const magicLink = `${baseUrl}/portal/login?token=${token}&return=${encodeURIComponent(destination)}`;
 
     // Nunca se loguea el enlace: contiene un token válido de un solo uso.

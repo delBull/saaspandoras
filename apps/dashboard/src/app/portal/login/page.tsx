@@ -22,6 +22,8 @@ function PortalLoginContent() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(!!token);
   const [error, setError] = useState<string | null>(null);
+  // Si el correo no está aprovisionado, ofrecemos la otra puerta (wallet).
+  const [needsWalletAccess, setNeedsWalletAccess] = useState(false);
   const [sentSuccess, setSentSuccess] = useState(false);
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
   const [usedEmails, setUsedEmails] = useState<string[]>([]);
@@ -54,6 +56,9 @@ function PortalLoginContent() {
         
         if (!res.ok) {
           const data = await res.json();
+      if (data?.code === 'NOT_PROVISIONED') {
+        setNeedsWalletAccess(true);
+      }
           throw new Error(data.error || 'Token inválido o expirado.');
         }
 
@@ -210,9 +215,19 @@ function PortalLoginContent() {
         ) : (
           <form onSubmit={handleSubmit}>
             {error && (
-              <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm p-3 rounded-xl mb-4.5 flex items-start gap-2">
-                <span className="shrink-0">⚠️</span>
-                <span>{error}</span>
+              <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm p-3 rounded-xl mb-4.5 flex flex-col gap-2">
+                <div className="flex items-start gap-2">
+                  <span className="shrink-0">⚠️</span>
+                  <span>{error}</span>
+                </div>
+                {needsWalletAccess && (
+                  <a
+                    href="/auth"
+                    className="ml-6 inline-flex w-fit items-center rounded-full border border-zinc-700 bg-zinc-900/70 px-4 py-2 text-[11px] font-black uppercase tracking-widest text-zinc-200 transition-colors hover:border-zinc-500 hover:text-white"
+                  >
+                    Entrar con wallet →
+                  </a>
+                )}
               </div>
             )}
 
