@@ -3,7 +3,7 @@ import { db } from '@saasfly/db';
 import { hermesKnowledge, hermesGovernanceAudit, projects, portalOnboardingState } from '@saasfly/db/schema';
 import { eq, and, or, inArray } from "@saasfly/db-core";
 import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
-import { PortalAuthorizationError } from '@saasfly/shared';
+import { PortalAuthorizationError } from '@/lib/portal/portal-types';
 import { TenantProvisioner } from '@saasfly/hermes-core';
 import { TenantAuthorityService } from '@saasfly/hermes-core';
 import type { TenantKnowledgePackInput, TenantClaimInput } from '@saasfly/hermes-core';
