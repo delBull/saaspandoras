@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { tryResolvePortalContext } from '@/lib/portal/resolve-portal-context';
 import { OverviewDashboard } from '@/components/hermes-portal/overview/OverviewDashboard';
 import { TenantPassportView } from '@/components/tenant-passport/TenantPassportView';
+import { ProductEntryStrip } from '@/components/portal/ProductEntryStrip';
 import { DashApi } from '@/lib/dash-api';
 import type { HermesOverviewView } from '@saasfly/shared';
 
@@ -53,11 +54,18 @@ export default async function PortalOverviewSubPage({
     const passportData = await getTenantPassportData(organizationSlug, callerWallet);
 
     return (
-      <TenantPassportView
-        context={portalCtx}
-        overview={overview}
-        passportData={passportData}
-      />
+      <>
+        <ProductEntryStrip
+          organizationSlug={organizationSlug}
+          installedProducts={portalCtx.organization.installedProducts}
+          activeProduct={portalCtx.organization.activeProduct}
+        />
+        <TenantPassportView
+          context={portalCtx}
+          overview={overview}
+          passportData={passportData}
+        />
+      </>
     );
   }
 
@@ -95,5 +103,14 @@ export default async function PortalOverviewSubPage({
     };
   }
 
-  return <OverviewDashboard context={portalCtx} overview={overview} />;
+  return (
+    <>
+      <ProductEntryStrip
+        organizationSlug={organizationSlug}
+        installedProducts={portalCtx.organization.installedProducts}
+        activeProduct={portalCtx.organization.activeProduct}
+      />
+      <OverviewDashboard context={portalCtx} overview={overview} />
+    </>
+  );
 }
