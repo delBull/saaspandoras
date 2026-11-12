@@ -19,6 +19,7 @@ import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
 // `instanceof` falla entre copias, enviando NO_SESSION a /portal/error.
 import { PortalAuthorizationError } from '@/lib/portal/portal-types';
 import { PortalShell } from '@/components/hermes-portal/PortalShell';
+import { recordPortalActivity } from '@/lib/portal/portal-activity';
 import { TourEngine } from '@/components/onboarding/TourEngine';
 
 interface PortalLayoutProps {
@@ -44,6 +45,13 @@ export default async function PortalLayout({ children, params }: PortalLayoutPro
     // Unexpected error
     redirect('/portal/error');
   }
+
+  // Telemetría de acceso ("quién está dentro"). Fire-and-forget con throttle:
+  // nunca debe bloquear ni romper el render del portal.
+  void recordPortalActivity({
+    tenantId: context.organization.slug,
+    actorId: context.tenant.actorId,
+  }).catch(() => undefined);
 
   let activeModules: string[] = [];
   try {

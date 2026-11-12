@@ -4505,6 +4505,21 @@ export const hermesCreditDeposits = pgTable("hermes_credit_deposits", {
  * Notificaciones in-app por tenant (avisos de trial, aprobaciones, avisos de plataforma).
  * Idempotentes por (tenant_id, dedupe_key): el mismo aviso no se duplica.
  */
+/**
+ * Actividad del Portal por tenant: "quién está dentro".
+ * Una fila por tenant con el último acceso (actualizado con throttle).
+ */
+export const hermesPortalActivity = pgTable("hermes_portal_activity", {
+  tenantId: varchar("tenant_id", { length: 128 }).primaryKey(),
+  lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).defaultNow().notNull(),
+  firstSeenAt: timestamp("first_seen_at", { withTimezone: true }).defaultNow().notNull(),
+  lastActorId: varchar("last_actor_id", { length: 160 }),
+  hits: integer("hits").notNull().default(0),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  lastSeenIdx: index("hermes_portal_activity_last_seen_idx").on(t.lastSeenAt),
+}));
+
 export const hermesTenantNotifications = pgTable("hermes_tenant_notifications", {
   id: varchar("id", { length: 128 }).primaryKey(),
   tenantId: varchar("tenant_id", { length: 128 }).notNull(),
