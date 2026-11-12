@@ -6,6 +6,7 @@ import { useActiveAccount, ConnectButton, darkTheme } from "thirdweb/react";
 import { client } from "@saasfly/shared/thirdweb-client";
 import { wallets } from "@/lib/wallets";
 import { useSearchParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { ShieldCheck, Loader2 } from 'lucide-react';
 import { defineChain } from 'thirdweb/chains';
 import { useAuth } from '@/components/auth/AuthProvider';
@@ -211,6 +212,25 @@ function AuthContent() {
                     )}
                 </div>
                 
+                {/* Acceso de CLIENTES: sin billetera, por enlace mágico al email.
+                    El hub/portal se resuelve por sesión; el cliente no necesita rutas. */}
+                <div className="w-full space-y-3">
+                    <div className="flex items-center gap-3">
+                        <div className="h-px flex-1 bg-zinc-800" />
+                        <span className="text-[10px] uppercase tracking-[0.2em] text-zinc-600">o</span>
+                        <div className="h-px flex-1 bg-zinc-800" />
+                    </div>
+                    <Link
+                        href="/portal/login"
+                        className="flex w-full items-center justify-center gap-2 rounded-full border border-zinc-700 bg-zinc-900/60 px-5 py-3 text-[11px] font-black uppercase tracking-widest text-zinc-200 transition-colors hover:border-zinc-500 hover:text-white"
+                    >
+                        Entrar con mi correo
+                    </Link>
+                    <p className="text-[10px] leading-relaxed text-zinc-500 text-center">
+                        Soy cliente / empresa: entro con mi email (enlace de acceso), sin billetera.
+                    </p>
+                </div>
+
                 <p className="text-[10px] text-zinc-600 font-medium text-center leading-relaxed">
                     {['authenticated', 'has_access', 'no_access', 'ready_to_mint', 'minting'].includes(authStatus) 
                         ? "Sincronizando sesión con el protocolo. Esta ventana se cerrará automáticamente."
