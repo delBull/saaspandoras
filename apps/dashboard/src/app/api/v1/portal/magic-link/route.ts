@@ -160,6 +160,7 @@ export async function POST(req: NextRequest) {
     }
 
     let token = '';
+    let isBootstrapWorkspace = false;
     let activeProjectId = project?.id;
     let activeProjectSlug = project?.slug;
 
@@ -185,7 +186,8 @@ export async function POST(req: NextRequest) {
       
       token = generatePortalToken(installedId, activeProjectId, 'hermes');
     } else {
-      // Auto-provision their bootstrap workspace
+      // Auto-provision their bootstrap workspace (usuario sin tenant todavía)
+      isBootstrapWorkspace = true;
       const { ensureInitialWorkspace } = await import('@/lib/platform/workspace-bootstrap');
       const bootstrap = await ensureInitialWorkspace(cleanEmail);
       token = bootstrap.portalToken;
@@ -201,7 +203,16 @@ export async function POST(req: NextRequest) {
 
     // 4. Generate Magic Link with proper return destination
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://dash.pandoras.finance';
-    const destination = safeReturn || (activeProjectSlug ? `/onboarding/${activeProjectSlug}` : '/portal');
+    // Un tenant existente va DIRECTO al Portal (nunca al onboarding, que crearía
+    // otra organización y chocaría con el slug). El onboarding queda sólo para
+    // el workspace bootstrap recién creado.
+    const destination =
+      safeReturn ||
+      (activeProjectSlug
+        ? isBootstrapWorkspace
+          ? `/onboarding/${activeProjectSlug}`
+          : `/portal/${activeProjectSlug}/media`
+        : '/portal');
     const magicLink = `${baseUrl}/portal/login?token=${token}&return=${encodeURIComponent(destination)}`;
 
     // Nunca se loguea el enlace: contiene un token válido de un solo uso.

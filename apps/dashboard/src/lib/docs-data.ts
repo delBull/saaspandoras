@@ -1509,6 +1509,59 @@ For questions about platform operations:
     icon: "Code",
     sections: [
       {
+        id: "hermes-tenant-provisioning",
+        title: "Alta de tenant por API",
+        content: `# Alta de tenant por API (self-serve)
+
+Un integrador con una API key que tenga el permiso \`tenant.provision\` puede crear un tenant completo en **una llamada**: proyecto, dueño, acceso al Portal, saldo en $0, API key propia y capabilities de media.
+
+\`\`\`http
+POST /api/v1/integrations/tenants/provision
+Authorization: Bearer sk_live_...   # key del integrador (no del tenant)
+Content-Type: application/json
+
+{
+  "name": "Forge",
+  "slug": "forge",
+  "ownerEmail": "mkt@forgeos.fitness",
+  "capabilities": ["Media.Image", "Media.Video", "Media.Copy"]
+}
+\`\`\`
+
+Respuesta \`201\`:
+
+\`\`\`json
+{
+  "success": true,
+  "tenant": { "projectId": 186, "slug": "forge", "ownerEmail": "mkt@forgeos.fitness" },
+  "apiKey": "sk_live_...",
+  "keyFingerprint": "sk_live_ab12...",
+  "permissions": ["content.asset.read", "content.asset.create", "content.asset.approve", "media:generate", "hermes_a2a", "events:write"],
+  "capabilities": ["Media.Image", "Media.Video", "Media.Copy"],
+  "credits": { "balanceUsd": 0, "markupPercentage": 35 },
+  "portalUrl": "/portal/forge/media",
+  "next": { "step1": "…", "step2": "…", "step3": "…" }
+}
+\`\`\`
+
+### Qué se crea
+- Proyecto con el \`slug\` normalizado (3-40 caracteres, \`[a-z0-9-]\`).
+- \`ownerEmail\` como dueño: es lo que habilita el **login por enlace mágico** en el Portal.
+- Usuario del Portal + producto HERMES instalado.
+- Saldo en **$0** (markup 35%) y la fila de créditos del tenant.
+- **API key S2S** del tenant (permisos de Content API) y sus capability grants.
+
+### Reglas
+- \`ownerEmail\` es **obligatorio**: un tenant sin email no puede entrar al Portal.
+- **\`apiKey\` se devuelve una sola vez.** Sólo se guarda su hash; si se pierde, hay que rotarla.
+- Slug duplicado ⇒ **409**. Slugs reservados (\`snarai\`, \`pandoras\`, \`admin\`, …) ⇒ **400**.
+- El tenant **no necesita conocer rutas**: abre \`portalUrl\` (\`/portal/<slug>/media\`) e inicia sesión con su email.
+
+> El Portal es donde se recarga saldo (tarjeta o USDC, mínimo $10) y donde se ve el Media Studio. La recarga queda pendiente de aprobación y el saldo se acredita al autorizarse.
+
+`
+      },
+      {
         id: "hermes-content-api",
         title: "Hermes Content API (Media Co)",
         content: `# Content API de Hermes (Media Co)

@@ -68,7 +68,9 @@ function PortalLoginContent() {
           let target = returnPath && returnPath.startsWith('/') && returnPath !== '/portal' ? returnPath : '';
           if (!target && data.organization?.slug) {
             const isDraft = data.organization.projectStatus === 'draft' || data.organization.onboardingStage;
-            target = isDraft ? `/onboarding/${data.organization.slug}` : `/portal/${data.organization.slug}`;
+            target = isDraft
+              ? `/onboarding/${data.organization.slug}`
+              : `/portal/${data.organization.slug}/media`;
           }
           if (!target) {
             target = '/portal';
