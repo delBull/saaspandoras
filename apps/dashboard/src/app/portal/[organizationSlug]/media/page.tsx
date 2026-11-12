@@ -1,16 +1,24 @@
-import { redirect } from 'next/navigation';
+import React from 'react';
+import { MediaStudioDashboard } from '@/components/hermes-portal/media/MediaStudioDashboard';
 
 export const dynamic = 'force-dynamic';
 
 /**
- * Backwards compatibility redirect:
- * /portal/[organizationSlug]/media -> /portal/[organizationSlug]/demand
+ * /portal/[organizationSlug]/media — Media Studio del tenant.
+ *
+ * Antes esta ruta redirigía a `/demand`, lo que dejaba el Media Studio
+ * (`MediaStudioDashboard`, con la recarga de saldo) sin ninguna página que lo
+ * montara: el tenant no podía recargar créditos desde el Portal.
+ *
+ * La autorización NO depende de esta página: el `layout` del portal resuelve la
+ * sesión (`resolvePortalContext`) y redirige a login/unauthorized, y las APIs
+ * que consume el dashboard (`/api/v1/hermes/media/*`) validan sesión de portal.
  */
-export default async function MediaRedirectPage({
+export default async function MediaStudioPage({
   params,
 }: {
   params: Promise<{ organizationSlug: string }>;
 }) {
   const { organizationSlug } = await params;
-  redirect(`/portal/${organizationSlug}/demand`);
+  return <MediaStudioDashboard organizationSlug={organizationSlug} />;
 }
