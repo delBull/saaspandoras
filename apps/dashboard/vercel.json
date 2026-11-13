@@ -1,6 +1,6 @@
 {
   "version": 2,
   "framework": "nextjs",
-  "buildCommand": "turbo run build --filter=@saasfly/dashboard...",
+  "buildCommand": "cd ../.. && bun run --cwd packages/shared build:js && turbo run build --filter=@saasfly/dashboard",
   "installCommand": "bun install --no-frozen-lockfile"
 }
