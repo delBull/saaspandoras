@@ -2,5 +2,11 @@
   "version": 2,
   "framework": "nextjs",
   "buildCommand": "SKIP_DTS=1 turbo run build --filter=@saasfly/dashboard...",
-  "installCommand": "bun install --no-frozen-lockfile"
+  "installCommand": "bun install --no-frozen-lockfile",
+  "crons": [
+    {
+      "path": "/api/v1/internal/cron/reconcile",
+      "schedule": "0 8 * * *"
+    }
+  ]
 }

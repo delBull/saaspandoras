@@ -43,7 +43,10 @@ const nextConfig = {
   experimental: {
     // Enable Next.js 15 memory optimizations during production build
     webpackMemoryOptimizations: true,
-    webpackBuildWorker: true,
+    // DESACTIVADO: el build worker spawnea un segundo proceso que hereda
+    // NODE_OPTIONS; en una máquina de 8 GB eso duplica el pico y el contenedor
+    // mata el build con SIGKILL (OOM del contenedor, no del heap).
+    webpackBuildWorker: false,
     // Fix Next.js 14+ barrel file imports for client and icon libraries
     optimizePackageImports: [
       'lucide-react',

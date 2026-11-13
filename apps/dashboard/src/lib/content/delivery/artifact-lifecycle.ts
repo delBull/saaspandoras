@@ -570,11 +570,22 @@ export class ArtifactLifecycleService {
    * Si el adaptador no soporta `list`, la detección de huérfanos se reporta como
    * `unsupported` — nunca como "no hay huérfanos".
    */
-  async reconcile(params: { artifactId?: string; keyPrefix?: string } = {}): Promise<{
+  async reconcile(params: {
+    artifactId?: string;
+    keyPrefix?: string;
+    /**
+     * Tope de objetos a verificar físicamente en esta ejecución. Evita que una
+     * tarea programada consuma CPU proporcional al inventario: si se alcanza el
+     * tope se reporta `truncated: true` (nunca se finge haber revisado todo).
+     */
+    limit?: number;
+  } = {}): Promise<{
     orphanBlobs: string[];
     orphanDetection: 'checked' | 'unsupported';
     missingBlobs: Array<{ artifactId: string; version: number }>;
     inconsistentBusinessState: Array<{ artifactId: string; version: number; reason: string }>;
+    scanned: number;
+    truncated: boolean;
   }> {
     const states: PhysicalState[] = ['stored', 'deletion_pending', 'deleted', 'missing'];
     const allRows = (
@@ -590,7 +601,12 @@ export class ArtifactLifecycleService {
 
     const adapter = this.requireStorage();
 
-    for (const row of scopedRows.filter((r) => r.physicalState === 'stored')) {
+    const limit = params.limit ?? 100;
+    const storedRows = scopedRows.filter((r) => r.physicalState === 'stored');
+    const batch = storedRows.slice(0, Math.max(1, limit));
+    const truncated = storedRows.length > batch.length;
+
+    for (const row of batch) {
       const exists = await adapter.head(row.storageKey);
       if (!exists) {
         missingBlobs.push({ artifactId: row.artifactId, version: row.version });
@@ -640,7 +656,14 @@ export class ArtifactLifecycleService {
       orphanDetection = 'checked';
     }
 
-    return { orphanBlobs, orphanDetection, missingBlobs, inconsistentBusinessState };
+    return {
+      orphanBlobs,
+      orphanDetection,
+      missingBlobs,
+      inconsistentBusinessState,
+      scanned: batch.length,
+      truncated,
+    };
   }
 
   /** Storage obligatorio: fail-closed si el llamador no lo configuró. */

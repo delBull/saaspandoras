@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireInternalAuth } from '@/lib/security/internal-auth';
+import { requireCronAuth } from '@/lib/security/internal-auth';
 import { ArtifactLifecycleService } from '@/lib/content/delivery/artifact-lifecycle';
 import { getArtifactRepository } from '@/lib/content/delivery/service-factory';
 import { resolveStorageAdapter } from '@/lib/content/storage';
@@ -20,7 +20,7 @@ export const runtime = 'nodejs';
  * limpieza sea una decisión explícita.
  */
 export async function GET(req: NextRequest) {
-  const authError = requireInternalAuth(req);
+  const authError = requireCronAuth(req);
   if (authError) return authError;
 
   try {
@@ -30,7 +30,11 @@ export async function GET(req: NextRequest) {
       storage: adapter,
     });
 
-    const report = await service.reconcile({});
+    // Tope de trabajo por ejecución: la tarea es diaria y debe ser barata en CPU.
+    const rawLimit = Number(new URL(req.url).searchParams.get('limit') ?? '100');
+    const limit = Number.isInteger(rawLimit) ? Math.min(Math.max(rawLimit, 1), 500) : 100;
+
+    const report = await service.reconcile({ limit });
 
     const healthy =
       report.missingBlobs.length === 0 &&
@@ -44,6 +48,7 @@ export async function GET(req: NextRequest) {
       notes: [
         'La reconciliación no elimina objetos: solo detecta y marca estados.',
         'orphanDetection=unsupported significa que el proveedor no permite listar; no es "sin huérfanos".',
+        'truncated=true significa que quedan objetos por revisar: la siguiente ejecución continúa.',
       ],
     });
   } catch (error: unknown) {
