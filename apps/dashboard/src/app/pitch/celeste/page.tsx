@@ -81,14 +81,16 @@ const slides: Slide[] = [
         <h2 className="text-4xl md:text-5xl font-bold text-white mb-6 leading-tight">
           El cuello de botella no es el precio: es <span className="text-purple-400">llegar a más interesados</span>.
         </h2>
-        <p className="text-xl text-zinc-400 mb-8 max-w-3xl">
-          Es el reto que identificó el equipo. Estas son las tres causas típicas que lo explican:
+        <p className="text-xl text-zinc-400 mb-3 max-w-3xl">
+          Es el reto que identificó el equipo. Las siguientes son <strong className="text-zinc-200">hipótesis de diagnóstico preliminar</strong>:
+          las validamos con datos en la semana 1.
         </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
-          <Cause n="01" title="Dependencia de terceros" text="Parte del inventario se mueve por Posadas/Curamoria con 8% de comisión: llega demanda, pero no es tuya ni medible." />
-          <Cause n="02" title="Sin un proceso único" text="Cada asesor opera a su manera: no hay un embudo común ni criterios de calificación." />
+          <Cause n="01" title="Dependencia de terceros" text="Parte del inventario se comercializa por Posadas/Curamoria, que cobra 8% según lo informado. Llega demanda, pero no es propia ni medible. A confirmar: 8% de qué (venta, reserva o cobro)." />
+          <Cause n="02" title="Sin un proceso único" text="Cada asesor opera a su manera: no hay un embudo común ni criterios de calificación acordados." />
           <Cause n="03" title="Sin medición" text="No se sabe qué canal trae prospectos que visitan y compran. Sin dato, no hay optimización." />
         </div>
+        <p className="mt-6 text-xs text-zinc-500">Diagnóstico preliminar sujeto a validación con el equipo de Celeste.</p>
       </div>
     ),
   },
@@ -103,7 +105,7 @@ const slides: Slide[] = [
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full mb-6">
           <Pillar icon={<Target className="w-4 h-4" />} title="1. Captación" text="Audiencias, campañas y landing orientadas a compradores de fracción." />
-          <Pillar icon={<Workflow className="w-4 h-4" />} title="2. Atención y precalificación" text="Respuesta, recopilación de datos y agenda de la experiencia Discovery." />
+          <Pillar icon={<Workflow className="w-4 h-4" />} title="2. Atención y precalificación" text="Al inicio, atención humana asistida con guiones y bandeja compartida. El asistente automatizado (WhatsApp) se habilita sólo tras validación técnica y aprobación de Meta." />
           <Pillar icon={<CalendarRange className="w-4 h-4" />} title="3. Conversión a visita" text="Coordinación con el equipo de Celeste para confirmar disponibilidad y condiciones." />
           <Pillar icon={<LineChart className="w-4 h-4" />} title="4. Seguimiento y medición" text="Origen, etapa, responsable, visita y resultado en un solo lugar." />
         </div>
@@ -148,7 +150,7 @@ const slides: Slide[] = [
         <div className="grid grid-cols-1 md:grid-cols-5 gap-3 w-full">
           <Phase week="Semana 1" title="Diagnóstico" text="Oferta, audiencias, activos, CRM y proceso" />
           <Phase week="Semanas 2-3" title="Construcción" text="Landing, catálogo, guiones y campañas en borrador" />
-          <Phase week="Semana 4" title="Activación" text="Campañas en vivo y atención operando" />
+          <Phase week="Semana 4" title="Activación (meta)" text="Objetivo de lanzamiento; depende de accesos, materiales y aprobaciones" />
           <Phase week="Semanas 5-11" title="Optimización" text="Ajustes semanales de audiencia, mensaje y creativo" />
           <Phase week="Semana 12" title="Cierre" text="Reporte final y decisión de continuidad" />
         </div>
@@ -169,7 +171,7 @@ const slides: Slide[] = [
             "Configuración de CRM y pipeline de ventas",
             "Asistente de atención y precalificación (sujeto a validación técnica)",
             "Diseño, lanzamiento y optimización de campañas",
-            "Hasta 8 piezas de contenido al mes (con material y aprobaciones a tiempo)",
+            "4 piezas de contenido al mes incluidas (8 como ampliación, con material y aprobaciones a tiempo)",
             "Seguimiento de prospectos y coordinación de visitas",
             "Reporte semanal y reunión de revisión",
           ].map((item, i) => (
@@ -188,7 +190,8 @@ const slides: Slide[] = [
     content: (
       <div className="flex flex-col items-start text-left max-w-5xl mx-auto w-full">
         <SectionTag n="08" label="Inversión" />
-        <h2 className="text-4xl md:text-5xl font-bold text-white mb-8 leading-tight">Propuesta económica</h2>
+        <h2 className="text-4xl md:text-5xl font-bold text-white mb-2 leading-tight">Propuesta económica</h2>
+        <p className="text-xs uppercase tracking-[0.2em] text-zinc-500 mb-6">Todos los importes en USD (dólares estadounidenses)</p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full mb-6">
           <PriceCard label="Configuración inicial" value="$2,500" note="Pago único" />
           <PriceCard label="Operación mensual" value="$1,800" note="Por mes · 3 meses" />
@@ -196,7 +199,7 @@ const slides: Slide[] = [
         </div>
         <div className="w-full rounded-2xl border border-white/10 bg-white/[0.02] p-5 text-sm text-zinc-300 space-y-2">
           <p><Wallet className="inline w-4 h-4 text-purple-400 mr-2" /><strong className="text-white">Publicidad aparte:</strong> la paga Celeste directamente a las plataformas. Escenario de trabajo: USD 1,500–3,000 / mes (a validar).</p>
-          <p><strong className="text-white">No incluye:</strong> impuestos, viajes, producción audiovisual especial, servicios externos extraordinarios ni comisión por ventas.</p>
+          <p><strong className="text-white">No incluye:</strong> impuestos (IVA se agrega si se factura en México), viajes, producción audiovisual especial, servicios externos extraordinarios ni comisión por ventas.</p>
           <p className="text-zinc-500">Un incentivo por ventas atribuibles, si se desea, se negocia por separado con reglas de atribución definidas.</p>
         </div>
       </div>
