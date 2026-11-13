@@ -100,6 +100,40 @@ export class TenantCreditLedgerService {
   }
 
   /**
+   * Lectura SIN efectos secundarios: devuelve null si el tenant no tiene fila.
+   * Usar en endpoints de consulta (no crear registros al leer).
+   */
+  public static async getCredits(tenantId: string): Promise<TenantCreditsDTO | null> {
+    const normalizedTenant = (tenantId ?? '').toLowerCase().trim();
+    if (!db || !normalizedTenant) return null;
+
+    try {
+      const [row] = await db
+        .select()
+        .from(hermesTenantCredits)
+        .where(eq(hermesTenantCredits.tenantId, normalizedTenant))
+        .limit(1);
+
+      if (!row) return null;
+
+      return {
+        tenantId: row.tenantId,
+        creditBalanceUsd: parseFloat(row.creditBalanceUsd || '0.0000'),
+        reservedBalanceUsd: parseFloat(row.reservedBalanceUsd || '0.0000'),
+        totalDepositedUsd: parseFloat(row.totalDepositedUsd || '0.0000'),
+        totalSpentUsd: parseFloat(row.totalSpentUsd || '0.0000'),
+        markupPercentage: row.markupPercentage ?? this.DEFAULT_MARKUP_PERCENTAGE,
+        isSandboxEnabled: row.isSandboxEnabled ?? true,
+        sandboxBalanceUsd: parseFloat(row.sandboxBalanceUsd || '0.0000'),
+        sandboxReservedBalanceUsd: parseFloat(row.sandboxReservedBalanceUsd || '0.0000'),
+      };
+    } catch (error: unknown) {
+      console.error('[TenantCreditLedger] getCredits failed:', error);
+      return null;
+    }
+  }
+
+  /**
    * Retrieves or initializes the credit ledger entry for a tenant.
    * Tenants start at $0.00 until they fund their sandbox or production credits.
    */
