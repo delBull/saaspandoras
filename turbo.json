@@ -6,6 +6,7 @@
     "bun.lockb"
   ],
   "globalEnv": [
+    "SKIP_DTS",
     "NEXTAUTH_SECRET",
     "NEXTAUTH_URL",
     "STRIPE_API_KEY",
