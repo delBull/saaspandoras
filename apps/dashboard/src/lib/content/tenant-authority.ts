@@ -4,6 +4,7 @@ import { projects } from '@saasfly/db/schema';
 import { eq } from '@saasfly/db-core';
 import { IntegrationKeyService } from '@/lib/integrations/auth';
 import { TenantAuthorityService } from '@saasfly/hermes-core';
+import { permissionSatisfied } from '@saasfly/shared';
 
 /**
  * Autoridad de la Content API (Media Co).
@@ -29,29 +30,12 @@ export type ContentAuthResult =
   | { ok: true; client: AuthorizedContentClient }
   | { ok: false; status: number; error: string; code?: string };
 
-/** Tipos de contenido aceptados → capability del orquestador. */
-export const CONTENT_TYPE_CAPABILITIES: Record<string, string> = {
-  image: 'Media.Image',
-  image_render: 'Media.Image',
-  poster: 'Media.Image',
-  video: 'Media.Video',
-  video_render: 'Media.Video',
-  reel: 'Media.Video',
-  copy: 'Media.Copy',
-  copy_render: 'Media.Copy',
-  caption: 'Media.Copy',
-  editorial: 'Media.Editorial',
-  newsletter: 'Media.Editorial',
-  audio: 'Media.Audio',
-  podcast: 'Media.Audio',
-  research: 'Media.Research',
-  research_report: 'Media.Research',
-};
-
-export function resolveContentCapability(type: string): string | null {
-  const key = (type || '').trim().toLowerCase();
-  return CONTENT_TYPE_CAPABILITIES[key] ?? null;
-}
+/**
+ * Mapa tipo de contenido → capability canónica.
+ * La definición vive en un módulo puro (`./capability-map`) y se re-exporta aquí
+ * para conservar los imports existentes.
+ */
+export { CONTENT_TYPE_CAPABILITIES, resolveContentCapability } from './capability-map';
 
 function readBearer(req: NextRequest): string | null {
   const header = req.headers.get('authorization') ?? '';
@@ -92,8 +76,12 @@ export async function authorizeContentClient(
   }
 
   const permissions = (client.permissions as string[]) ?? [];
-  const authorized =
-    permissions.includes('*') || requiredPermissions.some((permission) => permissions.includes(permission));
+  // Adapter canónico: acepta el identificador canónico y los aliases históricos
+  // (`Media.Image`, `managed.*`). Determinista y fail-closed: lo desconocido NO
+  // concede nada; `*` se conserva como contrato histórico de las API keys.
+  const authorized = requiredPermissions.some((permission) =>
+    permissionSatisfied(permissions, permission),
+  );
   if (!authorized) {
     return {
       ok: false,

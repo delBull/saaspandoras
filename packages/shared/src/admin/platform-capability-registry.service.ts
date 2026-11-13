@@ -8,8 +8,20 @@
  */
 
 import type { PlatformRole, PlatformActor } from '../dash-contracts/admin/identity';
+import {
+  TENANT_CAPABILITY_DEFINITIONS,
+  getCapabilityAuthorityModel,
+  mergeCapabilityCatalogs,
+  type CapabilityAuthorityModel,
+  type TenantCapability,
+} from './capability-vocabulary';
 
-export type PlatformCapability =
+/**
+ * Capacidades de PLATAFORMA: su autoridad es el rol del actor de plataforma.
+ * Las capacidades de TENANT viven en `capability-vocabulary.ts` y NUNCA se
+ * autorizan por rol (ver `getCapabilityAuthorityModel`).
+ */
+export type PlatformCapabilityBase =
   | 'platform.tenants.read'
   | 'platform.tenants.markup.update'
   | 'platform.tenants.suspend'
@@ -40,6 +52,12 @@ export type PlatformCapability =
   | 'ops.tenant.provision'
   | 'ops.tenant.bootstrap';
 
+/**
+ * Vocabulario canónico unificado: plataforma + tenant.
+ * Un solo identificador por capacidad; los nombres históricos son aliases.
+ */
+export type PlatformCapability = PlatformCapabilityBase | TenantCapability;
+
 export type RiskLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL_A' | 'CRITICAL_B' | 'CRITICAL';
 
 export type GovernanceRequirement = 
@@ -56,7 +74,7 @@ export type PlatformResourceScope =
 
 export interface PlatformCapabilityDefinition {
   capability: PlatformCapability;
-  resource: 'Platform' | 'Tenant' | 'RWA Project' | 'Treasury' | 'Identity' | 'Audit' | 'HQ CRM' | 'Integration' | 'Operations';
+  resource: 'Platform' | 'Tenant' | 'RWA Project' | 'Treasury' | 'Identity' | 'Audit' | 'HQ CRM' | 'Integration' | 'Operations' | 'Media' | 'Content' | 'CRM' | 'Reporting' | 'Governance';
   allowedScopes: Array<'all' | 'assigned' | 'scoped'>;
   riskLevel: RiskLevel;
   governanceRequirement: GovernanceRequirement;
@@ -73,8 +91,7 @@ export interface AuthorizationEvaluationResult {
   reason?: string;
 }
 
-export class PlatformCapabilityRegistryService {
-  private static readonly CAPABILITY_CATALOG: Record<PlatformCapability, PlatformCapabilityDefinition> = {
+const PLATFORM_CAPABILITY_CATALOG: Record<PlatformCapabilityBase, PlatformCapabilityDefinition> = {
     'platform.tenants.read': {
       capability: 'platform.tenants.read',
       resource: 'Tenant',
@@ -278,7 +295,20 @@ export class PlatformCapabilityRegistryService {
       governanceRequirement: 'REINFORCED_AUTH',
       description: 'Inicialización de Sovereign Knowledge Vault y namespaces del tenant',
     }
-  };
+};
+
+const TENANT_CAPABILITY_CATALOG: Record<TenantCapability, PlatformCapabilityDefinition> =
+  Object.fromEntries(
+    TENANT_CAPABILITY_DEFINITIONS.map((definition) => [definition.capability, definition]),
+  ) as Record<TenantCapability, PlatformCapabilityDefinition>;
+
+export class PlatformCapabilityRegistryService {
+  /**
+   * Catálogo unificado. `mergeCapabilityCatalogs` falla en construcción si un
+   * identificador canónico colisiona entre los dos dominios.
+   */
+  private static readonly CAPABILITY_CATALOG: Record<PlatformCapability, PlatformCapabilityDefinition> =
+    mergeCapabilityCatalogs(PLATFORM_CAPABILITY_CATALOG, TENANT_CAPABILITY_CATALOG);
 
   /**
    * Obtiene la definición de una capacidad de plataforma.
@@ -289,6 +319,23 @@ export class PlatformCapabilityRegistryService {
       throw new Error(`[PlatformCapabilityRegistry] Unknown capability: ${capability}`);
     }
     return def;
+  }
+
+  /**
+   * Modelo de autoridad de una capability.
+   * `PLATFORM_ROLE` se evalúa por rol; `TENANT_GRANT` exige grant de tenant y
+   * este evaluador siempre la deniega.
+   */
+  public static getAuthorityModel(capability: PlatformCapability): CapabilityAuthorityModel {
+    return getCapabilityAuthorityModel(capability);
+  }
+
+  /**
+   * `true` solo si el identificador pertenece al catálogo de PLATAFORMA.
+   * Útil para distinguir "no existe" de "existe pero no es de tenant".
+   */
+  public static isPlatformCapability(capability: string): boolean {
+    return Object.prototype.hasOwnProperty.call(PLATFORM_CAPABILITY_CATALOG, capability);
   }
 
   /**
@@ -310,6 +357,18 @@ export class PlatformCapabilityRegistryService {
       riskLevel: def.riskLevel,
       governanceRequirement: def.governanceRequirement,
     };
+
+    // ── Invariante 0: autoridad de las capacidades de tenant (P0.1) ──
+    // Un rol de plataforma NO confiere capacidades de tenant. Su autoridad es un
+    // grant de tenant resuelto en servidor (identidad + scope + policy), y la
+    // concesión NO se delega a este evaluador de roles.
+    if (getCapabilityAuthorityModel(capability) === 'TENANT_GRANT') {
+      return {
+        ...baseResult,
+        granted: false,
+        reason: `La capacidad '${capability}' pertenece al dominio del tenant: requiere grant de tenant (identidad + scope + policy), no un rol de plataforma.`,
+      };
+    }
 
     const isCritical = 
       def.riskLevel === 'CRITICAL' || 

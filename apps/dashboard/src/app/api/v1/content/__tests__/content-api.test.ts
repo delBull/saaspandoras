@@ -346,7 +346,9 @@ describe('Content API (Media Co) — sin mocks, acotada al tenant', () => {
   });
 
   // ── Approval ───────────────────────────────────────────────────────────────
-  it('APR-01: estado inválido → 422', async () => {
+  // P0.3: la aprobación por API key está CERRADA (frontera de seguridad).
+  // Una identidad de máquina no puede aprobar, ni su propio contenido ni el ajeno.
+  it('APR-01: una API key no puede aprobar (403 HUMAN_SESSION_REQUIRED, sin efectos)', async () => {
     const res = await approveAsset(
       new NextRequest('http://localhost/api/v1/content/assets/art_1/approval', {
         method: 'POST',
@@ -355,10 +357,15 @@ describe('Content API (Media Co) — sin mocks, acotada al tenant', () => {
       }),
       { params: Promise.resolve({ assetId: 'art_1' }) }
     );
-    expect(res.status).toBe(422);
+    expect(res.status).toBe(403);
+    const body = await res.json();
+    expect(body.code).toBe('HUMAN_SESSION_REQUIRED');
+    expect(body.approvalRequirements.length).toBeGreaterThan(0);
+    // Sin efectos: no se intentó escribir aprobación alguna.
+    expect(updatedArtifact).toBeNull();
   });
 
-  it('APR-02: asset inexistente / de otro tenant → 404', async () => {
+  it('APR-02: el endpoint no filtra existencia de activos de otro tenant (403 antes de consultar)', async () => {
     artifactRows = [];
     const res = await approveAsset(
       new NextRequest('http://localhost/api/v1/content/assets/art_ajeno/approval', {
@@ -368,6 +375,7 @@ describe('Content API (Media Co) — sin mocks, acotada al tenant', () => {
       }),
       { params: Promise.resolve({ assetId: 'art_ajeno' }) }
     );
-    expect(res.status).toBe(404);
+    expect(res.status).toBe(403);
+    expect((await res.json()).code).toBe('HUMAN_SESSION_REQUIRED');
   });
 });

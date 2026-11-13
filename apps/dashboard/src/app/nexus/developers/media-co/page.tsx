@@ -178,7 +178,7 @@ export default async function MediaCoApiReferencePage({ searchParams }: { search
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
             <div>
               <h3 className="text-lg font-bold text-white">Aprobar un Asset Terminado</h3>
-              <p className="text-sm text-zinc-400 mt-1">Emite una firma para aprobar un asset generado. Esta acción notifica al Sovereign Vault.</p>
+              <p className="text-sm text-zinc-400 mt-1">Requiere identidad humana por sesión de portal: una API key recibe 403 HUMAN_SESSION_REQUIRED. El aprobador debe ser distinto del creador y del último editor.</p>
             </div>
             <div className="flex items-center gap-3 font-mono text-sm">
               <span className="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 font-bold">POST</span>
@@ -188,7 +188,7 @@ export default async function MediaCoApiReferencePage({ searchParams }: { search
           <div className="space-y-4">
             <div>
               <h4 className="text-sm font-semibold text-zinc-300 mb-2 uppercase tracking-wider">Permiso Requerido</h4>
-              <code className="text-xs text-pandoras-300 bg-pandoras-500/10 px-2 py-1 rounded">content.render</code>
+              <code className="text-xs text-pandoras-300 bg-pandoras-500/10 px-2 py-1 rounded">content.asset.approve</code>
             </div>
             <div>
               <h4 className="text-sm font-semibold text-zinc-300 mb-2 uppercase tracking-wider">Payload (JSON)</h4>

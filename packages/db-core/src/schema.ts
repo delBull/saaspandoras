@@ -4334,6 +4334,310 @@ export const hermesArtifacts = pgTable("hermes_artifacts", {
   tenantCidIdx: uniqueIndex("hermes_artifacts_tenant_cid_unique").on(t.tenantId, t.cid),
 }));
 
+// ════════════════════════════════════════════════════════════════════════════════
+// P0.3 — MEDIA DELIVERY: almacenamiento físico, versiones de negocio, eventos y
+// tokens de entrega. Aditivo: NO altera `hermes_artifacts`.
+//
+// Separación de responsabilidades (una sola fuente de verdad por dimensión):
+//  - `hermes_artifact_versions` → estado de NEGOCIO por versión (revisión/aprobación).
+//  - `hermes_artifact_storage`  → estado FÍSICO por versión (proveedor, clave, hash).
+//  - `hermes_artifact_events`   → bitácora inmutable (append-only).
+//  - `hermes_artifact_delivery_tokens` → tokens de entrega revocables.
+//
+// `hermes_artifacts.artifact_id` NO es único (solo el PK `id` lo es), por eso la
+// relación es lógica (índice), no un FK duro.
+// ════════════════════════════════════════════════════════════════════════════════
+
+export const hermesArtifactVersions = pgTable("hermes_artifact_versions", {
+  id: varchar("id", { length: 128 }).primaryKey(),
+  artifactId: varchar("artifact_id", { length: 128 }).notNull(),
+  // Tenant desnormalizado: permite aislar y filtrar por organización sin join.
+  tenantId: varchar("tenant_id", { length: 128 }).notNull(),
+  version: integer("version").notNull(),
+  // Estado de NEGOCIO de esta versión (nunca el físico).
+  status: varchar("status", { length: 32 }).notNull().default('draft'), // draft|in_review|approved|rejected|published|replaced
+  sha256: varchar("sha256", { length: 64 }).notNull(),
+  sizeBytes: integer("size_bytes"),
+  contentType: varchar("content_type", { length: 255 }),
+  // Identidad que creó la versión: máquina (API key) o humano (sesión).
+  createdByKind: varchar("created_by_kind", { length: 16 }).notNull(), // human|api_key|system
+  createdById: varchar("created_by_id", { length: 128 }).notNull(),
+  // Sujeto humano resoluble (dueño de la API key) para la regla de aprobador distinto.
+  createdByOwnerId: varchar("created_by_owner_id", { length: 128 }),
+  approvedByKind: varchar("approved_by_kind", { length: 16 }), // siempre 'human'
+  approvedById: varchar("approved_by_id", { length: 128 }),
+  approvedAt: timestamp("approved_at", { withTimezone: true }),
+  // Último editor humano: la aprobación debe ser de una identidad distinta.
+  lastEditedByKind: varchar("last_edited_by_kind", { length: 16 }),
+  lastEditedById: varchar("last_edited_by_id", { length: 128 }),
+  rejectedReason: text("rejected_reason"),
+  replacedByVersion: integer("replaced_by_version"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  artifactVersionUnique: uniqueIndex("hermes_artifact_versions_av_unique").on(t.artifactId, t.version),
+  artifactStatusIdx: index("hermes_artifact_versions_status_idx").on(t.artifactId, t.status),
+  tenantIdx: index("hermes_artifact_versions_tenant_idx").on(t.tenantId),
+}));
+
+export const hermesArtifactStorage = pgTable("hermes_artifact_storage", {
+  id: varchar("id", { length: 128 }).primaryKey(),
+  artifactId: varchar("artifact_id", { length: 128 }).notNull(),
+  version: integer("version").notNull(),
+  // Estado FÍSICO. `deleted` SOLO si el proveedor lo confirmó.
+  physicalState: varchar("physical_state", { length: 32 }).notNull().default('stored'), // stored|deletion_pending|deleted|missing
+  provider: varchar("provider", { length: 32 }).notNull(), // blob|ipfs
+  storageKey: varchar("storage_key", { length: 1024 }).notNull(),
+  storageUrl: text("storage_url"),
+  sha256: varchar("sha256", { length: 64 }).notNull(),
+  sizeBytes: integer("size_bytes"),
+  contentType: varchar("content_type", { length: 255 }),
+  lastVerifiedAt: timestamp("last_verified_at", { withTimezone: true }),
+  reconciliationNote: text("reconciliation_note"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  artifactVersionUnique: uniqueIndex("hermes_artifact_storage_av_unique").on(t.artifactId, t.version),
+  providerKeyIdx: index("hermes_artifact_storage_provider_key_idx").on(t.provider, t.storageKey),
+  physicalStateIdx: index("hermes_artifact_storage_state_idx").on(t.physicalState),
+}));
+
+export const hermesArtifactEvents = pgTable("hermes_artifact_events", {
+  id: varchar("id", { length: 128 }).primaryKey(),
+  artifactId: varchar("artifact_id", { length: 128 }).notNull(),
+  version: integer("version"),
+  type: varchar("type", { length: 32 }).notNull(), // generated|stored|submitted|approved|rejected|published|unpublished|deleted|replaced|delivered|revoked
+  actorKind: varchar("actor_kind", { length: 16 }).notNull(), // human|api_key|system
+  actorId: varchar("actor_id", { length: 128 }).notNull(),
+  previousState: varchar("previous_state", { length: 32 }),
+  newState: varchar("new_state", { length: 32 }),
+  reason: text("reason"),
+  metadataJson: jsonb("metadata_json"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  artifactCreatedIdx: index("hermes_artifact_events_artifact_idx").on(t.artifactId, t.createdAt),
+}));
+
+export const hermesArtifactDeliveryTokens = pgTable("hermes_artifact_delivery_tokens", {
+  // `jti` del token (no se guarda el token en claro).
+  id: varchar("id", { length: 128 }).primaryKey(),
+  artifactId: varchar("artifact_id", { length: 128 }).notNull(),
+  version: integer("version").notNull(),
+  tenantId: varchar("tenant_id", { length: 128 }).notNull(),
+  issuedByKind: varchar("issued_by_kind", { length: 16 }).notNull(), // api_key|human
+  issuedById: varchar("issued_by_id", { length: 128 }).notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  useCount: integer("use_count").notNull().default(0),
+  lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  artifactIdx: index("hermes_artifact_delivery_tokens_artifact_idx").on(t.artifactId, t.version),
+  tenantIdx: index("hermes_artifact_delivery_tokens_tenant_idx").on(t.tenantId),
+}));
+
+// ════════════════════════════════════════════════════════════════════════════════
+// P0.1 — AUTORIZACIÓN DE TENANT (operadores humanos) y PERTENENCIA A EQUIPO.
+//
+// `hermes_capability_grants` es AGENTE↔AGENTE (grantee_agent_id) y NO representa
+// operadores humanos: no se reutiliza para esta autoridad.
+//
+// Las solicitudes de reasignación reutilizan `nexus_action_requests` (sustrato de
+// aprobaciones ya existente); no se crea una tabla paralela.
+// ════════════════════════════════════════════════════════════════════════════════
+
+export const tenantAuthorizationGrants = pgTable("tenant_authorization_grants", {
+  id: varchar("id", { length: 128 }).primaryKey(),
+  canonicalOrgId: varchar("canonical_org_id", { length: 256 }).notNull(),
+  subjectKind: varchar("subject_kind", { length: 16 }).notNull().default('human'),
+  subjectId: varchar("subject_id", { length: 128 }).notNull(),
+  // SIEMPRE identificadores canónicos (canonicalizados al emitir).
+  capabilities: jsonb("capabilities").$type<string[]>().notNull().default([]),
+  scopeKind: varchar("scope_kind", { length: 16 }).notNull().default('organization'), // organization|project
+  scopeProjectId: integer("scope_project_id"),
+  issuedBy: varchar("issued_by", { length: 128 }).notNull(),
+  issuedAt: timestamp("issued_at", { withTimezone: true }).defaultNow().notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  approvalRequestId: varchar("approval_request_id", { length: 128 }),
+}, (t) => ({
+  orgSubjectIdx: index("tenant_auth_grants_org_subject_idx").on(t.canonicalOrgId, t.subjectId),
+  activeIdx: index("tenant_auth_grants_active_idx").on(t.canonicalOrgId, t.revokedAt),
+}));
+
+export const nexusTeamMemberships = pgTable("nexus_team_memberships", {
+  canonicalOrgId: varchar("canonical_org_id", { length: 256 }).notNull(),
+  teamKey: varchar("team_key", { length: 128 }).notNull(),
+  memberIdentity: varchar("member_identity", { length: 128 }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  pk: primaryKey({ columns: [t.canonicalOrgId, t.teamKey, t.memberIdentity] }),
+  memberIdx: index("nexus_team_memberships_member_idx").on(t.canonicalOrgId, t.memberIdentity),
+}));
+
+// ════════════════════════════════════════════════════════════════════════════════
+// P0.2 — CRM MÍNIMO (Growth OS).
+//
+// Un pipeline por organización (`is_default`). `pipeline_id` ya está presente en
+// oportunidades y etapas para evolucionar a múltiples pipelines sin migración
+// destructiva.
+//
+// `clients` NO está particionado por organización, así que `client_id` en
+// oportunidades queda sin uso verificable en v1 (se rechaza explícitamente).
+// ════════════════════════════════════════════════════════════════════════════════
+
+export const crmPipelines = pgTable("crm_pipelines", {
+  id: varchar("id", { length: 128 }).primaryKey(),
+  organizationId: varchar("organization_id", { length: 256 }).notNull(),
+  name: varchar("name", { length: 128 }).notNull(),
+  isDefault: boolean("is_default").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  defaultIdx: uniqueIndex("crm_pipelines_org_default_unique").on(t.organizationId, t.isDefault),
+}));
+
+export const crmStages = pgTable("crm_stages", {
+  id: varchar("id", { length: 128 }).primaryKey(),
+  pipelineId: varchar("pipeline_id", { length: 128 }).notNull(),
+  key: varchar("key", { length: 64 }).notNull(),
+  name: varchar("name", { length: 128 }).notNull(),
+  position: integer("position").notNull(),
+  kind: varchar("kind", { length: 16 }).notNull().default('open'), // open|won|lost
+  requiresNextAction: boolean("requires_next_action").notNull().default(false),
+}, (t) => ({
+  pipelineKeyUnique: uniqueIndex("crm_stages_pipeline_key_unique").on(t.pipelineId, t.key),
+  kindChk: index("crm_stages_pipeline_position_idx").on(t.pipelineId, t.position),
+}));
+
+export const crmOpportunities = pgTable("crm_opportunities", {
+  id: varchar("id", { length: 128 }).primaryKey(),
+  organizationId: varchar("organization_id", { length: 256 }).notNull(),
+  projectId: integer("project_id").notNull(),
+  pipelineId: varchar("pipeline_id", { length: 128 }).notNull(),
+  stageKey: varchar("stage_key", { length: 64 }).notNull(),
+  leadId: uuid("lead_id"),
+  clientId: text("client_id"),
+  ownerCollaboratorId: varchar("owner_collaborator_id", { length: 128 }).notNull(),
+  title: varchar("title", { length: 256 }).notNull(),
+  // ESTIMACIÓN. Nunca ingresos.
+  estimatedValueUsd: decimal("estimated_value_usd", { precision: 14, scale: 2 }).notNull(),
+  // Único valor que cuenta como ingreso. Solo se escribe al ganar.
+  closedRevenueUsd: decimal("closed_revenue_usd", { precision: 14, scale: 2 }),
+  currency: varchar("currency", { length: 8 }).notNull().default('USD'),
+  source: varchar("source", { length: 32 }).notNull(),
+  utmSource: varchar("utm_source", { length: 128 }),
+  utmMedium: varchar("utm_medium", { length: 128 }),
+  utmCampaign: varchar("utm_campaign", { length: 128 }),
+  nextAction: varchar("next_action", { length: 256 }),
+  nextActionAt: timestamp("next_action_at", { withTimezone: true }),
+  lastContactAt: timestamp("last_contact_at", { withTimezone: true }),
+  closedAt: timestamp("closed_at", { withTimezone: true }),
+  closeReason: varchar("close_reason", { length: 256 }),
+  originLockedAt: timestamp("origin_locked_at", { withTimezone: true }).defaultNow().notNull(),
+  createdBy: varchar("created_by", { length: 128 }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  orgStageIdx: index("crm_opportunities_org_stage_idx").on(t.organizationId, t.stageKey),
+  orgOwnerIdx: index("crm_opportunities_org_owner_idx").on(t.organizationId, t.ownerCollaboratorId),
+  nextActionIdx: index("crm_opportunities_next_action_idx").on(t.nextActionAt),
+}));
+
+export const crmActivities = pgTable("crm_activities", {
+  id: varchar("id", { length: 128 }).primaryKey(),
+  organizationId: varchar("organization_id", { length: 256 }).notNull(),
+  opportunityId: varchar("opportunity_id", { length: 128 }).notNull(),
+  type: varchar("type", { length: 32 }).notNull(), // call|message|email|visit|note|stage_change|assignment
+  authorCollaboratorId: varchar("author_collaborator_id", { length: 128 }).notNull(),
+  content: text("content").notNull(),
+  outcome: varchar("outcome", { length: 256 }),
+  occurredAt: timestamp("occurred_at", { withTimezone: true }).defaultNow().notNull(),
+  metadata: jsonb("metadata"),
+}, (t) => ({
+  opportunityIdx: index("crm_activities_opportunity_idx").on(t.opportunityId, t.occurredAt),
+  orgIdx: index("crm_activities_org_idx").on(t.organizationId),
+}));
+
+// P0.2 — Solicitudes de reasignación con aprobación.
+//
+// NO se reutiliza `nexus_action_requests` para este flujo: su `actor_identity_id`
+// es un entero NOT NULL ligado a colaboradores/Telegram y su productor es un
+// dispatcher de Telegram. La sesión de portal no expone un id humano numérico;
+// forzar uno sería inventar identidad.
+export const crmReassignmentRequests = pgTable("crm_reassignment_requests", {
+  id: varchar("id", { length: 128 }).primaryKey(),
+  organizationId: varchar("organization_id", { length: 256 }).notNull(),
+  opportunityId: varchar("opportunity_id", { length: 128 }).notNull(),
+  ownerFrom: varchar("owner_from", { length: 128 }).notNull(),
+  ownerTo: varchar("owner_to", { length: 128 }).notNull(),
+  requestedBy: varchar("requested_by", { length: 128 }).notNull(),
+  reason: text("reason"),
+  status: varchar("status", { length: 32 }).notNull().default('pending'),
+  decidedBy: varchar("decided_by", { length: 128 }),
+  decidedAt: timestamp("decided_at", { withTimezone: true }),
+  decisionNote: text("decision_note"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  orgStatusIdx: index("crm_reassignment_requests_org_status_idx").on(t.organizationId, t.status),
+  opportunityIdx: index("crm_reassignment_requests_opportunity_idx").on(t.opportunityId),
+}));
+
+// P0.4 — Presupuesto COMPROMETIDO (separado del gasto real).
+//
+// Se mantiene en tabla propia a propósito: si compartiera tabla con el gasto real,
+// un `SUM` descuidado contaminaría `ad_spend_actual` y el CPL. La separación física
+// hace imposible ese error por accidente.
+export const adBudgetCommitments = pgTable("ad_budget_commitments", {
+  id: varchar("id", { length: 128 }).primaryKey(),
+  organizationId: varchar("organization_id", { length: 256 }).notNull(),
+  platform: varchar("platform", { length: 32 }).notNull(), // meta|google|other
+  periodStart: timestamp("period_start", { withTimezone: true }).notNull(),
+  periodEnd: timestamp("period_end", { withTimezone: true }).notNull(),
+  amountUsd: decimal("amount_usd", { precision: 14, scale: 2 }).notNull(),
+  approvedBy: varchar("approved_by", { length: 128 }).notNull(),
+  approvalRequestId: varchar("approval_request_id", { length: 128 }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  orgPeriodIdx: index("ad_budget_commitments_org_period_idx").on(t.organizationId, t.periodStart),
+}));
+
+// P0.4 — Reporting: gasto publicitario COMPROBADO y snapshots reproducibles.
+//
+// `ad_spend_actual` solo suma entradas con evidencia. Sin integración de Ads API:
+// la captura es manual y auditada.
+export const adSpendEntries = pgTable("ad_spend_entries", {
+  id: varchar("id", { length: 128 }).primaryKey(),
+  organizationId: varchar("organization_id", { length: 256 }).notNull(),
+  platform: varchar("platform", { length: 32 }).notNull(), // meta|google|other
+  periodStart: timestamp("period_start", { withTimezone: true }).notNull(),
+  periodEnd: timestamp("period_end", { withTimezone: true }).notNull(),
+  amountUsd: decimal("amount_usd", { precision: 14, scale: 2 }).notNull(),
+  evidenceType: varchar("evidence_type", { length: 32 }).notNull(), // invoice|screenshot|api
+  evidenceRef: varchar("evidence_ref", { length: 512 }).notNull(),
+  enteredBy: varchar("entered_by", { length: 128 }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  orgPeriodIdx: index("ad_spend_entries_org_period_idx").on(t.organizationId, t.periodStart),
+}));
+
+export const reportSnapshots = pgTable("report_snapshots", {
+  id: varchar("id", { length: 128 }).primaryKey(),
+  organizationId: varchar("organization_id", { length: 256 }).notNull(),
+  weekStart: timestamp("week_start", { withTimezone: true }).notNull(),
+  weekEnd: timestamp("week_end", { withTimezone: true }).notNull(),
+  timezone: varchar("timezone", { length: 64 }).notNull(),
+  ruleVersion: varchar("rule_version", { length: 32 }).notNull(),
+  inputsHash: varchar("inputs_hash", { length: 64 }).notNull(),
+  reportJson: jsonb("report_json").notNull(),
+  generatedAt: timestamp("generated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  orgWeekIdx: uniqueIndex("report_snapshots_org_week_unique").on(
+    t.organizationId,
+    t.weekStart,
+    t.inputsHash,
+  ),
+}));
+
 export type NexusPermissionsOverride = Record<string, boolean>;
 
 export type NexusProvisionStatus = 'ACTIVE' | 'PENDING' | 'REJECTED' | 'DISABLED';

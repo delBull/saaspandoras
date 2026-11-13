@@ -36,6 +36,10 @@ import {
   PortalAuthorizationError,
 } from './portal-types';
 import { PortalRole, PORTAL_ROLE_PERMISSIONS } from './permissions';
+import {
+  collaboratorBelongsToOrganization,
+  resolveCollaboratorSessionToken,
+} from './collaborator-session';
 
 const PORTAL_SESSION_COOKIE = 'pandoras_portal_session';
 
@@ -99,6 +103,84 @@ export async function resolvePortalContext(
     }
 
     throw new PortalAuthorizationError('NO_SESSION', 'No portal session found.');
+  }
+
+  // 1.6 MULTIUSUARIO: credencial de COLABORADOR (persona).
+  //     La identidad sale del colaborador; la organización se verifica por
+  //     pertenencia explícita. Si la credencial no es de colaborador, se sigue
+  //     con el flujo de sesión de producto (compatibilidad).
+  try {
+    const collaboratorSession = await resolveCollaboratorSessionToken(sessionToken);
+
+    if (collaboratorSession) {
+      let collaboratorOrg;
+      try {
+        collaboratorOrg = await OrganizationSDK.resolve(requestedOrganizationSlug);
+      } catch {
+        throw new PortalAuthorizationError(
+          'ORGANIZATION_NOT_FOUND',
+          `Organization '${requestedOrganizationSlug}' could not be resolved.`
+        );
+      }
+
+      const belongs = await collaboratorBelongsToOrganization(collaboratorSession, collaboratorOrg.slug);
+      if (!belongs) {
+        throw new PortalAuthorizationError(
+          'ORGANIZATION_ACCESS_DENIED',
+          'El colaborador no pertenece a esa organización.'
+        );
+      }
+
+      const permissions = PORTAL_ROLE_PERMISSIONS[collaboratorSession.role];
+
+      const collaboratorTenant: PortalTenantContext = {
+        actorId: collaboratorSession.actorId,
+        sessionId: `collaborator_session_${collaboratorSession.collaboratorId}`,
+        organizationId: collaboratorOrg.organizationId,
+        organizationSlug: collaboratorOrg.slug,
+        role: collaboratorSession.role,
+        permissions,
+      };
+
+      const isTrialOrg = collaboratorOrg.tenantType === 'TRIAL';
+      let collaboratorTrial = undefined;
+      if (isTrialOrg) {
+        const isExpired = collaboratorOrg.trialEndsAt
+          ? Date.now() >= new Date(collaboratorOrg.trialEndsAt).getTime()
+          : false;
+        const trialStatus = isExpired ? 'PRESERVED' : (collaboratorOrg.trialStatus || 'ACTIVE');
+        collaboratorTrial = {
+          isTrial: true,
+          tier: (collaboratorOrg.trialTier || 'MEDIA_ENABLED') as any,
+          startedAt: collaboratorOrg.trialStartedAt,
+          endsAt: collaboratorOrg.trialEndsAt,
+          status: trialStatus as any,
+          isExpired,
+        };
+      }
+
+      return {
+        tenant: collaboratorTenant,
+        organization: {
+          id: collaboratorOrg.organizationId,
+          slug: collaboratorOrg.slug,
+          name: collaboratorOrg.name,
+          logoUrl: collaboratorOrg.logoUrl ?? null,
+          projectId: collaboratorOrg.projectId,
+          activeProduct: collaboratorOrg.activeProduct?.product ?? null,
+          installedProducts: collaboratorOrg.installedProducts.map((p) => p.product),
+          isSimulationMode: collaboratorOrg.isSimulationMode ?? null,
+        },
+        trial: collaboratorTrial,
+      };
+    }
+  } catch (error) {
+    if (error instanceof PortalAuthorizationError) throw error;
+    // Fail-closed: un fallo al resolver la identidad NO degrada a otra autoridad.
+    throw new PortalAuthorizationError(
+      'INVALID_SESSION',
+      'No se pudo resolver la sesión del portal.'
+    );
   }
 
   // 2. Validate JWT session

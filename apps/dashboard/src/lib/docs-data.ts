@@ -1650,17 +1650,38 @@ Cada asset incluye \`cid\`, \`sha256\`, \`mimeType\`, \`sizeBytes\`, \`approval\
 - \`publicUrl\`: URL pública (\`<base>/<cid>\`) lista para publicar en redes.
 - \`publicUrlUnavailableReason\`: \`TENANT_BASE_URL_NOT_CONFIGURED\` o \`ARTIFACT_NOT_PINNED\`.
 
-## 4. Aprobar / rechazar
+## 4. Aprobar / rechazar (requiere identidad humana)
 
 \`\`\`http
 POST /api/v1/content/assets/:assetId/approval
 \`\`\`
 
-\`\`\`json
-{ "status": "approved", "note": "OK para publicar" }
+**Este endpoint ya no acepta API keys** (responde \`403 HUMAN_SESSION_REQUIRED\`). La aprobación exige una identidad humana autenticada por sesión de portal, distinta del creador, del propietario de la identidad de máquina creadora y del último editor humano. Una identidad de máquina nunca aprueba.
+
+La regla se aplica en el servidor; ocultarla en la UI no es un control.
+
+## 4.b Entrega firmada (proxy)
+
+El contenido gestionado **no** se sirve por URL pública. La entrega es un token de alcance limitado:
+
+\`\`\`http
+POST /api/v1/content/assets/:assetId/delivery-token
 \`\`\`
 
-Queda registrado quién y cuándo. El anclaje on-chain (Knowledge Vault) aún no está habilitado en este endpoint.
+\`\`\`json
+{ "version": 3, "ttlSeconds": 3600 }
+\`\`\`
+
+\`\`\`http
+GET /api/v1/content/assets/:assetId/file?token=<opaco>&v=<version>
+\`\`\`
+
+Invariantes:
+
+- El token es una credencial independiente: **no** es una API key ni hereda sus permisos.
+- Solo entrega la versión **vigente y publicada**.
+- La revocación surte efecto **aunque el token no haya expirado**.
+- Requiere el permiso \`content.token.issue\`.
 
 ## 5. Entrega pública por tenant
 

@@ -48,18 +48,28 @@ async function verifyDb(name: string, url: string) {
 }
 
 async function main() {
-  const localUrl = "postgresql://REMOVED_ROTATE_PASSWORD@localhost:5432/pandoras_local";
-  const stagingUrl = "postgresql://REMOVED_ROTATE_PASSWORD@ep-cool-feather-ambh76vv-pooler.c-5.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require";
-  const mainUrl = "postgresql://REMOVED_ROTATE_PASSWORD@ep-summer-bread-adqdsnx4-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require";
+  // NUNCA hardcodear endpoints ni credenciales: este archivo queda en el repo.
+  // Cada URL se toma del entorno; si falta, se omite la verificación (fail-closed).
+  const localUrl = process.env.VERIFY_DB_LOCAL_URL ?? null;
+  const stagingUrl = process.env.VERIFY_DB_STAGING_URL ?? null;
+  const mainUrl = process.env.VERIFY_DB_MAIN_URL ?? null;
 
-  const localOk = await verifyDb("LOCAL", localUrl);
-  const stagingOk = await verifyDb("STAGING", stagingUrl);
-  const mainOk = await verifyDb("MAIN", mainUrl);
+  const localOk = localUrl ? await verifyDb("LOCAL", localUrl) : null;
+  const stagingOk = stagingUrl ? await verifyDb("STAGING", stagingUrl) : null;
+  const mainOk = mainUrl ? await verifyDb("MAIN", mainUrl) : null;
 
   console.log("\n--- Final Status ---");
-  console.log(`LOCAL:   ${localOk ? 'Synced' : 'OUT OF SYNC'}`);
-  console.log(`STAGING: ${stagingOk ? 'Synced' : 'OUT OF SYNC'}`);
-  console.log(`MAIN:    ${mainOk ? 'Synced' : 'OUT OF SYNC'}`);
+  const label = (value: boolean | null) =>
+    value === null ? 'NOT_CONFIGURED' : value ? 'Synced' : 'OUT OF SYNC';
+
+  console.log(`LOCAL:   ${label(localOk)}`);
+  console.log(`STAGING: ${label(stagingOk)}`);
+  console.log(`MAIN:    ${label(mainOk)}`);
+
+  if (localUrl === null || stagingUrl === null || mainUrl === null) {
+    console.log('\nConfigura VERIFY_DB_LOCAL_URL / VERIFY_DB_STAGING_URL / VERIFY_DB_MAIN_URL.');
+    process.exitCode = 1;
+  }
 }
 
 main().catch(console.error);
