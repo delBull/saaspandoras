@@ -28,13 +28,28 @@ function isNotFoundError(error: unknown): boolean {
 
 export class BlobStorageAdapter implements StorageAdapter {
   readonly provider = 'blob' as const;
+  private readonly token: string | undefined;
+  private readonly storeId: string | undefined;
 
-  constructor(private readonly token: string) {
-    if (!token || token.trim().length === 0) {
+  /**
+   * Dos modos de autenticación, en este orden:
+   *  1. `token` (read-write token del store privado).
+   *  2. OIDC de Vercel + `storeId` (cómo conecta Vercel un store nuevo).
+   *
+   * Sin ninguno de los dos ⇒ StorageNotConfiguredError (fail-closed).
+   */
+  constructor(options: { token?: string | null; storeId?: string | null }) {
+    const token = options.token?.trim() ?? '';
+    const storeId = options.storeId?.trim() ?? '';
+
+    if (!token && !storeId) {
       throw new StorageNotConfiguredError(
-        'Blob storage no está configurado: falta BLOB_READ_WRITE_TOKEN.',
+        'Almacenamiento de contenido no configurado: falta BLOB_CONTENT_READ_WRITE_TOKEN o BLOB_CONTENT_READ_WRITE_TOKEN_STORE_ID.',
       );
     }
+
+    this.token = token.length > 0 ? token : undefined;
+    this.storeId = storeId.length > 0 ? storeId : undefined;
   }
 
   async put(bytes: Uint8Array, options: { key: string; contentType: string }): Promise<StoredObject> {
@@ -44,7 +59,8 @@ export class BlobStorageAdapter implements StorageAdapter {
         access: 'private',
         contentType: options.contentType,
         addRandomSuffix: false,
-        token: this.token,
+        ...(this.token ? { token: this.token } : {}),
+        ...(this.storeId ? { storeId: this.storeId } : {}),
       });
 
       return {
@@ -65,7 +81,11 @@ export class BlobStorageAdapter implements StorageAdapter {
 
   async read(key: string): Promise<ReadResult | null> {
     try {
-      const result = await get(key, { access: 'private', token: this.token });
+      const result = await get(key, {
+        access: 'private',
+        ...(this.token ? { token: this.token } : {}),
+        ...(this.storeId ? { storeId: this.storeId } : {}),
+      });
       if (!result) return null;
       // 304 Not Modified no trae cuerpo: no hay contenido que servir.
       if (result.statusCode !== 200 || !result.stream) return null;
@@ -85,7 +105,10 @@ export class BlobStorageAdapter implements StorageAdapter {
 
   async delete(key: string): Promise<{ deleted: boolean }> {
     try {
-      await del(key, { token: this.token });
+      await del(key, {
+        ...(this.token ? { token: this.token } : {}),
+        ...(this.storeId ? { storeId: this.storeId } : {}),
+      });
       return { deleted: true };
     } catch (error) {
       if (isNotFoundError(error)) return { deleted: false };
@@ -98,7 +121,10 @@ export class BlobStorageAdapter implements StorageAdapter {
 
   async head(key: string): Promise<{ sizeBytes: number; contentType: string } | null> {
     try {
-      const result = await head(key, { token: this.token });
+      const result = await head(key, {
+        ...(this.token ? { token: this.token } : {}),
+        ...(this.storeId ? { storeId: this.storeId } : {}),
+      });
       return { sizeBytes: result.size, contentType: result.contentType };
     } catch (error) {
       if (isNotFoundError(error)) return null;
@@ -115,7 +141,12 @@ export class BlobStorageAdapter implements StorageAdapter {
 
     try {
       do {
-        const page = await list({ prefix, cursor, token: this.token });
+        const page = await list({
+          prefix,
+          cursor,
+          ...(this.token ? { token: this.token } : {}),
+          ...(this.storeId ? { storeId: this.storeId } : {}),
+        });
         for (const blob of page.blobs) {
           results.push({ key: blob.pathname, sizeBytes: typeof blob.size === 'number' ? blob.size : null });
         }

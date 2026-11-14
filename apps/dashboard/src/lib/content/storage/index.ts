@@ -17,9 +17,26 @@ export interface TenantStorageConfig {
   provider?: string | null;
 }
 
-function readBlobToken(): string | null {
-  const token = process.env.BLOB_READ_WRITE_TOKEN;
-  return token && token.trim().length > 0 ? token : null;
+/**
+ * El contenido gestionado (P0.3) usa un store PRIVADO con token propio.
+ *
+ * No se reutiliza `BLOB_READ_WRITE_TOKEN`: ese store es público y lo usan
+ * avatares y adjuntos de deals. Mezclarlos rompería la invariante de P0.3
+ * (entrega solo por proxy firmado) o rompería esas features.
+ *
+ * Sin token propio ⇒ StorageNotConfiguredError (UNSTORED). Nunca se cae al
+ * store público en silencio.
+ */
+function readContentBlobConfig(): { token: string | null; storeId: string | null } {
+  const token = process.env.BLOB_CONTENT_READ_WRITE_TOKEN?.trim() ?? '';
+  const storeId =
+    process.env.BLOB_CONTENT_READ_WRITE_TOKEN_STORE_ID?.trim() ??
+    process.env.BLOB_STORE_ID?.trim() ??
+    '';
+  return {
+    token: token.length > 0 ? token : null,
+    storeId: storeId.length > 0 ? storeId : null,
+  };
 }
 
 /**
@@ -35,13 +52,13 @@ export function resolveStorageAdapter(config: TenantStorageConfig | null): Stora
   }
 
   if (provider === 'blob' || provider === '') {
-    const token = readBlobToken();
-    if (!token) {
+    const { token, storeId } = readContentBlobConfig();
+    if (!token && !storeId) {
       throw new StorageNotConfiguredError(
-        'Blob storage no está configurado: falta BLOB_READ_WRITE_TOKEN.',
+        'Almacenamiento de contenido no configurado: falta BLOB_CONTENT_READ_WRITE_TOKEN o BLOB_CONTENT_READ_WRITE_TOKEN_STORE_ID (store privado).',
       );
     }
-    return new BlobStorageAdapter(token);
+    return new BlobStorageAdapter({ token, storeId });
   }
 
   throw new StorageNotConfiguredError(
