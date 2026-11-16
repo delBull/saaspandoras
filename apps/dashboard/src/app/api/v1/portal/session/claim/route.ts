@@ -26,24 +26,29 @@ export async function GET(req: NextRequest) {
   const credential = url.searchParams.get('credential') ?? '';
   const org = url.searchParams.get('org') ?? '';
 
-  const invalid = NextResponse.redirect(
-    new URL('/portal/login?error=invalid_credential', url.origin),
-    { status: 302 },
-  );
+  // El motivo va en la URL para poder diagnosticar sin acceso a logs.
+  // No revela nada que el portador del token no sepa ya.
+  const invalid = (
+    reason: 'missing_params' | 'no_session' | 'no_membership' | 'rotation_failed',
+  ) =>
+    NextResponse.redirect(
+      new URL(`/portal/login?error=invalid_credential&reason=${reason}`, url.origin),
+      { status: 302 },
+    );
 
-  if (!credential || !org) return invalid;
+  if (!credential || !org) return invalid('missing_params');
 
   const session = await resolveCollaboratorSession(credential);
-  if (!session) return invalid;
+  if (!session) return invalid('no_session');
 
   const belongs = await collaboratorBelongsToOrganization(session, org);
-  if (!belongs) return invalid;
+  if (!belongs) return invalid('no_membership');
 
   // El enlace es de UN SOLO USO: se invalida la credencial antes de abrir sesión.
   // Si la rotación falla, no se abre sesión (fail-closed): el enlace no queda
   // reutilizable a medias.
   const rotated = await rotateInvitationCredential(session.collaboratorId);
-  if (!rotated) return invalid;
+  if (!rotated) return invalid('rotation_failed');
 
   let minted;
   try {
