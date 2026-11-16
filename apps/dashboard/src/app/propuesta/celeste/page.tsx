@@ -103,7 +103,9 @@ export default function CelesteProposalPage() {
         dangerouslySetInnerHTML={{
           __html: `
             @media print {
-              @page { size: letter; margin: 0.5in 0.55in; }
+              /* Margen 0 en @page: los márgenes los pone el CONTENEDOR, así se
+                 respetan aunque el diálogo de impresión esté en "Márgenes: Ninguno". */
+              @page { size: letter; margin: 0; }
               html, body {
                 background: #ffffff !important;
                 color: #111111 !important;
@@ -114,8 +116,12 @@ export default function CelesteProposalPage() {
               body * { visibility: hidden; }
               #proposal-print, #proposal-print * { visibility: visible; }
               #proposal-print {
-                position: absolute; left: 0; top: 0; width: 100%;
-                padding: 0 !important; max-width: none !important;
+                position: absolute; left: 0; top: 0;
+                width: 100%;
+                box-sizing: border-box;
+                /* Márgenes reales de papel (0.55in vertical / 0.65in lateral) */
+                padding: 0.55in 0.65in !important;
+                max-width: none !important;
                 background: #ffffff !important;
               }
               #proposal-print * {
