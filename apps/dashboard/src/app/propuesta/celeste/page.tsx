@@ -105,7 +105,9 @@ export default function CelesteProposalPage() {
             @media print {
               /* Margen 0 en @page: los márgenes los pone el CONTENEDOR, así se
                  respetan aunque el diálogo de impresión esté en "Márgenes: Ninguno". */
-              @page { size: letter; margin: 0; }
+              /* Vertical: @page es el ÚNICO mecanismo que se repite en cada página.
+                 Horizontal: lo aporta el padding del contenedor (se repite solo). */
+              @page { size: letter; margin: 0.55in 0; }
               html, body {
                 background: #ffffff !important;
                 color: #111111 !important;
@@ -119,8 +121,8 @@ export default function CelesteProposalPage() {
                 position: absolute; left: 0; top: 0;
                 width: 100%;
                 box-sizing: border-box;
-                /* Márgenes reales de papel (0.55in vertical / 0.65in lateral) */
-                padding: 0.55in 0.65in !important;
+                /* Solo lateral: el vertical lo pone @page en cada página */
+                padding: 0 0.65in !important;
                 max-width: none !important;
                 background: #ffffff !important;
               }
