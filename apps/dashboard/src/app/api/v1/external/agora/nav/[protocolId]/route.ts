@@ -3,22 +3,58 @@ import { validateExternalKey } from "@/lib/api-auth/validate-external-key";
 import { db } from "@saasfly/db-core";
 import { protocolNavs, pandoraBuybackPools, projects } from "@saasfly/db-core";
 import { eq, desc, and } from "@saasfly/db-core";
+import {
+  extractX402Payment,
+  buildX402Challenge,
+  verifyX402Payment,
+  attachX402Receipt,
+  type X402PaymentConfig,
+} from "@/lib/payments/x402";
+import type { Hash } from "@/lib/payments/onchain-verify";
 
 export const dynamic = "force-dynamic";
+
+const AGORA_NAV_X402_CONFIG: X402PaymentConfig = {
+  priceUsd: 0.01,
+  description: "Agora RWA Real-time NAV and Buyback Pool Data",
+};
 
 /**
  * GET /api/v1/external/agora/nav/[protocolId]
  *
  * Returns NAV history and buyback pool for a protocol.
- * Requires API key with: read:agora
+ * Auth:
+ *   - Human / Partner integrators: API key with 'read:agora'
+ *   - Autonomous AI Agents: x402 Micropayment Protocol (0.01 USDC on Base / Base Sepolia)
  */
 export async function GET(
   req: NextRequest,
   context: { params: Promise<{ protocolId: string }> }
 ) {
-  const { client, error } = await validateExternalKey(req, "read:agora");
-  if (error || !client) {
-    return NextResponse.json({ error: error ?? "Unauthorized" }, { status: 401 });
+  let isX402Settled = false;
+  let x402Receipt: { txHash: Hash; amountUsd: number } | null = null;
+
+  // 1. Check traditional API key (free tier / subscription for registered clients)
+  const { client } = await validateExternalKey(req, "read:agora");
+
+  if (!client) {
+    // 2. x402 protocol machine payments for AI agents
+    const paymentProof = extractX402Payment(req);
+    if (!paymentProof) {
+      // Return HTTP 402 with machine-readable terms
+      return buildX402Challenge(AGORA_NAV_X402_CONFIG);
+    }
+
+    const verification = await verifyX402Payment(req, AGORA_NAV_X402_CONFIG);
+    if (!verification.ok) {
+      return verification.challenge;
+    }
+
+    isX402Settled = true;
+    x402Receipt = {
+      txHash: verification.txHash,
+      amountUsd: verification.amountUsd,
+    };
   }
 
   const { protocolId: protocolIdStr } = await context.params;
@@ -67,7 +103,7 @@ export async function GET(
     // Safe — length checked above
     const latest = navHistory[0]!;
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       protocol_id: protocolId,
       current: {
@@ -92,6 +128,12 @@ export async function GET(
       })),
       generated_at: new Date().toISOString(),
     });
+
+    if (isX402Settled && x402Receipt) {
+      return attachX402Receipt(response, x402Receipt);
+    }
+
+    return response;
   } catch (e: any) {
     console.error("[external:agora:nav] Error:", e);
     return NextResponse.json({ error: "Internal Server Error", detail: e.message }, { status: 500 });

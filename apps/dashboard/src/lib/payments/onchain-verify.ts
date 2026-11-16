@@ -1,6 +1,8 @@
 import { createPublicClient, decodeEventLog, erc20Abi, formatUnits, http, type Chain, type Hash } from 'viem';
 import { base, baseSepolia } from 'viem/chains';
 
+export type { Hash };
+
 /**
  * Verificación on-chain de un pago USDC a la treasury.
  *
@@ -19,6 +21,7 @@ export const USDC_SEPOLIA = '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238';
 
 export const SUPPORTED_CHAINS: Record<number, { chain: Chain; usdc: `0x${string}` }> = {
   8453: { chain: base, usdc: USDC_BASE },
+  84532: { chain: baseSepolia, usdc: USDC_SEPOLIA },
   11155111: { chain: baseSepolia, usdc: USDC_SEPOLIA },
 };
 
@@ -34,6 +37,8 @@ export async function verifyOnChainUsdcTransfer(params: {
   txHash: Hash;
   chainId: number;
   treasury: string;
+  /** Maximum block age to prevent historical replay attacks (e.g. 300 blocks ~10 min). */
+  maxBlockAge?: number;
   /** Etiqueta para logs (deposit | subscription). */
   context?: string;
 }): Promise<OnChainVerification> {
@@ -50,6 +55,14 @@ export async function verifyOnChainUsdcTransfer(params: {
     const receipt = await publicClient.getTransactionReceipt({ hash: params.txHash });
     if (!receipt) return { ok: false, reason: 'TRANSACTION_NOT_FOUND' };
     if (receipt.status === 'reverted') return { ok: false, reason: 'TRANSACTION_REVERTED' };
+
+    // Anti-replay defense: enforce block freshness to reject ancient transactions
+    if (params.maxBlockAge && params.maxBlockAge > 0) {
+      const currentBlock = await publicClient.getBlockNumber();
+      if (currentBlock - receipt.blockNumber > BigInt(params.maxBlockAge)) {
+        return { ok: false, reason: 'TRANSACTION_EXPIRED_TOO_OLD' };
+      }
+    }
 
     const matches: Array<{ from: string; value: bigint }> = [];
 

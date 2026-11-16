@@ -4,9 +4,9 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, DollarSign, Link as LinkIcon, Users, ArrowUpRight, Copy, CreditCard, Trash2 } from "lucide-react";
+import { Loader2, DollarSign, Link as LinkIcon, Users, ArrowUpRight, Copy, CreditCard, Trash2, Wallet, ShieldCheck, RefreshCw, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
-import { getPaymentsDashboardStats, deletePaymentLink, updateTransactionStatus } from "@/actions/payments";
+import { getPaymentsDashboardStats, deletePaymentLink, updateTransactionStatus, checkPayingWalletAction } from "@/actions/payments";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 import { CreatePaymentLinkModal } from "./CreatePaymentLinkModal";
@@ -17,6 +17,16 @@ export function PaymentsDashboard() {
     const [links, setLinks] = useState<any[]>([]);
     const [pendingTransactions, setPendingTransactions] = useState<any[]>([]);
     const [currentPage, setCurrentPage] = useState(1);
+    const [payingWallet, setPayingWallet] = useState<{
+        configured: boolean;
+        addressMasked: string | null;
+        network: string;
+        usdcBalance: number;
+        ethBalance: number;
+        status: "healthy" | "low" | "critical" | "not_configured";
+        message: string;
+    } | null>(null);
+    const [checkingWallet, setCheckingWallet] = useState(false);
 
     const LINKS_PER_PAGE = 10;
     const totalPages = Math.max(1, Math.ceil(links.length / LINKS_PER_PAGE));
@@ -24,7 +34,22 @@ export function PaymentsDashboard() {
 
     useEffect(() => {
         loadData();
+        loadPayingWallet();
     }, []);
+
+    const loadPayingWallet = async () => {
+        setCheckingWallet(true);
+        try {
+            const res = await checkPayingWalletAction();
+            if (res.success && res.status) {
+                setPayingWallet(res.status);
+            }
+        } catch {
+            // Non-fatal
+        } finally {
+            setCheckingWallet(false);
+        }
+    };
 
     const loadData = async () => {
         setLoading(true);
@@ -165,6 +190,114 @@ export function PaymentsDashboard() {
                     </CardContent>
                 </Card>
             )}
+
+            {/* x402 AI Machine Payments Gateway Section */}
+            <Card className="bg-gradient-to-br from-zinc-900 via-zinc-900/90 to-blue-950/30 border-blue-500/20 shadow-lg">
+                <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 gap-2">
+                    <div>
+                        <div className="flex items-center gap-2">
+                            <CardTitle className="text-lg text-white flex items-center gap-2">
+                                <span className="p-1 rounded bg-blue-500/20 text-blue-400">⚡</span>
+                                Agentes IA & x402 Protocol
+                            </CardTitle>
+                            <Badge variant="outline" className="border-blue-500/40 text-blue-400 text-[10px] font-mono">
+                                Coinbase x Cloudflare Spec
+                            </Badge>
+                        </div>
+                        <p className="text-xs text-zinc-400 mt-1">
+                            Monetización de APIs de máquina-a-máquina vía HTTP 402 en Base L2 (USDC).
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs">
+                        <span className="text-zinc-500">Discovery:</span>
+                        <a href="/.well-known/x402.json" target="_blank" rel="noreferrer" className="text-blue-400 hover:underline flex items-center gap-1 font-mono text-[11px] bg-blue-950/40 px-2 py-1 rounded border border-blue-900/40">
+                            .well-known/x402.json <ArrowUpRight className="h-3 w-3" />
+                        </a>
+                        <a href="/llms.txt" target="_blank" rel="noreferrer" className="text-emerald-400 hover:underline flex items-center gap-1 font-mono text-[11px] bg-emerald-950/40 px-2 py-1 rounded border border-emerald-900/40">
+                            llms.txt <ArrowUpRight className="h-3 w-3" />
+                        </a>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div className="p-3 rounded-lg bg-zinc-950/60 border border-zinc-800">
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs font-medium text-zinc-400">Agora NAV Feed</span>
+                                <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px] font-mono">$0.01 USDC</Badge>
+                            </div>
+                            <p className="font-mono text-[11px] text-zinc-300 mt-1 truncate">/api/v1/external/agora/nav/:id</p>
+                            <p className="text-[10px] text-zinc-500 mt-1">Histórico NAV, tesorería y buyback pool</p>
+                        </div>
+
+                        <div className="p-3 rounded-lg bg-zinc-950/60 border border-zinc-800">
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs font-medium text-zinc-400">Protocol Details</span>
+                                <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px] font-mono">$0.005 USDC</Badge>
+                            </div>
+                            <p className="font-mono text-[11px] text-zinc-300 mt-1 truncate">/api/v1/external/protocols/:slug</p>
+                            <p className="text-[10px] text-zinc-500 mt-1">Metadata RWA, fondeo y precios</p>
+                        </div>
+
+                        <div className="p-3 rounded-lg bg-zinc-950/60 border border-zinc-800">
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs font-medium text-zinc-400">Governance DAO</span>
+                                <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px] font-mono">$0.002 USDC</Badge>
+                            </div>
+                            <p className="font-mono text-[11px] text-zinc-300 mt-1 truncate">/api/v1/external/governance/proposals</p>
+                            <p className="text-[10px] text-zinc-500 mt-1">Propuestas y quórum en cadena</p>
+                        </div>
+                    </div>
+
+                    {/* Paying Wallet Operational Status */}
+                    <div className="mt-4 pt-4 border-t border-zinc-800/80">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-zinc-950/80 p-3.5 rounded-lg border border-zinc-800">
+                            <div className="flex items-start gap-3">
+                                <div className="p-2 rounded-md bg-blue-500/10 text-blue-400 mt-0.5">
+                                    <Wallet className="h-4 w-4" />
+                                </div>
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs font-semibold text-white">Wallet Pagadora de Hermes (Búsquedas & Oráculos)</span>
+                                        {payingWallet?.status === 'healthy' && (
+                                            <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[10px]">🟢 Saldo Óptimo</Badge>
+                                        )}
+                                        {payingWallet?.status === 'low' && (
+                                            <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-[10px]">🟡 Saldo Bajo</Badge>
+                                        )}
+                                        {payingWallet?.status === 'critical' && (
+                                            <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-[10px] animate-pulse">🔴 Crítico — Recargar</Badge>
+                                        )}
+                                        {payingWallet?.status === 'not_configured' && (
+                                            <Badge className="bg-zinc-800 text-zinc-400 border-zinc-700 text-[10px]">Configurar en Vercel Secrets</Badge>
+                                        )}
+                                    </div>
+                                    <p className="text-[11px] text-zinc-400 mt-0.5">
+                                        {payingWallet?.configured ? (
+                                            <>Dirección: <span className="font-mono text-zinc-300">{payingWallet.addressMasked}</span> • Saldo: <span className="font-bold text-white">${payingWallet.usdcBalance.toFixed(2)} USDC</span> • Gas: <span className="font-mono text-zinc-300">{payingWallet.ethBalance.toFixed(5)} ETH</span> en Base</>
+                                        ) : (
+                                            "Define HERMES_AGENT_SIGNER_KEY en Vercel Secrets para habilitar compras de datos con x402."
+                                        )}
+                                    </p>
+                                    <p className="text-[10px] text-zinc-500 mt-0.5 flex items-center gap-1">
+                                        <ShieldCheck className="h-3 w-3 text-emerald-500 inline" />
+                                        <span>Clave privada 100% aislada. Si el saldo cae por debajo de $0.10 USDC, se alerta automáticamente a Discord (pandoras-alerts) y al email admin.</span>
+                                    </p>
+                                </div>
+                            </div>
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-xs border-zinc-700 text-zinc-300 hover:text-white"
+                                onClick={loadPayingWallet}
+                                disabled={checkingWallet}
+                            >
+                                <RefreshCw className={`h-3 w-3 mr-1 ${checkingWallet ? 'animate-spin' : ''}`} />
+                                Verificar en Base
+                            </Button>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
 
             {/* Recent Links Table */}
             <Card className="bg-zinc-900 border-zinc-800">

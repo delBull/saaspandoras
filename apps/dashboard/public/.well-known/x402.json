@@ -1,0 +1,52 @@
+{
+  "x402Version": "2.0",
+  "name": "Pandoras Growth OS & Hermes Cognitive Mesh",
+  "description": "Internet-native machine payment protocol for Pandoras RWA liquidity, NAV feeds, and Hermes AI APIs.",
+  "facilitator": "https://x402.org/facilitator",
+  "settlement": {
+    "networks": ["eip155:8453", "eip155:84532"],
+    "currency": "USDC",
+    "schemes": ["exact"]
+  },
+  "endpoints": [
+    {
+      "path": "/api/v1/external/agora/nav/{protocolId}",
+      "method": "GET",
+      "price": "$0.01",
+      "amountUsd": 0.01,
+      "description": "Real-time RWA Net Asset Value (NAV) history, treasury balance, and buyback pool allocation."
+    },
+    {
+      "path": "/api/v1/external/protocols/{slug}",
+      "method": "GET",
+      "price": "$0.005",
+      "amountUsd": 0.005,
+      "description": "Full protocol specifications, funding progress, token price, and legal vault metadata."
+    },
+    {
+      "path": "/api/v1/external/governance/proposals",
+      "method": "GET",
+      "price": "$0.002",
+      "amountUsd": 0.002,
+      "description": "Live DAO governance proposals, quorum analytics, and on-chain voting ledger."
+    },
+    {
+      "path": "/api/v1/hermes/ask",
+      "method": "POST",
+      "price": "$0.05",
+      "amountUsd": 0.05,
+      "description": "Hermes Cognitive Core inference & RWA due diligence expert analysis."
+    },
+    {
+      "path": "/api/v1/mcp",
+      "method": "POST",
+      "price": "per-tool ($0.002 - $0.05)",
+      "amountUsd": 0.01,
+      "description": "Model Context Protocol (MCP) server endpoint for Cursor, Windsurf, Claude Desktop, and AgentKit."
+    }
+  ],
+  "contact": {
+    "documentation": "https://dash.pandoras.finance/docs",
+    "governance": "https://pandoras.finance"
+  }
+}

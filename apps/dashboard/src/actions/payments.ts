@@ -259,3 +259,22 @@ export async function updateTransactionStatus(transactionId: string, status: 'co
         return { success: false, error: "Update failed" };
     }
 }
+
+/**
+ * Server action to inspect Hermes Paying Wallet on-chain balance (Super Admin / Admin only).
+ */
+export async function checkPayingWalletAction() {
+    try {
+        const __hdrs = await import("next/headers").then(m => m.headers());
+        const auth = await getNexusAuthContext(await __hdrs);
+        if (!auth.isAuthenticated || (auth.role !== 'SUPER_ADMIN' && auth.role !== 'ADMIN')) {
+            throw new Error("Unauthorized");
+        }
+
+        const { getPayingWalletStatus } = await import("@/lib/payments/paying-wallet");
+        const status = await getPayingWalletStatus();
+        return { success: true, status };
+    } catch (e: any) {
+        return { success: false, error: e?.message ?? "Failed to check paying wallet" };
+    }
+}

@@ -488,4 +488,5 @@ export type { NexusResourceScope } from './nexus/nexus-authorization';
 export * from './admin/platform-audit-ledger.service';
 export { ShadowVerificationEngine } from './knowledge/shadow-verifier';
 export * from './payments/PaymentCoreService';
+export * from './payments/HermesX402Client';
 export * from './provisioning/ProvisioningEngine';
