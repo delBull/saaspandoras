@@ -95,27 +95,44 @@ const assumptions = [
 
 export default function CelesteProposalPage() {
   return (
-    <main className="proposal mx-auto max-w-4xl px-6 py-12 print:max-w-none print:px-0 print:py-0">
-      {/* El tema del portal es oscuro: al imprimir forzamos papel blanco y tinta
-          negra, o el PDF saldría en blanco sobre blanco. */}
-      <style>{`
-        @media print {
-          html, body { background: #ffffff !important; }
-          .proposal, .proposal * {
-            color: #111111 !important;
-            background: transparent !important;
-            border-color: #d4d4d8 !important;
-          }
-          .proposal { padding: 0 !important; max-width: none !important; }
-          .proposal h1, .proposal h2, .proposal h3 { color: #000000 !important; }
-          .proposal table { border-color: #d4d4d8 !important; }
-          .proposal thead { background: #f4f4f5 !important; }
-          .proposal a { text-decoration: none !important; }
-          .proposal section { break-inside: avoid; page-break-inside: avoid; }
-          .proposal h2, .proposal h3 { break-after: avoid; page-break-after: avoid; }
-        }
-        @page { margin: 18mm 16mm; }
-      `}</style>
+    <main id="proposal-print" className="mx-auto max-w-4xl px-6 py-12 print:max-w-none print:px-0 print:py-0">
+      {/* ======================================================= */}
+      {/* ESTILOS DE IMPRESIÓN — patrón probado en admin/report    */}
+      {/* ======================================================= */}
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+            @media print {
+              @page { size: letter; margin: 0.5in 0.55in; }
+              html, body {
+                background: #ffffff !important;
+                color: #111111 !important;
+                font-family: Arial, Helvetica, sans-serif !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+              }
+              body * { visibility: hidden; }
+              #proposal-print, #proposal-print * { visibility: visible; }
+              #proposal-print {
+                position: absolute; left: 0; top: 0; width: 100%;
+                padding: 0 !important; max-width: none !important;
+                background: #ffffff !important;
+              }
+              #proposal-print * {
+                color: #111111 !important; background: transparent !important;
+                border-color: #d4d4d8 !important; box-shadow: none !important;
+              }
+              #proposal-print h1, #proposal-print h2, #proposal-print h3 { color: #000000 !important; }
+              #proposal-print .brand-mark { background: #7c3aed !important; color: #ffffff !important; }
+              #proposal-print .brand-rule { background: #7c3aed !important; }
+              #proposal-print thead { background: #f4f4f5 !important; }
+              #proposal-print section { break-inside: avoid; page-break-inside: avoid; }
+              #proposal-print h2, #proposal-print h3 { break-after: avoid; page-break-after: avoid; }
+              #proposal-print a { text-decoration: none !important; }
+            }
+          `,
+        }}
+      />
 
       {/* Barra de acciones — oculta al imprimir */}
       <div className="mb-8 flex flex-wrap items-center justify-between gap-3 print:hidden">
@@ -132,6 +149,20 @@ export default function CelesteProposalPage() {
       </div>
 
       <header className="mb-12 border-b border-white/10 pb-8">
+        <div className="mb-8 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span className="brand-mark flex h-9 w-9 items-center justify-center rounded-lg bg-purple-500 text-sm font-black text-white" aria-hidden="true">P</span>
+            <div>
+              <p className="text-sm font-bold uppercase tracking-[0.3em] text-white">Pandora&apos;s</p>
+              <p className="text-[10px] uppercase tracking-[0.18em] text-zinc-500">Growth OS · Hermes · Media Co</p>
+            </div>
+          </div>
+          <div className="text-right text-[10px] uppercase tracking-[0.15em] text-zinc-500">
+            <p>Propuesta</p>
+            <p className="text-zinc-400">v2.1</p>
+          </div>
+        </div>
+        <div className="brand-rule mb-6 h-px w-full bg-purple-500/40" />
         <p className="text-xs font-semibold uppercase tracking-[0.25em] text-purple-400">
           Propuesta comercial
         </p>
@@ -321,8 +352,19 @@ export default function CelesteProposalPage() {
       </section>
 
       <footer className="mt-16 border-t border-white/10 pt-6 text-xs text-zinc-500">
-        <p>Pandora&apos;s · Propuesta de operación gestionada · Documento confidencial.</p>
-        <p className="mt-1">Importes en USD. Vigencia de la propuesta: 30 días desde su envío.</p>
+        <div className="brand-rule mb-4 h-px w-full bg-purple-500/40" />
+        <div className="flex flex-wrap items-start justify-between gap-4 text-xs text-zinc-500">
+          <div>
+            <p className="font-semibold uppercase tracking-[0.2em] text-zinc-300">Pandora&apos;s</p>
+            <p className="mt-1">Operación gestionada de captación</p>
+            <p>Documento confidencial · Uso exclusivo de Celeste</p>
+          </div>
+          <div className="text-right">
+            <p>Importes en USD</p>
+            <p>Vigencia: 30 días desde su envío</p>
+            <p className="mt-1 text-zinc-600">dash.pandoras.finance/propuesta/celeste</p>
+          </div>
+        </div>
       </footer>
     </main>
   );
