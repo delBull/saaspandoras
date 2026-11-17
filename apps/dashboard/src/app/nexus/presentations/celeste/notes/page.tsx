@@ -37,7 +37,26 @@ export default async function CelesteNotesPage() {
     <div className="mx-auto max-w-4xl space-y-10 px-6 py-10 text-zinc-200">
       <header className="space-y-2 border-b border-white/10 pb-6">
         <p className="text-[11px] uppercase tracking-[0.2em] text-amber-300">Documento interno · no presentar</p>
-        <h1 className="text-3xl font-bold text-white">Celeste — Guía de presentación</h1>
+              {/* Acceso rápido al tenant de demostración — SOLO uso interno */}
+      <div className="mb-8 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 print:hidden">
+        <p className="text-xs font-semibold uppercase tracking-wider text-emerald-300">
+          Demo en vivo · abrir después de la diapositiva 4 (Cómo trabajamos)
+        </p>
+        <a
+          href="https://dash.pandoras.finance/portal/demo-celeste/crm"
+          target="_blank"
+          rel="noreferrer"
+          className="mt-2 inline-block rounded-lg bg-emerald-500/20 px-3 py-2 text-sm font-mono text-emerald-100 underline decoration-emerald-400/40"
+        >
+          /portal/demo-celeste/crm
+        </a>
+        <p className="mt-2 text-xs text-emerald-200/70">
+          Datos de ejemplo: 24 leads · 12 oportunidades · 19 actividades · USD 150,000 cerrados.
+          Si al abrirlo ves 403, tu identidad no coincide con el grant sembrado
+          (<code className="font-mono">wallet_0x00c9f7ee</code>): avísame y lo ajusto.
+        </p>
+      </div>
+<h1 className="text-3xl font-bold text-white">Celeste — Guía de presentación</h1>
         <p className="text-sm text-zinc-400">
           Deck: <code className="text-zinc-300">/pitch/celeste</code> · Deal Room: <code className="text-zinc-300">PDR-63C2E9</code> ·
           Reunión: Sovereign Meet (botón «Presentar» abre el deck)
