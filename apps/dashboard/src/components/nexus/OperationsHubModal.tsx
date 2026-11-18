@@ -36,6 +36,7 @@ import { OperationsKnowledgeTab } from './OperationsKnowledgeTab';
 import { OperationsCollaboratorsTab } from './OperationsCollaboratorsTab';
 import TasksPanel from './TasksPanel';
 import { CheckCircle, Building2 } from 'lucide-react';
+import { getNexusClientHeaders } from '@/lib/nexus/client-auth-headers';
 
 export type Tab = 'REGISTER' | 'CLIENTS' | 'DATAROOM' | 'WORK_ENGINE' | 'ACTIVITY' | 'KNOWLEDGE' | 'COHORTS' | 'APPROVALS';
 
@@ -320,21 +321,7 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
     saveTasks([taskItem, ...tasks]);
   };
 
-  const getWalletHeaders = (): Record<string, string> => {
-    if (typeof window === 'undefined') return {};
-    const wallet =
-      localStorage.getItem('snarai_wallet') ||
-      localStorage.getItem('user_wallet') ||
-      localStorage.getItem('walletAddress') ||
-      localStorage.getItem('thirdweb:active-account') ||
-      (window as any).ethereum?.selectedAddress ||
-      '';
-    if (!wallet) return {};
-    return {
-      'x-wallet-address': wallet,
-      'x-thirdweb-address': wallet,
-    };
-  };
+  const getWalletHeaders = (): Record<string, string> => getNexusClientHeaders();
 
   const assignTask = async (message: string, requester = 'Nexus Ops') => {
     setNotifying(true);
@@ -715,7 +702,7 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
 
           {/* TAB: CLIENTS & CRM */}
           {tab === 'CLIENTS' && (
-            <OperationsClientsTab />
+            <OperationsClientsTab onOpenApprovals={() => setTab('APPROVALS')} />
           )}
 
           {/* TAB: DATA ROOM */}

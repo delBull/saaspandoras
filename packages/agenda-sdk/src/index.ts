@@ -16,7 +16,13 @@ export interface CreateMeetingRequest {
     
     /** Scheduled start time, defaults to now if omitted */
     scheduledFor?: string | Date;
-    
+
+    /**
+     * Optional meeting length in minutes. When provided, `endsAt` is persisted.
+     * Additive field: callers that omit it keep the previous behaviour (endsAt null).
+     */
+    durationMinutes?: number | null;
+
     /** Array of participant internal IDs or identities to invite */
     collaborators?: (string | number)[];
 }
@@ -36,11 +42,16 @@ export class AgendaCore {
      * Creates a new Meeting and its participants in the database.
      */
     static async createMeeting(req: CreateMeetingRequest) {
-        const { canonicalOrgId, hostCollaboratorId, presentationId, scheduledFor, collaborators } = req;
+        const { canonicalOrgId, hostCollaboratorId, presentationId, scheduledFor, durationMinutes, collaborators } = req;
         
         if (!canonicalOrgId) {
             throw new Error("[AgendaCore] canonicalOrgId is required to maintain tenant boundaries.");
         }
+
+        const startsAt = scheduledFor ? new Date(scheduledFor) : new Date();
+        const endsAt = typeof durationMinutes === "number" && Number.isFinite(durationMinutes) && durationMinutes > 0
+            ? new Date(startsAt.getTime() + durationMinutes * 60_000)
+            : null;
 
         // 1. Jitsi Room Generation (Sovereign URL)
         const jitsiRoomId = `nexus-${canonicalOrgId}-${crypto.randomBytes(8).toString('hex')}`;
@@ -54,7 +65,8 @@ export class AgendaCore {
             jitsiRoomId,
             presentationId: presentationId || null,
             status: 'scheduled',
-            startsAt: scheduledFor ? new Date(scheduledFor) : new Date(),
+            startsAt,
+            endsAt,
         });
 
         // 3. Assign Collaborators (Participants)
@@ -76,7 +88,8 @@ export class AgendaCore {
             id: meetingId,
             jitsiRoomId,
             presentationId,
-            scheduledFor: scheduledFor ? new Date(scheduledFor).toISOString() : new Date().toISOString()
+            scheduledFor: startsAt.toISOString(),
+            endsAt: endsAt ? endsAt.toISOString() : null,
         };
     }
 }

@@ -1,81 +1,201 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Building2, Briefcase, Handshake, Users, ArrowUpRight, FolderGit2, CheckCircle2, ChevronRight, BarChart } from 'lucide-react';
+import { Building2, Briefcase, Handshake, ArrowUpRight, FolderGit2, CheckCircle2, Calendar, Video, AlertTriangle, Loader2, Check, Copy } from 'lucide-react';
+import { getNexusClientHeaders } from '@/lib/nexus/client-auth-headers';
 
 interface Deal {
   id: string;
+  roomId: string;
+  publicId: string | null;
   organization: string;
   project: string;
   stage: 'PROSPECT' | 'NEGOTIATION' | 'DUE_DILIGENCE' | 'CLOSED' | 'LOST';
   value: string;
   owner: string;
   nextAction: string;
+  rawData?: unknown;
 }
 
-const MOCK_DEALS: Deal[] = [
-  {
-    id: 'DEAL-1042',
-    organization: 'Acme Corp',
-    project: 'Tokenización Real Estate Miami',
-    stage: 'NEGOTIATION',
-    value: '$500,000',
-    owner: 'Matute',
-    nextAction: 'Revisar términos del Smart Contract'
-  },
-  {
-    id: 'DEAL-1043',
-    organization: 'Zenith Holdings',
-    project: 'S\'Narai Expansion',
-    stage: 'DUE_DILIGENCE',
-    value: '$1.2M',
-    owner: 'Marco',
-    nextAction: 'Esperando validación KYC institucional'
-  },
-  {
-    id: 'DEAL-1044',
-    organization: 'Fintech Latam SA',
-    project: 'Integración RWA Yield',
-    stage: 'CLOSED',
-    value: '$250,000',
-    owner: 'Hermes',
-    nextAction: 'Desplegar dashboard de inversor'
-  }
-];
+interface ScheduleResult {
+  meetingId: string;
+  scheduledFor: string;
+  endsAt: string | null;
+  participants: number;
+  dealRoomUrl: string;
+  agendaUrl: string;
+  audit: 'RECORDED' | 'FAILED';
+}
 
-export function OperationsClientsTab() {
+interface OperationsClientsTabProps {
+  /** Switches the Operations Hub to the approvals tab (in-app navigation). */
+  onOpenApprovals?: () => void;
+}
+
+/** Default start: next hour, in the local `datetime-local` format. */
+function defaultStart(): string {
+  const d = new Date(Date.now() + 60 * 60 * 1000);
+  d.setMinutes(0, 0, 0);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+const ERROR_MESSAGES: Record<string, string> = {
+  UNAUTHORIZED: 'Tu sesión expiró. Vuelve a iniciar sesión en Nexus.',
+  MISSING_CALENDAR_MANAGE: 'Tu identidad no tiene la capability calendar.manage.',
+  DEAL_NOT_FOUND: 'Esta Deal Room ya no existe.',
+  DEAL_ACCESS_DENIED: 'No tienes acceso a esta Deal Room.',
+  HOST_COLLABORATOR_UNRESOLVED: 'Tu usuario no está vinculado a un colaborador de Nexus; no se puede asignar host.',
+  INVALID_SCHEDULED_FOR: 'La fecha no es válida.',
+  SCHEDULED_FOR_IN_PAST: 'La fecha ya pasó.',
+  INVALID_DURATION: 'La duración debe estar entre 15 y 240 minutos.',
+  INVALID_PRESENTATION_ID: 'El identificador del deck no es válido.',
+  MEETING_CREATION_FAILED: 'No se pudo crear la reunión en el servidor.',
+};
+
+export function OperationsClientsTab({ onOpenApprovals }: OperationsClientsTabProps) {
   const [deals, setDeals] = useState<Deal[]>([]);
   const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  // Scheduling state
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [scheduledFor, setScheduledFor] = useState(defaultStart);
+  const [durationMinutes, setDurationMinutes] = useState(30);
+  const [presentationId, setPresentationId] = useState('');
+  const [isScheduling, setIsScheduling] = useState(false);
+  const [scheduleError, setScheduleError] = useState<string | null>(null);
+  const [scheduleResult, setScheduleResult] = useState<ScheduleResult | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const fetchDeals = async () => {
+      setLoadError(null);
       try {
-        const res = await fetch('/api/nexus/deals?scope=all');
+        const res = await fetch('/api/nexus/deals?scope=all', {
+          headers: getNexusClientHeaders(),
+          credentials: 'include',
+          cache: 'no-store',
+        });
+        if (!res.ok) {
+          setLoadError(res.status === 401 ? 'Sesión de Nexus no válida.' : 'No se pudieron cargar los deals.');
+          setDeals([]);
+          return;
+        }
         const data = await res.json();
-        if (data.rooms) {
-          // Map backend rooms to Deal interface
+        if (Array.isArray(data.rooms)) {
           const mappedDeals: Deal[] = data.rooms.map((r: any) => ({
             id: r.publicId || r.id,
+            roomId: r.id,
+            publicId: r.publicId ?? null,
             organization: r.company || r.counterparty || 'Desconocida',
             project: r.title || r.kind || 'Proyecto Sin Nombre',
             stage: r.status === 'SIGNED' ? 'CLOSED' : 'NEGOTIATION',
             value: 'N/A',
             owner: r.createdByEmail || 'Nexus',
             nextAction: 'Revisar expediente',
-            rawData: r
+            rawData: r,
           }));
           setDeals(mappedDeals);
         }
       } catch (err) {
         console.error('Error fetching deals', err);
+        setLoadError('Error de red al cargar los deals.');
       } finally {
         setIsLoading(false);
       }
     };
     fetchDeals();
   }, []);
+
+  const resetScheduleForm = () => {
+    setScheduleOpen(false);
+    setScheduleResult(null);
+    setScheduleError(null);
+    setScheduledFor(defaultStart());
+    setDurationMinutes(30);
+    setPresentationId('');
+    setCopied(false);
+  };
+
+  const selectDeal = (deal: Deal) => {
+    setSelectedDeal(deal);
+    resetScheduleForm();
+  };
+
+  const handleSchedule = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!selectedDeal) return;
+
+    setIsScheduling(true);
+    setScheduleError(null);
+    setScheduleResult(null);
+
+    try {
+      const startsAt = new Date(scheduledFor);
+      if (Number.isNaN(startsAt.getTime())) {
+        setScheduleError('La fecha no es válida.');
+        return;
+      }
+
+      const res = await fetch(`/api/nexus/deals/${encodeURIComponent(selectedDeal.roomId)}/schedule`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getNexusClientHeaders(),
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          scheduledFor: startsAt.toISOString(),
+          durationMinutes,
+          ...(presentationId.trim() ? { presentationId: presentationId.trim() } : {}),
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setScheduleError(ERROR_MESSAGES[data.code] ?? data.error ?? 'No se pudo agendar la presentación.');
+        return;
+      }
+
+      setScheduleResult({
+        meetingId: data.meetingId,
+        scheduledFor: data.scheduledFor,
+        endsAt: data.endsAt ?? null,
+        participants: data.participants ?? 0,
+        dealRoomUrl: data.dealRoomUrl,
+        agendaUrl: data.agendaUrl,
+        audit: data.audit ?? 'FAILED',
+      });
+    } catch (err) {
+      console.error('Schedule error', err);
+      setScheduleError('Error de red al agendar.');
+    } finally {
+      setIsScheduling(false);
+    }
+  };
+
+  const copyMeetingId = async (meetingId: string) => {
+    try {
+      await navigator.clipboard.writeText(meetingId);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setCopied(false);
+    }
+  };
+
+  const formattedResultRange = useMemo(() => {
+    if (!scheduleResult) return '';
+    const start = new Date(scheduleResult.scheduledFor);
+    const end = scheduleResult.endsAt ? new Date(scheduleResult.endsAt) : null;
+    const fmt = (d: Date) => d.toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' });
+    return end ? `${fmt(start)} → ${fmt(end)}` : fmt(start);
+  }, [scheduleResult]);
 
   const getStageStyles = (stage: Deal['stage']) => {
     switch (stage) {
@@ -104,11 +224,23 @@ export function OperationsClientsTab() {
           <div className="px-3 py-1.5 rounded-lg bg-black/40 border border-white/10 text-zinc-400 text-xs font-mono">
             {isLoading ? 'Cargando...' : `${deals.length} Active Deals`}
           </div>
-          <button className="px-3 py-1.5 rounded-lg border border-sky-500/30 bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 text-[11px] font-mono transition-colors">
+          <Link
+            href="/nexus/rooms"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-3 py-1.5 rounded-lg border border-sky-500/30 bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 text-[11px] font-mono transition-colors"
+          >
             + NEW DEAL
-          </button>
+          </Link>
         </div>
       </div>
+
+      {loadError && (
+        <div className="flex items-start gap-2 p-3 rounded-lg border border-rose-500/30 bg-rose-500/10 text-rose-300 text-xs">
+          <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+          <span>{loadError}</span>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column: Deal List */}
@@ -120,7 +252,7 @@ export function OperationsClientsTab() {
             {deals.map(deal => (
               <div 
                 key={deal.id}
-                onClick={() => setSelectedDeal(deal)}
+                onClick={() => selectDeal(deal)}
                 className={`p-3 rounded-xl border cursor-pointer transition-all ${selectedDeal?.id === deal.id ? 'border-sky-500/40 bg-sky-950/20' : 'border-white/5 bg-[#0C0C10] hover:border-white/20'}`}
               >
                 <div className="flex justify-between items-start mb-2">
@@ -133,6 +265,11 @@ export function OperationsClientsTab() {
                 <p className="text-[11px] text-zinc-400 mt-0.5 truncate">{deal.project}</p>
               </div>
             ))}
+            {!isLoading && deals.length === 0 && !loadError && (
+              <p className="text-[11px] text-zinc-500 font-mono p-3 border border-white/5 rounded-xl bg-[#0C0C10]">
+                Sin deals visibles para tu identidad.
+              </p>
+            )}
           </div>
         </div>
 
@@ -179,36 +316,63 @@ export function OperationsClientsTab() {
                       <span className="text-white text-right w-1/2">{selectedDeal.nextAction}</span>
                     </p>
                     <p className="flex justify-between text-zinc-400">
-                      <span>Último Contacto:</span>
-                      <span className="text-white">Reciente</span>
+                      <span>Deal Room:</span>
+                      <span className="text-white font-mono">{selectedDeal.publicId ?? 'Sin sala pública'}</span>
                     </p>
                   </div>
-                  <button className="w-full mt-2 px-3 py-1.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[10px] font-mono transition-colors">
-                    Actualizar Deal
-                  </button>
                 </div>
 
                 {/* Quick Actions */}
                 <div className="space-y-2">
-                  <button className="w-full p-3 flex items-center justify-between rounded-xl border border-white/5 bg-black/40 hover:bg-white/5 hover:border-white/10 transition-colors group">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setScheduleOpen((open) => !open);
+                      setScheduleResult(null);
+                      setScheduleError(null);
+                    }}
+                    className="w-full p-3 flex items-center justify-between rounded-xl border border-sky-500/30 bg-sky-500/10 hover:bg-sky-500/20 transition-colors group"
+                  >
                     <div className="flex items-center gap-3">
-                      <div className="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-400">
-                        <FolderGit2 className="w-4 h-4" />
+                      <div className="p-1.5 rounded-lg bg-sky-500/15 text-sky-300">
+                        <Calendar className="w-4 h-4" />
                       </div>
-                      <span className="text-xs text-zinc-300">Abrir Data Room del Deal</span>
+                      <span className="text-xs text-sky-100">Agendar presentación</span>
                     </div>
-                    <ArrowUpRight className="w-4 h-4 text-zinc-600 group-hover:text-indigo-400 transition-colors" />
+                    <ArrowUpRight className="w-4 h-4 text-sky-400/70 group-hover:text-sky-200 transition-colors" />
                   </button>
-                  <button className="w-full p-3 flex items-center justify-between rounded-xl border border-white/5 bg-black/40 hover:bg-white/5 hover:border-white/10 transition-colors group">
-                    <div className="flex items-center gap-3">
-                      <div className="p-1.5 rounded-lg bg-purple-500/10 text-purple-400">
-                        <BarChart className="w-4 h-4" />
+
+                  {selectedDeal.publicId ? (
+                    <Link
+                      href={`/deal/${selectedDeal.publicId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full p-3 flex items-center justify-between rounded-xl border border-white/5 bg-black/40 hover:bg-white/5 hover:border-white/10 transition-colors group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-400">
+                          <FolderGit2 className="w-4 h-4" />
+                        </div>
+                        <span className="text-xs text-zinc-300">Abrir Data Room del Deal</span>
                       </div>
-                      <span className="text-xs text-zinc-300">Consultar Hermes Intelligence</span>
+                      <ArrowUpRight className="w-4 h-4 text-zinc-600 group-hover:text-indigo-400 transition-colors" />
+                    </Link>
+                  ) : (
+                    <div className="w-full p-3 flex items-center justify-between rounded-xl border border-white/5 bg-black/20 opacity-60">
+                      <div className="flex items-center gap-3">
+                        <div className="p-1.5 rounded-lg bg-zinc-500/10 text-zinc-500">
+                          <FolderGit2 className="w-4 h-4" />
+                        </div>
+                        <span className="text-xs text-zinc-500">Data Room no disponible (sin publicId)</span>
+                      </div>
                     </div>
-                    <ArrowUpRight className="w-4 h-4 text-zinc-600 group-hover:text-purple-400 transition-colors" />
-                  </button>
-                  <button className="w-full p-3 flex items-center justify-between rounded-xl border border-white/5 bg-black/40 hover:bg-white/5 hover:border-white/10 transition-colors group">
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => onOpenApprovals?.()}
+                    className="w-full p-3 flex items-center justify-between rounded-xl border border-white/5 bg-black/40 hover:bg-white/5 hover:border-white/10 transition-colors group"
+                  >
                     <div className="flex items-center gap-3">
                       <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400">
                         <CheckCircle2 className="w-4 h-4" />
@@ -219,6 +383,140 @@ export function OperationsClientsTab() {
                   </button>
                 </div>
               </div>
+
+              {/* Schedule Panel */}
+              {(scheduleOpen || scheduleResult) && (
+                <div className="border-t border-white/10 p-5 bg-black/30">
+                  {scheduleResult ? (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-emerald-400" />
+                        <h4 className="text-xs font-mono uppercase text-emerald-300">Presentación agendada</h4>
+                      </div>
+                      <div className="space-y-1 text-xs text-zinc-300">
+                        <p><span className="text-zinc-500">Cuándo:</span> {formattedResultRange}</p>
+                        <p><span className="text-zinc-500">Participantes invitados:</span> {scheduleResult.participants}</p>
+                        <p className="flex items-center gap-2">
+                          <span className="text-zinc-500">Meeting ID:</span>
+                          <code className="font-mono text-[11px] text-zinc-400">{scheduleResult.meetingId}</code>
+                          <button
+                            type="button"
+                            onClick={() => copyMeetingId(scheduleResult.meetingId)}
+                            className="text-zinc-500 hover:text-zinc-300 transition-colors"
+                            title="Copiar Meeting ID"
+                          >
+                            {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                          </button>
+                        </p>
+                      </div>
+
+                      {scheduleResult.audit === 'FAILED' && (
+                        <p className="flex items-start gap-2 text-[11px] text-amber-300">
+                          <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                          La reunión se creó pero el registro de auditoría falló. Repórtalo antes de continuar.
+                        </p>
+                      )}
+
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        <Link
+                          href={scheduleResult.dealRoomUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3 py-1.5 rounded-lg border border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-200 text-[11px] font-mono"
+                        >
+                          Abrir Deal Room
+                        </Link>
+                        <Link
+                          href={scheduleResult.agendaUrl}
+                          className="px-3 py-1.5 rounded-lg border border-sky-500/30 bg-sky-500/10 hover:bg-sky-500/20 text-sky-200 text-[11px] font-mono flex items-center gap-1.5"
+                        >
+                          <Video className="w-3.5 h-3.5" />
+                          Ir a la Agenda
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={resetScheduleForm}
+                          className="px-3 py-1.5 rounded-lg border border-white/10 text-zinc-400 hover:text-white text-[11px] font-mono"
+                        >
+                          Cerrar
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <form onSubmit={handleSchedule} className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-xs font-mono uppercase text-zinc-400 flex items-center gap-1.5">
+                          <Calendar className="w-3.5 h-3.5 text-sky-400" />
+                          Nueva presentación para {selectedDeal.organization}
+                        </h4>
+                        <button
+                          type="button"
+                          onClick={resetScheduleForm}
+                          className="text-[11px] font-mono text-zinc-500 hover:text-zinc-300"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <label className="text-[11px] font-mono text-zinc-500 space-y-1">
+                          <span>Inicio</span>
+                          <input
+                            type="datetime-local"
+                            value={scheduledFor}
+                            onChange={(e) => setScheduledFor(e.target.value)}
+                            required
+                            className="w-full rounded-lg bg-black/50 border border-white/10 px-2 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-sky-500/50"
+                          />
+                        </label>
+                        <label className="text-[11px] font-mono text-zinc-500 space-y-1">
+                          <span>Duración (min)</span>
+                          <select
+                            value={durationMinutes}
+                            onChange={(e) => setDurationMinutes(Number(e.target.value))}
+                            className="w-full rounded-lg bg-black/50 border border-white/10 px-2 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-sky-500/50"
+                          >
+                            {[15, 30, 45, 60, 90, 120].map((minutes) => (
+                              <option key={minutes} value={minutes}>{minutes}</option>
+                            ))}
+                          </select>
+                        </label>
+                        <label className="text-[11px] font-mono text-zinc-500 space-y-1">
+                          <span>Deck (opcional)</span>
+                          <input
+                            type="text"
+                            value={presentationId}
+                            onChange={(e) => setPresentationId(e.target.value)}
+                            placeholder="institutional-os"
+                            className="w-full rounded-lg bg-black/50 border border-white/10 px-2 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-sky-500/50"
+                          />
+                        </label>
+                      </div>
+
+                      {scheduleError && (
+                        <p className="flex items-start gap-2 text-[11px] text-rose-300">
+                          <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                          {scheduleError}
+                        </p>
+                      )}
+
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-[10px] text-zinc-500 font-mono">
+                          Se invitará a los firmantes registrados del Deal Room.
+                        </p>
+                        <button
+                          type="submit"
+                          disabled={isScheduling}
+                          className="px-3 py-1.5 rounded-lg border border-sky-500/30 bg-sky-500/15 hover:bg-sky-500/25 disabled:opacity-50 text-sky-200 text-[11px] font-mono flex items-center gap-1.5"
+                        >
+                          {isScheduling ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Calendar className="w-3.5 h-3.5" />}
+                          {isScheduling ? 'Agendando...' : 'Crear reunión'}
+                        </button>
+                      </div>
+                    </form>
+                  )}
+                </div>
+              )}
             </motion.div>
           ) : (
             <div className="h-full flex flex-col items-center justify-center border border-white/5 border-dashed rounded-xl p-8 text-center bg-black/20">
@@ -227,7 +525,7 @@ export function OperationsClientsTab() {
               </div>
               <h3 className="text-sm font-semibold text-zinc-300">Selecciona un Deal</h3>
               <p className="text-xs text-zinc-500 mt-2 max-w-sm">
-                Haz clic en una organización de la lista a la izquierda para visualizar el estado, tareas y documentos en su Deal Room.
+                Haz clic en una organización de la lista a la izquierda para visualizar el estado, agendar la presentación y abrir su Deal Room.
               </p>
             </div>
           )}
