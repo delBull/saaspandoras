@@ -6,6 +6,8 @@ import { Building2, Briefcase, Handshake, Users, ArrowUpRight, FolderGit2, Check
 
 interface Deal {
   id: string;
+  /** publicId del Deal Room. Si no existe, el botón "Abrir Data Room" NO se muestra. */
+  publicId?: string | null;
   organization: string;
   project: string;
   stage: 'PROSPECT' | 'NEGOTIATION' | 'DUE_DILIGENCE' | 'CLOSED' | 'LOST';
@@ -58,6 +60,9 @@ export function OperationsClientsTab() {
           // Map backend rooms to Deal interface
           const mappedDeals: Deal[] = data.rooms.map((r: any) => ({
             id: r.publicId || r.id,
+            publicId:
+              r.publicId ??
+              (typeof r.id === 'string' && r.id.startsWith('PDR-') ? r.id : null),
             organization: r.company || r.counterparty || 'Desconocida',
             project: r.title || r.kind || 'Proyecto Sin Nombre',
             stage: r.status === 'SIGNED' ? 'CLOSED' : 'NEGOTIATION',
@@ -183,40 +188,10 @@ export function OperationsClientsTab() {
                       <span className="text-white">Reciente</span>
                     </p>
                   </div>
-                  <button className="w-full mt-2 px-3 py-1.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[10px] font-mono transition-colors">
-                    Actualizar Deal
-                  </button>
                 </div>
 
                 {/* Quick Actions */}
                 <div className="space-y-2">
-                  <button className="w-full p-3 flex items-center justify-between rounded-xl border border-white/5 bg-black/40 hover:bg-white/5 hover:border-white/10 transition-colors group">
-                    <div className="flex items-center gap-3">
-                      <div className="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-400">
-                        <FolderGit2 className="w-4 h-4" />
-                      </div>
-                      <span className="text-xs text-zinc-300">Abrir Data Room del Deal</span>
-                    </div>
-                    <ArrowUpRight className="w-4 h-4 text-zinc-600 group-hover:text-indigo-400 transition-colors" />
-                  </button>
-                  <button className="w-full p-3 flex items-center justify-between rounded-xl border border-white/5 bg-black/40 hover:bg-white/5 hover:border-white/10 transition-colors group">
-                    <div className="flex items-center gap-3">
-                      <div className="p-1.5 rounded-lg bg-purple-500/10 text-purple-400">
-                        <BarChart className="w-4 h-4" />
-                      </div>
-                      <span className="text-xs text-zinc-300">Consultar Hermes Intelligence</span>
-                    </div>
-                    <ArrowUpRight className="w-4 h-4 text-zinc-600 group-hover:text-purple-400 transition-colors" />
-                  </button>
-                  <button className="w-full p-3 flex items-center justify-between rounded-xl border border-white/5 bg-black/40 hover:bg-white/5 hover:border-white/10 transition-colors group">
-                    <div className="flex items-center gap-3">
-                      <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400">
-                        <CheckCircle2 className="w-4 h-4" />
-                      </div>
-                      <span className="text-xs text-zinc-300">Ver Aprobaciones Pendientes</span>
-                    </div>
-                    <ArrowUpRight className="w-4 h-4 text-zinc-600 group-hover:text-emerald-400 transition-colors" />
-                  </button>
                 </div>
               </div>
             </motion.div>
