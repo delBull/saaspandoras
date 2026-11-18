@@ -1,6 +1,9 @@
 import { redirect } from 'next/navigation';
 import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
-import { PortalAuthorizationError } from '@saasfly/shared';
+// ⚠️ La clase debe venir del MISMO módulo que la lanza (resolver local):
+// hay copias duplicadas en shared y en '@/lib/portal/portal-types' y
+// `instanceof` falla entre copias, enviando NO_SESSION a /portal/error.
+import { PortalAuthorizationError } from '@/lib/portal/portal-types';
 
 interface OnboardingLayoutProps {
   children: React.ReactNode;

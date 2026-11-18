@@ -9,6 +9,7 @@ import { eq } from "@saasfly/db-core";
 import CheckoutClient from './CheckoutClient';
 import { matchPhase, getRawPhases, type Phase } from '@saasfly/shared';
 import { resolveProjectSlug } from '@saasfly/shared';
+import { chainWithOwnRpc } from "@/lib/web3/rpc-chains";
 
 export default async function CheckoutHubPage({
     params
@@ -36,12 +37,12 @@ export default async function CheckoutHubPage({
     if (resolvedContract && resolvedContract !== "0x0000000000000000000000000000000000000000") {
         try {
             const thirdweb = await import("thirdweb");
-            const { defineChain } = await import("thirdweb/chains");
+            
             const { client: twClient } = await import("@saasfly/shared");
 
             const contract = thirdweb.getContract({
                 client: twClient,
-                chain: defineChain(Number(project.chainId ?? 137)),
+                chain: chainWithOwnRpc(Number(project.chainId ?? 8453)),
                 address: resolvedContract as `0x${string}`
             });
 

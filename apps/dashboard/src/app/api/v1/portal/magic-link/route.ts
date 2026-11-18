@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+import crypto from 'crypto';
 import { db } from '@saasfly/db';
 import { projects, installedProducts, users, accessRequests, marketingLeads } from '@saasfly/db/schema';
 import { eq, desc, or, sql } from "@saasfly/db-core";
-import { generatePortalToken } from '@saasfly/shared';
+import { generatePortalToken, normalizeProductKey } from '@saasfly/shared';
 import { sendEmail } from '@/lib/email/client';
 
 const MAGIC_LINK_EMAIL_DAILY_LIMIT = 3;
@@ -146,19 +147,32 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const isApproved = Boolean(
-      project ||
-      user || 
-      (approvedRequest && (approvedRequest.status === 'approved' || approvedRequest.status === 'granted'))
-    );
+    // Sólo entra quien tiene TENANT (proyecto resuelto) o una solicitud aprobada
+    // CON proyecto. Tener una fila en `users` NO basta: antes eso auto-creaba un
+    // workspace bootstrap y mandaba al onboarding a quien sólo quería el Portal.
+    const isApproved =
+      Boolean(project) ||
+      Boolean(
+        approvedRequest &&
+          (approvedRequest.status === 'approved' || approvedRequest.status === 'granted')
+      );
 
-    if (!isApproved) {
-      return NextResponse.json({ 
-        error: 'Si tu acceso ya fue aprobado, recibirás tu enlace en tu correo. Si no lo recibes, contacta a soporte en la página principal.' 
-      }, { status: 403 });
+    if (!isApproved || !project) {
+      return NextResponse.json(
+        {
+          error:
+            'Este correo no está registrado como cliente (tenant). Si tu empresa ya fue dada de alta, pide que verifiquen el email de contacto. Si eres fundador/operador, entra con tu wallet.',
+          code: 'NOT_PROVISIONED',
+          alternative: '/auth',
+        },
+        { status: 403 }
+      );
     }
 
     let token = '';
+    // Producto con el que se firma la sesión: el del producto instalado real
+    // (normalizado), nunca el literal 'hermes' en minúsculas.
+    let portalProduct = 'HERMES';
     let activeProjectId = project?.id;
     let activeProjectSlug = project?.slug;
 
@@ -168,13 +182,16 @@ export async function POST(req: NextRequest) {
         const products = await db.select().from(installedProducts).where(eq(installedProducts.projectId, activeProjectId)).limit(1);
         if (products && products.length > 0) {
           installedId = products[0]!.id;
+          portalProduct = normalizeProductKey(products[0]!.product) ?? 'HERMES';
         } else {
           const [newProduct] = await db.insert(installedProducts).values({
             projectId: activeProjectId,
             product: 'HERMES',
             productFamily: 'GROWTH_OS',
             plan: 'sandbox',
-            status: 'trial',
+            // Un tenant live no puede tener el producto en 'trial' (el portal lo
+            // bloquea por boundary trial↔producción).
+            status: project.status === 'live' ? 'active' : 'trial',
             config: { email: cleanEmail, companyName: project.title },
             runtimeManifest: { context: { adminEmail: cleanEmail } },
           }).returning({ id: installedProducts.id });
@@ -182,28 +199,25 @@ export async function POST(req: NextRequest) {
         }
       }
       
-      token = generatePortalToken(installedId, activeProjectId, 'hermes');
-    } else {
-      // Auto-provision their bootstrap workspace
-      const { ensureInitialWorkspace } = await import('@/lib/platform/workspace-bootstrap');
-      const bootstrap = await ensureInitialWorkspace(cleanEmail);
-      token = bootstrap.portalToken;
-      activeProjectId = bootstrap.projectId;
-      activeProjectSlug = bootstrap.projectSlug;
-      project = {
-        id: bootstrap.projectId,
-        slug: bootstrap.projectSlug,
-        title: 'Workspace',
-        status: 'draft',
-      } as any;
+      token = generatePortalToken(installedId, activeProjectId, portalProduct.toLowerCase());
     }
+    // Sin proyecto no se genera token: el flujo devuelve 403 NOT_PROVISIONED arriba.
+    // (Antes se auto-creaba un workspace bootstrap y se mandaba al onboarding a
+    // cualquiera que sólo quería entrar al Portal.)
 
     // 4. Generate Magic Link with proper return destination
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://dash.pandoras.finance';
-    const destination = safeReturn || (activeProjectSlug ? `/onboarding/${activeProjectSlug}` : '/portal');
+    // Un tenant existente va DIRECTO al Portal (nunca al onboarding, que crearía
+    // otra organización y chocaría con el slug). El onboarding queda sólo para
+    // el workspace bootstrap recién creado.
+    const destination = safeReturn || `/portal/${activeProjectSlug}/media`;
     const magicLink = `${baseUrl}/portal/login?token=${token}&return=${encodeURIComponent(destination)}`;
 
-    console.info(`[MagicLink API] Magic Link generated for ${cleanEmail} (Target: ${destination}): ${magicLink}`);
+    // Nunca se loguea el enlace: contiene un token válido de un solo uso.
+    const linkFingerprint = crypto.createHash('sha256').update(token).digest('hex').slice(0, 12);
+    console.info(
+      `[MagicLink API] Magic link generado para ${cleanEmail} (destino: ${destination}, fingerprint: ${linkFingerprint})`
+    );
 
     // Send the magic link via Resend with mobile-optimized email design
     try {
@@ -291,7 +305,18 @@ export async function POST(req: NextRequest) {
       });
       console.info(`[MagicLink API] Email dispatched for ${cleanEmail}:`, emailRes);
     } catch (e) {
-      console.warn('[MagicLink API] Email dispatch failed:', e);
+      console.error('[MagicLink API] Email dispatch failed:', e);
+      // Fail-closed: sin email no hay acceso. El enlace se genera pero no se entrega.
+      if (process.env.NODE_ENV !== 'development') {
+        return NextResponse.json(
+          {
+            error:
+              'No se pudo enviar el correo de acceso. El servicio de email no está disponible; contacta a soporte.',
+            code: 'EMAIL_DELIVERY_FAILED',
+          },
+          { status: 502 }
+        );
+      }
     }
 
 

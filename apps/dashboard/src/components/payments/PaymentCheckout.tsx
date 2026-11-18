@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Loader2, CheckCircle, Wallet, Landmark } from "lucide-react";
 import { client } from "@saasfly/shared/thirdweb-client";
-import { base, sepolia } from "thirdweb/chains";
+import { baseMainnet as base, baseSepoliaTestnet as sepolia } from "@/lib/web3/rpc-chains";
 import { getContract } from "thirdweb";
 import { transfer } from "thirdweb/extensions/erc20";
 import { TransactionButton, useActiveAccount } from "thirdweb/react";

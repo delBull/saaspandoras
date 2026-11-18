@@ -1,0 +1,33 @@
+{
+  "$schema": "https://modelcontextprotocol.io/schema/server.json",
+  "name": "pandoras-growth-os",
+  "title": "Pandoras RWA & Hermes AI MCP Server",
+  "description": "Autonomous access to Real World Asset (RWA) NAV telemetry, fractional projects, and Hermes AI expert analysis.",
+  "transport": {
+    "type": "http",
+    "url": "https://dash.pandoras.finance/api/v1/mcp"
+  },
+  "monetization": {
+    "protocol": "x402",
+    "network": "base",
+    "currency": "USDC",
+    "payTo": "0xc52BB6f53C91ff7134e7508B102E5A22BA415954"
+  },
+  "tools": [
+    {
+      "name": "pandoras_get_nav",
+      "description": "Real-time Net Asset Value and buyback pool capacity ($0.01 USDC)",
+      "priceUsd": 0.01
+    },
+    {
+      "name": "pandoras_get_protocol_details",
+      "description": "RWA project valuation, funding progress, and token price ($0.005 USDC)",
+      "priceUsd": 0.005
+    },
+    {
+      "name": "pandoras_get_governance_proposals",
+      "description": "Live DAO proposals, voting power, and quorum analytics ($0.002 USDC)",
+      "priceUsd": 0.002
+    }
+  ]
+}

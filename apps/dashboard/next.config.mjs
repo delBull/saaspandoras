@@ -43,7 +43,10 @@ const nextConfig = {
   experimental: {
     // Enable Next.js 15 memory optimizations during production build
     webpackMemoryOptimizations: true,
-    webpackBuildWorker: true,
+    // DESACTIVADO: el build worker spawnea un segundo proceso que hereda
+    // NODE_OPTIONS; en una máquina de 8 GB eso duplica el pico y el contenedor
+    // mata el build con SIGKILL (OOM del contenedor, no del heap).
+    webpackBuildWorker: false,
     // Fix Next.js 14+ barrel file imports for client and icon libraries
     optimizePackageImports: [
       'lucide-react',
@@ -165,6 +168,14 @@ const nextConfig = {
           { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
 
           // Content Security Policy — allows Thirdweb, IPFS, Vercel, and app domains.
+          //
+          // NOTA (deuda declarada): `script-src` conserva 'unsafe-inline' y
+          // 'unsafe-eval' porque Next.js inyecta scripts inline y las librerías de
+          // wallet (thirdweb / WalletConnect) usan eval. Quitarlos requiere migrar a
+          // CSP con nonce por request (middleware → header `x-nonce`), lo que no se
+          // hace a ciegas: un error ahí deja la app en blanco. Impacto actual
+          // acotado: ya no existe ninguna credencial de sesión legible por JS
+          // (cookie httpOnly), así que un XSS no puede exfiltrar el token.
           {
             key: 'Content-Security-Policy',
             value: [
@@ -174,10 +185,20 @@ const nextConfig = {
               "font-src 'self' https://fonts.gstatic.com",
               "img-src 'self' data: blob: https: ipfs:",
               "connect-src 'self' https: wss: data:",
-              "frame-src 'self' https://*.thirdweb.com https://*.pandoras.finance https://verify.walletconnect.org https://*.walletconnect.org https://8x8.vc https://*.8x8.vc https://meet.jit.si",
+              // Proveedores de rampa (tarjeta) que thirdweb embebe durante el checkout.
+              // Sin esto el modal del proveedor se abre y el navegador lo bloquea
+              // (síntoma: "aparece y se quita" / queda cargando).
+              "frame-src 'self' https://*.thirdweb.com https://*.pandoras.finance https://verify.walletconnect.org https://*.walletconnect.org https://8x8.vc https://*.8x8.vc https://meet.jit.si https://*.transak.com https://*.moonpay.com https://pay.coinbase.com https://ramp.stripe.com https://*.mercuryo.io https://*.banxa.com https://*.onramper.com",
               "object-src 'none'",
               "base-uri 'self'",
               "form-action 'self'",
+              // NO se declara `frame-ancestors` aquí a propósito: el middleware aplica
+              // `X-Frame-Options: DENY` en todas las rutas EXCEPTO /pay y /schedule
+              // (widgets embebibles). Un frame-ancestors global (aunque sea 'self')
+              // anularía esa excepción en navegadores modernos y rompería los embeds.
+              "worker-src 'self' blob:",
+              "manifest-src 'self'",
+              "upgrade-insecure-requests",
             ].join('; '),
           },
         ],

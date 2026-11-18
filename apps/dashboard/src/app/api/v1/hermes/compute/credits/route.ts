@@ -1,54 +1,80 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { TenantCreditLedgerService } from '@saasfly/hermes-core';
-import { db } from '@saasfly/db';
-import { projects } from '@saasfly/db/schema';
-import { eq, or } from "@saasfly/db-core";
+import { TenantAuthorityService, TenantCreditLedgerService } from '@saasfly/hermes-core';
+import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
+import { validateAdminSession } from '@/lib/admin-auth';
+
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 /**
- * 💳 HERMES TENANT CREDITS & LEDGER API
- * GET /api/v1/hermes/compute/credits
+ * GET /api/v1/hermes/compute/credits?tenantId=<slug|uuid>
  *
- * Exposes the durable tenant GPU compute ledger (available & reserved balances).
- * Enforces strict isolation between sandbox and production balances (F6-12).
+ * Saldo del tenant.
+ *
+ * SEGURIDAD (hotfix 2026-11-12):
+ *  - Antes leía `authorization` pero NO lo validaba: cualquiera consultaba el
+ *    saldo de cualquier tenant y además CREABA la fila de créditos.
+ *  - Ahora: admin de plataforma o sesión de portal del propio tenant (mismatch = 403).
+ *  - Lectura sin efectos secundarios (`getCredits`), nunca `getOrCreateCredits`.
+ *  - El `markupPercentage` (margen interno) solo se devuelve al admin.
  */
 export async function GET(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('authorization');
-    const tenantParam = request.nextUrl.searchParams.get('tenantId') || request.nextUrl.searchParams.get('organizationId');
+    const tenantParam =
+      request.nextUrl.searchParams.get('tenantId') ||
+      request.nextUrl.searchParams.get('organizationId') ||
+      '';
+    if (!tenantParam.trim()) {
+      return NextResponse.json({ ok: false, error: 'tenantId es requerido' }, { status: 400 });
+    }
 
-    // Production Truth: no snarai default — tenant must be explicitly provided.
-    let canonicalTenant = (tenantParam || '').replace(/^org_/, '');
+    const canonical = await TenantAuthorityService.resolveCanonicalTenant(tenantParam);
+    if (!canonical) {
+      return NextResponse.json({ ok: false, error: 'Tenant no encontrado' }, { status: 404 });
+    }
+    const projectSlug = canonical.projectSlug;
 
-    if (db && tenantParam && canonicalTenant) {
-      const [proj] = await db
-        .select({ slug: projects.slug })
-        .from(projects)
-        .where(or(eq(projects.slug, tenantParam), eq(projects.organizationId, tenantParam)))
-        .limit(1);
-      if (proj?.slug) {
-        canonicalTenant = proj.slug;
+    const admin = await validateAdminSession(request.headers);
+    let isAdminRequest = Boolean(admin.session);
+
+    if (!isAdminRequest) {
+      try {
+        const ctx = await resolvePortalContext(projectSlug);
+        if (ctx.organization.slug.toLowerCase() !== projectSlug.toLowerCase()) {
+          return NextResponse.json({ ok: false, error: 'Tenant no autorizado' }, { status: 403 });
+        }
+      } catch (error: any) {
+        const status = error?.code === 'NO_SESSION' || error?.code === 'INVALID_SESSION' ? 401 : 403;
+        return NextResponse.json(
+          { ok: false, error: 'Autenticación requerida para consultar créditos.' },
+          { status }
+        );
       }
     }
 
-    const credits = await TenantCreditLedgerService.getOrCreateCredits(canonicalTenant);
+    const credits = await TenantCreditLedgerService.getCredits(projectSlug);
+
+    // Sin fila de créditos = saldo $0 (hecho, no invención); no se crea nada al leer.
+    const base = {
+      tenantId: projectSlug,
+      production: {
+        availableBalanceUsd: credits?.creditBalanceUsd ?? 0,
+        reservedBalanceUsd: credits?.reservedBalanceUsd ?? 0,
+        totalSpentUsd: credits?.totalSpentUsd ?? 0,
+      },
+      sandbox: {
+        enabled: credits?.isSandboxEnabled ?? true,
+        availableBalanceUsd: credits?.sandboxBalanceUsd ?? 0,
+        reservedBalanceUsd: credits?.sandboxReservedBalanceUsd ?? 0,
+      },
+      initialized: Boolean(credits),
+    };
 
     return NextResponse.json({
       ok: true,
-      credits: {
-        tenantId: credits.tenantId,
-        production: {
-          availableBalanceUsd: credits.creditBalanceUsd,
-          reservedBalanceUsd: credits.reservedBalanceUsd,
-          totalSpentUsd: credits.totalSpentUsd,
-        },
-        sandbox: {
-          enabled: credits.isSandboxEnabled,
-          availableBalanceUsd: credits.sandboxBalanceUsd,
-          reservedBalanceUsd: credits.sandboxReservedBalanceUsd,
-        },
-        markupPercentage: credits.markupPercentage,
-      },
+      credits: isAdminRequest
+        ? { ...base, markupPercentage: credits?.markupPercentage ?? null }
+        : base,
     });
   } catch (err: any) {
     console.error('[CreditsRoute] Error loading tenant credits:', err);

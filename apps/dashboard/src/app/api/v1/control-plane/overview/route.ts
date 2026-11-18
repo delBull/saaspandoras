@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@saasfly/db';
 import { projects, installedProducts, operationalIntents } from '@saasfly/db/schema';
 import { eq, and, or, count } from "@saasfly/db-core";
+import { installedProductIn } from '@/lib/platform/product-matching';
 import { getAuth } from '@saasfly/auth-sdk';
 import { checkRateLimit, clientIpFromHeaders } from '@saasfly/hermes-core';
 import { validatePortalSession } from '@saasfly/shared';
@@ -131,7 +132,7 @@ export async function GET(req: NextRequest) {
     const hermesInstall = await db.query.installedProducts.findFirst({
       where: and(
         eq(installedProducts.projectId, project.id),
-        eq(installedProducts.productFamily, 'HERMES')
+        installedProductIn('HERMES')
       ),
     });
 

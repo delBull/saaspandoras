@@ -9,7 +9,7 @@
 import { db } from '@saasfly/db-core';
 import { users, nexusCollaborators, projectCollaborators, projects, type NexusPermissionsOverride, type NexusProvisionStatus } from '@saasfly/db-core/schema';
 import { eq, and, gt, asc, sql } from "@saasfly/db-core";
-import { getAuth, isAdmin } from '@saasfly/auth-sdk';
+import { getAuth, isSuperAdmin } from '@saasfly/auth-sdk';
 import crypto from 'crypto';
 
 // Dynamic require for next/headers without triggering direct-eval bundler warning
@@ -341,10 +341,10 @@ export async function getNexusAuthContext(
     const sessionWallet = typeof rawWallet === 'string' ? rawWallet.toLowerCase() : null;
 
     if (sessionWallet && isVerified) {
-      const isPlatformAdmin = await isAdmin(sessionWallet);
+      const isSuperAdminWallet = isSuperAdmin(sessionWallet);
 
-      if (isPlatformAdmin) {
-        // Resolve completion fields for sovereign administrators so the registration gate
+      if (isSuperAdminWallet) {
+        // Resolve completion fields for sovereign SUPER_ADMINISTRATOR so the registration gate
         // (!name && !whatsappPhone) never loops or blocks the operator.
         const [superUser] = await db
           .select({ id: users.id, name: users.name, email: users.email, role: users.role, image: users.image })
@@ -394,7 +394,7 @@ export async function getNexusAuthContext(
               break;
             }
           } catch (collabErr) {
-            console.warn('[NexusRBAC] Non-blocking collaborator lookup warning:', collabErr);
+            console.error('[NexusRBAC] Collaborator enrichment failed for admin wallet:', collabErr);
           }
         }
 
@@ -504,7 +504,17 @@ export async function getNexusAuthContext(
               }
             }
           } catch (collabErr) {
-            console.warn('[NexusRBAC] Non-blocking collaborator user lookup warning:', collabErr);
+            // 🛡️ Fail-Closed: si no podemos leer la denylist (REJECTED/DISABLED) el
+            // chequeo de revocación no puede garantizarse. Antes se continuaba y el
+            // rol se resolvía desde users.role → un revocado podía entrar durante un
+            // fallo de DB. Ahora se deniega.
+            console.error('[NexusRBAC] Collaborator lookup failed — denying session (fail-closed):', collabErr);
+            return {
+              isAuthenticated: false,
+              role: null,
+              surface,
+              permissions: DEFAULT_EMPTY_PERMISSIONS,
+            };
           }
         }
 

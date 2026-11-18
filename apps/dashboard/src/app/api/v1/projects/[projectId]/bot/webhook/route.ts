@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@saasfly/db';
 import { projects } from '@saasfly/db/schema';
 import { eq } from "@saasfly/db-core";
+import { installedProductIn } from '@/lib/platform/product-matching';
 import { withSecurity, apiRateLimiter } from '@saasfly/shared';
 
 import { OrganizationSDK } from '@saasfly/shared';
@@ -52,7 +53,7 @@ async function handler(req: Request, props: { params: Promise<{ projectId: strin
       .where(
         drizzleAnd(
           eq(installedProducts.projectId, projectRecord.id),
-          eq(installedProducts.productFamily, 'HERMES')
+          installedProductIn('HERMES')
         )
       ).limit(1);
 

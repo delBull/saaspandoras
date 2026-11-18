@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@saasfly/db-core";
 import { privatePaymentLinks } from "@saasfly/db-core";
-import { validateAdminSession } from "@/lib/admin-auth";
-import { getNexusAuthContext } from '@saasfly/shared';
+import { resolveTreasuryWallet } from '@/lib/payments/treasury';
+import { resolvePrivateAdmin } from '@/lib/private-admin';
+import { getPaymentLimits } from '@/lib/payments/limits';
 import { z } from "zod";
 import { desc } from "@saasfly/db-core";
 
@@ -17,45 +18,12 @@ const CreatePrivateLinkSchema = z.object({
   networkChainId: z.number().default(8453), // Default to Base
   settlementToken: z.string().regex(/^0x[a-fA-F0-9]{40}$/i).optional().nullable(),
   expiresInDays: z.number().min(1).max(365).optional(),
+  // Métodos habilitados en el checkout público. 'card' usa el CheckoutWidget de thirdweb.
+  methods: z.array(z.enum(["crypto", "wire", "card"])).min(1).default(["crypto"]),
 });
 
-/**
- * 🔒 Private Payment Rail — Admin Listing & Creation
- * Strictly isolated: zero tenant crossover, zero CRM sync, server-enforced destination.
- */
-async function resolvePrivateAdmin(req: NextRequest) {
-  // Strategy 1: Validate via validateAdminSession
-  try {
-    const adminCheck = await validateAdminSession(req.headers);
-    if (adminCheck.session?.address) {
-      return { address: adminCheck.session.address, errorResponse: null };
-    }
-  } catch (err) {
-    console.warn("[PrivatePayments API] validateAdminSession fallback check:", err);
-  }
-
-  // Strategy 2: Validate via Nexus RBAC Context (x-nexus-token / cookie)
-  try {
-    const nexusAuth = await getNexusAuthContext(req.headers);
-    if (nexusAuth.isAuthenticated && (nexusAuth.role === "SUPER_ADMIN" || nexusAuth.role === "ADMIN")) {
-      const address = nexusAuth.wallet || "0x00c9f7ee6d1808c09b61e561af6c787060bfe7c9";
-      return { address, errorResponse: null };
-    }
-  } catch (err) {
-    console.warn("[PrivatePayments API] getNexusAuthContext fallback check:", err);
-  }
-
-  return {
-    address: null,
-    errorResponse: NextResponse.json(
-      { error: "Forbidden: Super Admin session required." },
-      { status: 403 }
-    ),
-  };
-}
-
 export async function GET(req: NextRequest) {
-  const { address, errorResponse } = await resolvePrivateAdmin(req);
+  const { actor, errorResponse } = await resolvePrivateAdmin(req);
   if (errorResponse) return errorResponse;
 
   try {
@@ -64,10 +32,17 @@ export async function GET(req: NextRequest) {
       limit: 50,
     });
 
+    const treasury = resolveTreasuryWallet();
+    const limits = getPaymentLimits();
+
     return NextResponse.json({
       success: true,
       links,
-      admin: address,
+      admin: actor,
+      // Wallet del entorno: la terminal la usa como valor por defecto, no como autoridad.
+      defaultDestinationWallet: treasury.ok ? treasury.wallet : null,
+      // Mínimos por método (la terminal los muestra y valida antes de crear).
+      limits,
     });
   } catch (error: any) {
     console.error("[PrivatePayments API] Error listing links:", error);
@@ -76,7 +51,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const { address, errorResponse } = await resolvePrivateAdmin(req);
+  const { actor, errorResponse } = await resolvePrivateAdmin(req);
   if (errorResponse) return errorResponse;
 
   try {
@@ -99,12 +74,28 @@ export async function POST(req: NextRequest) {
       networkChainId,
       settlementToken,
       expiresInDays,
+      methods,
     } = parsed.data;
 
     let expiresAt: Date | null = null;
     if (expiresInDays) {
       expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + expiresInDays);
+    }
+
+    // Mínimo por método: si se habilita tarjeta y el monto es menor al mínimo de la
+    // rampa, el link nacería imposible de pagar (onramp/prepare responde 400).
+    const limits = getPaymentLimits();
+    const isUsd = currency.toUpperCase() === 'USD';
+    if (methods.includes('card') && isUsd && amount < limits.cardMinUsd) {
+      return NextResponse.json(
+        {
+          error: `El mínimo para cobrar con tarjeta es ${limits.cardMinUsd} USD. Sube el monto o deshabilita la tarjeta.`,
+          code: 'BELOW_CARD_MINIMUM',
+          cardMinUsd: limits.cardMinUsd,
+        },
+        { status: 422 }
+      );
     }
 
     const [created] = await db
@@ -120,8 +111,9 @@ export async function POST(req: NextRequest) {
         expiresAt,
         status: "active",
         metadata: {
-          createdByUser: address,
-          createdByWallet: address,
+          createdByUser: actor,
+          createdByWallet: actor,
+          methods,
         },
       })
       .returning();

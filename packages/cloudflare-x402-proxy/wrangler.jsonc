@@ -1,0 +1,14 @@
+{
+  "$schema": "https://unpkg.com/wrangler@latest/config-schema.json",
+  "name": "pandoras-x402-scraper-proxy",
+  "main": "src/index.ts",
+  "compatibility_date": "2024-11-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "vars": {
+    "ORIGIN_URL": "https://dash.pandoras.finance",
+    "PAY_TO": "0xc52BB6f53C91ff7134e7508B102E5A22BA415954",
+    "NETWORK": "eip155:8453",
+    "SCRAPER_PRICE": "$0.001",
+    "FACILITATOR_URL": "https://x402.org/facilitator"
+  }
+}

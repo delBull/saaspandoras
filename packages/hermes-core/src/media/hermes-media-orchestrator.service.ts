@@ -27,6 +27,8 @@ import {
 } from '@saasfly/db-core/schema';
 import { eq, and, desc } from "@saasfly/db-core";
 import { RunPodServerlessService } from '../compute/runpod-serverless.service';
+import { IpfsPinningService } from './ipfs-pinning.service';
+import { resolveTenantPinningConfig } from './tenant-pinning';
 import { TenantCreditLedgerService } from '../compute/tenant-credit-ledger.service';
 import { A2AOutboundDispatcher } from "../a2a/a2a-outbound-dispatcher";
 import { CapabilityGrantService } from "../a2a/capability-grant-service";
@@ -47,6 +49,8 @@ export interface CreateMediaRequestParams {
 
 export interface MediaGenerationResult {
   ok: boolean;
+  /** Código determinista del fallo (para mapear HTTP en la API). */
+  failureCode?: string;
   requestId: string;
   status: 'REQUESTED' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'UNKNOWN';
   provider: 'sofia' | 'runpod';
@@ -70,10 +74,20 @@ export interface MediaGenerationResult {
   isIdempotentReplay?: boolean;
 }
 
+function readTimeout(envName: string, fallbackMs: number): number {
+  const raw = Number(process.env[envName]);
+  return Number.isFinite(raw) && raw > 0 ? raw : fallbackMs;
+}
+
 export class HermesMediaOrchestratorService {
-  public static PRE_ACK_TIMEOUT_MS = 2500;
-  public static POST_ACK_TIMEOUT_MS = 15000;
-  private static readonly RUNPOD_DEFAULT_ENDPOINT = process.env.RUNPOD_DEFAULT_ENDPOINT || 'ep_comfyui_serverless_flux';
+  // Pre-ACK: tiempo que Sofía tiene para aceptar el trabajo. Medido en producción:
+  // ~1.1 s de latencia base; 5 s deja margen sin colgar la petición.
+  public static PRE_ACK_TIMEOUT_MS = readTimeout('SOFIA_PRE_ACK_TIMEOUT_MS', 5000);
+  // Post-ACK: espera del resultado real (imagen ~20 s + callback). 15 s era
+  // insuficiente y dejaba el job en UNKNOWN aunque Sofía terminara.
+  public static POST_ACK_TIMEOUT_MS = readTimeout('SOFIA_POST_ACK_TIMEOUT_MS', 120000);
+  // Fail-closed: sin endpoint configurado NO se inventa uno.
+  private static readonly RUNPOD_DEFAULT_ENDPOINT = process.env.RUNPOD_DEFAULT_ENDPOINT || '';
   private static inMemoryRequests: Map<string, any> = new Map();
   private static inMemoryAttempts: Map<string, any[]> = new Map();
   private static inMemoryArtifacts: Map<string, any> = new Map();
@@ -82,8 +96,8 @@ export class HermesMediaOrchestratorService {
     this.inMemoryRequests.clear();
     this.inMemoryAttempts.clear();
     this.inMemoryArtifacts.clear();
-    this.PRE_ACK_TIMEOUT_MS = 2500;
-    this.POST_ACK_TIMEOUT_MS = 15000;
+    this.PRE_ACK_TIMEOUT_MS = readTimeout('SOFIA_PRE_ACK_TIMEOUT_MS', 5000);
+    this.POST_ACK_TIMEOUT_MS = readTimeout('SOFIA_POST_ACK_TIMEOUT_MS', 120000);
   }
 
   /**
@@ -268,6 +282,7 @@ export class HermesMediaOrchestratorService {
         requestId,
         status: 'FAILED',
         provider: 'sofia',
+        failureCode: 'CAPABILITY_NOT_GRANTED',
         attemptCount: 0,
         error: `Capability '${params.capability}' is not granted for tenant '${normalizedTenant}'.`,
       };
@@ -290,6 +305,7 @@ export class HermesMediaOrchestratorService {
         requestId,
         status: 'FAILED',
         provider: 'sofia',
+        failureCode: 'INSUFFICIENT_CREDITS',
         attemptCount: 0,
         error: reservation.error || 'Insufficient credits for generation reservation.',
       };
@@ -315,7 +331,10 @@ export class HermesMediaOrchestratorService {
       try {
         // Pre-ACK bounded handshake (<= 2500ms)
         const timeoutPromise = new Promise<{ success: false; timeout: true }>((_, reject) =>
-          setTimeout(() => reject(new Error('Sofia pre-ACK timeout (2500ms exceeded)')), this.PRE_ACK_TIMEOUT_MS)
+          setTimeout(
+            () => reject(new Error(`Sofia pre-ACK timeout (${this.PRE_ACK_TIMEOUT_MS}ms exceeded)`)),
+            this.PRE_ACK_TIMEOUT_MS
+          )
         );
 
         const dispatchPromise = A2AOutboundDispatcher.sendToSofia('capability.request', {
@@ -488,6 +507,37 @@ export class HermesMediaOrchestratorService {
 
     const endpointId = params.endpointId || this.RUNPOD_DEFAULT_ENDPOINT;
 
+    // Fail-closed: sin endpoint real no se llama a RunPod (antes había un id
+    // inventado por defecto, lo que producía fallos opacos).
+    if (!endpointId) {
+      await this.updateAttempt(runpodAttemptId, {
+        status: 'FAILED',
+        errorCode: 'RUNPOD_ENDPOINT_REQUIRED',
+        errorMessage: 'No compute endpoint configured for this job.',
+      });
+      await TenantCreditLedgerService.releaseReservation(
+        reservationId,
+        normalizedTenant,
+        'RunPod endpoint not configured'
+      );
+      await this.markRequestFailed(
+        normalizedTenant,
+        requestId,
+        'RUNPOD_ENDPOINT_REQUIRED',
+        'No compute endpoint configured.'
+      );
+
+      return {
+        ok: false,
+        requestId,
+        status: 'FAILED',
+        provider: 'runpod',
+        failureCode: 'RUNPOD_ENDPOINT_REQUIRED',
+        attemptCount: runpodAttemptNumber,
+        error: 'No compute endpoint configured for this job.',
+      };
+    }
+
     // Execute RunPod Serverless GPU Inference
     const runpodRes = await RunPodServerlessService.executeSync({
       endpointId,
@@ -495,20 +545,26 @@ export class HermesMediaOrchestratorService {
         prompt: params.prompt,
         ...(params.options || {}),
       },
-      timeoutMs: 35000,
+      // Presupuesto configurable: cubre generación (~20 s) y cold start.
+      timeoutMs: Number(process.env.RUNPOD_JOB_BUDGET_MS || 120000),
     });
 
     if (!runpodRes.success) {
       await this.updateAttempt(runpodAttemptId, {
         status: 'FAILED',
-        errorCode: 'RUNPOD_EXECUTION_FAILED',
+        errorCode: runpodRes.errorCode || 'RUNPOD_EXECUTION_FAILED',
         errorMessage: runpodRes.error,
         computeSeconds: (runpodRes.executionTimeMs / 1000).toFixed(3),
         rawCostUsd: runpodRes.rawCostUsd.toFixed(5),
       });
 
       await TenantCreditLedgerService.releaseReservation(reservationId, normalizedTenant, runpodRes.error);
-      await this.markRequestFailed(normalizedTenant, requestId, 'RUNPOD_FAILED', runpodRes.error);
+      await this.markRequestFailed(
+        normalizedTenant,
+        requestId,
+        runpodRes.errorCode || 'RUNPOD_FAILED',
+        runpodRes.error
+      );
 
       return {
         ok: false,
@@ -571,10 +627,67 @@ export class HermesMediaOrchestratorService {
     options?: Record<string, any>;
     endpointId?: string;
   }): Promise<{ artifactId: string; artifact: any; financialBreakdown: any }> {
-    const rawAsset = params.output?.images?.[0] || params.output?.image || params.output?.imageUrl || params.output?.url || params.output?.cid || 'mock_bafkrei_rendered_image_payload';
-    const contentToHash = typeof rawAsset === 'string' ? rawAsset : JSON.stringify(rawAsset);
-    const sha256 = crypto.createHash('sha256').update(contentToHash).digest('hex');
-    const cid = params.output?.cid || `mock_bafkrei_${sha256.slice(0, 32)}`;
+    // ── Almacenamiento real del artefacto (sin CIDs inventados) ────────────────
+    const output = params.output ?? {};
+    const providedCidRaw = typeof output.cid === 'string' ? output.cid.trim() : '';
+    const providedCid = /^(bafy|Qm)[a-zA-Z0-9]+$/.test(providedCidRaw) ? providedCidRaw : null;
+    const sourceUrl =
+      output.images?.[0] || output.image || output.imageUrl || output.url || null;
+
+    // Algunos workers (p. ej. vLLM-Omni) devuelven la imagen inline en base64:
+    // { data: [{ b64_json }] }. Se decodifica para tener bytes reales.
+    const inlineB64Raw =
+      (Array.isArray(output.data) && typeof output.data[0]?.b64_json === 'string'
+        ? output.data[0].b64_json
+        : null) ??
+      (typeof output.b64_json === 'string' ? output.b64_json : null);
+
+    let inlineBytes: Uint8Array | null = null;
+    if (inlineB64Raw) {
+      try {
+        inlineBytes = new Uint8Array(Buffer.from(inlineB64Raw, 'base64'));
+      } catch (error: unknown) {
+        console.warn('[HermesMediaOrchestrator] Invalid base64 image payload:', error);
+        inlineBytes = null;
+      }
+    }
+
+    let cid: string | null = providedCid;
+    let sha256 = '';
+    let sizeBytes = 0;
+
+    const pinningConfig = await resolveTenantPinningConfig(params.tenantId);
+    if (!cid && typeof sourceUrl === 'string' && pinningConfig) {
+      const pinned = await IpfsPinningService.pinFromUrl(sourceUrl, pinningConfig);
+      if (pinned) {
+        cid = pinned.cid;
+        sha256 = pinned.sha256;
+        sizeBytes = pinned.sizeBytes;
+      }
+    }
+
+    // Bytes propios (inline) sin pinning: se huella el contenido real, no el JSON.
+    if (inlineBytes) {
+      sha256 = crypto.createHash('sha256').update(Buffer.from(inlineBytes)).digest('hex');
+      sizeBytes = inlineBytes.byteLength;
+
+      if (!cid && pinningConfig) {
+        const pinned = await IpfsPinningService.pinBytes(
+          inlineBytes,
+          `generated_${params.requestId}.png`,
+          pinningConfig
+        );
+        if (pinned) cid = pinned.cid;
+      }
+    }
+
+    if (!sha256) {
+      // Sin bytes propios: se huella la referencia del proveedor (documentado).
+      const contentToHash = typeof sourceUrl === 'string' ? sourceUrl : JSON.stringify(output);
+      sha256 = crypto.createHash('sha256').update(contentToHash).digest('hex');
+      sizeBytes = Buffer.byteLength(contentToHash, 'utf8');
+    }
+
     const artifactId = `art_${params.requestId}`;
 
     const artifactRecord = {
@@ -586,11 +699,19 @@ export class HermesMediaOrchestratorService {
       artifactType: 'image',
       title: (params.options?.title as string) || `Media Asset for ${params.tenantId}`,
       cid,
-      ipfsUri: `ipfs://${cid}`,
+      ipfsUri: cid ? `ipfs://${cid}` : null,
       sha256,
       mimeType: 'image/png',
-      sizeBytes: Buffer.byteLength(contentToHash, 'utf8'),
-      metadataJson: { prompt: params.prompt, capability: params.capability, options: params.options },
+      sizeBytes,
+      metadataJson: {
+        prompt: params.prompt,
+        capability: params.capability,
+        options: params.options,
+        storage: cid ? 'IPFS_PINNED' : 'UNPINNED',
+        providerAssetUrl: typeof sourceUrl === 'string' ? sourceUrl : null,
+        outputEncoding: inlineBytes ? 'INLINE_B64' : typeof sourceUrl === 'string' ? 'REMOTE_URL' : 'UNKNOWN',
+        bytesDiscarded: Boolean(inlineBytes) && !cid,
+      },
       createdAt: new Date(),
     };
 
@@ -717,8 +838,33 @@ export class HermesMediaOrchestratorService {
               rawCostUsd: Number(dbAttempt.rawCostUsd || 0.02),
             };
           }
-        } catch {
-          // ignore transient select error during polling
+
+          // Respaldo: el callback escribe primero el request. Si el intento no
+          // quedó cerrado (versión antigua del handler, reintento, etc.), el
+          // request COMPLETED con artifactId es evidencia suficiente para
+          // liquidar sin dejar el job en UNKNOWN.
+          const [doneReq] = await db
+            .select({
+              artifactId: hermesMediaRequests.artifactId,
+              status: hermesMediaRequests.status,
+            })
+            .from(hermesMediaRequests)
+            .where(
+              and(
+                eq(hermesMediaRequests.id, requestId),
+                eq(hermesMediaRequests.tenantId, tenantId)
+              )
+            )
+            .limit(1);
+
+          if (doneReq?.status === 'COMPLETED' && doneReq.artifactId) {
+            const art = await this.getArtifact(tenantId, doneReq.artifactId);
+            return { output: art, computeSeconds: 3.0, rawCostUsd: 0.02 };
+          }
+        } catch (error: unknown) {
+          // Un fallo transitorio de lectura no debe abortar el sondeo, pero sí
+          // quedar visible (nada de silencios en el camino del dinero).
+          console.error('[HermesMediaOrchestrator] Post-ACK poll query failed:', error);
         }
       }
     }
@@ -762,8 +908,12 @@ export class HermesMediaOrchestratorService {
       if (db) {
         await db.insert(hermesGenerationAttempts).values(record).onConflictDoNothing();
       }
-    } catch (err) {
-      console.warn('[HermesMediaOrchestrator] Notice recording attempt:', err);
+    } catch (error: unknown) {
+      // Evidencia de ejecución: no puede desaparecer en silencio.
+      console.error(
+        `[HermesMediaOrchestrator] Could not persist attempt ${attempt?.id} (request ${attempt?.requestId}):`,
+        error
+      );
     }
   }
 
@@ -782,8 +932,8 @@ export class HermesMediaOrchestratorService {
           .set({ ...updates, updatedAt: new Date() })
           .where(eq(hermesGenerationAttempts.id, attemptId));
       }
-    } catch (err) {
-      console.warn('[HermesMediaOrchestrator] Notice updating attempt:', err);
+    } catch (error: unknown) {
+      console.error(`[HermesMediaOrchestrator] Could not update attempt ${attemptId}:`, error);
     }
   }
 

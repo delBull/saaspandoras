@@ -8,7 +8,10 @@ import { redirect } from 'next/navigation';
 import type { EcosystemSetupSummary } from '@saasfly/shared';
 import { setupProgressService } from '@saasfly/shared';
 import { resolvePortalContext } from '@/lib/portal/resolve-portal-context';
-import { PortalAuthorizationError } from '@saasfly/shared';
+// ⚠️ La clase debe venir del MISMO módulo que la lanza (resolver local):
+// hay copias duplicadas en shared y en '@/lib/portal/portal-types' y
+// `instanceof` falla entre copias, enviando NO_SESSION a /portal/error.
+import { PortalAuthorizationError } from '@/lib/portal/portal-types';
 import { SimulationAlert } from '@/components/hermes-portal/SimulationAlert';
 import { TrialReadinessBanner } from '@/components/ecosystem/TrialReadinessBanner';
 import { DashboardProvider } from '@pandoras/display-engine';

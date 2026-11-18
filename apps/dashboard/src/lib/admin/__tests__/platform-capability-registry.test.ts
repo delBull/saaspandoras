@@ -54,8 +54,13 @@ describe('PlatformCapabilityRegistryService (F9.2)', () => {
   };
 
   it('PCAP-01: Catalog contains exactly 25 canonical platform capabilities', () => {
-    const all = PlatformCapabilityRegistryService.getAllDefinitions();
-    expect(all.length).toBe(25);
+    // El catálogo unificado añade capacidades de TENANT (autoridad por grant, no por
+    // rol). Este test fija el contrato de PLATAFORMA: 25 ids con autoridad por rol.
+    const platformCapabilities = PlatformCapabilityRegistryService.getAllDefinitions().filter(
+      (def) =>
+        PlatformCapabilityRegistryService.getAuthorityModel(def.capability) === 'PLATFORM_ROLE',
+    );
+    expect(platformCapabilities.length).toBe(25);
   });
 
   it('PCAP-02: SUPER_ADMIN with 2FA has authority over all capabilities including CRITICAL (A and B)', () => {

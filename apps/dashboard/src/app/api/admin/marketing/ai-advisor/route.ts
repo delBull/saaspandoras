@@ -1,3 +1,4 @@
+import { validateAdminSession } from '@/lib/admin-auth';
 import { NextResponse } from 'next/server';
 import { AIService } from '@/services/marketing/ai_advisor';
 
@@ -6,6 +7,9 @@ const aiCache = new Map<string, { data: any, timestamp: number }>();
 const CACHE_TTL = 1000 * 60 * 60; // 1 hour
 
 export async function POST(req: Request) {
+  // 🛡️ Autorización propia (el middleware sólo verifica presencia de cookie).
+  const { errorResponse } = await validateAdminSession(req.headers);
+  if (errorResponse) return errorResponse;
   try {
     const { leads, projectName } = await req.json();
 

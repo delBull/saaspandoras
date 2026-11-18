@@ -1,3 +1,4 @@
+import { timingSafeEqual } from 'node:crypto';
 import { NextResponse } from 'next/server';
 
 /**
@@ -39,4 +40,41 @@ export function requireInternalAuth(req: Request): NextResponse | null {
   }
 
   return null; // Auth passed
+}
+
+/**
+ * Autorización para tareas programadas (Vercel Cron).
+ *
+ * Vercel envía `Authorization: Bearer <CRON_SECRET>` cuando esa variable existe.
+ * Se acepta también el header interno (`x-pandoras-internal-secret`) para
+ * disparos manuales desde operación.
+ *
+ * Fail-closed: sin `CRON_SECRET` configurado en producción ⇒ 503.
+ */
+export function requireCronAuth(req: Request): NextResponse | null {
+  const cronSecret = process.env.CRON_SECRET;
+
+  if (!cronSecret) {
+    if (process.env.NODE_ENV === 'production') {
+      console.error('[CronAuth] CRON_SECRET no configurado en producción. Denegando.');
+      return NextResponse.json(
+        { error: 'Cron is not configured. Set CRON_SECRET.' },
+        { status: 503 },
+      );
+    }
+    return requireInternalAuth(req);
+  }
+
+  const header = req.headers.get('authorization') ?? '';
+  const match = /^Bearer\s+(.+)$/i.exec(header.trim());
+  const provided = match?.[1]?.trim() ?? '';
+
+  if (provided.length > 0) {
+    const a = Buffer.from(provided, 'utf8');
+    const b = Buffer.from(cronSecret, 'utf8');
+    if (a.length === b.length && timingSafeEqual(a, b)) return null;
+  }
+
+  // Disparo manual desde operación (mismo secreto interno ya existente).
+  return requireInternalAuth(req);
 }

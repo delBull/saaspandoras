@@ -3,7 +3,8 @@
  */
 import { db } from '@saasfly/db';
 import { projects, installedProducts } from '@saasfly/db/schema';
-import { eq, and } from "@saasfly/db-core";
+import { eq, and, inArray } from "@saasfly/db-core";
+import { productFamilyOf } from '@saasfly/shared';
 import { NftLabActivationService } from '@saasfly/nexus-deals-sdk';
 
 export type Family = 'GROWTH_OS' | 'HERMES' | 'CAPITAL' | 'NFT_LAB';
@@ -14,6 +15,25 @@ export const FULL_ACCESS_FAMILIES: Array<{ family: Family; product: string }> = 
   { family: 'CAPITAL', product: 'TOKENIZATION' },   // RWA vertical
   { family: 'NFT_LAB', product: 'NFT_LAB' },        // NFT Lab (Phase 3 registry)
 ];
+
+/**
+ * Claves legacy que la DB todavía tiene y deben reconocerse como el MISMO
+ * producto al buscar si ya está instalado.
+ *
+ * Importante: la búsqueda se hace por `product`, NO por `productFamily`.
+ * `HERMES` y `GROWTH_OS` comparten la familia 'GROWTH_OS', así que filtrar por
+ * familia hacía que "instalar Growth OS" encontrara la fila de Hermes (y
+ * viceversa), dejando tenants con el producto equivocado.
+ */
+const PRODUCT_LEGACY_ALIASES: Record<string, string[]> = {
+  HERMES: ['HERMES_OS'],
+  GROWTH_OS: [],
+  TOKENIZATION: ['PANDORAS_RWA', 'RWA'],
+};
+
+function productCandidates(product: string): string[] {
+  return [product, ...(PRODUCT_LEGACY_ALIASES[product] ?? [])];
+}
 
 export interface FullAccessResult { family: Family; action: string; plan?: string; status?: string }
 
@@ -41,12 +61,13 @@ export async function provisionFullAccess(
       continue;
     }
 
+    // Match por PRODUCTO (con alias legacy), nunca por familia.
     const [existing] = await db
       .select({ id: installedProducts.id, plan: installedProducts.plan, status: installedProducts.status })
       .from(installedProducts)
       .where(and(
         eq(installedProducts.projectId, project.id),
-        eq(installedProducts.productFamily, family),
+        inArray(installedProducts.product, productCandidates(product)),
       ))
       .limit(1);
 
@@ -63,7 +84,8 @@ export async function provisionFullAccess(
       await db.insert(installedProducts).values({
         projectId: project.id,
         product,
-        productFamily: family,
+        // Familia canónica del registry (single source of truth), no la etiqueta local.
+        productFamily: productFamilyOf(product as any),
         plan: 'enterprise',
         status: 'active',
         bindingMode: 'provisioned',

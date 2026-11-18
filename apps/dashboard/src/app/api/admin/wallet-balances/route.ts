@@ -1,3 +1,4 @@
+import { validateAdminSession } from '@/lib/admin-auth';
 import { NextResponse } from 'next/server';
 
 const BASE_RPC = process.env.BASE_RPC_URL || `https://base-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY || ''}`;
@@ -99,6 +100,9 @@ async function sendDiscordWalletAlert(
 }
 
 export async function GET(request: Request) {
+  // 🛡️ Autorización propia (el middleware sólo verifica presencia de cookie).
+  const { errorResponse } = await validateAdminSession(request.headers);
+  if (errorResponse) return errorResponse;
   try {
     const { searchParams } = new URL(request.url);
     const triggerAlert = searchParams.get('alert') === 'true';

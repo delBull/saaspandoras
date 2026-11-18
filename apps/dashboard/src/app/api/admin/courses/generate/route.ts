@@ -1,3 +1,4 @@
+import { validateAdminSession } from '@/lib/admin-auth';
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
@@ -47,6 +48,9 @@ const QUIZ_SCHEMA = `{
 }`;
 
 export async function POST(req: Request) {
+  // 🛡️ Autorización propia (el middleware sólo verifica presencia de cookie).
+  const { errorResponse } = await validateAdminSession(req.headers);
+  if (errorResponse) return errorResponse;
   try {
     if (!process.env.OPENAI_API_KEY) {
       return NextResponse.json({ error: 'OPENAI_API_KEY no está configurada en las variables de entorno.' }, { status: 500 });

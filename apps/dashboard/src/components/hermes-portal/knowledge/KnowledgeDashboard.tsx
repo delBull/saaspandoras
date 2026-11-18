@@ -66,9 +66,20 @@ export function KnowledgeDashboard({ overview, organizationName = 'your organiza
           <TeachHermesDialog 
             onClose={() => setShowTeachModal(false)} 
             onSelect={async (payload) => {
-              if (onAddKnowledge) {
-                await onAddKnowledge(payload);
+              if (!onAddKnowledge) {
+                throw new Error('La ingesta de conocimiento no está habilitada en esta vista.');
               }
+              const result = await onAddKnowledge(payload);
+              // A 200 with success:false must never be reported as a successful ingestion.
+              if (
+                result !== null &&
+                typeof result === 'object' &&
+                'success' in result &&
+                (result as { success?: boolean }).success === false
+              ) {
+                throw new Error('La API de conocimiento rechazó la ingesta (success: false).');
+              }
+              return result;
             }}
           />
         )}

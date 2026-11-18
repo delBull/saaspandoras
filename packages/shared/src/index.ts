@@ -5,6 +5,7 @@ export { MagicLinkEmail } from "./emails/magic-link-email";
 export { siteConfig } from "./config/site";
 
 export * from './admin/platform-capability-registry.service';
+export * from './admin/capability-vocabulary';
 export * from './admin/canonical-capabilities';
 
 export * from './config/site';
@@ -50,6 +51,7 @@ export * from './phase-utils';
 export * from './platform/organization-sdk';
 export * from './platform/portal-auth';
 export * from './platform/product-registry';
+export * from './platform/product-catalog';
 export * from './portal/permissions';
 export * from './portal/portal-types';
 export * from './portal/catalog-types';

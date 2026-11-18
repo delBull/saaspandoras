@@ -42,6 +42,9 @@ export interface PortalOrganization {
   // Active product resolution (used by modules)
   activeProduct: string | null;
 
+  /** Keys canónicas de los productos instalados (hub/sidebar filtran por esto). */
+  installedProducts?: string[];
+
   // Tenant state
   isSimulationMode?: boolean | null;
 }

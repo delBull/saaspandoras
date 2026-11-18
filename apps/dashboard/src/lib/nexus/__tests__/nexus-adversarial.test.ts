@@ -66,24 +66,16 @@ describe('Nexus Adversarial Tests (Phase 3)', () => {
     expect(data.policy.actionStatus).toBe('PROPOSE_ONLY');
   });
 
-  it('rejects deposit approve action without finance.manage permission', async () => {
-    // Mock auth context to simulate user WITHOUT finance.manage
-    vi.spyOn(nexusRbac, 'getNexusAuthContext').mockResolvedValueOnce({
-      isAuthenticated: true,
-      collaboratorId: 1,
-      role: 'OPERATOR',
-      surface: 'NEXUS',
-      permissions: { 'finance.manage': false } as any
-    });
-
-    const mockRequest = {
-      json: async () => ({})
-    } as any;
+  it('retired deposit approve endpoint fails closed and never mutates data', async () => {
+    const mockRequest = { json: async () => ({}) } as any;
 
     const response = await depositApprovePost(mockRequest, { params: Promise.resolve({ id: 'dep-123' }) });
     const data = await response.json();
 
-    expect(response.status).toBe(403);
-    expect(data.error).toContain('Forbidden');
+    // El endpoint legacy (aprobaba un `purchases.id` enviado por el cliente) se
+    // retiró: debe fallar explícitamente, sin tocar la base de datos.
+    expect(response.status).toBe(410);
+    expect(data.code).toBe('ENDPOINT_RETIRED');
+    expect(db.update).not.toHaveBeenCalled();
   });
 });

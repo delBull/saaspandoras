@@ -6,8 +6,9 @@ import { useActiveAccount, ConnectButton, darkTheme } from "thirdweb/react";
 import { client } from "@saasfly/shared/thirdweb-client";
 import { wallets } from "@/lib/wallets";
 import { useSearchParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { ShieldCheck, Loader2 } from 'lucide-react';
-import { defineChain } from 'thirdweb/chains';
+import { chainWithOwnRpc } from '@/lib/web3/rpc-chains';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { getProjectForAuth } from './actions';
 
@@ -54,7 +55,7 @@ function AuthContent() {
 
     // Chain detection (default to Sepolia for now or Base if project specifies)
     const chainId = project?.chainId ? Number(project.chainId) : 11155111;
-    const chain = defineChain(chainId);
+    const chain = chainWithOwnRpc(chainId);
     const brandColor = project?.themeColor || '#7c3aed';
 
     useEffect(() => {
@@ -116,13 +117,11 @@ function AuthContent() {
                 } catch (e) {
                     console.error("Failed to construct return URL", e);
                 }
-            } else if (isSuccess) {
-                // DIRECT TAB ACCESS: Si entra directamente por URL (sin popup ni origin), redirigir al Dashboard
-                console.log("🛡️ [Auth] Direct tab access: redirecting to Dashboard...");
-                closeTimeout = setTimeout(() => {
-                    router.replace('/');
-                }, 1000);
             }
+            // NOTA: antes aquí había un auto-redirect a '/' a los 1s. Como thirdweb
+            // auto-conecta la wallet de la sesión anterior, la página saltaba sola
+            // al onboarding sin dejar al usuario elegir. El avance ahora es explícito
+            // (botón "Entrar al Dashboard →" cuando hay sesión).
         }
 
         return () => {
@@ -211,6 +210,26 @@ function AuthContent() {
                     )}
                 </div>
                 
+                {/* Acceso de CLIENTES: sin billetera, por enlace mágico al email.
+                    El hub/portal se resuelve por sesión; el cliente no necesita rutas. */}
+                <div className="w-full space-y-3">
+                    <div className="flex items-center gap-3">
+                        <div className="h-px flex-1 bg-zinc-800" />
+                        <span className="text-[10px] uppercase tracking-[0.2em] text-zinc-600">o</span>
+                        <div className="h-px flex-1 bg-zinc-800" />
+                    </div>
+                    <Link
+                        href="/portal/login"
+                        className="flex w-full items-center justify-center gap-2 rounded-full border border-zinc-700 bg-zinc-900/60 px-5 py-3 text-[11px] font-black uppercase tracking-widest text-zinc-200 transition-colors hover:border-zinc-500 hover:text-white"
+                    >
+                        Portal de clientes (email)
+                    </Link>
+                    <p className="text-[10px] leading-relaxed text-zinc-500 text-center">
+                        Distinto del acceso con wallet/email de arriba: aquí entran los <strong>tenants</strong> con el
+                        correo con el que fueron dados de alta (enlace mágico, sin billetera).
+                    </p>
+                </div>
+
                 <p className="text-[10px] text-zinc-600 font-medium text-center leading-relaxed">
                     {['authenticated', 'has_access', 'no_access', 'ready_to_mint', 'minting'].includes(authStatus) 
                         ? "Sincronizando sesión con el protocolo. Esta ventana se cerrará automáticamente."

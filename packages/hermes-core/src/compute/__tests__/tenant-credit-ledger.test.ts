@@ -11,7 +11,7 @@ describe('⚡ HERMES RUNPOD SERVERLESS & TENANT CREDIT LEDGER SUITE', () => {
     expect(credits.creditBalanceUsd).toBe(0);
     expect(credits.sandboxBalanceUsd).toBe(0); // Starts at $0.00 until funded
     expect(credits.markupPercentage).toBe(35);
-    expect(TenantCreditLedgerService.MIN_TOPUP_AMOUNT_USD).toBe(5.0000);
+    expect(TenantCreditLedgerService.MIN_TOPUP_AMOUNT_USD).toBe(Number(process.env.HERMES_MIN_TOPUP_USD || 10));
   });
 
   it('TC-2: Calculates dynamic markup correctly on raw compute cost', async () => {

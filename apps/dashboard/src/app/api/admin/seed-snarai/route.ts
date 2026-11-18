@@ -2,8 +2,13 @@ import { NextResponse } from 'next/server';
 import { db } from '@saasfly/db';
 import { projects } from '@saasfly/db/schema';
 import { eq } from "@saasfly/db-core";
+import { validateAdminSession } from '@/lib/admin-auth';
 
-export async function GET() {
+export async function GET(request: Request) {
+  // 🛡️ Autorización propia: escribe la configuración de un proyecto real.
+  const { errorResponse } = await validateAdminSession(request.headers);
+  if (errorResponse) return errorResponse;
+
   try {
     const projectRecord = await db.query.projects.findFirst({
       where: eq(projects.slug, 'snarai')

@@ -95,14 +95,6 @@ export default function NexusSettingsPage({ isUserAdmin = false, userRole = "OPE
             ) : (
               <a
                 href="/nexus"
-                onClick={(e) => {
-                  const storedToken = typeof window !== "undefined" ? localStorage.getItem("pandoras_nexus_token") : null;
-                  if (storedToken) {
-                    e.preventDefault();
-                    document.cookie = `pandoras_nexus_token=${encodeURIComponent(storedToken)}; path=/; max-age=2592000; SameSite=Lax`;
-                    window.location.href = `/nexus?token=${encodeURIComponent(storedToken)}`;
-                  }
-                }}
                 className="p-2.5 bg-zinc-900 rounded-xl border border-zinc-800 hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
                 title="Volver a Nexus Command Center"
               >

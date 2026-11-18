@@ -124,7 +124,7 @@ describe('📧 Nexus Collaborators Request Route (/api/nexus/collaborators/reque
     expect(sendMagicLinkCalls.length).toBe(1);
   });
 
-  it('REQ-04: Forbids registration when non-admin tries to provision a new user via /request', async () => {
+  it('REQ-04: Un no-admin NO puede provisionar un usuario nuevo y la respuesta no lo delata', async () => {
     mockRequireNexusAdmin = false;
     mockExistingCollaborator = null;
 
@@ -142,10 +142,14 @@ describe('📧 Nexus Collaborators Request Route (/api/nexus/collaborators/reque
     });
 
     const res = await POST(req);
-    expect(res.status).toBe(403);
+    // Anti-enumeración: la respuesta es idéntica exista o no el colaborador.
+    expect(res.status).toBe(200);
     const data = await res.json();
-    expect(data.error).toContain('Acceso denegado');
+    expect(data.ok).toBe(true);
+    expect(data.collaborator).toBeUndefined();
+    // La propiedad de seguridad que importa: no se crea ni se notifica nada.
     expect(createOrUpdateCalls.length).toBe(0);
+    expect(sendMagicLinkCalls.length).toBe(0);
   });
 
   it('REQ-05: Non-admin caller cannot escalate privileges to ADMIN or SUPER_ADMIN', async () => {

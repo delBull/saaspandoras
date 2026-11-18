@@ -228,7 +228,7 @@ export const ProvisioningEngine = {
           projectId,
           product,
           plan,
-          status: 'trial'
+          status: 'active'
         };
       }
     }

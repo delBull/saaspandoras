@@ -352,6 +352,17 @@ export class A2AMessageHandler {
                 completedAt: new Date(),
               })
               .where(eq(hermesMediaRequests.correlationId, message.correlationId));
+
+            // Cerrar el INTENTO de generación. Sin esto, `awaitSofiaResult`
+            // (que sondea hermes_generation_attempts) expira, el job queda
+            // UNKNOWN y la reserva de crédito se congela aunque Sofía sí generó.
+            const { closeGenerationAttemptForArtifact } = await import('./artifact-attempt-link');
+            await closeGenerationAttemptForArtifact({
+              tenantId: mediaReq.tenantId,
+              requestId: mediaReq.id,
+              artifactId: artifact.artifactId,
+              dbClient: db,
+            });
           }
         }
       } catch (err) {

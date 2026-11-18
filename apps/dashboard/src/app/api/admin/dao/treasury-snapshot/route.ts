@@ -1,3 +1,4 @@
+import { validateAdminSession } from '@/lib/admin-auth';
 import { NextResponse } from 'next/server';
 import { db } from '@saasfly/db';
 import { daoTreasurySnapshots, projects } from '@saasfly/db/schema';
@@ -7,6 +8,9 @@ import { client } from "@saasfly/shared/thirdweb-client";
 import { getWalletBalance } from "thirdweb/wallets";
 
 export async function POST(req: Request) {
+    // 🛡️ Autorización propia (el middleware sólo verifica presencia de cookie).
+    const { errorResponse } = await validateAdminSession(req.headers);
+    if (errorResponse) return errorResponse;
     try {
         const { projectId } = await req.json();
 

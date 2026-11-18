@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@saasfly/db';
 import { marketingLeads, projects, growthActionsLog } from '@saasfly/db/schema';
 import { desc, eq, and, sql } from "@saasfly/db-core";
+import { validateAdminSession } from '@/lib/admin-auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,6 +15,10 @@ export const dynamic = 'force-dynamic';
  * - offset: default 0
  */
 export async function GET(req: NextRequest) {
+  // 🛡️ Autorización propia: devuelve PII de leads (CRM).
+  const { errorResponse } = await validateAdminSession(req.headers);
+  if (errorResponse) return errorResponse;
+
   try {
     const { searchParams } = new URL(req.url);
     const requestedProjectIdentifier = searchParams.get('projectId');

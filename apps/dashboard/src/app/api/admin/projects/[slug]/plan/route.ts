@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@saasfly/db';
 import { projects, installedProducts } from '@saasfly/db/schema';
 import { eq, and } from "@saasfly/db-core";
+import { installedProductIn } from "@/lib/platform/product-matching";
+import { normalizeProductKey } from "@saasfly/shared";
 import { getNexusAuthContext } from '@saasfly/shared';
 import { PlatformAuditLedgerService } from '@saasfly/hermes-core';
 import { sendTenantProvisionEmail } from '@saasfly/shared';
@@ -46,12 +48,17 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
       return NextResponse.json({ success: false, message: 'Project not found' }, { status: 404 });
     }
 
-    // Optional targeting: update only one vertical (productFamily), or all
-    // installed products of the tenant when omitted.
+    // Targeting opcional: un producto del tenant, o todos cuando se omite.
+    // Se busca por `product` (con alias legacy) porque `HERMES` y `GROWTH_OS`
+    // comparten la familia 'GROWTH_OS' y un match por familia cambiaba el plan
+    // del producto equivocado.
+    const normalizedProduct = productFamily ? normalizeProductKey(String(productFamily)) : null;
     const whereClause = productFamily
       ? and(
           eq(installedProducts.projectId, project.id),
-          eq(installedProducts.productFamily, productFamily)
+          normalizedProduct
+            ? installedProductIn(normalizedProduct)
+            : eq(installedProducts.productFamily, productFamily)
         )
       : eq(installedProducts.projectId, project.id);
 

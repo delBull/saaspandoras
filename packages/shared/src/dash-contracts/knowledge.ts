@@ -3,6 +3,36 @@
  * src/lib/dash-contracts/knowledge.ts
  */
 
+/**
+ * Canonical knowledge dimensions (mirror of `KnowledgeDimension` in `@saasfly/hermes-core`,
+ * declared here because the UI package cannot import the DB-bound core package).
+ * `@saasfly/hermes-core` asserts assignability at compile time, so a divergence breaks the build.
+ */
+export type KnowledgeDimensionView =
+  | 'identity'
+  | 'project'
+  | 'product'
+  | 'market'
+  | 'founder'
+  | 'business_model'
+  | 'traction'
+  | 'evidence'
+  | 'offer'
+  | 'governance';
+
+/**
+ * Dimensions that describe the business itself — used by Dash "Business Entities".
+ * Single source for both the UI counter and the backend projection.
+ */
+export const BUSINESS_ENTITY_DIMENSIONS = [
+  'identity',
+  'project',
+  'product',
+  'market',
+  'founder',
+  'business_model',
+] as const satisfies readonly KnowledgeDimensionView[];
+
 export interface KnowledgeFactDTO {
   id: string;
   dimension: string;

@@ -13,6 +13,12 @@ import { NexusCentralNotificationModal } from "@/components/nexus/NexusCentralNo
 import NexusSettingsPage from "./settings/SettingsClient";
 import type { TaskItem } from "@/components/nexus/taskTypes";
 import { INITIAL_TASKS } from "@/components/nexus/taskTypes";
+import {
+  NEXUS_TOKEN_STORAGE_KEY,
+  exchangeNexusSession,
+  readNexusTokenFromUrl,
+  scrubNexusTokenFromUrl,
+} from "@/lib/nexus/session-client";
 import { useActiveWallet, useDisconnect } from "thirdweb/react";
 
 import { NexusShell } from "@/components/nexus/shell/NexusShell";
@@ -50,21 +56,23 @@ export function NexusCommandCenter({ auth, initialTour, initialRole: _initialRol
   const [opsActiveTab, setOpsActiveTab] = useState<Tab>('WORK_ENGINE');
 
   useEffect(() => {
-    try {
-      const urlToken = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("token") : null;
-      const effectiveToken = urlToken ?? token;
-      if (effectiveToken) {
-        localStorage.setItem("pandoras_nexus_token", effectiveToken);
-        document.cookie = `pandoras_nexus_token=${encodeURIComponent(effectiveToken)}; path=/; max-age=2592000; SameSite=Lax`;
-      } else {
-        const stored = typeof window !== "undefined" ? localStorage.getItem("pandoras_nexus_token") : null;
-        if (stored && !document.cookie.includes("pandoras_nexus_token=")) {
-          document.cookie = `pandoras_nexus_token=${encodeURIComponent(stored)}; path=/; max-age=2592000; SameSite=Lax`;
-        }
-      }
-    } catch (e) {
-      console.warn("[Nexus] Failed to sync token storage/cookie:", e);
-    }
+    if (typeof window === "undefined") return;
+    const urlToken = readNexusTokenFromUrl() ?? token ?? null;
+    if (!urlToken) return;
+
+    let cancelled = false;
+    // Canje del magic link por cookie httpOnly (token de un solo uso). Sin copia
+    // legible por JS: si algo inyecta código en la página, no hay llave que robar.
+    void (async () => {
+      const established = await exchangeNexusSession(urlToken);
+      if (cancelled || !established) return;
+      localStorage.removeItem(NEXUS_TOKEN_STORAGE_KEY);
+      scrubNexusTokenFromUrl();
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [token]);
 
   const [tasks, setTasks] = useState<TaskItem[]>(() => {
@@ -339,17 +347,21 @@ export function NexusCommandCenter({ auth, initialTour, initialRole: _initialRol
 
   const _handleLogout = async () => {
     try {
+      // 1) Revocar en el servidor ANTES de borrar la cookie: el endpoint quema el
+      // token de sesión en la base, así una copia robada de la cookie deja de valer.
+      // 2) Recién después se limpia el estado local.
+      await fetch('/api/auth/logout', { method: 'POST' }).catch(() => undefined);
+
       localStorage.removeItem('pandoras_nexus_token');
+      localStorage.setItem('wallet-logged-out', 'true');
       document.cookie = 'pandoras_nexus_token=; path=/; max-age=0; SameSite=Lax';
       document.cookie = 'wallet-address=; path=/; max-age=0;';
       document.cookie = 'thirdweb:wallet-address=; path=/; max-age=0;';
-      localStorage.setItem('wallet-logged-out', 'true');
       if (activeThirdwebWallet) {
         disconnectWallet(activeThirdwebWallet);
       }
-      await fetch('/api/auth/logout', { method: 'POST' }).catch(() => undefined);
-    } catch {
-      // ignore
+    } catch (error: unknown) {
+      console.error('[Nexus] Logout failed to complete cleanly:', error);
     }
     window.location.href = '/';
   };

@@ -274,6 +274,80 @@ export async function verifyCollaboratorToken(
 }
 
 /**
+ * Revoca la sesión de un token: lo quema (centinela `consumed_` + expiración en
+ * 1970) para que ninguna petición posterior lo acepte. Idempotente: un token ya
+ * revocado, expirado o inexistente devuelve `false` sin lanzar.
+ */
+export async function revokeCollaboratorSessionToken(rawToken: string): Promise<boolean> {
+  if (!rawToken) return false;
+
+  const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+  const consumedSentinel = `consumed_${crypto.randomBytes(16).toString('hex')}`;
+
+  const [record] = await db
+    .update(nexusCollaborators)
+    .set({ token: consumedSentinel, expiresAt: new Date(0) })
+    .where(
+      and(
+        eq(nexusCollaborators.token, tokenHash),
+        sql`${nexusCollaborators.token} NOT LIKE 'consumed_%'`
+      )
+    )
+    .returning();
+
+  return Boolean(record);
+}
+
+/**
+ * Canjea un token de magic link (un solo uso) por un token de sesión nuevo.
+ *
+ * - El token presentado se quema de forma atómica (`UPDATE ... WHERE token = old`),
+ *   así el enlace no se puede reutilizar: dos canjes concurrentes, sólo uno gana.
+ * - Se emite un token nuevo y aleatorio cuyo hash queda en la fila; el valor en
+ *   claro se devuelve UNA vez para que la ruta lo ponga en una cookie httpOnly.
+ * - Respeta la denylist (`REJECTED`/`DISABLED`) y la expiración en la misma query.
+ *
+ * Devuelve null si el token no es canjeable (inválido, expirado, ya usado o revocado).
+ */
+export async function rotateCollaboratorSessionToken(
+  rawToken: string,
+  options: { ttlHours?: number } = {}
+): Promise<{ sessionToken: string; collaboratorId: number; role: string } | null> {
+  if (!rawToken) return null;
+
+  const now = new Date();
+  const ttlHours = options.ttlHours ?? TOKEN_EXPIRY_HOURS;
+  const presentedHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+  const sessionToken = generateToken();
+  const sessionHash = crypto.createHash('sha256').update(sessionToken).digest('hex');
+
+  const [record] = await db
+    .update(nexusCollaborators)
+    .set({
+      token: sessionHash,
+      expiresAt: new Date(now.getTime() + ttlHours * 60 * 60 * 1000),
+      lastAccessAt: now,
+    })
+    .where(
+      and(
+        eq(nexusCollaborators.token, presentedHash),
+        gt(nexusCollaborators.expiresAt, now),
+        sql`${nexusCollaborators.token} NOT LIKE 'consumed_%'`,
+        sql`${nexusCollaborators.status} NOT IN ('REJECTED', 'DISABLED')`
+      )
+    )
+    .returning();
+
+  if (!record) return null;
+
+  return {
+    sessionToken,
+    collaboratorId: record.id,
+    role: record.role || 'COLLABORATOR',
+  };
+}
+
+/**
  * Get a collaborator by email (expired or not) for self-renewal auth.
  */
 export async function getCollaboratorByEmail(

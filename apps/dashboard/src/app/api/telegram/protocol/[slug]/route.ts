@@ -15,7 +15,7 @@ import { sql, eq } from "@saasfly/db-core";
 import type { NextRequest } from 'next/server';
 import type { ProtocolTelegramCapabilities } from '@pandoras/gamification/types/bridge';
 import { readContract } from "thirdweb";
-import { defineChain } from "thirdweb/chains";
+import { chainWithOwnRpc } from "@/lib/web3/rpc-chains";
 import { client } from "@saasfly/shared/thirdweb-client";
 import { getContract } from "thirdweb";
 import { telegramBindings } from '@saasfly/db/schema';
@@ -83,7 +83,7 @@ export async function GET(
             try {
                 const contract = getContract({
                     client,
-                    chain: defineChain(Number(project.chain_id)),
+                    chain: chainWithOwnRpc(Number(project.chain_id)),
                     address: resolvedContract
                 });
                 const balance = await readContract({

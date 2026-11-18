@@ -5,7 +5,8 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useActiveAccount, TransactionButton, useWalletBalance, ConnectButton, darkTheme } from "thirdweb/react";
-import { prepareContractCall, defineChain, getContract } from "thirdweb";
+import { prepareContractCall, getContract } from "thirdweb";
+import { chainWithOwnRpc } from "@/lib/web3/rpc-chains";
 import { client } from "@saasfly/shared/thirdweb-client";
 import { toast } from "sonner";
 import { CheckCircle, Loader2, Lock, ArrowRight, ShieldCheck, Flame, ChevronRight, Zap, AlertTriangle, FileText, CheckSquare, Square, X, Crown, Star } from 'lucide-react';
@@ -116,7 +117,7 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
     // Chain detection
     const rawChainId = Number(project.chainId);
     const safeChainId = (!isNaN(rawChainId) && rawChainId > 0) ? rawChainId : 11155111;
-    const chain = useMemo(() => defineChain(safeChainId), [safeChainId]);
+    const chain = useMemo(() => chainWithOwnRpc(safeChainId), [safeChainId]);
     const isTestnet = safeChainId === 11155111 || safeChainId === 84532;
 
     const { data: balanceData } = useWalletBalance({

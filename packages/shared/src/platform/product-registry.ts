@@ -99,6 +99,41 @@ export const PRODUCT_REGISTRY = {
     },
   },
 
+  /**
+   * Growth OS — producto propio (no es una familia de Hermes).
+   * Automatización de crecimiento: campañas, audiencias y contenido.
+   */
+  GROWTH_OS: {
+    family: 'GROWTH_OS',
+    displayName: 'Growth OS',
+    crmPipeline: ['Lead', 'Qualified', 'Campaign', 'Retainer'],
+    capabilities: {
+      growth:      { default: true,  plans: ['sandbox', 'starter', 'growth', 'enterprise'] },
+      audience:    { default: true,  plans: ['sandbox', 'starter', 'growth', 'enterprise'] },
+      content:     { default: true,  plans: ['sandbox', 'starter', 'growth', 'enterprise'] },
+      analytics:   { default: false, plans: ['starter', 'growth', 'enterprise'] },
+      multiagent:  { default: false, plans: ['enterprise'] },
+    },
+    connectors: {
+      telegram:    { default: true,  plans: ['sandbox', 'starter', 'growth', 'enterprise'] },
+      email:       { default: true,  plans: ['sandbox', 'starter', 'growth', 'enterprise'] },
+      instagram:   { default: false, plans: ['growth', 'enterprise'] },
+      whatsapp:    { default: false, plans: ['starter', 'growth', 'enterprise'] },
+    },
+    portalModules: ['growth', 'audience', 'content', 'analytics'],
+    onboardingSteps: ['define_icp', 'connect_channels', 'first_campaign'],
+    runtimeProfile: {
+      requiredKnowledge: ['company_faq', 'offer'],
+      healthChecks: ['channels_connected', 'first_campaign_sent'],
+    },
+    pricing: {
+      sandbox:    { price: 0,    currency: 'USD', period: 'trial'  },
+      starter:    { price: 249,  currency: 'USD', period: 'month'  },
+      growth:     { price: 599,  currency: 'USD', period: 'month'  },
+      enterprise: { price: null, currency: 'USD', period: 'custom' },
+    },
+  },
+
   TOKENIZATION: {
     family: 'INFRASTRUCTURE',
     displayName: 'Tokenización RWA',

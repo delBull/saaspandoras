@@ -21,7 +21,7 @@ export function OperationsKnowledgeTab() {
           </p>
         </div>
         <a
-          href="/admin/hermes"
+          href="https://admin.pandoras.finance/admin/hermes"
           target="_blank"
           rel="noopener noreferrer"
           className="px-3.5 py-1.5 rounded-lg border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 text-xs font-mono flex items-center gap-1.5 transition-colors shrink-0"
@@ -75,7 +75,7 @@ export function OperationsKnowledgeTab() {
             Gestor narrativo de onboarding, configurador de estaciones (Sovereign Doctrine) y FAQs de Hermes.
           </p>
           <a
-            href="/admin/hermes"
+            href="https://admin.pandoras.finance/admin/hermes"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-between w-full px-3.5 py-2 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-mono transition-colors hover:bg-indigo-500/20"

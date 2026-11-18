@@ -163,19 +163,29 @@ export const claimRateLimiter = new RedisRateLimiter(10, 60000); // 10 claims pe
 export const registerRateLimiter = new RedisRateLimiter(5, 60000); // 5 registrations per minute
 
 /**
- * 🛡️ Resolves trusted client IP in production proxy topology (Cloudflare / Vercel Edge).
- * Prioritizes cf-connecting-ip (overwritten by Cloudflare Edge), then x-real-ip,
- * then the last entry in x-forwarded-for (closest to our trusted edge proxy).
- * Never trusts the first entry in x-forwarded-for which can be spoofed by client.
+ * 🛡️ Resolves trusted client IP in production proxy topology.
+ *
+ * Regla: sólo se confía en un header de IP cuando el proxy que está DELANTE de la
+ * app lo sella. `x-real-ip` y `cf-connecting-ip` los puede escribir cualquier
+ * cliente si la plataforma no los sobrescribe; confiar en ellos a ciegas permitía
+ * rotar la IP por request y anular todos los rate limits (fuerza bruta de logins,
+ * magic links y registros).
  */
 export function getTrustedClientIp(headers: Headers | { get(name: string): string | null }): string {
-  // 🛡️ Vercel Edge strictly sets and seals `x-real-ip` from the incoming socket.
-  // Prioritizing x-real-ip prevents attackers from forging `cf-connecting-ip` to bypass rate limits
-  // when Cloudflare proxy is not terminating or actively overwriting the connection.
-  const realIp = headers.get('x-real-ip')?.trim();
-  if (realIp) return realIp;
+  // Vercel sí sobrescribe `x-real-ip` desde el socket: es confiable sólo ahí.
+  const isVercel = process.env.VERCEL === '1' || Boolean(process.env.VERCEL_ENV);
+  if (isVercel) {
+    const realIp = headers.get('x-real-ip')?.trim();
+    if (realIp) return realIp;
+  }
+
+  // Cloudflare inyecta `cf-connecting-ip` junto con `cf-ray`; ambos juntos no son
+  // falsificables sin atravesar el proxy de Cloudflare.
   const cfIp = headers.get('cf-connecting-ip')?.trim();
-  if (cfIp) return cfIp;
+  if (cfIp && headers.get('cf-ray')) return cfIp;
+
+  // Cadena de proxies: el ÚLTIMO salto es el que añadió el proxy inmediato.
+  // El primero lo controla el cliente, así que nunca se usa.
   const forwarded = headers.get('x-forwarded-for');
   if (forwarded) {
     const parts = forwarded.split(',').map((p) => p.trim()).filter(Boolean);

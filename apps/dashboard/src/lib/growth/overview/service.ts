@@ -1,6 +1,7 @@
 import { db } from '@saasfly/db';
 import { projects, installedProducts, marketingLeads, operationalIntents, hermesEvents } from '@saasfly/db/schema';
 import { eq, and, count, desc } from "@saasfly/db-core";
+import { installedProductIn } from '@/lib/platform/product-matching';
 import { CanonicalAuthSession } from '@saasfly/hermes-core';
 import { capabilityRegistry } from '@/lib/growth/capability-registry.service';
 import { getTreasuryBalances, isDeployedContract } from '@/lib/growth/treasury-onchain';
@@ -23,7 +24,7 @@ export class GrowthOverviewService {
     const hermesInstall = await db.query.installedProducts.findFirst({
       where: and(
         eq(installedProducts.projectId, project.id),
-        eq(installedProducts.productFamily, 'HERMES')
+        installedProductIn('HERMES')
       ),
     });
 

@@ -3,7 +3,16 @@ import { db } from '@saasfly/db';
 import { nexusCollaborators, users, type NexusProvisionStatus } from '@saasfly/db/schema';
 import crypto from 'crypto';
 import { eq } from "@saasfly/db-core";
-import { getNexusAuthContext, registerRateLimiter, getTrustedClientIp } from '@saasfly/shared';
+import {
+  NEXUS_DEFAULT_PHONE_COUNTRY_CODE,
+  describePhoneFailure,
+  normalizePhoneE164,
+} from '@saasfly/shared/nexus-phone';
+import {
+  getNexusAuthContext,
+  getTrustedClientIp,
+  registerRateLimiter,
+} from '@saasfly/shared';
 import { notifyProvisioningRequest } from '@/lib/nexus/provisioning';
 
 const ADMIN_EMAILS = [
@@ -14,12 +23,8 @@ const ADMIN_EMAILS = [
     .map((e) => e.trim())
 ].filter(Boolean);
 
-// E.164 basic: + seguido de 7-15 digitos
-const E164_REGEX = /^\+?[1-9]\d{6,14}$/;
-
-function normalizePhone(raw: string): string {
-  return raw.replace(/[\s\-().]/g, '');
-}
+// E.164 + normalización de teléfono: una sola fuente de verdad en @saasfly/shared.
+const PHONE_OPTIONS = { defaultCountryCode: NEXUS_DEFAULT_PHONE_COUNTRY_CODE };
 
 export async function POST(req: NextRequest) {
   try {
@@ -34,30 +39,51 @@ export async function POST(req: NextRequest) {
 
     // Session guard: solo actores autenticados pueden auto-registrarse.
     // Previene que un atacante registre colaboradores arbitrarios con solo conocer email/whatsapp.
+    // El token puede venir en el query (magic link legacy) o en el header `x-nexus-token`
+    // (transporte vigente: nunca debe reinyectarse un bearer en la URL).
     const tokenParam = req.nextUrl.searchParams.get('token') ?? undefined;
-    const auth = await getNexusAuthContext(null, tokenParam);
+    const presentedToken = tokenParam ?? req.headers.get('x-nexus-token') ?? undefined;
+    const auth = await getNexusAuthContext(null, presentedToken);
 
     if (!auth.isAuthenticated) {
       return NextResponse.json(
-        { error: 'Se requiere una sesion activa para completar el registro.' },
+        {
+          error:
+            'Tu sesión de Nexus no está verificada o expiró. Vuelve a firmar con tu billetera o solicita un nuevo magic link.',
+        },
         { status: 401 }
       );
     }
 
-    const body = await req.json();
-    const { address, name, email, whatsappPhone } = body;
+    const body: unknown = await req.json();
+    const payload = (body !== null && typeof body === 'object' ? body : {}) as Record<string, unknown>;
+    const name = typeof payload.name === 'string' ? payload.name.trim() : '';
+    const email = typeof payload.email === 'string' ? payload.email.trim() : '';
+    // La billetera autoritativa la aporta la sesión (`auth.wallet`), no el body:
+    // un `address` enviado por el cliente nunca es autoridad y aquí ya no se exige.
+    // Teléfono OPCIONAL: se normaliza sólo si viene provisto. Nunca se fabrica un valor.
+    const rawPhone =
+      typeof payload.whatsappPhone === 'string' && payload.whatsappPhone.trim()
+        ? payload.whatsappPhone
+        : null;
+    // Borrado EXPLÍCITO del número guardado. Va como bandera separada para que
+    // "campo vacío" (conservar) y "quiero eliminar mi número" no se confundan.
+    const clearWhatsappPhone = payload.clearWhatsappPhone === true;
 
-    if (!address || !name || !email || !whatsappPhone) {
+    if (!name || !email) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    // E.164 validation
-    const normalizedPhone = normalizePhone(String(whatsappPhone).trim());
-    if (!E164_REGEX.test(normalizedPhone)) {
-      return NextResponse.json(
-        { error: 'El numero de WhatsApp debe ser valido e incluir codigo de pais (ej. +521234567890).' },
-        { status: 422 }
-      );
+    let normalizedPhone: string | null = null;
+    if (rawPhone !== null) {
+      const normalized = normalizePhoneE164(rawPhone, PHONE_OPTIONS);
+      if (!normalized.ok) {
+        return NextResponse.json(
+          { error: describePhoneFailure(normalized.reason, PHONE_OPTIONS) },
+          { status: 422 }
+        );
+      }
+      normalizedPhone = normalized.value;
     }
 
     const normalizedEmail = email.toLowerCase().trim();
@@ -120,9 +146,15 @@ export async function POST(req: NextRequest) {
           ? (existing.status as NexusProvisionStatus)
           : desiredStatus;
 
+      // Fail-safe de datos: un payload SIN teléfono (el operador lo dejó vacío)
+      // no debe borrar el número ya almacenado. Sólo se sobrescribe cuando llega
+      // un número nuevo ya normalizado, o cuando se pide el borrado explícito.
+      const effectivePhone =
+        normalizedPhone ?? (clearWhatsappPhone ? null : existing.whatsappPhone ?? null);
+
       await db.update(nexusCollaborators).set({
         name: name.trim(),
-        whatsappPhone: normalizedPhone,
+        whatsappPhone: effectivePhone,
         lastAccessAt: new Date(),
         // Solo asciende a SUPER_ADMIN si el actor autenticado tiene esa autoridad
         role: existing.role === 'COLLABORATOR' && isPrivilegedActor ? assignedRole : existing.role,
@@ -132,7 +164,7 @@ export async function POST(req: NextRequest) {
 
       // Notify admin queue when a self-registration moves INTO pending (new signup path)
       if (effectiveStatus === 'PENDING' && existing.status !== 'PENDING') {
-        void notifyProvisioningRequest({ name: name.trim(), email: normalizedEmail, whatsappPhone: normalizedPhone, role: assignedRole });
+        void notifyProvisioningRequest({ name: name.trim(), email: normalizedEmail, whatsappPhone: effectivePhone, role: assignedRole });
       }
     } else {
       await db.insert(nexusCollaborators).values({
@@ -212,19 +244,14 @@ export async function POST(req: NextRequest) {
       console.warn('[Nexus Register] Wallet→users link skipped (non-blocking):', linkErr);
     }
 
-    const response = NextResponse.json({ ok: true, token: tokenParam });
-    if (tokenParam) {
-      // 🛡️ Aligned with 24h database token TTL to prevent dead/zombie cookies on client
-      response.cookies.set('pandoras_nexus_token', tokenParam, {
-        path: '/',
-        maxAge: 24 * 60 * 60, // 24 hours
-        sameSite: 'lax',
-        secure: process.env.NODE_ENV === 'production',
-      });
-    }
-    return response;
-  } catch (error: any) {
+    // La cookie de sesión la emite SOLO /api/nexus/session (httpOnly, token de un
+    // solo uso). Aquí no se escribe: hacerlo instalaría un token ya canjeado.
+    return NextResponse.json({ ok: true });
+  } catch (error: unknown) {
     console.error('[Nexus Register] Error:', error);
-    return NextResponse.json({ error: error.message || 'Internal error' }, { status: 500 });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Internal error' },
+      { status: 500 }
+    );
   }
 }

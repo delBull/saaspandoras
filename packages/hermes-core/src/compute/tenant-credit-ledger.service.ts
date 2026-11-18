@@ -62,7 +62,9 @@ export interface ReservationResult {
 
 export class TenantCreditLedgerService {
   public static readonly DEFAULT_MARKUP_PERCENTAGE = Number(process.env.HERMES_DEFAULT_MARKUP_PERCENTAGE || 35);
-  public static readonly MIN_TOPUP_AMOUNT_USD = 5.0000; // $5 USD mínimo de recarga permitido
+  // Mínimo de recarga: umbral operativo (conciliación on-chain + revisión manual).
+  // Configurable sin redeploy de código; $10 por defecto.
+  public static readonly MIN_TOPUP_AMOUNT_USD = Number(process.env.HERMES_MIN_TOPUP_USD || 10);
   private static inMemoryCredits: Map<string, TenantCreditsDTO> = new Map();
   private static inMemoryTrialCredits: Map<string, {
     grantedCredits: number;
@@ -95,6 +97,40 @@ export class TenantCreditLedgerService {
       sandboxReservedBalanceUsd: 0,
     };
     this.inMemoryCredits.set(normalizedTenant, { ...current, ...updates });
+  }
+
+  /**
+   * Lectura SIN efectos secundarios: devuelve null si el tenant no tiene fila.
+   * Usar en endpoints de consulta (no crear registros al leer).
+   */
+  public static async getCredits(tenantId: string): Promise<TenantCreditsDTO | null> {
+    const normalizedTenant = (tenantId ?? '').toLowerCase().trim();
+    if (!db || !normalizedTenant) return null;
+
+    try {
+      const [row] = await db
+        .select()
+        .from(hermesTenantCredits)
+        .where(eq(hermesTenantCredits.tenantId, normalizedTenant))
+        .limit(1);
+
+      if (!row) return null;
+
+      return {
+        tenantId: row.tenantId,
+        creditBalanceUsd: parseFloat(row.creditBalanceUsd || '0.0000'),
+        reservedBalanceUsd: parseFloat(row.reservedBalanceUsd || '0.0000'),
+        totalDepositedUsd: parseFloat(row.totalDepositedUsd || '0.0000'),
+        totalSpentUsd: parseFloat(row.totalSpentUsd || '0.0000'),
+        markupPercentage: row.markupPercentage ?? this.DEFAULT_MARKUP_PERCENTAGE,
+        isSandboxEnabled: row.isSandboxEnabled ?? true,
+        sandboxBalanceUsd: parseFloat(row.sandboxBalanceUsd || '0.0000'),
+        sandboxReservedBalanceUsd: parseFloat(row.sandboxReservedBalanceUsd || '0.0000'),
+      };
+    } catch (error: unknown) {
+      console.error('[TenantCreditLedger] getCredits failed:', error);
+      return null;
+    }
   }
 
   /**
