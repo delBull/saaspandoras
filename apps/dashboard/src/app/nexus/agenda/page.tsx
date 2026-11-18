@@ -7,6 +7,7 @@ import Link from "next/link";
 import { ArrowLeft, Calendar, Video } from "lucide-react";
 import { CancelMeetingButton } from "./CancelMeetingButton";
 import { LaunchImmediateMeetingButton } from "./LaunchImmediateMeetingButton";
+import { SchedulePresentationForm } from "./SchedulePresentationForm";
 import { CopyLinkButton } from "./CopyLinkButton";
 import { AgendaListClient } from "./AgendaListClient";
 export const dynamic = "force-dynamic";
@@ -103,7 +104,8 @@ export default async function NexusAgendaPage({ searchParams }: { searchParams: 
               Reuniones, AI Ingestion y Action Items
             </p>
           </div>
-          <div>
+          <div className="flex flex-col items-end gap-2">
+            <SchedulePresentationForm />
             <LaunchImmediateMeetingButton />
           </div>
         </header>

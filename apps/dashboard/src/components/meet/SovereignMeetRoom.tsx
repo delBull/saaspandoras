@@ -406,6 +406,17 @@ export function SovereignMeetRoom({
                         <p className="text-[11px] text-zinc-400">Este slide no tiene notas de conducción.</p>
                     )}
 
+                    {presentation.proposalHref && (
+                        <a
+                            href={presentation.proposalHref}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block text-center px-3 py-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-[11px] font-mono text-emerald-200"
+                        >
+                            Abrir propuesta del deal
+                        </a>
+                    )}
+
                     <div className="pt-2 border-t border-white/10 space-y-1">
                         <p className="text-[10px] font-mono uppercase text-zinc-500">Reglas</p>
                         {presentation.guardrails.map((rule, index) => (

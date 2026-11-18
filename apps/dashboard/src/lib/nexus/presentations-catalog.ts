@@ -32,6 +32,8 @@ export interface NexusPresentation {
   tags: string[];
   /** Ruta canónica del deck */
   href: string;
+  /** Documento de propuesta asociado (opcional) */
+  proposalHref?: string;
   status: string;
   /** Duración sugerida total, en minutos */
   targetMinutes: number;
@@ -41,6 +43,130 @@ export interface NexusPresentation {
 }
 
 export const NEXUS_PRESENTATIONS: NexusPresentation[] = [
+  {
+    slug: "celeste",
+    title: "Celeste · Sistema Comercial",
+    subtitle:
+      "Captación y conversión comercial para Celeste Beach Residences & Spa. Piloto de 90 días con atribución y medición semanal.",
+    category: "Deal activo · Hospitalidad",
+    tags: ["Celeste Beach Residences", "104 fracciones", "Estancia Discovery", "Deal Room PDR-63C2E9"],
+    href: "/pitch/celeste",
+    proposalHref: "/propuesta/celeste",
+    status: "Listo para presentar",
+    targetMinutes: 35,
+    guardrails: [
+      "No garantizar prospectos, visitas ni ventas: se presenta el sistema y cómo se mide.",
+      "Usar solo los datos confirmados por Eduardo (104 fracciones · $138k/$181k · promedio $155k · equipos Huatulco y CDMX).",
+      "No mencionar subdivisiones 1/8 ni 1/16: no están confirmadas.",
+      "El 8% de Posadas/Curamoria se menciona como información del cliente y se marca como 'a confirmar de qué se calcula'.",
+      "Los ~$16.12M USD son inventario nominal, NO ventas ni ingreso atribuible a Pandora's.",
+      "Publicidad fondeada por Celeste y separada de honorarios. No hay success fee en la base.",
+      "La automatización de WhatsApp se presenta sujeta a aprobación de Meta; al inicio la atención es humana asistida.",
+    ],
+    script: [
+      {
+        slide: "s1-portada",
+        title: "Apertura y encuadre",
+        minutes: 2,
+        beats: [
+          "Agradece el tiempo y confirma quién está en la llamada (Eduardo y área comercial).",
+          "Encuadra: 30-35 minutos, y al final se validan 4 datos y deciden si arranca el piloto.",
+          "Abre el deck cuando termines el encuadre (botón Presentar deck en la sala).",
+        ],
+      },
+      {
+        slide: "s2-oportunidad",
+        title: "La oportunidad",
+        minutes: 4,
+        beats: [
+          "Repite lo que ellos dijeron, no lo que supones: 104 fracciones disponibles, $138k (2 rec) y $181k (3 rec), promedio $155k.",
+          "Perfil: uso vacacional, compradores de CDMX, Oaxaca y extranjeros. Equipo: 1 asesora en Huatulco y 2 vendedores en CDMX.",
+          "Menciona la Estancia Discovery (USD 250/noche, descontable del anticipo) como activo existente, con condiciones a confirmar.",
+          "Si surge el inventario total, aclara que es valor nominal de lo disponible, no ventas.",
+        ],
+      },
+      {
+        slide: "s3-diagnostico",
+        title: "Diagnóstico",
+        minutes: 5,
+        beats: [
+          "Nombra su propio diagnóstico: el cuello de botella es conseguir interesados calificados.",
+          "Presenta las tres hipótesis como hipótesis: dependencia de Posadas/Curamoria (8%, a confirmar base de cálculo), falta de proceso único y falta de medición.",
+          "Pregunta antes de afirmar: ¿cuántos interesados reciben al mes y cuántos llegan a visita?",
+          "Compromiso explícito: el diagnóstico se valida con datos en la semana 1, no se da por cierto.",
+        ],
+      },
+      {
+        slide: "s4-solucion",
+        title: "La solución",
+        minutes: 5,
+        beats: [
+          "Explica el servicio como sistema único: captar, atender, precalificar, convertir a visita y medir.",
+          "Deja claro el límite: Pandora's opera el sistema; Celeste conserva el cierre y la relación con el comprador.",
+          "Sobre automatización: al inicio es atención humana asistida; el asistente en WhatsApp requiere aprobación de Meta.",
+        ],
+      },
+      {
+        slide: "s5-como",
+        title: "El recorrido del prospecto",
+        minutes: 4,
+        beats: [
+          "Recorre el flujo completo con sus etapas y responsables, de captación a registro y atribución.",
+          "Detente en la entrega al equipo de ellos: qué recibe, con qué criterios y quién responde.",
+          "Si preguntan por su CRM actual, deja abierto integrarse o usar el entorno de Pandora's (se define en semana 1).",
+        ],
+      },
+      {
+        slide: "s6-plan",
+        title: "Plan de 90 días",
+        minutes: 4,
+        beats: [
+          "Semana 1 diagnóstico · semanas 2-3 construcción · semana 4 activación (meta, depende de accesos y aprobaciones).",
+          "Semanas 5-11 optimización semanal · semana 12 reporte final y decisión de continuidad.",
+          "Pide aquí los accesos y materiales: sin ellos la semana 4 se mueve, y decirlo ahora evita fricción después.",
+        ],
+      },
+      {
+        slide: "s7-entregables",
+        title: "Qué incluye",
+        minutes: 3,
+        beats: [
+          "Recorre los entregables sin leerlos todos: destaca landing + catálogo, CRM con pipeline, campañas y reporte semanal.",
+          "Contenido: 4 piezas al mes incluidas; 8 como ampliación sujeta a material y aprobaciones a tiempo.",
+        ],
+      },
+      {
+        slide: "s8-inversion",
+        title: "Propuesta económica",
+        minutes: 5,
+        beats: [
+          "Cifras: $2,500 de configuración + $1,800/mes por 3 meses = $7,900 de honorarios en 90 días.",
+          "Publicidad aparte, la paga Celeste directo a plataformas; escenario de trabajo $1,500-3,000/mes a validar.",
+          "No incluye IVA, viajes, producción audiovisual especial ni comisión por ventas.",
+          "Si piden incentivo por ventas: se negocia por separado con reglas de atribución. No improvisar descuentos ni plazos en la llamada.",
+        ],
+      },
+      {
+        slide: "s9-indicadores",
+        title: "Qué medimos",
+        minutes: 3,
+        beats: [
+          "CPL, porcentaje de prospectos calificados, solicitudes y visitas Discovery, ventas atribuibles si se acuerda.",
+          "Di la frase completa: no se garantizan prospectos, visitas ni ventas; el resultado también depende de su oferta, disponibilidad y velocidad de cierre.",
+        ],
+      },
+      {
+        slide: "s10-siguientes",
+        title: "Siguientes pasos",
+        minutes: 2,
+        beats: [
+          "Cierra con los 3 pasos: validar 4 datos (anticipo, reglas Discovery, presupuesto de pauta, accesos) → aceptar la propuesta → kickoff.",
+          "Confirma que el documento de aceptación se firma en el Deal Room de Celeste.",
+          "Finaliza la reunión con el botón Finalizar: dispara el seguimiento por email a los asistentes.",
+        ],
+      },
+    ],
+  },
   {
     slug: "real-estate-growth",
     title: "Real Estate Growth Infrastructure",

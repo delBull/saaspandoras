@@ -33,8 +33,13 @@ export interface FollowUpSummary {
   noShow: number;
 }
 
-function followUpEmailHtml(input: { firstName: string; deckTitle: string | null; deckUrl: string | null }): string {
-  const { firstName, deckTitle, deckUrl } = input;
+function followUpEmailHtml(input: {
+  firstName: string;
+  deckTitle: string | null;
+  deckUrl: string | null;
+  proposalUrl: string | null;
+}): string {
+  const { firstName, deckTitle, deckUrl, proposalUrl } = input;
   return `<!DOCTYPE html>
 <html lang="es"><head><meta charset="UTF-8"/><title>Gracias por tu tiempo</title></head>
 <body style="margin:0;padding:0;background-color:#08080C;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
@@ -54,6 +59,9 @@ function followUpEmailHtml(input: { firstName: string; deckTitle: string | null;
             <a href="${deckUrl}" target="_blank" style="display:inline-block;background:linear-gradient(135deg,#f59e0b,#b45309);color:#fff;text-decoration:none;font-size:14px;font-weight:600;padding:13px 28px;border-radius:10px;">
               Ver la presentación · ${deckTitle}
             </a></td></tr></table>` : ''}
+          ${proposalUrl ? `<p style="margin:16px 0 0;font-size:13px;line-height:1.6;color:rgba(255,255,255,0.75);">
+            Propuesta completa: <a href="${proposalUrl}" style="color:#fbbf24;">ver documento</a>
+          </p>` : ''}
           <p style="margin:22px 0 0;font-size:13px;line-height:1.6;color:rgba(255,255,255,0.6);">
             Cualquier duda o ajuste sobre lo revisado, responde directamente a este correo.
           </p>
@@ -103,6 +111,7 @@ export async function runSovereignFollowUps(meetingId?: string): Promise<FollowU
 
     const deck = findPresentation(meeting.presentationId);
     const deckUrl = deck ? `${baseUrl}${deck.href}` : null;
+    const proposalUrl = deck?.proposalHref ? `${baseUrl}${deck.proposalHref}` : null;
 
     for (const participant of pendingParticipants) {
       // Con asistencia conocida, el seguimiento va a quien realmente asistió.
@@ -141,6 +150,7 @@ export async function runSovereignFollowUps(meetingId?: string): Promise<FollowU
               firstName: identity.split('@')[0] ?? '',
               deckTitle: deck?.title ?? null,
               deckUrl,
+              proposalUrl,
             }),
           });
           sent = Boolean(result?.success);

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, BookOpen, Building2, Calendar, Cpu, Presentation } from "lucide-react";
+import { ArrowRight, BookOpen, Building2, Calendar, Cpu, FileText, Presentation } from "lucide-react";
 import { NEXUS_PRESENTATIONS } from "@/lib/nexus/presentations-catalog";
 
 /**
@@ -9,11 +9,13 @@ import { NEXUS_PRESENTATIONS } from "@/lib/nexus/presentations-catalog";
  */
 
 const ICONS: Record<string, typeof Building2> = {
+  celeste: Building2,
   "real-estate-growth": Building2,
   "institutional-os": Cpu,
 };
 
 const ACCENTS: Record<string, { accent: string; border: string }> = {
+  celeste: { accent: "from-emerald-500/20 to-emerald-900/10", border: "border-emerald-500/30" },
   "real-estate-growth": { accent: "from-purple-500/20 to-purple-900/10", border: "border-purple-500/30" },
   "institutional-os": { accent: "from-zinc-500/20 to-zinc-900/10", border: "border-white/10" },
 };
@@ -106,15 +108,28 @@ export default function NexusPresentationsPage() {
                     <BookOpen className="w-3.5 h-3.5 text-purple-300" />
                     <span>Ver guión</span>
                   </Link>
-                  <Link
-                    href={deck.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white text-black font-semibold text-xs tracking-wider uppercase hover:bg-zinc-200 transition-all shadow-md group-hover:gap-3"
-                  >
-                    <span>Lanzar Presentador</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
+                  <div className="flex items-center gap-2">
+                    {deck.proposalHref && (
+                      <Link
+                        href={deck.proposalHref}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-[11px] font-mono text-emerald-200"
+                      >
+                        <FileText className="w-3.5 h-3.5" />
+                        Propuesta
+                      </Link>
+                    )}
+                    <Link
+                      href={deck.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white text-black font-semibold text-xs tracking-wider uppercase hover:bg-zinc-200 transition-all shadow-md group-hover:gap-3"
+                    >
+                      <span>Lanzar Presentador</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                  </div>
                 </div>
               </div>
             );
