@@ -4,7 +4,7 @@ import { eq, and, sql } from "@saasfly/db-core";
 import { daoMembers, purchases, ambassadors, ambassadorClients, ambassadorCommissions, projects } from '@saasfly/db/schema';
 import { sendPurchaseEmail } from '@/lib/email/purchase-mailer';
 
-import { defineChain } from "thirdweb/chains";
+import { chainWithOwnRpc } from "@/lib/web3/rpc-chains";
 import { client as twClient } from "@saasfly/shared/thirdweb-client";
 import { eth_getTransactionReceipt, getRpcClient } from "thirdweb/rpc";
 
@@ -52,7 +52,7 @@ export async function POST(req: Request) {
         }
 
         try {
-            const chain = defineChain(Number(project.chainId));
+            const chain = chainWithOwnRpc(Number(project.chainId));
             const provider = getRpcClient({ client: twClient, chain });
             const receipt = await eth_getTransactionReceipt(provider, { hash: txHash as `0x${string}` });
 

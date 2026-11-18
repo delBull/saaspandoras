@@ -6,7 +6,7 @@ import { userBalances } from "@saasfly/db-core";
 import { eq, sql } from "@saasfly/db-core";
 import { getContract, prepareTransaction, sendTransaction, waitForReceipt } from "thirdweb";
 import { privateKeyToAccount } from "thirdweb/wallets";
-import { base, sepolia } from "thirdweb/chains";
+import { baseMainnet as base, baseSepoliaTestnet as sepolia } from "@/lib/web3/rpc-chains";
 import { generateMintSignature } from "thirdweb/extensions/erc20";
 
 // Using shared client from ~/lib/thirdweb-client

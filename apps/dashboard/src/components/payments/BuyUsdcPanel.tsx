@@ -2,7 +2,7 @@
 
 import { memo, useState } from 'react';
 import { BuyWidget } from 'thirdweb/react';
-import { base } from 'thirdweb/chains';
+import { baseMainnet as base } from '@/lib/web3/rpc-chains';
 import { client } from '@saasfly/shared/thirdweb-client';
 import { wallets } from '@/lib/wallets';
 import { CheckCircle2, AlertTriangle } from 'lucide-react';

@@ -5,7 +5,7 @@ import { db } from '@saasfly/db-core';
 import { purchases as purchasesSchema, projects as projectsSchema } from '@saasfly/db-core';
 import { eq } from "@saasfly/db-core";
 import { getContract, readContract } from 'thirdweb';
-import { defineChain } from 'thirdweb/chains';
+import { chainWithOwnRpc } from '@/lib/web3/rpc-chains';
 import { client as twClient } from '@saasfly/shared/thirdweb-client';
 
 export default async function CertificatePage({ 
@@ -48,7 +48,7 @@ export default async function CertificatePage({
       try {
         const contract = getContract({
           client: twClient,
-          chain: defineChain(Number(chainId)),
+          chain: chainWithOwnRpc(Number(chainId)),
           address: resolvedContract
         });
         const rawBalance = await Promise.race([

@@ -15,6 +15,7 @@ import { useReadContract, useActiveAccount, useContractEvents, TransactionButton
 import { useAuth } from "@/components/auth/AuthProvider";
 import { getContract, prepareEvent, prepareContractCall } from "thirdweb";
 import { client } from "@saasfly/shared/thirdweb-client";
+import { chainWithOwnRpc } from "@/lib/web3/rpc-chains";
 import { config } from "@/config";
 import { governanceABI } from "@/lib/governance-abi";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -109,7 +110,7 @@ export default function GovernancePage() {
     // --- On-Chain Setup ---
     const contract = getContract({
         client,
-        chain: config.chain,
+        chain: chainWithOwnRpc(config.chain.id),
         address: config.governanceContractAddress,
         abi: governanceABI as any
     });

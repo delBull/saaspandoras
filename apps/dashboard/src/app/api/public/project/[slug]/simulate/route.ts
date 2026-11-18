@@ -4,7 +4,7 @@ import { projects as projectsSchema } from "@saasfly/db-core";
 import { eq } from "@saasfly/db-core";
 import { IntegrationKeyService } from "@/lib/integrations/auth";
 import { readContract } from "thirdweb";
-import { defineChain } from "thirdweb/chains";
+import { chainWithOwnRpc } from "@/lib/web3/rpc-chains";
 import { client as twClient } from "@saasfly/shared/thirdweb-client";
 import { getContract } from "thirdweb";
 import { ProgressionEngine, Tier } from "@/lib/protocol-engine/progression";
@@ -65,7 +65,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       if (resolvedContract && resolvedContract !== "0x0000000000000000000000000000000000000000") {
         try {
           const contract = getContract({
-            client: twClient, chain: defineChain(Number(chainId)), address: resolvedContract
+            client: twClient, chain: chainWithOwnRpc(Number(chainId)), address: resolvedContract
           });
           const balance = await readContract({
             contract, method: "function balanceOf(address) view returns (uint256)", params: [wallet as `0x${string}`]

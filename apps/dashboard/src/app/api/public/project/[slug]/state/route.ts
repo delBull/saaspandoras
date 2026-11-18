@@ -23,7 +23,7 @@ import { eq, sql, and, desc, inArray, ilike } from "@saasfly/db-core";
 import { IntegrationKeyService } from "@/lib/integrations/auth";
 import { ProjectDomainService } from "@/lib/domain/project-domain-service";
 import { readContract } from "thirdweb";
-import { defineChain } from "thirdweb/chains";
+import { chainWithOwnRpc } from "@/lib/web3/rpc-chains";
 import { client as twClient } from "@saasfly/shared/thirdweb-client";
 import { getContract } from "thirdweb";
 import { ProgressionEngine, Tier } from "@/lib/protocol-engine/progression";
@@ -121,7 +121,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     
     if (contractActive) {
       const contract = getContract({
-        client: twClient, chain: defineChain(Number(chainId)), address: resolvedContract
+        client: twClient, chain: chainWithOwnRpc(Number(chainId)), address: resolvedContract
       });
 
       try {
@@ -172,7 +172,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         // If DB says 0 but we have a contract, fetch from chain to ensure Source of Truth
         if (holdersCount === 0 && resolvedContract && resolvedContract !== "0x0000000000000000000000000000000000000000") {
             try {
-                const chain = defineChain(Number(chainId));
+                const chain = chainWithOwnRpc(Number(chainId));
                 const contract = getContract({
                     client: twClient, chain, address: resolvedContract
                 });
@@ -223,7 +223,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
 
         // e) Fetch Treasury Balance
         if (project.treasuryAddress?.startsWith('0x')) {
-            const chain = defineChain(Number(chainId));
+            const chain = chainWithOwnRpc(Number(chainId));
             
             if (Number(chainId) === 8453) {
                 const USDC_BASE_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";

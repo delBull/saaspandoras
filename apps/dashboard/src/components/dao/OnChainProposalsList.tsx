@@ -2,7 +2,8 @@
 "use client";
 
 import { useReadContract, useActiveAccount, TransactionButton, useContractEvents } from "thirdweb/react";
-import { getContract, defineChain, prepareContractCall, prepareEvent } from "thirdweb";
+import { getContract, prepareContractCall, prepareEvent } from "thirdweb";
+import { chainWithOwnRpc } from "@/lib/web3/rpc-chains";
 import { client } from "@saasfly/shared/thirdweb-client"; // Verify correct path
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
@@ -20,13 +21,13 @@ export function OnChainProposalsList({ votingContractAddress, chainId, governanc
     const account = useActiveAccount();
     const contract = votingContractAddress ? getContract({
         client,
-        chain: defineChain(chainId),
+        chain: chainWithOwnRpc(chainId),
         address: votingContractAddress,
     }) : undefined;
 
     const dummyContract = getContract({
         client,
-        chain: defineChain(chainId),
+        chain: chainWithOwnRpc(chainId),
         address: "0x0000000000000000000000000000000000000000"
     });
 
@@ -89,7 +90,7 @@ export function OnChainProposalsList({ votingContractAddress, chainId, governanc
 function ProposalCard({ proposal, contract, account, chainId, governanceTokenAddress }: any) {
     const dummyContract = getContract({
         client,
-        chain: defineChain(chainId),
+        chain: chainWithOwnRpc(chainId),
         address: "0x0000000000000000000000000000000000000000"
     });
 
@@ -104,7 +105,7 @@ function ProposalCard({ proposal, contract, account, chainId, governanceTokenAdd
     const { data: decimalsData } = useReadContract({
         contract: (proposal.contract?.address || governanceTokenAddress) ? getContract({
             client,
-            chain: defineChain(chainId),
+            chain: chainWithOwnRpc(chainId),
             address: proposal.contract?.address || governanceTokenAddress || "",
         }) : dummyContract as any,
         method: "function decimals() view returns (uint8)",
