@@ -1637,6 +1637,8 @@ export const meetings = pgTable("meetings", {
   
   jitsiRoomId: text("jitsi_room_id"), // Sovereign Jitsi Meet ID
   presentationId: text("presentation_id"), // ID to link to Fullscreen Pitch Template
+  presentationOpen: boolean("presentation_open").notNull().default(false), // Deck injected in-room
+  presentationSlide: integer("presentation_slide").notNull().default(0), // Host-controlled slide
 
   
   status: meetingStatusEnum("status").default("scheduled").notNull(),
@@ -3546,6 +3548,7 @@ export const nexusDealRooms = pgTable("nexus_deal_rooms", {
   status: nexusDealStatusEnum("status").notNull().default("DRAFT"),
   summary: text("summary"),
   cognitiveSummary: jsonb("cognitive_summary").$type<Array<string>>().default([]),
+  presentationId: varchar("presentation_id", { length: 64 }), // Deck del catálogo soberano (opcional)
   autoShare: boolean("auto_share").notNull().default(true),
   openSign: boolean("open_sign").notNull().default(false),
   taskRef: text("task_ref"),

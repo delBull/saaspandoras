@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { checkNexusPermission, getNexusAuthContext } from "@saasfly/shared";
+import { checkNexusPermission, getNexusAuthContext, sendEmail } from "@saasfly/shared";
 import { canUserAccessDeal, getRoom, getRoomByPublicId } from "@saasfly/nexus-deals-sdk";
 import { AgendaCore } from "@saasfly/agenda-sdk";
+import { findPresentation, isKnownPresentation } from "@/lib/nexus/presentations-catalog";
 import { db } from "@saasfly/db-core";
 import { nexusAuditEvents } from "@saasfly/db-core/schema";
 
@@ -24,13 +25,60 @@ export const dynamic = "force-dynamic";
  * authenticated operator session (fail-closed).
  */
 
-const PRESENTATION_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MIN_DURATION_MINUTES = 15;
 const MAX_DURATION_MINUTES = 240;
 const DEFAULT_DURATION_MINUTES = 30;
 const PAST_TOLERANCE_MS = 5 * 60 * 1000;
 const HORIZON_DAYS = 365;
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function inviteEmailHtml(input: {
+  startsAt: Date;
+  endsAt: string | null;
+  deckTitle: string | null;
+  joinUrl: string;
+  dealRoomUrl: string;
+  counterparty: string;
+}): string {
+  const { startsAt, endsAt, deckTitle, joinUrl, dealRoomUrl, counterparty } = input;
+  const fmt = (value: Date) =>
+    value.toLocaleString("es-MX", { dateStyle: "full", timeStyle: "short", timeZone: "America/Mexico_City" });
+  const when = endsAt ? `${fmt(startsAt)} (hasta ${fmt(new Date(endsAt))})` : fmt(startsAt);
+  return `<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"/><title>Invitación a la presentación</title></head>
+<body style="margin:0;padding:0;background-color:#08080C;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#08080C;">
+    <tr><td align="center" style="padding:40px 16px;">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:540px;margin:0 auto;background:#0F0F18;border:1px solid rgba(255,255,255,0.07);border-radius:16px;overflow:hidden;">
+        <tr><td style="background:linear-gradient(135deg,#0a0a1a 0%,#1a0533 100%);padding:28px 32px;text-align:center;">
+          <div style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:rgba(251,191,36,0.7);margin-bottom:10px;">PANDORA'S · SOVEREIGN MEET</div>
+          <div style="font-size:22px;font-weight:700;color:#ffffff;">Presentación agendada</div>
+          <div style="font-size:13px;color:rgba(255,255,255,0.5);margin-top:6px;">${counterparty}</div>
+        </td></tr>
+        <tr><td style="padding:30px 32px;">
+          <p style="margin:0 0 6px;font-size:13px;color:rgba(255,255,255,0.5);">Cuándo</p>
+          <p style="margin:0 0 20px;font-size:15px;color:#ffffff;font-weight:600;">${when}</p>
+          ${deckTitle ? `<p style="margin:0 0 6px;font-size:13px;color:rgba(255,255,255,0.5);">Presentación</p>
+          <p style="margin:0 0 22px;font-size:14px;color:rgba(255,255,255,0.85);">${deckTitle}</p>` : ''}
+          <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
+            <a href="${joinUrl}" target="_blank" style="display:inline-block;background:linear-gradient(135deg,#f59e0b,#b45309);color:#fff;text-decoration:none;font-size:14px;font-weight:600;padding:14px 30px;border-radius:10px;">
+              Entrar a la sala
+            </a>
+          </td></tr></table>
+          <p style="margin:22px 0 0;font-size:12px;color:rgba(255,255,255,0.5);text-align:center;">
+            Documento y expediente: <a href="${dealRoomUrl}" style="color:#fbbf24;">Deal Room</a>
+          </p>
+        </td></tr>
+        <tr><td style="background:#080810;padding:14px 28px;border-top:1px solid rgba(255,255,255,0.05);">
+          <div style="font-size:10px;color:rgba(255,255,255,0.28);text-align:center;">Pandora's Group · Confidential</div>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
+}
 
 function fail(status: number, code: string, message: string, extra?: Record<string, unknown>) {
   return NextResponse.json({ error: message, code, ...(extra ?? {}) }, { status });
@@ -86,13 +134,13 @@ export async function POST(
     );
   }
 
-  let presentationId: string | null = null;
-  if (body.presentationId !== undefined && body.presentationId !== null && body.presentationId !== "") {
-    const candidate = String(body.presentationId).trim();
-    if (!PRESENTATION_ID_PATTERN.test(candidate)) {
-      return fail(400, "INVALID_PRESENTATION_ID", "presentationId tiene un formato inválido.");
-    }
-    presentationId = candidate;
+  // The body may PROPOSE a deck, but only as a fallback: the deal's own deck wins.
+  const rawDeckFromBody =
+    body.presentationId !== undefined && body.presentationId !== null && body.presentationId !== ""
+      ? String(body.presentationId).trim()
+      : null;
+  if (rawDeckFromBody && !isKnownPresentation(rawDeckFromBody)) {
+    return fail(400, "INVALID_PRESENTATION_ID", "presentationId no existe en el catálogo de presentaciones.");
   }
 
   // 3. Resource scope: the deal must be reachable by this identity
@@ -123,6 +171,10 @@ export async function POST(
   }
   const canonicalOrgId = auth.canonicalOrgId || "pandoras";
 
+  // Deck: la fuente de verdad es el deal (server-side). El body solo si el deal no tiene deck.
+  const dealDeck = (room as { presentationId?: string | null }).presentationId ?? null;
+  const presentationId: string | null = dealDeck || rawDeckFromBody;
+
   const participantEmails = Array.from(
     new Set(
       (room.signers ?? [])
@@ -147,7 +199,50 @@ export async function POST(
     return fail(500, "MEETING_CREATION_FAILED", "No se pudo crear la reunión.");
   }
 
-  // 6. Audit (explicit status — never reported as recorded when it is not)
+  // 6. Invitaciones (side effect reportado con números reales, nunca fingidos)
+  const baseUrl =
+    process.env.NEXT_PUBLIC_APP_URL ??
+    (process.env.NODE_ENV === "production" ? "https://dash.pandoras.finance" : "http://localhost:3000");
+  const joinUrl = `${baseUrl}/meet/${meeting.id}`;
+  const dealRoomUrl = `${baseUrl}/deal/${room.publicId}`;
+  const deck = findPresentation(presentationId);
+
+  let invitesSent = 0;
+  let invitesFailed = 0;
+  const inviteErrors: string[] = [];
+  for (const email of participantEmails) {
+    if (!EMAIL_PATTERN.test(email)) {
+      invitesFailed++;
+      inviteErrors.push(`${email}:INVALID_EMAIL`);
+      continue;
+    }
+    try {
+      const result = await sendEmail({
+        to: email,
+        subject: `Presentación agendada · ${room.counterparty}`,
+        html: inviteEmailHtml({
+          startsAt,
+          endsAt: meeting.endsAt,
+          deckTitle: deck?.title ?? null,
+          joinUrl,
+          dealRoomUrl,
+          counterparty: room.counterparty,
+        }),
+      });
+      if (result?.success) {
+        invitesSent++;
+      } else {
+        invitesFailed++;
+        inviteErrors.push(`${email}:${result?.error ?? "NOT_SENT"}`);
+      }
+    } catch (error) {
+      invitesFailed++;
+      inviteErrors.push(`${email}:SEND_FAILED`);
+      console.error("[DealSchedule] Invite failed:", error);
+    }
+  }
+
+  // 7. Audit (explicit status — never reported as recorded when it is not)
   let audit: "RECORDED" | "FAILED" = "RECORDED";
   try {
     await db.insert(nexusAuditEvents).values({
@@ -164,6 +259,8 @@ export async function POST(
         endsAt: meeting.endsAt,
         presentationId,
         participants: participantEmails,
+        invitesSent,
+        invitesFailed,
       },
       result: "SUCCESS",
     });
@@ -180,8 +277,10 @@ export async function POST(
       endsAt: meeting.endsAt,
       presentationId,
       participants: participantEmails.length,
+      joinUrl,
       dealRoomUrl: `/deal/${room.publicId}`,
       agendaUrl: "/nexus/agenda",
+      invites: { sent: invitesSent, failed: invitesFailed, errors: inviteErrors },
       audit,
     },
     { status: 201 }

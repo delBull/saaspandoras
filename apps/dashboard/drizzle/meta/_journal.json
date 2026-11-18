@@ -617,6 +617,20 @@
       "when": 1792829000000,
       "tag": "0087_nexus_direct_messages",
       "breakpoints": true
+    },
+    {
+      "idx": 88,
+      "version": "7",
+      "when": 1793500000000,
+      "tag": "0088_deal_room_presentation",
+      "breakpoints": true
+    },
+    {
+      "idx": 89,
+      "version": "7",
+      "when": 1793500100000,
+      "tag": "0089_meeting_presentation_state",
+      "breakpoints": true
     }
   ]
 }

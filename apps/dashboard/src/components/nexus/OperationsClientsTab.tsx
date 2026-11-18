@@ -5,11 +5,13 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Building2, Briefcase, Handshake, ArrowUpRight, FolderGit2, CheckCircle2, Calendar, Video, AlertTriangle, Loader2, Check, Copy } from 'lucide-react';
 import { getNexusClientHeaders } from '@/lib/nexus/client-auth-headers';
+import { NEXUS_PRESENTATIONS, findPresentation } from '@/lib/nexus/presentations-catalog';
 
 interface Deal {
   id: string;
   roomId: string;
   publicId: string | null;
+  presentationId: string | null;
   organization: string;
   project: string;
   stage: 'PROSPECT' | 'NEGOTIATION' | 'DUE_DILIGENCE' | 'CLOSED' | 'LOST';
@@ -24,6 +26,8 @@ interface ScheduleResult {
   scheduledFor: string;
   endsAt: string | null;
   participants: number;
+  joinUrl: string;
+  invites: { sent: number; failed: number; errors: string[] };
   dealRoomUrl: string;
   agendaUrl: string;
   audit: 'RECORDED' | 'FAILED';
@@ -70,6 +74,8 @@ export function OperationsClientsTab({ onOpenApprovals }: OperationsClientsTabPr
   const [scheduleError, setScheduleError] = useState<string | null>(null);
   const [scheduleResult, setScheduleResult] = useState<ScheduleResult | null>(null);
   const [copied, setCopied] = useState(false);
+  const [deckSaving, setDeckSaving] = useState(false);
+  const [deckError, setDeckError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchDeals = async () => {
@@ -91,6 +97,7 @@ export function OperationsClientsTab({ onOpenApprovals }: OperationsClientsTabPr
             id: r.publicId || r.id,
             roomId: r.id,
             publicId: r.publicId ?? null,
+            presentationId: r.presentationId ?? null,
             organization: r.company || r.counterparty || 'Desconocida',
             project: r.title || r.kind || 'Proyecto Sin Nombre',
             stage: r.status === 'SIGNED' ? 'CLOSED' : 'NEGOTIATION',
@@ -124,6 +131,34 @@ export function OperationsClientsTab({ onOpenApprovals }: OperationsClientsTabPr
   const selectDeal = (deal: Deal) => {
     setSelectedDeal(deal);
     resetScheduleForm();
+  };
+
+  const handleDeckChange = async (deckSlug: string) => {
+    if (!selectedDeal) return;
+    setDeckSaving(true);
+    setDeckError(null);
+    try {
+      const res = await fetch(`/api/nexus/deals/${encodeURIComponent(selectedDeal.roomId)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', ...getNexusClientHeaders() },
+        credentials: 'include',
+        body: JSON.stringify({ presentationId: deckSlug === '' ? null : deckSlug }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setDeckError(data.code === 'UNKNOWN_PRESENTATION'
+          ? 'Ese deck no existe en el catálogo.'
+          : (data.error ?? 'No se pudo guardar el deck del deal.'));
+        return;
+      }
+      const updated = { ...selectedDeal, presentationId: deckSlug === '' ? null : deckSlug };
+      setSelectedDeal(updated);
+      setDeals((prev) => prev.map((deal) => (deal.roomId === updated.roomId ? updated : deal)));
+    } catch {
+      setDeckError('Error de red al guardar el deck.');
+    } finally {
+      setDeckSaving(false);
+    }
   };
 
   const handleSchedule = async (event: React.FormEvent) => {
@@ -167,6 +202,8 @@ export function OperationsClientsTab({ onOpenApprovals }: OperationsClientsTabPr
         scheduledFor: data.scheduledFor,
         endsAt: data.endsAt ?? null,
         participants: data.participants ?? 0,
+        joinUrl: data.joinUrl ?? '',
+        invites: data.invites ?? { sent: 0, failed: 0, errors: [] },
         dealRoomUrl: data.dealRoomUrl,
         agendaUrl: data.agendaUrl,
         audit: data.audit ?? 'FAILED',
@@ -319,6 +356,31 @@ export function OperationsClientsTab({ onOpenApprovals }: OperationsClientsTabPr
                       <span>Deal Room:</span>
                       <span className="text-white font-mono">{selectedDeal.publicId ?? 'Sin sala pública'}</span>
                     </p>
+                    <label className="flex flex-col gap-1 pt-1">
+                      <span className="text-zinc-400 text-[11px]">Deck del deal (se inyecta en la reunión)</span>
+                      <select
+                        value={selectedDeal.presentationId ?? ''}
+                        onChange={(e) => handleDeckChange(e.target.value)}
+                        disabled={deckSaving}
+                        className="w-full rounded-lg bg-black/50 border border-white/10 px-2 py-1.5 text-[11px] text-zinc-200 focus:outline-none focus:border-sky-500/50 disabled:opacity-50"
+                      >
+                        <option value="">Sin deck vinculado</option>
+                        {NEXUS_PRESENTATIONS.map((deck) => (
+                          <option key={deck.slug} value={deck.slug}>{deck.title}</option>
+                        ))}
+                      </select>
+                    </label>
+                    {deckError && <p className="text-[10px] text-rose-300">{deckError}</p>}
+                    {selectedDeal.presentationId && findPresentation(selectedDeal.presentationId) && (
+                      <Link
+                        href={`/nexus/presentations/${selectedDeal.presentationId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[10px] font-mono text-purple-300 hover:text-purple-200"
+                      >
+                        Ver guión del deck →
+                      </Link>
+                    )}
                   </div>
                 </div>
 
@@ -395,7 +457,16 @@ export function OperationsClientsTab({ onOpenApprovals }: OperationsClientsTabPr
                       </div>
                       <div className="space-y-1 text-xs text-zinc-300">
                         <p><span className="text-zinc-500">Cuándo:</span> {formattedResultRange}</p>
-                        <p><span className="text-zinc-500">Participantes invitados:</span> {scheduleResult.participants}</p>
+                        <p>
+                          <span className="text-zinc-500">Invitaciones por email:</span>{' '}
+                          <span className={scheduleResult.invites.failed > 0 ? 'text-amber-300' : 'text-emerald-300'}>
+                            {scheduleResult.invites.sent} enviadas
+                          </span>
+                          {scheduleResult.invites.failed > 0 && (
+                            <span className="text-amber-300"> · {scheduleResult.invites.failed} fallidas</span>
+                          )}
+                        </p>
+                        <p><span className="text-zinc-500">Participantes registrados:</span> {scheduleResult.participants}</p>
                         <p className="flex items-center gap-2">
                           <span className="text-zinc-500">Meeting ID:</span>
                           <code className="font-mono text-[11px] text-zinc-400">{scheduleResult.meetingId}</code>
@@ -426,6 +497,14 @@ export function OperationsClientsTab({ onOpenApprovals }: OperationsClientsTabPr
                         >
                           Abrir Deal Room
                         </Link>
+                        <button
+                          type="button"
+                          onClick={() => copyMeetingId(scheduleResult.joinUrl)}
+                          className="px-3 py-1.5 rounded-lg border border-lime-500/30 bg-lime-500/10 hover:bg-lime-500/20 text-lime-200 text-[11px] font-mono flex items-center gap-1.5"
+                        >
+                          {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                          Copiar link de la sala
+                        </button>
                         <Link
                           href={scheduleResult.agendaUrl}
                           className="px-3 py-1.5 rounded-lg border border-sky-500/30 bg-sky-500/10 hover:bg-sky-500/20 text-sky-200 text-[11px] font-mono flex items-center gap-1.5"
@@ -482,14 +561,18 @@ export function OperationsClientsTab({ onOpenApprovals }: OperationsClientsTabPr
                           </select>
                         </label>
                         <label className="text-[11px] font-mono text-zinc-500 space-y-1">
-                          <span>Deck (opcional)</span>
-                          <input
-                            type="text"
-                            value={presentationId}
+                          <span>{selectedDeal.presentationId ? 'Deck (del deal)' : 'Deck (opcional)'}</span>
+                          <select
+                            value={selectedDeal.presentationId ?? presentationId}
                             onChange={(e) => setPresentationId(e.target.value)}
-                            placeholder="institutional-os"
-                            className="w-full rounded-lg bg-black/50 border border-white/10 px-2 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-sky-500/50"
-                          />
+                            disabled={Boolean(selectedDeal.presentationId)}
+                            className="w-full rounded-lg bg-black/50 border border-white/10 px-2 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-sky-500/50 disabled:opacity-60"
+                          >
+                            <option value="">Sin deck</option>
+                            {NEXUS_PRESENTATIONS.map((deck) => (
+                              <option key={deck.slug} value={deck.slug}>{deck.title}</option>
+                            ))}
+                          </select>
                         </label>
                       </div>
 
@@ -502,7 +585,7 @@ export function OperationsClientsTab({ onOpenApprovals }: OperationsClientsTabPr
 
                       <div className="flex items-center justify-between gap-2">
                         <p className="text-[10px] text-zinc-500 font-mono">
-                          Se invitará a los firmantes registrados del Deal Room.
+                          Se invitará a los firmantes registrados del Deal Room. El deck del deal manda sobre esta selección.
                         </p>
                         <button
                           type="submit"

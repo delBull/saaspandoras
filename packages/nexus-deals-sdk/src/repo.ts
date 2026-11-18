@@ -205,6 +205,8 @@ export async function updateRoom(input: {
   status?: string;
   taskRef?: string;
   openSign?: boolean;
+  /** Deck del catálogo soberano de presentaciones (null lo desvincula) */
+  presentationId?: string | null;
   actor?: string;
 }) {
   const { id, actor = "Nexus Ops", ...fields } = input;
@@ -218,6 +220,9 @@ export async function updateRoom(input: {
   if (fields.status !== undefined) patch.status = fields.status;
   if (fields.taskRef !== undefined) patch.taskRef = fields.taskRef === "" ? null : fields.taskRef;
   if (fields.openSign !== undefined) patch.openSign = fields.openSign;
+  if (fields.presentationId !== undefined) {
+    patch.presentationId = fields.presentationId === "" ? null : fields.presentationId;
+  }
 
   if (fields.status === "EXECUTED" && !patch.enteredIntoForceAt) {
     patch.enteredIntoForceAt = new Date();

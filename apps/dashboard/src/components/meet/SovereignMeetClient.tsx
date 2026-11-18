@@ -40,6 +40,7 @@ export function SovereignMeetClient({ joinRef }: SovereignMeetClientProps) {
     const [loading, setLoading] = useState(true);
 
     const [presentationId, setPresentationId] = useState<string | null>(null);
+    const [meetingId, setMeetingId] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchToken = async () => {
@@ -62,6 +63,9 @@ export function SovereignMeetClient({ joinRef }: SovereignMeetClientProps) {
                 setRole(data.role);
                 if (data.presentationId) {
                     setPresentationId(data.presentationId);
+                }
+                if (data.meetingId) {
+                    setMeetingId(data.meetingId);
                 }
             } catch (err: any) {
                 setError(err.message);
@@ -104,9 +108,20 @@ export function SovereignMeetClient({ joinRef }: SovereignMeetClientProps) {
 
     if (!token || !appId || !roomName) return null;
 
+    if (!meetingId) {
+        return (
+            <div className="w-full h-full flex flex-col items-center justify-center bg-black text-white p-8">
+                <p className="text-zinc-500 text-sm text-center">
+                    La sala no devolvió un identificador de reunión válido.
+                </p>
+            </div>
+        );
+    }
+
     return (
         <SovereignMeetRoom
             roomName={roomName}
+            meetingId={meetingId}
             displayName={`Participante ${role === "host" ? "(Host)" : ""}`}
             role={role || "participant"}
             jwt={token}

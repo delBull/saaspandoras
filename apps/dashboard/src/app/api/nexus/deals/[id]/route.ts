@@ -17,6 +17,7 @@ import {
 import { DealKind } from "@saasfly/nexus-deals-sdk";
 import { sendDealRoomAlert } from "@saasfly/nexus-deals-sdk";
 import { sendDealCancelledEmail } from "@saasfly/nexus-deals-sdk";
+import { isKnownPresentation } from "@/lib/nexus/presentations-catalog";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -88,6 +89,17 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       if (typeof body.status === "string") patch.status = body.status;
       if (typeof body.taskRef === "string") patch.taskRef = body.taskRef.trim();
       if (typeof body.openSign === "boolean") patch.openSign = body.openSign;
+      if (body.presentationId !== undefined) {
+        // El deck debe existir en el catálogo soberano (fuente única de verdad).
+        const rawDeck = body.presentationId === null ? null : String(body.presentationId).trim();
+        if (rawDeck !== null && rawDeck !== "" && !isKnownPresentation(rawDeck)) {
+          return NextResponse.json(
+            { error: "presentationId no existe en el catálogo de presentaciones", code: "UNKNOWN_PRESENTATION" },
+            { status: 400 }
+          );
+        }
+        patch.presentationId = rawDeck === "" ? null : rawDeck;
+      }
       const after = await updateRoom(patch as any);
       updated = after!;
 

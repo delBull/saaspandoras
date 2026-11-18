@@ -1,11 +1,13 @@
 "use client";
 
 import { JitsiMeeting } from "@jitsi/react-sdk";
-import { useEffect, useState, useRef } from "react";
-import { Loader2 } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ChevronLeft, ChevronRight, Loader2, MonitorPlay, PhoneOff, X, BookOpen } from "lucide-react";
+import { findPresentation } from "@/lib/nexus/presentations-catalog";
 
 interface SovereignMeetRoomProps {
-    roomName: string; // The UUID meeting ID — appId prefix is added internally
+    roomName: string; // JaaS room name — appId prefix is added internally
+    meetingId: string; // Canonical meeting UUID (for presentation state + end)
     displayName: string;
     role: string;
     jwt: string;
@@ -46,8 +48,17 @@ const MOBILE_TOOLBAR: string[] = [
 // Host-only extras (added on top of desktop set)
 const HOST_EXTRAS: string[] = ['recording', 'mute-everyone', 'security'];
 
+const PRESENTATION_POLL_MS = 3000;
+
+interface PresentationState {
+    open: boolean;
+    slide: number;
+    status: string;
+}
+
 export function SovereignMeetRoom({
     roomName,
+    meetingId,
     displayName,
     role,
     jwt,
@@ -57,8 +68,22 @@ export function SovereignMeetRoom({
     const [loading, setLoading] = useState(true);
     const [isMobile, setIsMobile] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
+    const deckFrameRef = useRef<HTMLIFrameElement>(null);
 
     const isHost = role === "host" || role === "co_host";
+
+    // --- Injected presentation state (host-controlled, DB-backed) ---
+    const [deckState, setDeckState] = useState<PresentationState>({ open: false, slide: 0, status: "scheduled" });
+    const [deckError, setDeckError] = useState<string | null>(null);
+    const [deckBusy, setDeckBusy] = useState(false);
+    const [showScript, setShowScript] = useState(false);
+    const [ending, setEnding] = useState(false);
+    const [meetingEnded, setMeetingEnded] = useState(false);
+
+    const hasDeck = Boolean(presentationId);
+    const presentation = useMemo(() => findPresentation(presentationId), [presentationId]);
+    const scriptBlocks = presentation?.script ?? [];
+    const currentBlock = scriptBlocks[deckState.slide];
 
     useEffect(() => {
         const check = () => setIsMobile(window.innerWidth < 768);
@@ -67,6 +92,95 @@ export function SovereignMeetRoom({
         return () => window.removeEventListener("resize", check);
     }, []);
 
+    // Participants follow the host: short polling of the shared meeting state.
+    useEffect(() => {
+        if (!hasDeck) return;
+        let cancelled = false;
+
+        const load = async () => {
+            try {
+                const res = await fetch(`/api/v1/meet/presentation?meetingId=${encodeURIComponent(meetingId)}`, {
+                    cache: "no-store",
+                });
+                if (!res.ok) return;
+                const data = await res.json();
+                if (cancelled) return;
+                setDeckState({
+                    open: Boolean(data.open),
+                    slide: Number.isInteger(data.slide) ? data.slide : 0,
+                    status: data.status ?? "scheduled",
+                });
+                if (data.status === "ended") setMeetingEnded(true);
+            } catch {
+                // Silencioso a propósito: un fallo de red no debe tumbar la sala.
+            }
+        };
+
+        load();
+        const interval = setInterval(load, PRESENTATION_POLL_MS);
+        return () => {
+            cancelled = true;
+            clearInterval(interval);
+        };
+    }, [hasDeck, meetingId]);
+
+    // Push the synchronized slide index into the deck iframe.
+    useEffect(() => {
+        if (!deckState.open) return;
+        const frame = deckFrameRef.current;
+        if (!frame?.contentWindow) return;
+        frame.contentWindow.postMessage({ type: "pandora:presentation:go", index: deckState.slide }, "*");
+    }, [deckState.open, deckState.slide]);
+
+    const updateDeck = useCallback(
+        async (patch: { open?: boolean; slide?: number }) => {
+            setDeckBusy(true);
+            setDeckError(null);
+            try {
+                const res = await fetch("/api/v1/meet/presentation", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ meetingId, ...patch }),
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    setDeckError(data.error ?? "No se pudo actualizar la presentación");
+                    return;
+                }
+                setDeckState({
+                    open: Boolean(data.open),
+                    slide: Number.isInteger(data.slide) ? data.slide : 0,
+                    status: data.status ?? deckState.status,
+                });
+            } catch {
+                setDeckError("Error de red al actualizar la presentación");
+            } finally {
+                setDeckBusy(false);
+            }
+        },
+        [deckState.status]
+    );
+
+    const endMeeting = useCallback(async () => {
+        setEnding(true);
+        try {
+            const res = await fetch("/api/v1/meet/end", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ meetingId }),
+            });
+            if (res.ok) {
+                setMeetingEnded(true);
+                return true;
+            }
+            return false;
+        } catch {
+            return false;
+        } finally {
+            setEnding(false);
+        }
+    }, [meetingId]);
+
     const toolbarButtons = isMobile
         ? MOBILE_TOOLBAR
         : isHost
@@ -74,8 +188,6 @@ export function SovereignMeetRoom({
         : DESKTOP_TOOLBAR;
 
     // JaaS (8x8.vc) room format: <appId>/<roomName>
-    // The JWT `room` claim is set to `meetingId` (UUID) by /meet/token.
-    // JaaS strips the appId prefix when matching against the JWT `room` claim.
     const fullRoomName = `${appId}/${roomName}`;
 
     return (
@@ -94,16 +206,154 @@ export function SovereignMeetRoom({
                     </p>
                 </div>
             )}
-            
-            {isHost && presentationId && (
-                <div className="absolute top-4 left-4 z-20">
+
+            {/* Host controls: presentation + end meeting */}
+            {isHost && (
+                <div className="absolute top-4 left-4 z-30 flex flex-wrap items-center gap-2">
+                    {hasDeck && (
+                        <>
+                            <button
+                                type="button"
+                                disabled={deckBusy || meetingEnded}
+                                onClick={() => updateDeck({ open: !deckState.open, slide: deckState.slide })}
+                                className="bg-lime-500 text-black px-4 py-2 rounded-full font-bold text-xs uppercase tracking-wider hover:bg-lime-400 disabled:opacity-50 transition-colors flex items-center gap-2 shadow-lg shadow-lime-500/20 border border-lime-400/50"
+                            >
+                                <MonitorPlay className="w-4 h-4" />
+                                {deckState.open ? "Ocultar deck" : "Presentar deck"}
+                            </button>
+                            {deckState.open && (
+                                <div className="flex items-center gap-1 bg-black/70 border border-white/15 rounded-full px-1.5 py-1 backdrop-blur">
+                                    <button
+                                        type="button"
+                                        disabled={deckBusy || deckState.slide === 0}
+                                        onClick={() => updateDeck({ slide: Math.max(deckState.slide - 1, 0) })}
+                                        className="p-1.5 rounded-full hover:bg-white/10 disabled:opacity-40 text-white"
+                                        title="Slide anterior"
+                                    >
+                                        <ChevronLeft className="w-4 h-4" />
+                                    </button>
+                                    <span className="text-[10px] font-mono text-zinc-300 min-w-[3rem] text-center">
+                                        {deckState.slide + 1}/{scriptBlocks.length || "?"}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        disabled={deckBusy}
+                                        onClick={() => updateDeck({ slide: deckState.slide + 1 })}
+                                        className="p-1.5 rounded-full hover:bg-white/10 disabled:opacity-40 text-white"
+                                        title="Slide siguiente"
+                                    >
+                                        <ChevronRight className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            )}
+                            {presentation && (
+                                <button
+                                    type="button"
+                                    onClick={() => setShowScript((v) => !v)}
+                                    className={`px-3 py-2 rounded-full text-xs font-mono flex items-center gap-1.5 border backdrop-blur transition-colors ${
+                                        showScript
+                                            ? "bg-purple-500/30 border-purple-400/50 text-purple-100"
+                                            : "bg-black/60 border-white/15 text-zinc-300 hover:text-white"
+                                    }`}
+                                    title="Guión del presentador"
+                                >
+                                    <BookOpen className="w-3.5 h-3.5" />
+                                    Guión
+                                </button>
+                            )}
+                        </>
+                    )}
                     <button
-                        onClick={() => window.open(`/pitch?id=${presentationId}`, '_blank')}
-                        className="bg-lime-500 text-black px-4 py-2 rounded-full font-bold text-xs uppercase tracking-wider hover:bg-lime-400 transition-colors flex items-center gap-2 shadow-lg shadow-lime-500/20 border border-lime-400/50"
+                        type="button"
+                        disabled={ending || meetingEnded}
+                        onClick={endMeeting}
+                        className="bg-red-600/90 hover:bg-red-500 text-white px-4 py-2 rounded-full font-bold text-xs uppercase tracking-wider disabled:opacity-50 transition-colors flex items-center gap-2"
+                        title="Finaliza la reunión y encola el seguimiento por email"
                     >
-                        <span>🚀</span>
-                        Lanzar Pitch Deck
+                        <PhoneOff className="w-4 h-4" />
+                        {meetingEnded ? "Finalizada" : ending ? "Finalizando..." : "Finalizar"}
                     </button>
+                </div>
+            )}
+
+            {isHost && deckError && (
+                <div className="absolute top-20 left-4 z-30 max-w-xs text-[11px] text-red-300 bg-red-950/80 border border-red-500/40 rounded-lg px-3 py-2">
+                    {deckError}
+                </div>
+            )}
+
+            {/* Presenter script (host only) */}
+            {isHost && showScript && presentation && (
+                <aside className="absolute top-20 right-4 z-30 w-80 max-h-[70dvh] overflow-y-auto rounded-xl bg-black/85 border border-purple-500/30 backdrop-blur p-4 space-y-3">
+                    <header className="flex items-center justify-between">
+                        <div>
+                            <p className="text-[10px] font-mono uppercase tracking-widest text-purple-300">Guión · {presentation.title}</p>
+                            <p className="text-[10px] text-zinc-500">{presentation.targetMinutes} min objetivo</p>
+                        </div>
+                        <button type="button" onClick={() => setShowScript(false)} className="text-zinc-500 hover:text-white">
+                            <X className="w-4 h-4" />
+                        </button>
+                    </header>
+
+                    {currentBlock ? (
+                        <div className="space-y-2">
+                            <p className="text-xs font-semibold text-white">
+                                {deckState.slide + 1}. {currentBlock.title}
+                                <span className="ml-2 text-[10px] font-mono text-zinc-500">{currentBlock.minutes} min</span>
+                            </p>
+                            <ul className="space-y-1.5">
+                                {currentBlock.beats.map((beat, index) => (
+                                    <li key={index} className="text-[11px] text-zinc-300 leading-relaxed flex gap-2">
+                                        <span className="text-purple-400">·</span>
+                                        <span>{beat}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    ) : (
+                        <p className="text-[11px] text-zinc-400">Este slide no tiene notas de conducción.</p>
+                    )}
+
+                    <div className="pt-2 border-t border-white/10 space-y-1">
+                        <p className="text-[10px] font-mono uppercase text-zinc-500">Reglas</p>
+                        {presentation.guardrails.map((rule, index) => (
+                            <p key={index} className="text-[10px] text-zinc-400 leading-relaxed">— {rule}</p>
+                        ))}
+                    </div>
+                </aside>
+            )}
+
+            {/* Injected deck: same slide for everyone, controlled by the host */}
+            {deckState.open && presentation && (
+                <div className="absolute inset-0 z-20 bg-black flex flex-col">
+                    <div className="flex items-center justify-between px-4 py-2 border-b border-white/10 bg-black/80">
+                        <span className="text-[10px] font-mono uppercase tracking-widest text-lime-400">
+                            Presentación soberana · {presentation.title}
+                        </span>
+                        <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-mono text-zinc-500">
+                                Slide {deckState.slide + 1}
+                                {isHost ? " · control del host" : " · siguiendo al host"}
+                            </span>
+                            {isHost && (
+                                <button
+                                    type="button"
+                                    onClick={() => updateDeck({ open: false })}
+                                    className="text-zinc-400 hover:text-white"
+                                    title="Cerrar deck"
+                                >
+                                    <X className="w-4 h-4" />
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                    <iframe
+                        ref={deckFrameRef}
+                        src={`/pitch/${presentation.slug}?embed=1&slide=${deckState.slide}`}
+                        title={presentation.title}
+                        className="flex-1 w-full border-0 bg-black"
+                        allow="fullscreen"
+                    />
                 </div>
             )}
 
@@ -132,8 +382,6 @@ export function SovereignMeetRoom({
                         enableNoisyMicDetection: true,
 
                         // --- Branding (configOverwrite path — supported in JaaS) ---
-                        // Note: watermark/logo suppression is primarily configured in
-                        // JaaS Console → Customization. These are belt-and-suspenders.
                         hideConferenceSubject: false, // Show the meeting title
                         disableThirdPartyRequests: false,
 
@@ -142,7 +390,6 @@ export function SovereignMeetRoom({
                     }}
                     interfaceConfigOverwrite={{
                         // Legacy flags — still honored by some JaaS deployments.
-                        // Primary branding control is via JaaS Console → Customization.
                         SHOW_JITSI_WATERMARK: false,
                         SHOW_BRAND_WATERMARK: false,
                         SHOW_WATERMARK_FOR_GUESTS: false,
@@ -162,7 +409,10 @@ export function SovereignMeetRoom({
                         });
 
                         externalApi.on("readyToClose", () => {
-                            // When user hangs up, redirect back to dashboard
+                            // Host closing the call ends the meeting (queues follow-up).
+                            if (isHost) {
+                                void endMeeting();
+                            }
                             if (typeof window !== "undefined") {
                                 window.location.href = "/";
                             }

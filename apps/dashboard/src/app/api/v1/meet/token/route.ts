@@ -118,6 +118,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       token,
+      meetingId: meeting.id, // Canonical UUID — used by in-room presentation state + end
       roomName: meeting.jitsiRoomId || meetingId, // Use Sovereign Jitsi Room ID if available
       appId: JITSI_APP_ID,
       role,

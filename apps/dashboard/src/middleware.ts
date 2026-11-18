@@ -79,7 +79,20 @@ export function middleware(request: NextRequest) {
     // Only rewrite paths that are dedicated sub-modules of /nexus (rooms, settings, developers, print, etc.)
     // All top-level platform routes (/onboarding, /access, /growth-os, /admin, /deal, /portal, etc.)
     // must be served normally without appending /nexus prefix.
-    const nexusSubmodules = ["/rooms", "/settings", "/developers", "/print", "/roles"];
+    //
+    // IMPORTANT: every directory under app/nexus must be listed here, because rule 0.2.2 redirects
+    // `/nexus/<x>` → `<nexus-host>/<x>`. A missing entry means the redirected URL 404s.
+    const nexusSubmodules = [
+      "/rooms",
+      "/agenda",
+      "/presentations",
+      "/settings",
+      "/developers",
+      "/print",
+      "/checkout",
+      "/invite",
+      "/private-terminal",
+    ];
     const isNexusSubmodule = nexusSubmodules.some(sub => pathname === sub || pathname.startsWith(`${sub}/`));
     
     if (isNexusSubmodule && !pathname.startsWith("/nexus/")) {

@@ -8,10 +8,17 @@ let auditInsertCalls: any[] = [];
 let auditShouldFail = false;
 let getRoomCalls: string[] = [];
 let publicIdLookups: string[] = [];
+let emailCalls: any[] = [];
+let emailShouldFail = false;
 
 vi.mock("@saasfly/shared", () => ({
   getNexusAuthContext: vi.fn(async () => mockAuth),
   checkNexusPermission: vi.fn((ctx: any, permission: string) => Boolean(ctx?.permissions?.[permission])),
+  sendEmail: vi.fn(async (payload: any) => {
+    emailCalls.push(payload);
+    if (emailShouldFail) return { success: false, error: "NOT_CONFIGURED: RESEND_API_KEY" };
+    return { success: true, id: "mock_email" };
+  }),
 }));
 
 vi.mock("@saasfly/nexus-deals-sdk", () => ({
@@ -103,6 +110,8 @@ describe("📅 Deal schedule route (/api/nexus/deals/[id]/schedule)", () => {
     auditShouldFail = false;
     getRoomCalls = [];
     publicIdLookups = [];
+    emailCalls = [];
+    emailShouldFail = false;
     vi.clearAllMocks();
   });
 
@@ -239,6 +248,23 @@ describe("📅 Deal schedule route (/api/nexus/deals/[id]/schedule)", () => {
       result: "SUCCESS",
     });
     expect(auditInsertCalls[0].newState.dealPublicId).toBe(ROOM.publicId);
+    expect(data.joinUrl).toContain("/meet/meeting-abc");
+    expect(data.invites).toEqual({ sent: 2, failed: 0, errors: [] });
+    expect(emailCalls).toHaveLength(2);
+    expect(emailCalls[0].to).toBe("socio@celeste.com");
+  });
+
+  it("SCH-09b: reporta invitaciones fallidas con números reales (no finge éxito)", async () => {
+    emailShouldFail = true;
+
+    const res = await POST(makeRequest({ scheduledFor: futureIso() }), { params: Promise.resolve({ id: ROOM.id }) });
+
+    expect(res.status).toBe(201);
+    const data = await res.json();
+    expect(data.meetingId).toBe("meeting-abc");
+    expect(data.invites.sent).toBe(0);
+    expect(data.invites.failed).toBe(2);
+    expect(data.invites.errors[0]).toContain("NOT_CONFIGURED");
   });
 
   it("SCH-10: reports audit failure explicitly instead of claiming it was recorded", async () => {
@@ -250,6 +276,29 @@ describe("📅 Deal schedule route (/api/nexus/deals/[id]/schedule)", () => {
     const data = await res.json();
     expect(data.meetingId).toBe("meeting-abc");
     expect(data.audit).toBe("FAILED");
+  });
+
+  it("SCH-12: el deck del deal manda sobre el deck propuesto en el body", async () => {
+    mockRoom.presentationId = "real-estate-growth";
+
+    const res = await POST(
+      makeRequest({ scheduledFor: futureIso(), presentationId: "institutional-os" }),
+      { params: Promise.resolve({ id: ROOM.id }) }
+    );
+
+    expect(res.status).toBe(201);
+    expect(createMeetingCalls[0].presentationId).toBe("real-estate-growth");
+  });
+
+  it("SCH-13: un deck que no existe en el catálogo se rechaza antes de crear nada", async () => {
+    const res = await POST(
+      makeRequest({ scheduledFor: futureIso(), presentationId: "deck-inexistente" }),
+      { params: Promise.resolve({ id: ROOM.id }) }
+    );
+
+    expect(res.status).toBe(400);
+    expect((await res.json()).code).toBe("INVALID_PRESENTATION_ID");
+    expect(createMeetingCalls).toHaveLength(0);
   });
 
   it("SCH-11: rejects a malformed presentationId with 400", async () => {
