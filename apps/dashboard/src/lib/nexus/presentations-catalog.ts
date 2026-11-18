@@ -50,7 +50,7 @@ export const NEXUS_PRESENTATIONS: NexusPresentation[] = [
       "Captación y conversión comercial para Celeste Beach Residences & Spa. Piloto de 90 días con atribución y medición semanal.",
     category: "Deal activo · Hospitalidad",
     tags: ["Celeste Beach Residences", "104 fracciones", "Estancia Discovery", "Deal Room PDR-63C2E9"],
-    href: "/pitch/celeste",
+    href: "/pitch/deck/celeste",
     proposalHref: "/propuesta/celeste",
     status: "Listo para presentar",
     targetMinutes: 35,

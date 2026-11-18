@@ -122,7 +122,7 @@ export async function POST(req: NextRequest) {
       presentationId,
       scheduledFor: startsAt,
       durationMinutes,
-      collaborators: emails,
+      participants: emails.map((email) => ({ email })),
     });
 
     const baseUrl = defaultAppBaseUrl();

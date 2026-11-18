@@ -1,5 +1,5 @@
 import { db } from '@saasfly/db';
-import { meetings, meetingParticipants, channelIdentityBindings } from '@saasfly/db/schema';
+import { meetings, meetingParticipants, meetingPresenceSessions, channelIdentityBindings } from '@saasfly/db/schema';
 import { eq, and } from '@saasfly/db-core';
 import { WhatsAppAdapter, TelegramAdapter } from '@saasfly/hermes-core';
 import { sendEmail } from '@saasfly/shared';
@@ -22,6 +22,8 @@ import { findPresentation } from '@/lib/nexus/presentations-catalog';
  */
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+/** Permanencia mínima para considerar que alguien asistió (segundos). */
+const MIN_ATTENDANCE_SECONDS = 60;
 const FROM = process.env.RESEND_FROM_EMAIL ?? "Pandora's Group <hello@pandoras.finance>";
 
 export interface FollowUpSummary {
@@ -105,18 +107,44 @@ export async function runSovereignFollowUps(meetingId?: string): Promise<FollowU
     if (pendingParticipants.length === 0) continue;
     summary.meetings++;
 
-    // Asistencia: solo se considera CONOCIDA si al menos un invitado con link personal entró.
-    // Sin esa evidencia (reuniones sin tokens) el envío sigue siendo a todos: no se inventa no-show.
-    const attendanceKnown = allParticipants.some((p) => Boolean(p.joinToken) && Boolean(p.joinedAt));
+    // Asistencia por PERMANENCIA: sesiones de presencia con duración real.
+    const sessions = await db
+      .select()
+      .from(meetingPresenceSessions)
+      .where(eq(meetingPresenceSessions.meetingId, meeting.id));
+
+    const durationByParticipant = new Map<string, number>();
+    for (const session of sessions) {
+      if (!session.participantId) continue;
+      const end = session.leftAt ?? session.lastSeenAt;
+      const seconds = Math.max(
+        0,
+        Math.round((new Date(end).getTime() - new Date(session.joinedAt).getTime()) / 1000)
+      );
+      durationByParticipant.set(
+        session.participantId,
+        (durationByParticipant.get(session.participantId) ?? 0) + seconds
+      );
+    }
+
+    const presenceKnown = sessions.length > 0;
+    // Sin datos de presencia se cae al registro del link personal (joinedAt).
+    // Sin ninguna evidencia el envío sigue siendo a todos: no se inventa no-show.
+    const attendanceKnown = presenceKnown || allParticipants.some((p) => Boolean(p.joinToken) && Boolean(p.joinedAt));
 
     const deck = findPresentation(meeting.presentationId);
     const deckUrl = deck ? `${baseUrl}${deck.href}` : null;
     const proposalUrl = deck?.proposalHref ? `${baseUrl}${deck.proposalHref}` : null;
 
     for (const participant of pendingParticipants) {
+      const presenceSeconds = durationByParticipant.get(participant.id) ?? 0;
+      const attended = presenceKnown
+        ? presenceSeconds >= MIN_ATTENDANCE_SECONDS
+        : Boolean(participant.joinedAt);
+
       // Con asistencia conocida, el seguimiento va a quien realmente asistió.
       // Los no-show se marcan explícitamente (y se cuentan) para el flujo manual.
-      if (attendanceKnown && participant.joinToken && !participant.joinedAt) {
+      if (attendanceKnown && !attended) {
         await db
           .update(meetingParticipants)
           .set({ followUpStatus: 'no_action' })

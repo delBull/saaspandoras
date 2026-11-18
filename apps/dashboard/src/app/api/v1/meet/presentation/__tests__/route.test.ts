@@ -128,7 +128,7 @@ describe("🎬 In-room presentation state (/api/v1/meet/presentation)", () => {
 
     expect(res.status).toBe(200);
     const data = await res.json();
-    expect(data).toEqual({
+    expect(data).toMatchObject({
       presentationId: "real-estate-growth",
       open: true,
       slide: 4,

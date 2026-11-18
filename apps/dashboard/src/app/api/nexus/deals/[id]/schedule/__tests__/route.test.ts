@@ -47,9 +47,10 @@ vi.mock("@saasfly/agenda-sdk", () => ({
         presentationId: req.presentationId ?? null,
         scheduledFor: startsAt.toISOString(),
         endsAt: endsAt ? endsAt.toISOString() : null,
-        participants: (req.collaborators ?? []).map((identityId: string, index: number) => ({
+        participants: (req.participants ?? []).map((participant: { email: string }, index: number) => ({
           id: `participant-${index}`,
-          identityId,
+          identityId: participant.email,
+          email: participant.email,
           joinToken: `token${index}`.padEnd(32, "0"),
         })),
       };
@@ -57,8 +58,18 @@ vi.mock("@saasfly/agenda-sdk", () => ({
   },
 }));
 
+let meetingLinkPatches: any[] = [];
+
 vi.mock("@saasfly/db-core", () => ({
+  eq: (...args: any[]) => args,
+  meetings: { __t: "meetings" },
   db: {
+    update: vi.fn(() => ({
+      set: (patch: any) => {
+        meetingLinkPatches.push(patch);
+        return { where: async () => undefined };
+      },
+    })),
     insert: vi.fn(() => ({
       values: vi.fn(async (values: any) => {
         if (auditShouldFail) throw new Error("audit down");
@@ -71,6 +82,7 @@ vi.mock("@saasfly/db-core", () => ({
 
 vi.mock("@saasfly/db-core/schema", () => ({
   nexusAuditEvents: { __table: "nexus_audit_events" },
+  meetings: { __table: "meetings" },
 }));
 
 import { POST } from "../route";
@@ -117,6 +129,7 @@ describe("📅 Deal schedule route (/api/nexus/deals/[id]/schedule)", () => {
     publicIdLookups = [];
     emailCalls = [];
     emailShouldFail = false;
+    meetingLinkPatches = [];
     vi.clearAllMocks();
   });
 
@@ -234,7 +247,7 @@ describe("📅 Deal schedule route (/api/nexus/deals/[id]/schedule)", () => {
     expect(call.hostCollaboratorId).toBe(7);
     expect(call.presentationId).toBe("institutional-os");
     expect(call.durationMinutes).toBe(45);
-    expect(call.collaborators).toEqual(["socio@celeste.com", "legal@celeste.com"]);
+    expect(call.participants).toEqual([{ email: "socio@celeste.com" }, { email: "legal@celeste.com" }]);
 
     expect(data.meetingId).toBe("meeting-abc");
     expect(data.dealRoomUrl).toBe(`/deal/${ROOM.publicId}`);
@@ -257,6 +270,8 @@ describe("📅 Deal schedule route (/api/nexus/deals/[id]/schedule)", () => {
     expect(data.invites).toEqual({ sent: 2, failed: 0, errors: [] });
     expect(emailCalls).toHaveLength(2);
     expect(emailCalls[0].to).toBe("socio@celeste.com");
+    // La reunión queda vinculada a su Deal Room (link de propuesta dinámico).
+    expect(meetingLinkPatches).toContainEqual({ dealRoomId: ROOM.id });
     // Cada invitación lleva el link personal que registra asistencia.
     const tokenFor = (index: number) => `token${index}`.padEnd(32, "0");
     expect(String(emailCalls[0].html)).toContain(`?p=${tokenFor(0)}`);

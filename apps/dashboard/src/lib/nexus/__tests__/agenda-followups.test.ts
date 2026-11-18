@@ -5,6 +5,7 @@ let participantRows: any[] = [];
 let updates: Array<{ patch: any }> = [];
 let emailCalls: any[] = [];
 let emailShouldFail = false;
+let presenceRows: any[] = [];
 
 vi.mock("@saasfly/shared", () => ({
   sendEmail: vi.fn(async (payload: any) => {
@@ -22,6 +23,7 @@ vi.mock("@saasfly/hermes-core", () => ({
 vi.mock("@saasfly/db/schema", () => ({
   meetings: { __t: "meetings" },
   meetingParticipants: { __t: "participants" },
+  meetingPresenceSessions: { __t: "sessions" },
   channelIdentityBindings: { __t: "bindings" },
 }));
 
@@ -33,6 +35,7 @@ vi.mock("@saasfly/db", () => ({
           if (table?.__t === "meetings") return meetingRows;
           if (table?.__t === "participants") return participantRows;
           if (table?.__t === "bindings") return [];
+          if (table?.__t === "sessions") return presenceRows;
           return [];
         },
       }),
@@ -67,6 +70,7 @@ describe("📬 Seguimiento post-presentación (audiencia y honestidad)", () => {
     updates = [];
     emailCalls = [];
     emailShouldFail = false;
+    presenceRows = [];
     meetingRows = [
       {
         id: MEETING_ID,
@@ -108,6 +112,56 @@ describe("📬 Seguimiento post-presentación (audiencia y honestidad)", () => {
     const noShowUpdate = updates.find((u) => u.patch.followUpStatus === "no_action");
     expect(noShowUpdate).toBeDefined();
     expect(updates.some((u) => u.patch.followUpStatus === "sent")).toBe(true);
+  });
+
+  it("FU-05: usa la permanencia real (segundos en sala), no solo la apertura del link", async () => {
+    participantRows = [
+      {
+        id: "p1",
+        meetingId: MEETING_ID,
+        identityId: "presente@celeste.com",
+        joinToken: TOKEN,
+        joinedAt: new Date(),
+        followUpStatus: "pending",
+      },
+      {
+        id: "p2",
+        meetingId: MEETING_ID,
+        identityId: "entro-y-sallo@celeste.com",
+        joinToken: "b".repeat(32),
+        joinedAt: new Date(),
+        followUpStatus: "pending",
+      },
+    ];
+
+    const startedAt = new Date(Date.now() - 10 * 60 * 1000);
+    presenceRows = [
+      {
+        id: "s1",
+        meetingId: MEETING_ID,
+        participantId: "p1",
+        identity: "participant:p1",
+        joinedAt: startedAt,
+        lastSeenAt: new Date(startedAt.getTime() + 9 * 60 * 1000),
+        leftAt: new Date(startedAt.getTime() + 9 * 60 * 1000),
+      },
+      {
+        id: "s2",
+        meetingId: MEETING_ID,
+        participantId: "p2",
+        identity: "participant:p2",
+        joinedAt: startedAt,
+        // Abrió el link y se fue a los 10 segundos: no cuenta como asistencia.
+        lastSeenAt: new Date(startedAt.getTime() + 10 * 1000),
+        leftAt: new Date(startedAt.getTime() + 10 * 1000),
+      },
+    ];
+
+    const summary = await runSovereignFollowUps(MEETING_ID);
+
+    expect(summary.sent).toBe(1);
+    expect(summary.noShow).toBe(1);
+    expect(emailCalls.map((call: any) => call.to)).toEqual(["presente@celeste.com"]);
   });
 
   it("FU-02: sin evidencia de asistencia no se inventa no-show: se escribe a todos", async () => {

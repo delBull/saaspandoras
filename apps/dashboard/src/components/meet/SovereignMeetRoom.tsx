@@ -54,6 +54,7 @@ interface PresentationState {
     open: boolean;
     slide: number;
     status: string;
+    dealPublicId?: string | null;
 }
 
 export function SovereignMeetRoom({
@@ -75,6 +76,13 @@ export function SovereignMeetRoom({
     // --- Injected presentation state (host-controlled, DB-backed) ---
     const [deckState, setDeckState] = useState<PresentationState>({ open: false, slide: 0, status: "scheduled" });
     const [deckError, setDeckError] = useState<string | null>(null);
+    const [deckMeta, setDeckMeta] = useState<{
+        title: string;
+        slug: string;
+        guardrails: string[];
+        targetMinutes: number;
+        script: Array<{ slide: string; title: string; notes: string[]; minutes?: number }>;
+    } | null>(null);
     const [deckBusy, setDeckBusy] = useState(false);
     const [showScript, setShowScript] = useState(false);
     const [notes, setNotes] = useState("");
@@ -86,8 +94,21 @@ export function SovereignMeetRoom({
     const [meetingEnded, setMeetingEnded] = useState(false);
 
     const hasDeck = Boolean(presentationId);
-    const presentation = useMemo(() => findPresentation(presentationId), [presentationId]);
-    const scriptBlocks = presentation?.script ?? [];
+    const catalogPresentation = useMemo(() => findPresentation(presentationId), [presentationId]);
+
+    // El guión y las reglas vienen del CMS (DB) cuando está sembrado; el catálogo
+    // versionado queda como respaldo explícito.
+    const presentation = deckMeta ?? catalogPresentation;
+    const scriptBlocks: Array<{ slide: string; title: string; notes: string[]; minutes?: number }> =
+        (deckMeta?.script as any) ??
+        (catalogPresentation?.script ?? []).map((block) => ({
+            slide: block.slide,
+            title: block.title,
+            notes: block.beats,
+            minutes: block.minutes,
+        }));
+    const guardrails = deckMeta?.guardrails ?? catalogPresentation?.guardrails ?? [];
+    const deckTitle = deckMeta?.title ?? catalogPresentation?.title ?? "Presentación";
     const currentBlock = scriptBlocks[deckState.slide];
 
     useEffect(() => {
@@ -107,11 +128,14 @@ export function SovereignMeetRoom({
 
         const applyState = (data: any) => {
             if (cancelled || !data || data.error) return;
-            setDeckState({
+            setDeckState((prev) => ({
                 open: Boolean(data.open),
-                slide: Number.isInteger(data.slide) ? data.slide : 0,
-                status: data.status ?? "scheduled",
-            });
+                slide: Number.isInteger(data.slide) ? data.slide : prev.slide,
+                status: data.status ?? prev.status,
+                dealPublicId:
+                    typeof data.dealPublicId === "string" ? data.dealPublicId : prev.dealPublicId ?? null,
+            }));
+            if (data.deck) setDeckMeta(data.deck);
             if (data.status === "ended") setMeetingEnded(true);
         };
 
@@ -132,6 +156,9 @@ export function SovereignMeetRoom({
             void pollOnce();
             interval = setInterval(pollOnce, PRESENTATION_POLL_MS);
         };
+
+        // Estado inicial + meta del deck (el SSE solo transporta cambios de slide).
+        void pollOnce();
 
         if (typeof window !== "undefined" && typeof window.EventSource === "function") {
             try {
@@ -166,6 +193,59 @@ export function SovereignMeetRoom({
             if (interval) clearInterval(interval);
         };
     }, [hasDeck, meetingId]);
+
+    // Permanencia real: el cliente reporta join / heartbeat / leave. El servidor
+    // acumula sesiones y el seguimiento usa la duración, no solo "abrió el link".
+    useEffect(() => {
+        let stopped = false;
+        let timer: ReturnType<typeof setInterval> | null = null;
+
+        const report = async (event: "join" | "heartbeat" | "leave") => {
+            try {
+                await fetch("/api/v1/meet/presence", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ meetingId, event }),
+                    keepalive: event !== "heartbeat",
+                });
+            } catch {
+                // La sala no se cae por un fallo de telemetría de presencia.
+            }
+        };
+
+        const start = () => {
+            if (stopped) return;
+            void report("join");
+            timer = setInterval(() => void report("heartbeat"), 30_000);
+        };
+
+        // Arranca cuando el usuario realmente entra a la conferencia.
+        const timeout = setTimeout(start, 4_000);
+
+        const handleExit = () => {
+            if (stopped) return;
+            stopped = true;
+            if (timer) clearInterval(timer);
+            clearTimeout(timeout);
+            try {
+                const payload = JSON.stringify({ meetingId, event: "leave" });
+                const blob = new Blob([payload], { type: "application/json" });
+                navigator.sendBeacon?.("/api/v1/meet/presence", blob);
+            } catch {
+                // sin beacon: el servidor cierra la sesión por lastSeenAt
+            }
+        };
+
+        window.addEventListener("pagehide", handleExit);
+        window.addEventListener("beforeunload", handleExit);
+
+        return () => {
+            if (timer) clearInterval(timer);
+            clearTimeout(timeout);
+            window.removeEventListener("pagehide", handleExit);
+            window.removeEventListener("beforeunload", handleExit);
+        };
+    }, [meetingId]);
 
     // Push the synchronized slide index into the deck iframe.
     useEffect(() => {
@@ -230,6 +310,7 @@ export function SovereignMeetRoom({
                     open: Boolean(data.open),
                     slide: Number.isInteger(data.slide) ? data.slide : 0,
                     status: data.status ?? deckState.status,
+                    dealPublicId: deckState.dealPublicId ?? null,
                 });
             } catch {
                 setDeckError("Error de red al actualizar la presentación");
@@ -379,8 +460,10 @@ export function SovereignMeetRoom({
                 <aside className="absolute top-20 right-4 z-30 w-80 max-h-[70dvh] overflow-y-auto rounded-xl bg-black/85 border border-purple-500/30 backdrop-blur p-4 space-y-3">
                     <header className="flex items-center justify-between">
                         <div>
-                            <p className="text-[10px] font-mono uppercase tracking-widest text-purple-300">Guión · {presentation.title}</p>
-                            <p className="text-[10px] text-zinc-500">{presentation.targetMinutes} min objetivo</p>
+                            <p className="text-[10px] font-mono uppercase tracking-widest text-purple-300">Guión · {deckTitle}</p>
+                            <p className="text-[10px] text-zinc-500">
+                                {(deckMeta?.targetMinutes ?? catalogPresentation?.targetMinutes ?? 30)} min objetivo
+                            </p>
                         </div>
                         <button type="button" onClick={() => setShowScript(false)} className="text-zinc-500 hover:text-white">
                             <X className="w-4 h-4" />
@@ -394,7 +477,7 @@ export function SovereignMeetRoom({
                                 <span className="ml-2 text-[10px] font-mono text-zinc-500">{currentBlock.minutes} min</span>
                             </p>
                             <ul className="space-y-1.5">
-                                {currentBlock.beats.map((beat, index) => (
+                                {currentBlock.notes.map((beat, index) => (
                                     <li key={index} className="text-[11px] text-zinc-300 leading-relaxed flex gap-2">
                                         <span className="text-purple-400">·</span>
                                         <span>{beat}</span>
@@ -406,9 +489,13 @@ export function SovereignMeetRoom({
                         <p className="text-[11px] text-zinc-400">Este slide no tiene notas de conducción.</p>
                     )}
 
-                    {presentation.proposalHref && (
+                    {catalogPresentation?.proposalHref && (
                         <a
-                            href={presentation.proposalHref}
+                            href={
+                                deckState.dealPublicId
+                                    ? `${catalogPresentation.proposalHref}?deal=${encodeURIComponent(deckState.dealPublicId)}`
+                                    : catalogPresentation.proposalHref
+                            }
                             target="_blank"
                             rel="noopener noreferrer"
                             className="block text-center px-3 py-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-[11px] font-mono text-emerald-200"
@@ -419,7 +506,7 @@ export function SovereignMeetRoom({
 
                     <div className="pt-2 border-t border-white/10 space-y-1">
                         <p className="text-[10px] font-mono uppercase text-zinc-500">Reglas</p>
-                        {presentation.guardrails.map((rule, index) => (
+                        {guardrails.map((rule, index) => (
                             <p key={index} className="text-[10px] text-zinc-400 leading-relaxed">— {rule}</p>
                         ))}
                     </div>
@@ -464,7 +551,7 @@ export function SovereignMeetRoom({
                 <div className="absolute inset-0 z-20 bg-black flex flex-col">
                     <div className="flex items-center justify-between px-4 py-2 border-b border-white/10 bg-black/80">
                         <span className="text-[10px] font-mono uppercase tracking-widest text-lime-400">
-                            Presentación soberana · {presentation.title}
+                            Presentación soberana · {deckTitle}
                         </span>
                         <div className="flex items-center gap-2">
                             <span className="text-[10px] font-mono text-zinc-500">
@@ -485,8 +572,8 @@ export function SovereignMeetRoom({
                     </div>
                     <iframe
                         ref={deckFrameRef}
-                        src={`/pitch/${presentation.slug}?embed=1&slide=${deckState.slide}`}
-                        title={presentation.title}
+                        src={`${catalogPresentation?.href ?? `/pitch/deck/${presentationId}`}?embed=1&slide=${deckState.slide}`}
+                        title={deckTitle}
                         className="flex-1 w-full border-0 bg-black"
                         allow="fullscreen"
                     />

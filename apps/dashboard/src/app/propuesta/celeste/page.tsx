@@ -14,6 +14,26 @@ export const metadata: Metadata = {
   },
 };
 
+const DEAL_PUBLIC_ID_PATTERN = /^PDR-[A-Z0-9]{4,32}$/i;
+
+/**
+ * Link del Deal Room del documento.
+ * Prioridad: `?deal=PDR-XXXX` (lo manda el Deal Room / la sala) → variable de entorno
+ * → sin enlace (se muestra aviso, no un link inventado).
+ */
+function resolveDealUrl(dealParam?: string | string[]): string | null {
+  const raw = Array.isArray(dealParam) ? dealParam[0] : dealParam;
+  const candidate = raw && DEAL_PUBLIC_ID_PATTERN.test(raw) ? raw.toUpperCase() : null;
+  const fallback = process.env.NEXT_PUBLIC_CELESTE_DEAL_PUBLIC_ID?.trim();
+  const publicId =
+    candidate ??
+    (fallback && DEAL_PUBLIC_ID_PATTERN.test(fallback) ? fallback.toUpperCase() : null);
+
+  if (!publicId) return null;
+  const base = process.env.NEXT_PUBLIC_APP_URL ?? 'https://dash.pandoras.finance';
+  return `${base.replace(/\/$/, '')}/deal/${publicId}`;
+}
+
 const scope = [
   {
     n: '01',
@@ -93,7 +113,14 @@ const assumptions = [
   'La semana 4 es una meta de activación, no una garantía: depende de accesos, materiales y aprobaciones.',
 ] as const;
 
-export default function CelesteProposalPage() {
+export default async function CelesteProposalPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ deal?: string | string[] }>;
+}) {
+  const { deal } = await searchParams;
+  const dealUrl = resolveDealUrl(deal);
+
   return (
     <main id="proposal-print" className="mx-auto max-w-4xl px-6 py-12 print:max-w-none print:px-0 print:py-0">
       {/* ======================================================= */}
@@ -147,10 +174,13 @@ export default function CelesteProposalPage() {
         <p className="text-xs uppercase tracking-[0.2em] text-purple-400">Documento confidencial</p>
         <div className="flex items-center gap-3">
           <a
-            href="https://dash.pandoras.finance/deal/PDR-63C2E9"
-            className="rounded-lg border border-white/15 px-4 py-2 text-sm text-zinc-300 hover:border-white/30 hover:text-white"
+            href={dealUrl ?? '#deal-room-no-configurado'}
+            aria-disabled={!dealUrl}
+            className={`rounded-lg border border-white/15 px-4 py-2 text-sm ${
+              dealUrl ? 'text-zinc-300 hover:border-white/30 hover:text-white' : 'text-zinc-600 cursor-not-allowed'
+            }`}
           >
-            Ver acuerdo y condiciones
+            {dealUrl ? 'Ver acuerdo y condiciones' : 'Deal Room no vinculado'}
           </a>
           <PrintButton />
         </div>
@@ -352,7 +382,7 @@ export default function CelesteProposalPage() {
           entregables y las condiciones de aceptación.
         </p>
         <a
-          href="https://dash.pandoras.finance/deal/PDR-63C2E9"
+          href={dealUrl ?? '#deal-room-no-configurado'}
           className="mt-4 inline-block rounded-xl border border-white/15 px-5 py-3 text-sm font-semibold text-zinc-200 hover:border-white/30 hover:text-white"
         >
           Abrir sala de acuerdos

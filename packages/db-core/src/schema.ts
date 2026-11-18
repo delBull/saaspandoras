@@ -1633,6 +1633,7 @@ export const meetings = pgTable("meetings", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   canonicalOrgId: text("canonical_org_id").notNull(), // Strict Tenant Isolation
   appointmentId: text("appointment_id").references(() => schedulingBookings.id), // Link to Agenda
+  dealRoomId: uuid("deal_room_id"), // Deal Room asociado (link de propuesta dinámico)
   hostCollaboratorId: integer("host_collaborator_id").references(() => nexusCollaborators.id), // The actual owner/host
   
   jitsiRoomId: text("jitsi_room_id"), // Sovereign Jitsi Meet ID
@@ -1666,6 +1667,7 @@ export const meetingParticipants = pgTable("meeting_participants", {
   meetingId: text("meeting_id").references(() => meetings.id).notNull(),
   identityId: varchar("identity_id", { length: 255 }), // Can be null for anonymous guests
   joinToken: varchar("join_token", { length: 64 }).unique(), // Identifica al invitado y registra asistencia
+  email: varchar("email", { length: 255 }), // Email de invitación (independiente de identityId)
   
   participantType: participantTypeEnum("participant_type").default("anonymous_guest").notNull(),
   role: participantRoleEnum("role").default("guest").notNull(),
@@ -1675,6 +1677,17 @@ export const meetingParticipants = pgTable("meeting_participants", {
   invitedAt: timestamp("invited_at", { withTimezone: true }).defaultNow(),
   joinedAt: timestamp("joined_at", { withTimezone: true }),
   leftAt: timestamp("left_at", { withTimezone: true }),
+});
+
+export const meetingPresenceSessions = pgTable("meeting_presence_sessions", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  meetingId: text("meeting_id").notNull().references(() => meetings.id, { onDelete: "cascade" }),
+  participantId: text("participant_id"), // meeting_participants.id (null para anónimos)
+  identity: text("identity").notNull(), // quién está en la sala (email o guest:<id>)
+  joinedAt: timestamp("joined_at", { withTimezone: true }).notNull().defaultNow(),
+  lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).notNull().defaultNow(),
+  leftAt: timestamp("left_at", { withTimezone: true }),
+  source: varchar("source", { length: 32 }).notNull().default("client"), // client | provider-webhook
 });
 
 export const meetingActionItemStatusEnum = pgEnum("meeting_action_item_status", [
@@ -3565,6 +3578,23 @@ export const nexusDealRooms = pgTable("nexus_deal_rooms", {
   sharedWith: jsonb("shared_with").$type<Array<{ email: string; name?: string; sharedAt: string; sharedBy: string }>>().default([]).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+/**
+ * Decks como DATO (CMS soberano): el contenido vive en jsonb, no en JSX.
+ * `slides` es un arreglo de bloques tipados que renderiza `pitch/deck/[slug]`.
+ */
+export const nexusPresentations = pgTable("nexus_presentations", {
+  slug: varchar("slug", { length: 64 }).primaryKey(),
+  title: text("title").notNull(),
+  subtitle: text("subtitle"),
+  category: varchar("category", { length: 128 }),
+  status: varchar("status", { length: 32 }).notNull().default("DRAFT"),
+  targetMinutes: integer("target_minutes").notNull().default(30),
+  proposalKey: varchar("proposal_key", { length: 64 }),
+  guardrails: jsonb("guardrails").$type<string[]>().notNull().default([]),
+  slides: jsonb("slides").$type<unknown[]>().notNull().default([]),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const nexusDealSections = pgTable("nexus_deal_sections", {

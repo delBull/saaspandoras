@@ -23,8 +23,14 @@ export interface CreateMeetingRequest {
      */
     durationMinutes?: number | null;
 
-    /** Array of participant internal IDs or identities to invite */
+    /** Array of participant internal IDs or identities to invite (legacy) */
     collaborators?: (string | number)[];
+
+    /**
+     * Participantes de la reunión (NO firmantes del deal).
+     * Un meeting puede tener muchos invitados y solo 1-2 firmantes.
+     */
+    participants?: Array<{ email: string; name?: string | null }>;
 }
 
 /**
@@ -42,7 +48,7 @@ export class AgendaCore {
      * Creates a new Meeting and its participants in the database.
      */
     static async createMeeting(req: CreateMeetingRequest) {
-        const { canonicalOrgId, hostCollaboratorId, presentationId, scheduledFor, durationMinutes, collaborators } = req;
+        const { canonicalOrgId, hostCollaboratorId, presentationId, scheduledFor, durationMinutes, collaborators, participants } = req;
         
         if (!canonicalOrgId) {
             throw new Error("[AgendaCore] canonicalOrgId is required to maintain tenant boundaries.");
@@ -72,17 +78,31 @@ export class AgendaCore {
         // 3. Assign Collaborators (Participants)
         //    Cada participante recibe un `joinToken` opaco: es lo que permite
         //    identificar quién entró (asistencia) sin exponer su identidad en la URL.
-        const participantRecords: Array<{ id: string; identityId: string; joinToken: string }> = [];
+        const participantRecords: Array<{ id: string; identityId: string; email: string | null; joinToken: string }> = [];
 
-        if (Array.isArray(collaborators) && collaborators.length > 0) {
-            const participantsToInsert = collaborators.map((cId) => {
+        const invitedEmails = (participants ?? [])
+            .map((participant) => String(participant.email ?? '').trim().toLowerCase())
+            .filter(Boolean);
+
+        const invitedIdentities = Array.isArray(collaborators)
+            ? collaborators.map((cId) => String(cId).trim().toLowerCase()).filter(Boolean)
+            : [];
+
+        // Los emails explícitos ganan; `collaborators` se mantiene por compatibilidad.
+        const invitees = Array.from(new Set([...invitedEmails, ...invitedIdentities]));
+
+        if (invitees.length > 0) {
+            const participantsToInsert = invitees.map((invitee) => {
                 const joinToken = crypto.randomBytes(16).toString('hex');
-                const record = { id: crypto.randomUUID(), identityId: String(cId), joinToken };
+                const isEmail = invitee.includes('@');
+                const record = { id: crypto.randomUUID(), identityId: invitee, email: isEmail ? invitee : null, joinToken };
                 participantRecords.push(record);
+
                 return {
                     id: record.id,
                     meetingId,
                     identityId: record.identityId,
+                    email: record.email,
                     joinToken,
                     // Default to anonymous_guest/guest unless specified otherwise
                     participantType: 'anonymous_guest' as const,

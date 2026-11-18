@@ -21,9 +21,10 @@ vi.mock("@saasfly/agenda-sdk", () => ({
         endsAt: req.durationMinutes
           ? new Date(new Date(req.scheduledFor).getTime() + req.durationMinutes * 60_000).toISOString()
           : null,
-        participants: (req.collaborators ?? []).map((email: string, index: number) => ({
+        participants: (req.participants ?? []).map((participant: { email: string }, index: number) => ({
           id: `p-${index}`,
-          identityId: email,
+          identityId: participant.email,
+          email: participant.email,
           joinToken: `tok${index}`.padEnd(32, "0"),
         })),
       };
@@ -109,7 +110,7 @@ describe("🗓️ Agenda Soberana — crear presentación (/api/v1/nexus/agenda/
     expect(createCalls[0].canonicalOrgId).toBe("pandoras");
     expect(createCalls[0].hostCollaboratorId).toBe(7);
     expect(createCalls[0].presentationId).toBe("celeste");
-    expect(createCalls[0].collaborators).toEqual(["eduardo@celeste.com", "comercial@celeste.com"]);
+    expect(createCalls[0].participants).toEqual([{ email: "eduardo@celeste.com" }, { email: "comercial@celeste.com" }]);
 
     expect(data.meeting.joinUrl).toBe("https://dash.pandoras.finance/meet/meeting-xyz");
     expect(data.meeting.presentationId).toBe("celeste");

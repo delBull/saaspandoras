@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@saasfly/db-core";
 import { meetings } from "@saasfly/db-core";
 import { and, eq } from "@saasfly/db-core";
+import { resolveDealPublicId } from "@/lib/meet/deal-context";
+import { getDeck } from "@/lib/nexus/deck-repository";
 import { isKnownPresentation } from "@/lib/nexus/presentations-catalog";
 import { isMeetingHost, resolveRoomActor } from "@/lib/meet/room-credentials";
 
@@ -32,12 +34,15 @@ function stateOf(meeting: {
   presentationOpen: boolean;
   presentationSlide: number;
   status: string;
+  dealRoomId?: string | null;
 }) {
   return {
     presentationId: meeting.presentationId,
     open: meeting.presentationOpen,
     slide: meeting.presentationSlide,
     status: meeting.status,
+    // El deck puede resolver su link de Deal Room sin hardcodear nada.
+    dealRoomId: meeting.dealRoomId ?? null,
   };
 }
 
@@ -54,6 +59,7 @@ export async function GET(req: NextRequest) {
         presentationOpen: meetings.presentationOpen,
         presentationSlide: meetings.presentationSlide,
         status: meetings.status,
+        dealRoomId: meetings.dealRoomId,
       })
       .from(meetings)
       .where(eq(meetings.id, meetingId))
@@ -63,7 +69,37 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Reunión no encontrada", code: "MEETING_NOT_FOUND" }, { status: 404 });
     }
 
-    return NextResponse.json(stateOf(meeting));
+    // El link del Deal Room se resuelve server-side (nada hardcodeado en el deck).
+    const dealPublicId = await resolveDealPublicId(meeting.dealRoomId);
+
+    // Guión/meta del deck desde el CMS. Si no está sembrado, la sala usa el
+    // guión versionado en el catálogo (fallback explícito, nunca inventado).
+    let deck: {
+      title: string;
+      slug: string;
+      guardrails: string[];
+      script: Array<{ slide: string; title: string; notes: string[]; minutes?: number }>;
+      targetMinutes: number;
+    } | null = null;
+    if (meeting.presentationId) {
+      const document = await getDeck(meeting.presentationId);
+      if (document) {
+        deck = {
+          title: document.title,
+          slug: document.slug,
+          guardrails: document.guardrails,
+          targetMinutes: document.targetMinutes,
+          script: document.slides.map((slide) => ({
+            slide: slide.id,
+            title: slide.title,
+            notes: slide.notes,
+            minutes: slide.minutes,
+          })),
+        };
+      }
+    }
+
+    return NextResponse.json({ ...stateOf(meeting), dealPublicId, deck });
   } catch (error) {
     console.error("[MeetPresentation] GET error:", error);
     return NextResponse.json({ error: "Error interno", code: "INTERNAL" }, { status: 500 });
@@ -145,6 +181,7 @@ export async function POST(req: NextRequest) {
         presentationOpen: meetings.presentationOpen,
         presentationSlide: meetings.presentationSlide,
         status: meetings.status,
+        dealRoomId: meetings.dealRoomId,
       });
 
     if (!updated) {

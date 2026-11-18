@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { db } from "@saasfly/db-core";
 import { meetings } from "@saasfly/db-core";
 import { eq } from "@saasfly/db-core";
+import { resolveDealPublicId } from "@/lib/meet/deal-context";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -38,17 +39,20 @@ async function readState(meetingId: string) {
       presentationOpen: meetings.presentationOpen,
       presentationSlide: meetings.presentationSlide,
       status: meetings.status,
+      dealRoomId: meetings.dealRoomId,
     })
     .from(meetings)
     .where(eq(meetings.id, meetingId))
     .limit(1);
 
   if (!meeting) return null;
+  const dealPublicId = await resolveDealPublicId(meeting.dealRoomId);
   return {
     presentationId: meeting.presentationId,
     open: meeting.presentationOpen,
     slide: meeting.presentationSlide,
     status: meeting.status,
+    dealPublicId,
   };
 }
 

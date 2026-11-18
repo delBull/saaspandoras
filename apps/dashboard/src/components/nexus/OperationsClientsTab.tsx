@@ -70,6 +70,7 @@ export function OperationsClientsTab({ onOpenApprovals }: OperationsClientsTabPr
   const [scheduledFor, setScheduledFor] = useState(defaultStart);
   const [durationMinutes, setDurationMinutes] = useState(30);
   const [presentationId, setPresentationId] = useState('');
+  const [inviteEmails, setInviteEmails] = useState('');
   const [isScheduling, setIsScheduling] = useState(false);
   const [scheduleError, setScheduleError] = useState<string | null>(null);
   const [scheduleResult, setScheduleResult] = useState<ScheduleResult | null>(null);
@@ -125,12 +126,22 @@ export function OperationsClientsTab({ onOpenApprovals }: OperationsClientsTabPr
     setScheduledFor(defaultStart());
     setDurationMinutes(30);
     setPresentationId('');
+    setInviteEmails('');
     setCopied(false);
+  };
+
+  const signerEmailsOf = (deal: Deal): string => {
+    const raw = deal.rawData as { signers?: Array<{ email?: string | null }> } | undefined;
+    const emails = (raw?.signers ?? [])
+      .map((signer) => (signer.email ?? '').trim().toLowerCase())
+      .filter(Boolean);
+    return Array.from(new Set(emails)).join(', ');
   };
 
   const selectDeal = (deal: Deal) => {
     setSelectedDeal(deal);
     resetScheduleForm();
+    setInviteEmails(signerEmailsOf(deal));
   };
 
   const handleDeckChange = async (deckSlug: string) => {
@@ -187,6 +198,11 @@ export function OperationsClientsTab({ onOpenApprovals }: OperationsClientsTabPr
           scheduledFor: startsAt.toISOString(),
           durationMinutes,
           ...(presentationId.trim() ? { presentationId: presentationId.trim() } : {}),
+          // Participantes ≠ firmantes: la lista de invitados es explícita y editable.
+          participantEmails: inviteEmails
+            .split(/[\s,;]+/)
+            .map((value) => value.trim())
+            .filter(Boolean),
         }),
       });
 
@@ -576,6 +592,20 @@ export function OperationsClientsTab({ onOpenApprovals }: OperationsClientsTabPr
                         </label>
                       </div>
 
+                      <label className="block text-[11px] font-mono text-zinc-500 space-y-1">
+                        <span>Invitados al meet (emails separados por coma)</span>
+                        <textarea
+                          value={inviteEmails}
+                          onChange={(e) => setInviteEmails(e.target.value)}
+                          rows={2}
+                          placeholder="eduardo@celeste.com, comercial@celeste.com"
+                          className="w-full rounded-lg bg-black/50 border border-white/10 px-2 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-sky-500/50"
+                        />
+                        <span className="text-[10px] text-zinc-600">
+                          Los firmantes del Deal Room se precargan, pero puedes invitar a más (o a otros).
+                        </span>
+                      </label>
+
                       {scheduleError && (
                         <p className="flex items-start gap-2 text-[11px] text-rose-300">
                           <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
@@ -585,7 +615,7 @@ export function OperationsClientsTab({ onOpenApprovals }: OperationsClientsTabPr
 
                       <div className="flex items-center justify-between gap-2">
                         <p className="text-[10px] text-zinc-500 font-mono">
-                          Se invitará a los firmantes registrados del Deal Room. El deck del deal manda sobre esta selección.
+                          Los invitados son esta lista; el firmante del deal es independiente. El deck del deal manda sobre esta selección.
                         </p>
                         <button
                           type="submit"

@@ -20,7 +20,19 @@ export interface RoomActor {
   orgId: string | null;
   /** Identidad que actúa (id de colaborador, o `guest:<meetingId>` para invitados) */
   actorCollaboratorId: string;
+  /** meeting_participants.id cuando el invitado entró con su link personal (?p=) */
+  participantId: string | null;
   via: "session" | "joinRef";
+}
+
+/** `guest:<meetingId>:<participantId>` → participantId */
+export function extractParticipantId(collaboratorId: string | number): string | null {
+  const value = String(collaboratorId);
+  if (!value.startsWith("guest:")) return null;
+  const parts = value.split(":");
+  if (parts.length < 3) return null;
+  const participantId = parts.slice(2).join(":").trim();
+  return participantId.length > 0 ? participantId : null;
 }
 
 export interface JoinRefClaims {
@@ -71,6 +83,7 @@ export async function resolveRoomActor(
         meetingId,
         orgId: claims?.orgId ?? auth.canonicalOrgId ?? null,
         actorCollaboratorId: String(auth.collaboratorId),
+        participantId: claims ? extractParticipantId(claims.collaboratorId) : null,
         via: "session",
       },
     };
@@ -88,6 +101,7 @@ export async function resolveRoomActor(
       meetingId: claims.meetingId,
       orgId: claims.orgId ?? null,
       actorCollaboratorId: String(claims.collaboratorId),
+      participantId: extractParticipantId(claims.collaboratorId),
       via: "joinRef",
     },
   };

@@ -27,7 +27,8 @@
     "db:seed:ecosystem": "node scripts/db.seed.ecosystem.mjs",
     "db:seed:journeys": "bun run scripts/seed-canonical-journeys.mjs",
     "verify:safety": "bun run scripts/verify-migration-safety.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "seed:decks": "bun scripts/seed-decks.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

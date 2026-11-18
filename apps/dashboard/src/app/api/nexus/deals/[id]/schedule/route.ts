@@ -5,7 +5,8 @@ import { AgendaCore } from "@saasfly/agenda-sdk";
 import { isKnownPresentation } from "@/lib/nexus/presentations-catalog";
 import { defaultAppBaseUrl, sendMeetingInvites } from "@/lib/nexus/meeting-invites";
 import { db } from "@saasfly/db-core";
-import { nexusAuditEvents } from "@saasfly/db-core/schema";
+import { eq } from "@saasfly/db-core";
+import { meetings, nexusAuditEvents } from "@saasfly/db-core/schema";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,6 +27,8 @@ export const dynamic = "force-dynamic";
  * authenticated operator session (fail-closed).
  */
 
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MAX_PARTICIPANTS = 25;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MIN_DURATION_MINUTES = 15;
 const MAX_DURATION_MINUTES = 240;
@@ -128,12 +131,28 @@ export async function POST(
   const dealDeck = (room as { presentationId?: string | null }).presentationId ?? null;
   const presentationId: string | null = dealDeck || rawDeckFromBody;
 
-  const participantEmails = Array.from(
-    new Set(
-      (room.signers ?? [])
-        .map((signer: { email?: string | null }) => (signer.email ?? "").trim().toLowerCase())
+  // Participantes ≠ firmantes: el body puede traer la lista de invitados.
+  // Si no viene, se usan los firmantes del Deal Room como valor por defecto.
+  const signerEmails = (room.signers ?? [])
+    .map((signer: { email?: string | null }) => (signer.email ?? "").trim().toLowerCase())
+    .filter(Boolean);
+
+  const requestedParticipants = Array.isArray(body.participantEmails)
+    ? (body.participantEmails as unknown[])
+        .map((value) => String(value ?? "").trim().toLowerCase())
         .filter(Boolean)
-    )
+    : null;
+
+  if (requestedParticipants && requestedParticipants.length > MAX_PARTICIPANTS) {
+    return fail(400, "TOO_MANY_PARTICIPANTS", `Máximo ${MAX_PARTICIPANTS} invitados por reunión.`);
+  }
+  const invalidParticipants = (requestedParticipants ?? []).filter((email) => !EMAIL_PATTERN.test(email));
+  if (invalidParticipants.length > 0) {
+    return fail(400, "INVALID_PARTICIPANT_EMAIL", `Emails inválidos: ${invalidParticipants.join(", ")}`);
+  }
+
+  const participantEmails = Array.from(
+    new Set(requestedParticipants && requestedParticipants.length > 0 ? requestedParticipants : signerEmails)
   );
 
   // 5. Execution through the canonical agenda domain
@@ -145,11 +164,19 @@ export async function POST(
       presentationId,
       scheduledFor: startsAt,
       durationMinutes,
-      collaborators: participantEmails,
+      participants: participantEmails.map((email) => ({ email })),
     });
   } catch (error) {
     console.error("[DealSchedule] AgendaCore error:", error);
     return fail(500, "MEETING_CREATION_FAILED", "No se pudo crear la reunión.");
+  }
+
+  // La reunión recuerda su Deal Room: habilita el link de propuesta dinámico y el
+  // contexto del seguimiento sin volver a resolver el deal.
+  try {
+    await db.update(meetings).set({ dealRoomId: room.id }).where(eq(meetings.id, meeting.id));
+  } catch (error) {
+    console.error("[DealSchedule] No se pudo vincular el Deal Room a la reunión:", error);
   }
 
   // 6. Invitaciones (side effect reportado con números reales, nunca fingidos)
