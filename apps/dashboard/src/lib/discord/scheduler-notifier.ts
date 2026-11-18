@@ -7,7 +7,8 @@ export async function sendSchedulerNotification(
     slotDate: Date,
     lead: { name: string, email: string, notes?: string, phone?: string, projectTitle?: string },
     actionNeeded = true,
-    projectWebhookUrl?: string | null
+    projectWebhookUrl?: string | null,
+    meetingLink?: string | null
 ) {
     const dateStr = new Intl.DateTimeFormat('es-MX', {
         dateStyle: 'full',
@@ -27,6 +28,10 @@ export async function sendSchedulerNotification(
             { name: "Email", value: lead.email, inline: true },
             { name: "Teléfono", value: lead.phone || "_Sin teléfono_", inline: true },
             { name: "Notas", value: lead.notes || "_Sin notas_" },
+            {
+                name: "🔗 Sala de la sesión",
+                value: meetingLink ? `[Entrar a la sala](${meetingLink})` : "_Se genera al confirmar_",
+            },
         ],
         footer: { text: `ID: ${bookingId}` },
         timestamp: new Date().toISOString(),

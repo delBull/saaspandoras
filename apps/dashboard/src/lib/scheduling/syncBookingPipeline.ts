@@ -17,7 +17,7 @@
  */
 
 import { db } from '@saasfly/db';
-import { marketingLeads, clients, projects, meetings } from '@saasfly/db/schema';
+import { marketingLeads, clients, projects, nexusCollaborators, users } from '@saasfly/db/schema';
 import { eq, sql } from "@saasfly/db-core";
 import { sendBookingConfirmedEmail } from '@/lib/email/scheduler-mailer';
 import { sendSchedulerTelegramAlert } from '@/lib/scheduling/scheduler-telegram-notifier';
@@ -43,7 +43,41 @@ export interface SyncBookingPipelineParams {
   hostRole?: 'FOUNDER' | 'OPERATIONS' | 'MEMBER';
 }
 
-export async function syncBookingToPipeline(params: SyncBookingPipelineParams) {
+/**
+ * Resuelve el colaborador de Nexus que funge como HOST de la reunión.
+ * Sin esto la reunión se creaba con host_collaborator_id NULL y por eso NO aparecía
+ * en la Agenda del operador (la agenda filtra por host o participante).
+ */
+async function resolveHostCollaboratorId(hostUserId?: string): Promise<number | null> {
+  if (!hostUserId) return null;
+  try {
+    const [host] = await db
+      .select({ email: users.email })
+      .from(users)
+      .where(eq(users.id, hostUserId))
+      .limit(1);
+    if (!host?.email) return null;
+
+    const [collab] = await db
+      .select({ id: nexusCollaborators.id })
+      .from(nexusCollaborators)
+      .where(eq(nexusCollaborators.email, host.email))
+      .limit(1);
+    return collab?.id ?? null;
+  } catch (error) {
+    console.error('[SyncBookingPipeline] No se pudo resolver el host:', error);
+    return null;
+  }
+}
+
+export async function syncBookingToPipeline(params: SyncBookingPipelineParams): Promise<{
+  success: boolean;
+  bookingId: string;
+  projectId: number;
+  brandName: string;
+  meetingId: string | null;
+  meetingLink: string | null;
+}> {
   const {
     bookingId,
     slotStartTime,
@@ -92,22 +126,39 @@ export async function syncBookingToPipeline(params: SyncBookingPipelineParams) {
   const brandName = isPandoras ? "Pandora's" : (targetProject?.title || tenantSlug || 'Tenant');
   const canonicalOrgId = targetProject?.organizationId || tenantSlug || 'pandoras';
 
-  // 1.5. Create Sovereign Meeting Entity
+  // 1.5. Create Sovereign Meeting Entity (host + participante con token de asistencia)
+  const appBaseUrl =
+    process.env.NEXT_PUBLIC_APP_URL ??
+    (process.env.NODE_ENV === 'production' ? 'https://dash.pandoras.finance' : 'http://localhost:3000');
+
   let finalMeetingLink = meetingLink;
+  let sovereignMeetingId: string | null = null;
   try {
-    const { randomUUID } = await import('crypto');
-    const newMeetingId = randomUUID();
-    
-    await db.insert(meetings).values({
-      id: newMeetingId,
+    const { AgendaCore } = await import('@saasfly/agenda-sdk');
+    const hostCollaboratorId = await resolveHostCollaboratorId(hostUserId);
+    const durationMinutes = Math.max(
+      15,
+      Math.round((slotEndTime.getTime() - slotStartTime.getTime()) / 60000)
+    );
+
+    const meeting = await AgendaCore.createMeeting({
       canonicalOrgId,
+      hostCollaboratorId,
+      scheduledFor: slotStartTime,
+      durationMinutes,
       appointmentId: bookingId,
-      startsAt: slotStartTime,
-      endsAt: slotEndTime,
-      status: 'scheduled',
+      participants: [{ email: normalizedEmail }],
     });
-    
-    finalMeetingLink = `https://dash.pandoras.finance/meet/${newMeetingId}`;
+
+    sovereignMeetingId = meeting.id;
+    const leadToken = meeting.participants?.[0]?.joinToken;
+    finalMeetingLink = `${appBaseUrl}/meet/${meeting.id}${leadToken ? `?p=${leadToken}` : ''}`;
+
+    if (!hostCollaboratorId) {
+      console.warn(
+        '[SyncBookingPipeline] Reunión sin host de Nexus (hostUserId sin colaborador). No aparecerá en la agenda del operador.'
+      );
+    }
   } catch (meetErr) {
     console.error('[SyncBookingPipeline] Failed to create Sovereign Meeting:', meetErr);
   }
@@ -241,7 +292,8 @@ export async function syncBookingToPipeline(params: SyncBookingPipelineParams) {
         projectTitle: brandName,
       },
       false, // already confirmed
-      projectWebhookUrl
+      projectWebhookUrl,
+      finalMeetingLink
     ).catch((err) => console.error('[SyncBookingPipeline] Discord notification error:', err))
   );
 
@@ -279,5 +331,7 @@ export async function syncBookingToPipeline(params: SyncBookingPipelineParams) {
     bookingId,
     projectId: effectiveProjectId,
     brandName,
+    meetingId: sovereignMeetingId,
+    meetingLink: finalMeetingLink,
   };
 }

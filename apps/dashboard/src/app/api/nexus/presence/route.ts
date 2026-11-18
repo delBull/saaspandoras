@@ -8,6 +8,13 @@ import { eq, desc, sql } from "@saasfly/db-core";
 import { getNexusAuthContext } from '@saasfly/shared';
 
 const PRESENCE_VALID_STATUSES = ['ONLINE', 'OFFLINE', 'DO_NOT_DISTURB', 'IN_MEETING'] as const;
+
+/**
+ * Un operador cuenta como conectado si su último heartbeat es reciente.
+ * El cliente late cada 30s; 90s tolera un latido perdido sin marcar a todos offline.
+ * Sin esto, una fila con status='ONLINE' de hace semanas seguía apareciendo conectada.
+ */
+const PRESENCE_ONLINE_TTL_MS = 90_000;
 type PresenceValidStatus = (typeof PRESENCE_VALID_STATUSES)[number];
 
 const PRESENCE_VALID_CHANNELS = ['NEXUS_CHAT', 'TELEGRAM', 'WHATSAPP', 'EMAIL'] as const;
@@ -57,7 +64,29 @@ export async function GET() {
           .where(eq(nexusCollaborators.canonicalOrgId, orgId))
           .orderBy(desc(nexusPresence.lastSeenAt));
 
-    return NextResponse.json({ presence: presenceData });
+    // Estado EFECTIVO calculado en servidor: la columna `status` es la última intención,
+    // pero la conexión real se deriva de `last_seen_at`.
+    const nowMs = Date.now();
+    const presence = presenceData.map((row) => {
+      const lastSeenMs = row.lastSeenAt ? new Date(row.lastSeenAt).getTime() : 0;
+      const isFresh = nowMs - lastSeenMs <= PRESENCE_ONLINE_TTL_MS;
+      const stored = (row.status ?? 'OFFLINE') as string;
+      const status = isFresh && stored !== 'OFFLINE' ? stored : 'OFFLINE';
+
+      return {
+        ...row,
+        status,
+        isOnline: status !== 'OFFLINE',
+        // Edad en segundos para que la UI pueda decir "hace X" sin recalcular zonas.
+        lastSeenAgeSeconds: lastSeenMs > 0 ? Math.round((nowMs - lastSeenMs) / 1000) : null,
+      };
+    });
+
+    return NextResponse.json({
+      presence,
+      onlineTtlSeconds: Math.round(PRESENCE_ONLINE_TTL_MS / 1000),
+      serverTime: new Date().toISOString(),
+    });
   } catch (error: unknown) {
     // Migration-lag tolerance: if the nexus_presence table has not been applied
     // to the active environment yet, report empty presence instead of a 500.

@@ -77,6 +77,8 @@ export function SchedulerForm({
   });
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [joinLink, setJoinLink] = useState<string | null>(null);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   const config = MEETING_CONFIG[meetingType] || MEETING_CONFIG.strategy;
 
@@ -156,6 +158,7 @@ export function SchedulerForm({
         notes: `[${config.title}] ${formData.notes || ""}`,
       });
       if (res.success) {
+        setJoinLink((res as { meetingLink?: string | null }).meetingLink ?? null);
         setSuccess(true);
         setIsDrawerOpen(false);
         toast.success("Agenda confirmada exitosamente. Revisa tu correo.");
@@ -182,7 +185,7 @@ export function SchedulerForm({
 
   if (success && selectedSlot) {
     return (
-      <div className="text-center py-12 px-4 space-y-6 max-w-md mx-auto">
+      <div className="text-center py-10 sm:py-12 px-4 space-y-6 max-w-md mx-auto w-full">
         <div className="w-16 h-16 rounded-full bg-[#D4A853]/15 border border-[#D4A853]/40 flex items-center justify-center mx-auto shadow-[0_0_30px_rgba(212,168,83,0.2)]">
           <CheckCircle2 className="w-8 h-8 text-[#D4A853]" />
         </div>
@@ -196,27 +199,62 @@ export function SchedulerForm({
           </p>
         </div>
 
-        <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-xl p-4 text-left space-y-2.5">
-          <div className="flex items-center justify-between text-xs text-zinc-400">
-            <span className="text-zinc-500">Sesión</span>
-            <span className="font-semibold text-white">{config.title}</span>
+        <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-xl p-4 text-left space-y-3">
+          <div className="flex flex-col gap-0.5 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+            <span className="text-xs text-zinc-500 shrink-0">Sesión</span>
+            <span className="text-xs font-semibold text-white break-words sm:text-right">{config.title}</span>
           </div>
-          <div className="flex items-center justify-between text-xs text-zinc-400">
-            <span className="text-zinc-500">Fecha</span>
-            <span className="font-medium text-zinc-200 capitalize">
+          <div className="flex flex-col gap-0.5 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+            <span className="text-xs text-zinc-500 shrink-0">Fecha</span>
+            <span className="text-xs font-medium text-zinc-200 capitalize break-words sm:text-right">
               {format(new Date(selectedSlot.startTime), "EEEE d 'de' MMMM, yyyy", { locale: es })}
             </span>
           </div>
-          <div className="flex items-center justify-between text-xs text-zinc-400">
-            <span className="text-zinc-500">Horario</span>
-            <span className="font-mono text-[#D4A853]">
+          <div className="flex flex-col gap-0.5 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+            <span className="text-xs text-zinc-500 shrink-0">Horario</span>
+            <span className="text-xs font-mono text-[#D4A853] sm:text-right">
               {format(new Date(selectedSlot.startTime), "HH:mm")} - {format(new Date(selectedSlot.endTime), "HH:mm")} GMT-6
             </span>
           </div>
-          <div className="flex items-center justify-between text-xs text-zinc-400">
-            <span className="text-zinc-500">Canal</span>
-            <span className="text-zinc-200">Google Meet / Encriptado</span>
+          <div className="flex flex-col gap-0.5 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+            <span className="text-xs text-zinc-500 shrink-0">Sala</span>
+            <span className="text-xs text-zinc-200 sm:text-right">Pandora&apos;s Sovereign Meet</span>
           </div>
+
+          {joinLink && (
+            <div className="pt-3 border-t border-white/10 space-y-2">
+              <p className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">Tu enlace de acceso</p>
+              <a
+                href={joinLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block w-full rounded-lg bg-[#D4A853] text-black text-xs font-semibold px-3 py-2.5 text-center hover:bg-[#e0b767] transition-colors"
+              >
+                Entrar a la sala
+              </a>
+              <div className="flex items-start gap-2">
+                <code className="flex-1 min-w-0 text-[10px] text-zinc-400 break-all bg-black/40 border border-white/10 rounded px-2 py-1">
+                  {joinLink}
+                </code>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(joinLink);
+                      setLinkCopied(true);
+                      setTimeout(() => setLinkCopied(false), 2000);
+                    } catch { /* sin permiso de portapapeles */ }
+                  }}
+                  className="shrink-0 text-[10px] font-mono px-2 py-1 rounded border border-white/15 text-zinc-300 hover:text-white hover:border-white/30"
+                >
+                  {linkCopied ? "Copiado" : "Copiar"}
+                </button>
+              </div>
+              <p className="text-[10px] text-zinc-500">
+                El mismo enlace va en tu correo. Es personal: identifica tu asistencia.
+              </p>
+            </div>
+          )}
         </div>
 
         <button

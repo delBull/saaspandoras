@@ -134,7 +134,7 @@ export async function bookSlot(slotId: string, leadData: { name: string, email: 
 
             // Centralized pipeline sync (Idempotent scoring + CRM + Email w/ brand & ICS + Telegram + WhatsApp)
             const { syncBookingToPipeline } = await import('@/lib/scheduling/syncBookingPipeline');
-            await syncBookingToPipeline({
+            const synced = await syncBookingToPipeline({
                 bookingId: bookResult.bookingId,
                 slotStartTime,
                 slotEndTime,
@@ -144,7 +144,7 @@ export async function bookSlot(slotId: string, leadData: { name: string, email: 
                 hostUserId,
             });
 
-            return { success: true, bookingId: bookResult.bookingId };
+            return { success: true, bookingId: bookResult.bookingId, meetingLink: synced.meetingLink };
         }
 
         if (slotId.startsWith('hold_')) {
@@ -235,7 +235,7 @@ export async function bookSlot(slotId: string, leadData: { name: string, email: 
 
           // 3. Centralized Pipeline Sync & Multi-channel notifications
           const { syncBookingToPipeline } = await import('@/lib/scheduling/syncBookingPipeline');
-          await syncBookingToPipeline({
+          const synced = await syncBookingToPipeline({
               bookingId,
               slotStartTime: updatedSlot.startTime,
               slotEndTime: updatedSlot.endTime,
@@ -244,7 +244,7 @@ export async function bookSlot(slotId: string, leadData: { name: string, email: 
               hostUserId: updatedSlot.userId
           });
 
-          return { success: true, bookingId };
+          return { success: true, bookingId, meetingLink: synced.meetingLink };
         });
 
     } catch (error) {
@@ -574,8 +574,10 @@ export async function createAdminBooking(userId: string, data: {
             sendSchedulerNotification(bookingId, data.startTime, {
                 name: data.leadName,
                 email: data.leadEmail,
-                notes: `(Admin Manual) ${data.title}` + (sovereignMeeting ? `\nJitsi Room: ${sovereignMeeting.jitsiRoomId}` : '')
-            }),
+                notes: `(Admin Manual) ${data.title}` + (sovereignMeeting ? `\nSala: ${sovereignMeeting.jitsiRoomId}` : '')
+            }, true, null, sovereignMeeting
+                ? `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://dash.pandoras.finance'}/meet/${sovereignMeeting.meetingId}`
+                : null),
             // Use existing emailer (might need adjustment to send "Confirmed" directly)
             sendBookingPendingEmail(data.leadEmail, {
                 name: data.leadName,

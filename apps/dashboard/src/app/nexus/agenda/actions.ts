@@ -40,7 +40,7 @@ export async function launchImmediateMeetingAction() {
     }
 
     revalidatePath("/nexus/agenda");
-    return { success: true, meetingId: result.meetingId };
+    return { success: true, meetingId: result.meetingId, meetingLink: result.meetingLink };
   } catch (error: any) {
     console.error("[LaunchMeetingAction] Error:", error);
     return { success: false, error: "Internal Server Error" };

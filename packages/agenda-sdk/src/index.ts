@@ -26,6 +26,12 @@ export interface CreateMeetingRequest {
     /** Array of participant internal IDs or identities to invite (legacy) */
     collaborators?: (string | number)[];
 
+    /** Cita de agenda (scheduling_bookings) que origina la reunión */
+    appointmentId?: string | null;
+
+    /** Estado inicial (por defecto 'scheduled') */
+    status?: 'scheduled' | 'live';
+
     /**
      * Participantes de la reunión (NO firmantes del deal).
      * Un meeting puede tener muchos invitados y solo 1-2 firmantes.
@@ -48,7 +54,7 @@ export class AgendaCore {
      * Creates a new Meeting and its participants in the database.
      */
     static async createMeeting(req: CreateMeetingRequest) {
-        const { canonicalOrgId, hostCollaboratorId, presentationId, scheduledFor, durationMinutes, collaborators, participants } = req;
+        const { canonicalOrgId, hostCollaboratorId, presentationId, scheduledFor, durationMinutes, collaborators, participants, appointmentId, status } = req;
         
         if (!canonicalOrgId) {
             throw new Error("[AgendaCore] canonicalOrgId is required to maintain tenant boundaries.");
@@ -70,7 +76,8 @@ export class AgendaCore {
             hostCollaboratorId: hostCollaboratorId || null,
             jitsiRoomId,
             presentationId: presentationId || null,
-            status: 'scheduled',
+            appointmentId: appointmentId || null,
+            status: status ?? 'scheduled',
             startsAt,
             endsAt,
         });

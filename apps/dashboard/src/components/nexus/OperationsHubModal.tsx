@@ -32,13 +32,14 @@ import { OperationsBroadcastTab } from './OperationsBroadcastTab';
 import { OperationsIncidentCenter } from './OperationsIncidentCenter';
 import { OperationsApprovalsTab } from './OperationsApprovalsTab';
 import { OperationsClientsTab } from './OperationsClientsTab';
+import { OperationsAgendaTab } from './OperationsAgendaTab';
 import { OperationsKnowledgeTab } from './OperationsKnowledgeTab';
 import { OperationsCollaboratorsTab } from './OperationsCollaboratorsTab';
 import TasksPanel from './TasksPanel';
 import { CheckCircle, Building2 } from 'lucide-react';
 import { getNexusClientHeaders } from '@/lib/nexus/client-auth-headers';
 
-export type Tab = 'REGISTER' | 'CLIENTS' | 'DATAROOM' | 'WORK_ENGINE' | 'ACTIVITY' | 'KNOWLEDGE' | 'COHORTS' | 'APPROVALS';
+export type Tab = 'REGISTER' | 'CLIENTS' | 'DATAROOM' | 'AGENDA' | 'WORK_ENGINE' | 'ACTIVITY' | 'KNOWLEDGE' | 'COHORTS' | 'APPROVALS';
 
 interface IPAsset {
   id: string;
@@ -375,6 +376,7 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
       ? [{ id: 'REGISTER' as Tab, label: `OPS REGISTER (${assets.length})`, icon: <Layers className="w-3.5 h-3.5" /> }]
       : []),
     { id: 'CLIENTS', label: 'CLIENTS & CRM', icon: <Building2 className="w-3.5 h-3.5" /> },
+    { id: 'AGENDA', label: 'AGENDA', icon: <Calendar className="w-3.5 h-3.5" /> },
     { id: 'DATAROOM', label: 'DATA ROOM & VAULT', icon: <FolderGit2 className="w-3.5 h-3.5" /> },
     ...(isOpsAdmin
       ? [{ id: 'COHORTS' as Tab, label: 'COHORTS', icon: <Shield className="w-3.5 h-3.5" /> }]
@@ -704,6 +706,9 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
           {tab === 'CLIENTS' && (
             <OperationsClientsTab onOpenApprovals={() => setTab('APPROVALS')} />
           )}
+
+          {/* TAB: AGENDA (mis reuniones) */}
+          {tab === 'AGENDA' && <OperationsAgendaTab />}
 
           {/* TAB: DATA ROOM */}
           {tab === 'DATAROOM' && (

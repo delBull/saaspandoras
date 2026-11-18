@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getNexusAuthContext } from '@saasfly/shared';
-import { db, nexusDirectMessages, eq, and, or, asc, desc, sql } from '@saasfly/db-core';
+import { db, nexusDirectMessages, nexusCollaborators, eq, and, or, asc, desc, sql } from '@saasfly/db-core';
 import type { NexusDirectMessage } from '@saasfly/db-core';
 
 export const runtime = 'nodejs';
@@ -66,8 +66,9 @@ export async function GET(req: Request) {
     }
 
     try {
-      // Mark messages from targetEmail as read for myEmail
-      db.update(nexusDirectMessages)
+      // Mark messages from targetEmail as read for myEmail (se espera para evitar
+      // que el refetch inmediato del cliente vuelva a pintarlos como no leídos).
+      await db.update(nexusDirectMessages)
         .set({ readAt: new Date() })
         .where(
           and(
@@ -159,6 +160,27 @@ export async function POST(req: Request) {
     const emailPrefix = auth.email.split('@')[0] ?? 'Operador';
     const senderName = auth.name?.trim() ? auth.name.trim() : emailPrefix;
     const orgId = auth.canonicalOrgId ?? 'pandoras';
+
+    // El destinatario debe ser un colaborador real: si no, el mensaje quedaría en un
+    // buzón que nadie consulta (fallo silencioso).
+    const [receiver] = await db
+      .select({ id: nexusCollaborators.id, status: nexusCollaborators.status })
+      .from(nexusCollaborators)
+      .where(eq(nexusCollaborators.email, receiverEmail))
+      .limit(1);
+
+    if (!receiver) {
+      return NextResponse.json(
+        { error: 'El destinatario no es un colaborador registrado', code: 'RECEIVER_NOT_FOUND' },
+        { status: 404 }
+      );
+    }
+    if (receiver.status === 'DISABLED' || receiver.status === 'REJECTED') {
+      return NextResponse.json(
+        { error: 'El destinatario no está activo', code: 'RECEIVER_INACTIVE' },
+        { status: 409 }
+      );
+    }
 
     try {
       const inserted: NexusDirectMessage[] = await db

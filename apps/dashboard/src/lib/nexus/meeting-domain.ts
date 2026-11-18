@@ -1,6 +1,6 @@
 import { db } from '@saasfly/db';
 import { eq, and } from "@saasfly/db-core";
-import { meetings, nexusAuditEvents } from '@saasfly/db/schema';
+import { meetings, nexusAuditEvents, nexusCollaborators } from '@saasfly/db/schema';
 import { NexusAuthContext } from '@saasfly/shared';
 
 export class MeetingPolicy {
@@ -120,14 +120,36 @@ export class EndMeetingHandler {
 }
 
 export class LaunchImmediateMeetingHandler {
-  static async execute(authCtx: NexusAuthContext): Promise<{ success: boolean; meetingId?: string; error?: string }> {
-    if (!authCtx.isAuthenticated || !authCtx.collaboratorId) {
-      return { success: false, error: 'Unauthorized' };
+  static async execute(
+    authCtx: NexusAuthContext
+  ): Promise<{ success: boolean; meetingId?: string; meetingLink?: string; error?: string }> {
+    if (!authCtx.isAuthenticated) {
+      return { success: false, error: 'Tu sesión de Nexus expiró. Vuelve a entrar.' };
     }
-    if (!authCtx.permissions['calendar.manage']) {
-      return { success: false, error: 'Forbidden: Missing calendar.manage capability' };
+
+    // La capability puede venir apagada en el mapa aunque el rol la tenga por diseño.
+    const roleAllowsCalendar = ['SUPER_ADMIN', 'ADMIN', 'ADMIN_OPERATIONS'].includes(String(authCtx.role ?? ''));
+    if (!authCtx.permissions['calendar.manage'] && !roleAllowsCalendar) {
+      return { success: false, error: 'Tu identidad no tiene la capability calendar.manage.' };
     }
-    
+
+    // Si la sesión no trae colaborador, se resuelve por email (sin inventar identidad).
+    let collaboratorId = authCtx.collaboratorId ?? null;
+    if (!collaboratorId && authCtx.email) {
+      const [collab] = await db
+        .select({ id: nexusCollaborators.id })
+        .from(nexusCollaborators)
+        .where(eq(nexusCollaborators.email, authCtx.email))
+        .limit(1);
+      collaboratorId = collab?.id ?? null;
+    }
+    if (!collaboratorId) {
+      return {
+        success: false,
+        error: 'Tu usuario no está vinculado a un colaborador de Nexus; no se puede asignar host a la reunión.',
+      };
+    }
+
     const orgId = authCtx.canonicalOrgId ?? 'pandoras';
     const now = new Date();
     const newMeetingId = crypto.randomUUID();
@@ -136,7 +158,7 @@ export class LaunchImmediateMeetingHandler {
       await tx.insert(meetings).values({
         id: newMeetingId,
         canonicalOrgId: orgId,
-        hostCollaboratorId: authCtx.collaboratorId,
+        hostCollaboratorId: collaboratorId,
         status: 'live',
         startsAt: now,
         startedAt: now,
@@ -144,7 +166,7 @@ export class LaunchImmediateMeetingHandler {
 
       await tx.insert(nexusAuditEvents).values({
         canonicalOrgId: orgId,
-        actorIdentityId: authCtx.collaboratorId!,
+        actorIdentityId: collaboratorId,
         eventType: 'MEETING_STARTED',
         resourceType: 'meeting',
         resourceId: newMeetingId,
@@ -154,7 +176,7 @@ export class LaunchImmediateMeetingHandler {
       });
     });
 
-    return { success: true, meetingId: newMeetingId };
+    return { success: true, meetingId: newMeetingId, meetingLink: `/meet/${newMeetingId}` };
   }
 }
 

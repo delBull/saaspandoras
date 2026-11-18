@@ -28,6 +28,9 @@ export interface CollaboratorPresence {
   email: string;
   role: string;
   status: PresenceStatus;
+  /** Verdad de conexión calculada por el servidor (lastSeenAt <= TTL) */
+  isOnline: boolean;
+  lastSeenAgeSeconds?: number | null;
   context?: string;
   preferredChannel: PreferredChannel;
   whatsappPhone?: string | null;
@@ -42,6 +45,8 @@ interface RawPresenceItem {
   email?: string;
   role?: string;
   status?: PresenceStatus;
+  isOnline?: boolean;
+  lastSeenAgeSeconds?: number | null;
   context?: string;
   preferredChannel?: PreferredChannel;
   whatsappPhone?: string | null;
@@ -241,6 +246,10 @@ export function PresenceDock({ hidden = false }: { hidden?: boolean }) {
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatInput.trim() || !selectedCollaborator || isSendingMessage) return;
+    if (!selectedCollaborator.email) {
+      toast.error('Este colaborador no tiene email registrado; no puede recibir mensajes.');
+      return;
+    }
 
     const textToSend = chatInput.trim();
     setIsSendingMessage(true);
@@ -255,6 +264,12 @@ export function PresenceDock({ hidden = false }: { hidden?: boolean }) {
           content: textToSend,
         }),
       });
+
+      if (!res.ok) {
+        const err = (await res.json().catch(() => ({}))) as { error?: string };
+        toast.error(err.error ?? 'No se pudo enviar el mensaje');
+        return;
+      }
 
       if (res.ok) {
         setChatInput('');
@@ -304,7 +319,10 @@ export function PresenceDock({ hidden = false }: { hidden?: boolean }) {
                 name: cleanName || rawName,
                 email: p.email ?? '',
                 role: p.role ?? 'COLLABORATOR',
-                status: p.status ?? 'ONLINE',
+                // Sin dato de frescura no se asume conectado: por defecto OFFLINE.
+                status: p.status ?? 'OFFLINE',
+                isOnline: p.isOnline ?? (p.status ? p.status !== 'OFFLINE' : false),
+                lastSeenAgeSeconds: p.lastSeenAgeSeconds ?? null,
                 context: p.context,
                 preferredChannel: p.preferredChannel ?? 'NEXUS_CHAT',
                 whatsappPhone: p.whatsappPhone ?? null,
@@ -329,6 +347,12 @@ export function PresenceDock({ hidden = false }: { hidden?: boolean }) {
       void tick();
     }, 30000);
 
+    // Al volver a la pestaña (móvil/escritorio suspendido) se late de inmediato.
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') void tick();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+
     const onAvatarUpdated = () => {
       void fetchPresence();
     };
@@ -352,6 +376,7 @@ export function PresenceDock({ hidden = false }: { hidden?: boolean }) {
       clearInterval(interval);
       window.removeEventListener('nexus-avatar-updated', onAvatarUpdated);
       window.removeEventListener('beforeunload', onUnload);
+      document.removeEventListener('visibilitychange', onVisibility);
     };
   }, []);
 
@@ -485,7 +510,19 @@ export function PresenceDock({ hidden = false }: { hidden?: boolean }) {
     }
   };
 
-  const getStatusText = (status: PresenceStatus) => {
+  const formatLastSeen = (seconds?: number | null) => {
+    if (seconds == null) return 'sin actividad registrada';
+    if (seconds < 60) return 'hace segundos';
+    const minutes = Math.round(seconds / 60);
+    if (minutes < 60) return `hace ${minutes} min`;
+    const hours = Math.round(minutes / 60);
+    if (hours < 24) return `hace ${hours} h`;
+    const days = Math.round(hours / 24);
+    return `hace ${days} d`;
+  };
+
+  const getStatusText = (status: PresenceStatus, isOnline: boolean, ageSeconds?: number | null) => {
+    if (!isOnline) return `Desconectado · ${formatLastSeen(ageSeconds)}`;
     switch (status) {
       case 'ONLINE': return 'Disponible';
       case 'DO_NOT_DISTURB': return 'No molestar';
@@ -494,9 +531,9 @@ export function PresenceDock({ hidden = false }: { hidden?: boolean }) {
     }
   };
 
-  const online = presenceList.filter(p => p.status === 'ONLINE' || p.status === 'IN_MEETING');
-  const dnd = presenceList.filter(p => p.status === 'DO_NOT_DISTURB');
-  const offline = presenceList.filter(p => p.status === 'OFFLINE');
+  const online = presenceList.filter(p => p.isOnline && p.status !== 'DO_NOT_DISTURB');
+  const dnd = presenceList.filter(p => p.isOnline && p.status === 'DO_NOT_DISTURB');
+  const offline = presenceList.filter(p => !p.isOnline);
 
   const handleSelectCollaborator = (collab: CollaboratorPresence) => {
     setIsOpen(false);
@@ -545,7 +582,7 @@ export function PresenceDock({ hidden = false }: { hidden?: boolean }) {
           )}
         </div>
         <p className="text-[11px] text-white/50 truncate">
-          {p.context ? p.context : getStatusText(p.status)}
+          {p.context ? p.context : getStatusText(p.status, p.isOnline, p.lastSeenAgeSeconds)}
         </p>
       </div>
       <div className="text-[10px] font-mono px-1.5 py-0.5 bg-white/5 border border-white/10 rounded text-white/60">
@@ -585,7 +622,7 @@ export function PresenceDock({ hidden = false }: { hidden?: boolean }) {
                     <div className="flex items-center gap-2 mt-1">
                       <span className={`w-2 h-2 rounded-full ${getStatusColor(selectedCollaborator.status)}`} />
                       <span className="text-xs text-zinc-300">
-                        {selectedCollaborator.context ?? getStatusText(selectedCollaborator.status)}
+                        {selectedCollaborator.context ?? getStatusText(selectedCollaborator.status, selectedCollaborator.isOnline, selectedCollaborator.lastSeenAgeSeconds)}
                       </span>
                     </div>
                   </div>
