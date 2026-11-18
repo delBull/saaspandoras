@@ -18,7 +18,8 @@ import { Loader2 } from "lucide-react";
 
 import useSWR from "swr";
 import { useActiveAccount, useReadContract, useActiveWalletConnectionStatus } from "thirdweb/react";
-import { getContract, defineChain } from "thirdweb";
+import { getContract } from "thirdweb";
+import { chainWithOwnRpc } from "@/lib/web3/rpc-chains";
 import { client } from "@saasfly/shared/thirdweb-client"; // Verify client import path
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
@@ -29,7 +30,7 @@ export default function DAOPage({ params }: { params: Promise<{ slug: string }> 
 
     const dummyContract = getContract({
         client,
-        chain: defineChain(11155111),
+        chain: chainWithOwnRpc(11155111),
         address: "0x0000000000000000000000000000000000000000"
     });
 
@@ -53,7 +54,7 @@ export default function DAOPage({ params }: { params: Promise<{ slug: string }> 
 
     const licenseContract = (project?.licenseContractAddress && project.licenseContractAddress.startsWith('0x')) ? getContract({
         client,
-        chain: defineChain(safeChainId),
+        chain: chainWithOwnRpc(safeChainId),
         address: project.licenseContractAddress,
     }) : undefined;
 

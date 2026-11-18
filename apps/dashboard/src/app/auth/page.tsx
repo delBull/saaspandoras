@@ -8,7 +8,7 @@ import { wallets } from "@/lib/wallets";
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ShieldCheck, Loader2 } from 'lucide-react';
-import { defineChain } from 'thirdweb/chains';
+import { chainWithOwnRpc } from '@/lib/web3/rpc-chains';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { getProjectForAuth } from './actions';
 
@@ -55,7 +55,7 @@ function AuthContent() {
 
     // Chain detection (default to Sepolia for now or Base if project specifies)
     const chainId = project?.chainId ? Number(project.chainId) : 11155111;
-    const chain = defineChain(chainId);
+    const chain = chainWithOwnRpc(chainId);
     const brandColor = project?.themeColor || '#7c3aed';
 
     useEffect(() => {
