@@ -207,6 +207,14 @@ export async function POST(
   const dealRoomUrl = `${baseUrl}/deal/${room.publicId}`;
   const deck = findPresentation(presentationId);
 
+  // Cada invitado recibe su link personal (?p=<joinToken>): es lo que registra asistencia.
+  const joinTokenByEmail = new Map<string, string>(
+    (meeting.participants ?? []).map((participant) => [
+      participant.identityId.toLowerCase(),
+      participant.joinToken,
+    ])
+  );
+
   let invitesSent = 0;
   let invitesFailed = 0;
   const inviteErrors: string[] = [];
@@ -217,6 +225,7 @@ export async function POST(
       continue;
     }
     try {
+      const token = joinTokenByEmail.get(email);
       const result = await sendEmail({
         to: email,
         subject: `Presentación agendada · ${room.counterparty}`,
@@ -224,7 +233,7 @@ export async function POST(
           startsAt,
           endsAt: meeting.endsAt,
           deckTitle: deck?.title ?? null,
-          joinUrl,
+          joinUrl: token ? `${baseUrl}/meet/${meeting.id}?p=${token}` : joinUrl,
           dealRoomUrl,
           counterparty: room.counterparty,
         }),

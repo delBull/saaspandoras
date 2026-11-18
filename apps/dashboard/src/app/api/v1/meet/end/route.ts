@@ -82,10 +82,10 @@ export async function POST(req: NextRequest) {
 
     // Seguimiento inmediato (único mecanismo, mismo que usa el cron como red de seguridad).
     // Si falla, la reunión ya quedó `ended` y el cron lo reintenta: no se miente al cliente.
-    let followUp: { dispatched: number; pending: number; error?: string } = { dispatched: 0, pending: 0 };
+    let followUp: { dispatched: number; pending: number; noShow?: number; error?: string } = { dispatched: 0, pending: 0 };
     try {
       const summary = await runSovereignFollowUps(updated.id);
-      followUp = { dispatched: summary.sent, pending: summary.pending };
+      followUp = { dispatched: summary.sent, pending: summary.pending, noShow: summary.noShow };
     } catch (err) {
       console.error("[MeetEnd] follow-up error:", err);
       followUp = { dispatched: 0, pending: 0, error: "FOLLOW_UP_FAILED_RETRY_VIA_CRON" };

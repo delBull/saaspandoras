@@ -70,16 +70,26 @@ export class AgendaCore {
         });
 
         // 3. Assign Collaborators (Participants)
+        //    Cada participante recibe un `joinToken` opaco: es lo que permite
+        //    identificar quién entró (asistencia) sin exponer su identidad en la URL.
+        const participantRecords: Array<{ id: string; identityId: string; joinToken: string }> = [];
+
         if (Array.isArray(collaborators) && collaborators.length > 0) {
-            const participantsToInsert = collaborators.map((cId) => ({
-                id: crypto.randomUUID(),
-                meetingId,
-                identityId: String(cId),
-                // Default to anonymous_guest/guest unless specified otherwise
-                participantType: 'anonymous_guest' as const, 
-                role: 'guest' as const,
-                followUpStatus: 'pending' as const
-            }));
+            const participantsToInsert = collaborators.map((cId) => {
+                const joinToken = crypto.randomBytes(16).toString('hex');
+                const record = { id: crypto.randomUUID(), identityId: String(cId), joinToken };
+                participantRecords.push(record);
+                return {
+                    id: record.id,
+                    meetingId,
+                    identityId: record.identityId,
+                    joinToken,
+                    // Default to anonymous_guest/guest unless specified otherwise
+                    participantType: 'anonymous_guest' as const,
+                    role: 'guest' as const,
+                    followUpStatus: 'pending' as const
+                };
+            });
 
             await db.insert(meetingParticipants).values(participantsToInsert);
         }
@@ -90,6 +100,7 @@ export class AgendaCore {
             presentationId,
             scheduledFor: startsAt.toISOString(),
             endsAt: endsAt ? endsAt.toISOString() : null,
+            participants: participantRecords,
         };
     }
 }

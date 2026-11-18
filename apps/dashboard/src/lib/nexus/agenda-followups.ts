@@ -29,6 +29,8 @@ export interface FollowUpSummary {
   sent: number;
   pending: number;
   noAction: number;
+  /** Invitados con link personal que NO entraron (no-show) — solo si la asistencia es conocida */
+  noShow: number;
 }
 
 function followUpEmailHtml(input: { firstName: string; deckTitle: string | null; deckUrl: string | null }): string {
@@ -70,7 +72,7 @@ function followUpEmailHtml(input: { firstName: string; deckTitle: string | null;
  * @param meetingId Limita el proceso a una reunión (cierre inmediato). Sin parámetro: todas.
  */
 export async function runSovereignFollowUps(meetingId?: string): Promise<FollowUpSummary> {
-  const summary: FollowUpSummary = { meetings: 0, sent: 0, pending: 0, noAction: 0 };
+  const summary: FollowUpSummary = { meetings: 0, sent: 0, pending: 0, noAction: 0, noShow: 0 };
 
   const targetMeetings = meetingId
     ? await db.select().from(meetings).where(and(eq(meetings.id, meetingId), eq(meetings.status, 'ended')))
@@ -86,23 +88,34 @@ export async function runSovereignFollowUps(meetingId?: string): Promise<FollowU
     (process.env.NODE_ENV === 'production' ? 'https://dash.pandoras.finance' : 'http://localhost:3000');
 
   for (const meeting of targetMeetings) {
-    const pendingParticipants = await db
+    const allParticipants = await db
       .select()
       .from(meetingParticipants)
-      .where(
-        and(
-          eq(meetingParticipants.meetingId, meeting.id),
-          eq(meetingParticipants.followUpStatus, 'pending')
-        )
-      );
+      .where(eq(meetingParticipants.meetingId, meeting.id));
 
+    const pendingParticipants = allParticipants.filter((p) => p.followUpStatus === 'pending');
     if (pendingParticipants.length === 0) continue;
     summary.meetings++;
+
+    // Asistencia: solo se considera CONOCIDA si al menos un invitado con link personal entró.
+    // Sin esa evidencia (reuniones sin tokens) el envío sigue siendo a todos: no se inventa no-show.
+    const attendanceKnown = allParticipants.some((p) => Boolean(p.joinToken) && Boolean(p.joinedAt));
 
     const deck = findPresentation(meeting.presentationId);
     const deckUrl = deck ? `${baseUrl}${deck.href}` : null;
 
     for (const participant of pendingParticipants) {
+      // Con asistencia conocida, el seguimiento va a quien realmente asistió.
+      // Los no-show se marcan explícitamente (y se cuentan) para el flujo manual.
+      if (attendanceKnown && participant.joinToken && !participant.joinedAt) {
+        await db
+          .update(meetingParticipants)
+          .set({ followUpStatus: 'no_action' })
+          .where(eq(meetingParticipants.id, participant.id));
+        summary.noShow++;
+        continue;
+      }
+
       if (!participant.identityId) {
         await db
           .update(meetingParticipants)

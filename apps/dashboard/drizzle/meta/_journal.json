@@ -631,6 +631,13 @@
       "when": 1793500100000,
       "tag": "0089_meeting_presentation_state",
       "breakpoints": true
+    },
+    {
+      "idx": 90,
+      "version": "7",
+      "when": 1793500200000,
+      "tag": "0090_meeting_attendance_notes",
+      "breakpoints": true
     }
   ]
 }

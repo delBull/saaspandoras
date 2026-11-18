@@ -5,6 +5,7 @@ import { meetings } from "@saasfly/db-core";
 import { eq } from "@saasfly/db-core";
 import { SovereignMeetClient } from "@/components/meet/SovereignMeetClient";
 import { getNexusAuthContext } from "@saasfly/shared";
+import { resolveParticipantJoin } from "@/lib/meet/participant-join";
 
 export const metadata: Metadata = {
     title: "Sovereign Meet | Pandora's",
@@ -31,8 +32,15 @@ export const metadata: Metadata = {
  * If MEET_JOIN_SECRET is not configured, we render a clear error instead of passing
  *   a null joinRef that would result in a cryptic 400 from the token endpoint.
  */
-export default async function MeetPage({ params }: { params: Promise<{ meetingId: string }> }) {
+export default async function MeetPage({
+    params,
+    searchParams,
+}: {
+    params: Promise<{ meetingId: string }>;
+    searchParams: Promise<{ p?: string }>;
+}) {
     const { meetingId } = await params;
+    const { p: participantToken } = await searchParams;
     const MEET_JOIN_SECRET = process.env.MEET_JOIN_SECRET;
 
     if (!MEET_JOIN_SECRET) {
@@ -61,14 +69,38 @@ export default async function MeetPage({ params }: { params: Promise<{ meetingId
     }
 
     const authCtx = await getNexusAuthContext();
-    const isGuest = !authCtx.isAuthenticated;
     
+    // Asistencia: el link personal del email (?p=<joinToken>) identifica al invitado
+    // y marca `joined_at` una sola vez. Es la única fuente de verdad de asistencia.
+    let participantIdentity: string | null = null;
+    let participantId: string | null = null;
+    if (participantToken) {
+        try {
+            const join = await resolveParticipantJoin(meetingId, participantToken);
+            if (join) {
+                participantIdentity = join.identityId;
+                participantId = join.participantId;
+            }
+        } catch {
+            // No bloquea la entrada: si el registro de asistencia falla, la sala sigue.
+            console.warn("[Meet] No se pudo registrar la asistencia del participante");
+        }
+    }
+
     // We strictly use the authenticated collaborator ID if present.
     // If they are a guest, they remain 'guest:<meetingId>'.
     // The Jitsi JaaS token generation in /api/v1/meet/token handles the roles based on this ID.
-    const collaboratorId = authCtx.isAuthenticated ? authCtx.collaboratorId : `guest:${meetingId}`;
-    const name = authCtx.isAuthenticated ? authCtx.name : "Guest";
-    const email = authCtx.isAuthenticated ? authCtx.email : "guest@pandoras.finance";
+    const collaboratorId = authCtx.isAuthenticated
+        ? authCtx.collaboratorId
+        : participantId
+        ? `guest:${meetingId}:${participantId}`
+        : `guest:${meetingId}`;
+    const name = authCtx.isAuthenticated
+        ? authCtx.name
+        : participantIdentity?.split("@")[0] || "Invitado";
+    const email = authCtx.isAuthenticated
+        ? authCtx.email
+        : participantIdentity || "guest@pandoras.finance";
 
     const joinRef = jwt.sign(
         { meetingId, collaboratorId, orgId, name, email },

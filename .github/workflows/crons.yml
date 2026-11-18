@@ -70,12 +70,21 @@ jobs:
   agenda-followups:
     if: github.event.schedule == '0 */2 * * *'
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Call agenda-followups
         run: |
-          curl -s -o /dev/null -w "%{http_code}" \
+          RESPONSE=$(curl -s -w "%{http_code}" -o /tmp/followups.json \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-            "https://dash.pandoras.finance/api/cron/sovereign-agenda-followups"
+            "https://dash.pandoras.finance/api/cron/sovereign-agenda-followups")
+
+          echo "HTTP $RESPONSE"
+          cat /tmp/followups.json || true
+
+          if [ "$RESPONSE" != "200" ]; then
+            echo "::error::agenda-followups failed with HTTP $RESPONSE"
+            exit 1
+          fi
 
   nexus-cron:
     if: github.event.schedule == '0 */2 * * *'

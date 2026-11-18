@@ -47,6 +47,11 @@ vi.mock("@saasfly/agenda-sdk", () => ({
         presentationId: req.presentationId ?? null,
         scheduledFor: startsAt.toISOString(),
         endsAt: endsAt ? endsAt.toISOString() : null,
+        participants: (req.collaborators ?? []).map((identityId: string, index: number) => ({
+          id: `participant-${index}`,
+          identityId,
+          joinToken: `token${index}`.padEnd(32, "0"),
+        })),
       };
     }),
   },
@@ -252,6 +257,12 @@ describe("📅 Deal schedule route (/api/nexus/deals/[id]/schedule)", () => {
     expect(data.invites).toEqual({ sent: 2, failed: 0, errors: [] });
     expect(emailCalls).toHaveLength(2);
     expect(emailCalls[0].to).toBe("socio@celeste.com");
+    // Cada invitación lleva el link personal que registra asistencia.
+    const tokenFor = (index: number) => `token${index}`.padEnd(32, "0");
+    expect(String(emailCalls[0].html)).toContain(`?p=${tokenFor(0)}`);
+    expect(String(emailCalls[1].html)).toContain(`?p=${tokenFor(1)}`);
+    // El link del host no lleva token de participante.
+    expect(data.joinUrl).not.toContain("?p=");
   });
 
   it("SCH-09b: reporta invitaciones fallidas con números reales (no finge éxito)", async () => {

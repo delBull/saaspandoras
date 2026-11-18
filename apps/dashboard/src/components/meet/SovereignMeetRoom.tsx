@@ -2,7 +2,7 @@
 
 import { JitsiMeeting } from "@jitsi/react-sdk";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Loader2, MonitorPlay, PhoneOff, X, BookOpen } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, MonitorPlay, PhoneOff, X, BookOpen, NotebookPen, Save } from "lucide-react";
 import { findPresentation } from "@/lib/nexus/presentations-catalog";
 
 interface SovereignMeetRoomProps {
@@ -48,7 +48,7 @@ const MOBILE_TOOLBAR: string[] = [
 // Host-only extras (added on top of desktop set)
 const HOST_EXTRAS: string[] = ['recording', 'mute-everyone', 'security'];
 
-const PRESENTATION_POLL_MS = 3000;
+const PRESENTATION_POLL_MS = 3000; // fallback si el navegador no soporta SSE
 
 interface PresentationState {
     open: boolean;
@@ -77,6 +77,11 @@ export function SovereignMeetRoom({
     const [deckError, setDeckError] = useState<string | null>(null);
     const [deckBusy, setDeckBusy] = useState(false);
     const [showScript, setShowScript] = useState(false);
+    const [notes, setNotes] = useState("");
+    const [notesLoaded, setNotesLoaded] = useState(false);
+    const [notesSaving, setNotesSaving] = useState(false);
+    const [notesSaved, setNotesSaved] = useState(false);
+    const [showNotes, setShowNotes] = useState(false);
     const [ending, setEnding] = useState(false);
     const [meetingEnded, setMeetingEnded] = useState(false);
 
@@ -92,35 +97,73 @@ export function SovereignMeetRoom({
         return () => window.removeEventListener("resize", check);
     }, []);
 
-    // Participants follow the host: short polling of the shared meeting state.
+    // Participants follow the host. Transporte: SSE (push del servidor) con
+    // fallback a polling si EventSource no está disponible o falla de forma persistente.
     useEffect(() => {
         if (!hasDeck) return;
         let cancelled = false;
+        let source: EventSource | null = null;
+        let interval: ReturnType<typeof setInterval> | null = null;
 
-        const load = async () => {
+        const applyState = (data: any) => {
+            if (cancelled || !data || data.error) return;
+            setDeckState({
+                open: Boolean(data.open),
+                slide: Number.isInteger(data.slide) ? data.slide : 0,
+                status: data.status ?? "scheduled",
+            });
+            if (data.status === "ended") setMeetingEnded(true);
+        };
+
+        const pollOnce = async () => {
             try {
                 const res = await fetch(`/api/v1/meet/presentation?meetingId=${encodeURIComponent(meetingId)}`, {
                     cache: "no-store",
                 });
                 if (!res.ok) return;
-                const data = await res.json();
-                if (cancelled) return;
-                setDeckState({
-                    open: Boolean(data.open),
-                    slide: Number.isInteger(data.slide) ? data.slide : 0,
-                    status: data.status ?? "scheduled",
-                });
-                if (data.status === "ended") setMeetingEnded(true);
+                applyState(await res.json());
             } catch {
                 // Silencioso a propósito: un fallo de red no debe tumbar la sala.
             }
         };
 
-        load();
-        const interval = setInterval(load, PRESENTATION_POLL_MS);
+        const startPolling = () => {
+            if (interval || cancelled) return;
+            void pollOnce();
+            interval = setInterval(pollOnce, PRESENTATION_POLL_MS);
+        };
+
+        if (typeof window !== "undefined" && typeof window.EventSource === "function") {
+            try {
+                source = new EventSource(
+                    `/api/v1/meet/presentation/stream?meetingId=${encodeURIComponent(meetingId)}`
+                );
+                source.onmessage = (event) => {
+                    try {
+                        applyState(JSON.parse(event.data));
+                    } catch {
+                        // mensaje parcial/keep-alive: se ignora
+                    }
+                };
+                // EventSource reconecta solo; tras error persistente caemos a polling.
+                source.onerror = () => {
+                    if (source && source.readyState === EventSource.CLOSED) {
+                        source.close();
+                        source = null;
+                        startPolling();
+                    }
+                };
+            } catch {
+                startPolling();
+            }
+        } else {
+            startPolling();
+        }
+
         return () => {
             cancelled = true;
-            clearInterval(interval);
+            source?.close();
+            if (interval) clearInterval(interval);
         };
     }, [hasDeck, meetingId]);
 
@@ -131,6 +174,42 @@ export function SovereignMeetRoom({
         if (!frame?.contentWindow) return;
         frame.contentWindow.postMessage({ type: "pandora:presentation:go", index: deckState.slide }, "*");
     }, [deckState.open, deckState.slide]);
+
+    // Guión contextual de ESTA sesión (host-only): se carga al abrir el panel.
+    const loadNotes = useCallback(async () => {
+        try {
+            const res = await fetch(`/api/v1/meet/notes?meetingId=${encodeURIComponent(meetingId)}`, {
+                cache: "no-store",
+            });
+            if (!res.ok) return;
+            const data = await res.json();
+            setNotes(data.notes ?? "");
+            setNotesLoaded(true);
+        } catch {
+            setNotesLoaded(true);
+        }
+    }, [meetingId]);
+
+    const saveNotes = useCallback(async () => {
+        setNotesSaving(true);
+        setNotesSaved(false);
+        try {
+            const res = await fetch("/api/v1/meet/notes", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ meetingId, notes }),
+            });
+            if (res.ok) setNotesSaved(true);
+        } catch {
+            // sin éxito visible: el host ve que no se guardó
+        } finally {
+            setNotesSaving(false);
+        }
+    }, [meetingId, notes]);
+
+    useEffect(() => {
+        if (showNotes && isHost && !notesLoaded) void loadNotes();
+    }, [showNotes, isHost, notesLoaded, loadNotes]);
 
     const updateDeck = useCallback(
         async (patch: { open?: boolean; slide?: number }) => {
@@ -246,6 +325,19 @@ export function SovereignMeetRoom({
                                     </button>
                                 </div>
                             )}
+                            <button
+                                type="button"
+                                onClick={() => setShowNotes((v) => !v)}
+                                className={`px-3 py-2 rounded-full text-xs font-mono flex items-center gap-1.5 border backdrop-blur transition-colors ${
+                                    showNotes
+                                        ? "bg-sky-500/30 border-sky-400/50 text-sky-100"
+                                        : "bg-black/60 border-white/15 text-zinc-300 hover:text-white"
+                                }`}
+                                title="Contexto de la sesión (solo host)"
+                            >
+                                <NotebookPen className="w-3.5 h-3.5" />
+                                Contexto
+                            </button>
                             {presentation && (
                                 <button
                                     type="button"
@@ -319,6 +411,39 @@ export function SovereignMeetRoom({
                         {presentation.guardrails.map((rule, index) => (
                             <p key={index} className="text-[10px] text-zinc-400 leading-relaxed">— {rule}</p>
                         ))}
+                    </div>
+                </aside>
+            )}
+
+            {/* Contexto de la sesión (host-only, persistido por reunión) */}
+            {isHost && showNotes && (
+                <aside className="absolute top-20 right-4 z-30 w-80 max-h-[70dvh] overflow-y-auto rounded-xl bg-black/85 border border-sky-500/30 backdrop-blur p-4 space-y-3">
+                    <header className="flex items-center justify-between">
+                        <p className="text-[10px] font-mono uppercase tracking-widest text-sky-300">Contexto de esta sesión</p>
+                        <button type="button" onClick={() => setShowNotes(false)} className="text-zinc-500 hover:text-white">
+                            <X className="w-4 h-4" />
+                        </button>
+                    </header>
+                    <textarea
+                        value={notes}
+                        onChange={(e) => { setNotes(e.target.value); setNotesSaved(false); }}
+                        rows={8}
+                        placeholder="Acuerdos previos, objeciones conocidas, compromisos de la sesión anterior..."
+                        className="w-full rounded-lg bg-black/60 border border-white/10 px-2 py-1.5 text-[11px] text-zinc-200 focus:outline-none focus:border-sky-500/50"
+                    />
+                    <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-mono text-zinc-500">
+                            {notesSaved ? "Guardado" : `${notes.length}/8000`}
+                        </span>
+                        <button
+                            type="button"
+                            disabled={notesSaving}
+                            onClick={saveNotes}
+                            className="px-3 py-1.5 rounded-lg border border-sky-500/30 bg-sky-500/15 hover:bg-sky-500/25 disabled:opacity-50 text-sky-100 text-[11px] font-mono flex items-center gap-1.5"
+                        >
+                            <Save className="w-3.5 h-3.5" />
+                            {notesSaving ? "Guardando..." : "Guardar"}
+                        </button>
                     </div>
                 </aside>
             )}
