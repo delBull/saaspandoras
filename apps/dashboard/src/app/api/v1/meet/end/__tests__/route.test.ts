@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 let meetingRow: any = null;
 let lastPatch: any = null;
+let patches: any[] = [];
 let followUpCalls: string[] = [];
 let followUpShouldThrow = false;
 let followUpSummary = { meetings: 1, sent: 2, pending: 0, noAction: 0 };
@@ -29,6 +30,7 @@ vi.mock("@saasfly/db-core", () => {
       update: () => ({
         set: (patch: any) => {
           lastPatch = patch;
+          patches.push(patch);
           return {
             where: () => ({
               returning: async () => [{ id: meetingRow?.id, endedAt: patch.endedAt ?? null }],
@@ -40,6 +42,7 @@ vi.mock("@saasfly/db-core", () => {
     and: (...args: any[]) => args,
     eq: (...args: any[]) => args,
     meetings: { id: "id", canonicalOrgId: "canonical_org_id" },
+    meetingPresentationState: { meetingId: "meeting_id" },
   };
 });
 
@@ -58,6 +61,7 @@ function request(body: unknown = { meetingId: MEETING_ID }) {
 describe("📴 Cierre de reunión (/api/v1/meet/end)", () => {
   beforeEach(() => {
     lastPatch = null;
+    patches = [];
     followUpCalls = [];
     followUpShouldThrow = false;
     followUpSummary = { meetings: 1, sent: 2, pending: 0, noAction: 0 };
@@ -81,8 +85,9 @@ describe("📴 Cierre de reunión (/api/v1/meet/end)", () => {
     expect(data.ok).toBe(true);
     expect(data.followUp).toEqual({ dispatched: 2, pending: 0 });
 
-    expect(lastPatch).toMatchObject({ status: "ended", presentationOpen: false });
-    expect(lastPatch.endedAt).toBeInstanceOf(Date);
+    expect(patches.some((patch) => patch.status === "ended")).toBe(true);
+    const endPatch = patches.find((patch) => patch.status === "ended");
+    expect(endPatch?.endedAt).toBeInstanceOf(Date);
     expect(followUpCalls).toEqual([MEETING_ID]);
   });
 
@@ -135,7 +140,7 @@ describe("📴 Cierre de reunión (/api/v1/meet/end)", () => {
     expect(res.status).toBe(200);
 
     const data = await res.json();
-    expect(lastPatch).toMatchObject({ status: "ended" });
+    expect(patches.some((patch) => patch.status === "ended")).toBe(true);
     expect(data.followUp).toEqual({ dispatched: 0, pending: 0, error: "FOLLOW_UP_FAILED_RETRY_VIA_CRON" });
   });
 });

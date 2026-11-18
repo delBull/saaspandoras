@@ -1638,8 +1638,6 @@ export const meetings = pgTable("meetings", {
   
   jitsiRoomId: text("jitsi_room_id"), // Sovereign Jitsi Meet ID
   presentationId: text("presentation_id"), // ID to link to Fullscreen Pitch Template
-  presentationOpen: boolean("presentation_open").notNull().default(false), // Deck injected in-room
-  presentationSlide: integer("presentation_slide").notNull().default(0), // Host-controlled slide
 
   
   status: meetingStatusEnum("status").default("scheduled").notNull(),
@@ -1653,6 +1651,20 @@ export const meetings = pgTable("meetings", {
   presenterNotes: text("presenter_notes"), // Guión contextual de ESTA sesión (host)
   
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+/**
+ * Estado compartido del deck dentro de la sala.
+ * Tabla ADOPTADA del checkout principal: ya existía en producción, por lo que es la
+ * única fuente de verdad (no se duplica en columnas de `meetings`).
+ */
+export const meetingPresentationState = pgTable("meeting_presentation_state", {
+  meetingId: text("meeting_id").primaryKey(),
+  presentationId: text("presentation_id").notNull(),
+  slideIndex: integer("slide_index").notNull().default(0),
+  presentationOpen: boolean("presentation_open").notNull().default(false),
+  updatedBy: text("updated_by"),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 

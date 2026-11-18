@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 let meetingRow: any = null;
+let stateRow: any = null;
 let lastPatch: any = null;
 let mockAuth: any = { isAuthenticated: true, collaboratorId: 7, canonicalOrgId: "pandoras" };
 
@@ -9,26 +10,41 @@ vi.mock("@saasfly/shared", () => ({
 }));
 
 vi.mock("@saasfly/db-core", () => {
-  const selectChain = {
-    from: () => ({ where: () => ({ limit: async () => (meetingRow ? [meetingRow] : []) }) }),
-  };
+  const select = () => ({
+    from: (table: any) => ({
+      where: () => ({
+        limit: async () => {
+          if (table?.__t === "state") return stateRow ? [stateRow] : [];
+          return meetingRow ? [meetingRow] : [];
+        },
+      }),
+    }),
+  });
+
   return {
     db: {
-      select: () => selectChain,
+      select,
       update: () => ({
         set: (patch: any) => {
           lastPatch = patch;
-          return {
-            where: () => ({
-              returning: async () => [{ ...meetingRow, ...patch }],
-            }),
-          };
+          return { where: async () => undefined };
         },
+      }),
+      insert: () => ({
+        values: (values: any) => ({
+          onConflictDoUpdate: () => ({
+            returning: async () => {
+              lastPatch = values;
+              return [{ slideIndex: values.slideIndex, presentationOpen: values.presentationOpen }];
+            },
+          }),
+        }),
       }),
     },
     and: (...args: any[]) => args,
     eq: (...args: any[]) => args,
-    meetings: { id: "id", canonicalOrgId: "canonical_org_id" },
+    meetings: { __t: "meetings", id: "id" },
+    meetingPresentationState: { __t: "state", meetingId: "meeting_id" },
   };
 });
 
@@ -54,9 +70,8 @@ describe("🎬 In-room presentation state (/api/v1/meet/presentation)", () => {
       hostCollaboratorId: 7,
       status: "scheduled",
       presentationId: "real-estate-growth",
-      presentationOpen: false,
-      presentationSlide: 0,
     };
+    stateRow = null;
   });
 
   it("PRS-01: host opens the deck at a given slide", async () => {
@@ -67,7 +82,7 @@ describe("🎬 In-room presentation state (/api/v1/meet/presentation)", () => {
     expect(data.open).toBe(true);
     expect(data.slide).toBe(3);
     expect(data.presentationId).toBe("real-estate-growth");
-    expect(lastPatch).toMatchObject({ presentationOpen: true, presentationSlide: 3 });
+    expect(lastPatch).toMatchObject({ presentationOpen: true, slideIndex: 3 });
   });
 
   it("PRS-02: rejects a non-host identity with 403 and writes nothing", async () => {
@@ -119,8 +134,7 @@ describe("🎬 In-room presentation state (/api/v1/meet/presentation)", () => {
   });
 
   it("PRS-07: GET exposes only deck state (participants follow the host)", async () => {
-    meetingRow.presentationOpen = true;
-    meetingRow.presentationSlide = 4;
+    stateRow = { presentationOpen: true, slideIndex: 4 };
 
     const res = await presentationGet(
       new Request(`http://localhost/api/v1/meet/presentation?meetingId=${MEETING_ID}`) as any

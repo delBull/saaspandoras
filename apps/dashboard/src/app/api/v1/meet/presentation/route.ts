@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@saasfly/db-core";
-import { meetings } from "@saasfly/db-core";
+import { meetings, meetingPresentationState } from "@saasfly/db-core";
 import { and, eq } from "@saasfly/db-core";
 import { resolveDealPublicId } from "@/lib/meet/deal-context";
 import { getDeck } from "@/lib/nexus/deck-repository";
@@ -29,21 +29,34 @@ export const dynamic = "force-dynamic";
 
 const MAX_SLIDE_INDEX = 200;
 
-function stateOf(meeting: {
+function stateOf(input: {
   presentationId: string | null;
-  presentationOpen: boolean;
-  presentationSlide: number;
   status: string;
   dealRoomId?: string | null;
+  open?: boolean;
+  slide?: number;
 }) {
   return {
-    presentationId: meeting.presentationId,
-    open: meeting.presentationOpen,
-    slide: meeting.presentationSlide,
-    status: meeting.status,
+    presentationId: input.presentationId,
+    open: input.open ?? false,
+    slide: input.slide ?? 0,
+    status: input.status,
     // El deck puede resolver su link de Deal Room sin hardcodear nada.
-    dealRoomId: meeting.dealRoomId ?? null,
+    dealRoomId: input.dealRoomId ?? null,
   };
+}
+
+/** Estado del deck (tabla adoptada). Devuelve null si todavía no hay fila. */
+async function readDeckState(meetingId: string) {
+  const [state] = await db
+    .select({
+      presentationOpen: meetingPresentationState.presentationOpen,
+      slideIndex: meetingPresentationState.slideIndex,
+    })
+    .from(meetingPresentationState)
+    .where(eq(meetingPresentationState.meetingId, meetingId))
+    .limit(1);
+  return state ?? null;
 }
 
 export async function GET(req: NextRequest) {
@@ -56,8 +69,6 @@ export async function GET(req: NextRequest) {
     const [meeting] = await db
       .select({
         presentationId: meetings.presentationId,
-        presentationOpen: meetings.presentationOpen,
-        presentationSlide: meetings.presentationSlide,
         status: meetings.status,
         dealRoomId: meetings.dealRoomId,
       })
@@ -70,6 +81,7 @@ export async function GET(req: NextRequest) {
     }
 
     // El link del Deal Room se resuelve server-side (nada hardcodeado en el deck).
+    const deckState = await readDeckState(meetingId);
     const dealPublicId = await resolveDealPublicId(meeting.dealRoomId);
 
     // Guión/meta del deck desde el CMS. Si no está sembrado, la sala usa el
@@ -99,7 +111,17 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({ ...stateOf(meeting), dealPublicId, deck });
+    return NextResponse.json({
+      ...stateOf({
+        presentationId: meeting.presentationId,
+        status: meeting.status,
+        dealRoomId: meeting.dealRoomId,
+        open: deckState?.presentationOpen ?? false,
+        slide: deckState?.slideIndex ?? 0,
+      }),
+      dealPublicId,
+      deck,
+    });
   } catch (error) {
     console.error("[MeetPresentation] GET error:", error);
     return NextResponse.json({ error: "Error interno", code: "INTERNAL" }, { status: 500 });
@@ -168,27 +190,49 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const patch: Partial<typeof meetings.$inferInsert> = { updatedAt: new Date() };
-    if (hasOpen) patch.presentationOpen = body.open as boolean;
-    if (slideIndex !== null) patch.presentationSlide = slideIndex;
+    const current = await readDeckState(meeting.id);
+    const nextOpen = hasOpen ? (body.open as boolean) : current?.presentationOpen ?? false;
+    const nextSlide = slideIndex !== null ? slideIndex : current?.slideIndex ?? 0;
 
-    const [updated] = await db
-      .update(meetings)
-      .set(patch)
-      .where(eq(meetings.id, actor.meetingId))
+    const [saved] = await db
+      .insert(meetingPresentationState)
+      .values({
+        meetingId: meeting.id,
+        presentationId: meeting.presentationId,
+        slideIndex: nextSlide,
+        presentationOpen: nextOpen,
+        updatedBy: actor.actorCollaboratorId,
+        updatedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: meetingPresentationState.meetingId,
+        set: {
+          presentationId: meeting.presentationId,
+          slideIndex: nextSlide,
+          presentationOpen: nextOpen,
+          updatedBy: actor.actorCollaboratorId,
+          updatedAt: new Date(),
+        },
+      })
       .returning({
-        presentationId: meetings.presentationId,
-        presentationOpen: meetings.presentationOpen,
-        presentationSlide: meetings.presentationSlide,
-        status: meetings.status,
-        dealRoomId: meetings.dealRoomId,
+        slideIndex: meetingPresentationState.slideIndex,
+        presentationOpen: meetingPresentationState.presentationOpen,
       });
 
-    if (!updated) {
+    if (!saved) {
       return NextResponse.json({ error: "No se pudo actualizar", code: "UPDATE_FAILED" }, { status: 500 });
     }
 
-    return NextResponse.json(stateOf(updated));
+    return NextResponse.json({
+      ...stateOf({
+        presentationId: meeting.presentationId,
+        status: meeting.status,
+        dealRoomId: meeting.dealRoomId,
+        open: saved.presentationOpen,
+        slide: saved.slideIndex,
+      }),
+      dealPublicId: await resolveDealPublicId(meeting.dealRoomId),
+    });
   } catch (error) {
     console.error("[MeetPresentation] POST error:", error);
     return NextResponse.json({ error: "Error interno", code: "INTERNAL" }, { status: 500 });

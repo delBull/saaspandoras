@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { db } from "@saasfly/db-core";
-import { meetings } from "@saasfly/db-core";
+import { meetings, meetingPresentationState } from "@saasfly/db-core";
 import { eq } from "@saasfly/db-core";
 import { resolveDealPublicId } from "@/lib/meet/deal-context";
 
@@ -36,8 +36,6 @@ async function readState(meetingId: string) {
   const [meeting] = await db
     .select({
       presentationId: meetings.presentationId,
-      presentationOpen: meetings.presentationOpen,
-      presentationSlide: meetings.presentationSlide,
       status: meetings.status,
       dealRoomId: meetings.dealRoomId,
     })
@@ -46,11 +44,21 @@ async function readState(meetingId: string) {
     .limit(1);
 
   if (!meeting) return null;
+
+  const [state] = await db
+    .select({
+      presentationOpen: meetingPresentationState.presentationOpen,
+      slideIndex: meetingPresentationState.slideIndex,
+    })
+    .from(meetingPresentationState)
+    .where(eq(meetingPresentationState.meetingId, meetingId))
+    .limit(1);
+
   const dealPublicId = await resolveDealPublicId(meeting.dealRoomId);
   return {
     presentationId: meeting.presentationId,
-    open: meeting.presentationOpen,
-    slide: meeting.presentationSlide,
+    open: state?.presentationOpen ?? false,
+    slide: state?.slideIndex ?? 0,
     status: meeting.status,
     dealPublicId,
   };

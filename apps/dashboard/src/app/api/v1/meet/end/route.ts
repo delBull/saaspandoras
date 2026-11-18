@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@saasfly/db-core";
-import { meetings } from "@saasfly/db-core";
+import { meetings, meetingPresentationState } from "@saasfly/db-core";
 import { and, eq } from "@saasfly/db-core";
 import { isMeetingHost, resolveRoomActor } from "@/lib/meet/room-credentials";
 import { runSovereignFollowUps } from "@/lib/nexus/agenda-followups";
@@ -72,12 +72,22 @@ export async function POST(req: NextRequest) {
     const endedAt = new Date();
     const [updated] = await db
       .update(meetings)
-      .set({ status: "ended", endedAt, updatedAt: endedAt, presentationOpen: false })
+      .set({ status: "ended", endedAt, updatedAt: endedAt })
       .where(eq(meetings.id, meeting.id))
       .returning({ id: meetings.id, endedAt: meetings.endedAt });
 
     if (!updated) {
       return NextResponse.json({ error: "No se pudo cerrar la reunión", code: "UPDATE_FAILED" }, { status: 500 });
+    }
+
+    // El deck deja de estar "en vivo" al cerrar (best-effort: no bloquea el cierre).
+    try {
+      await db
+        .update(meetingPresentationState)
+        .set({ presentationOpen: false, updatedAt: endedAt })
+        .where(eq(meetingPresentationState.meetingId, meeting.id));
+    } catch (error) {
+      console.error("[MeetEnd] No se pudo cerrar el estado del deck:", error);
     }
 
     // Seguimiento inmediato (único mecanismo, mismo que usa el cron como red de seguridad).
