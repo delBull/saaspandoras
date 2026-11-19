@@ -31,6 +31,11 @@ Post-reunión
   └─ seguimiento por email  → lib/nexus/agenda-followups.ts
         · a asistentes (permanencia ≥ 60s) cuando hay evidencia
         · a todos si no hay evidencia (nunca se inventa no-show)
+
+Calendario (rápido, sin OAuth)
+  ├─ invitados → .ics adjunto en invitación/recordatorio
+  └─ host      → “Añadir a Google Calendar” en agenda/Hub/drawer
+                 (evento prellenado; el host revisa y guarda)
 ```
 
 Las dos vías para agendar producen el mismo objeto reunión:
@@ -39,6 +44,28 @@ Las dos vías para agendar producen el mismo objeto reunión:
 |---|---|---|
 | Deal Room → Clients & CRM → "Agendar presentación" | `POST /api/nexus/deals/:id/schedule` | hereda deck del deal y deal_room_id |
 | Agenda Soberana → "Agendar presentación" | `POST /api/v1/nexus/agenda/meet/create` | reunión suelta con deck del catálogo |
+
+### Borrado lógico de reuniones pasadas (implementado)
+
+- En `/nexus/agenda` → bloque **Anteriores**, el host ve **“Eliminar”**.
+- No es un `DELETE`: setea `meetings.archived_at`. Se conservan minuta, asistencia,
+  tareas, audit y follow-ups.
+- La reunión deja de listarse en agenda, Operations Hub y TMA.
+- Solo el host de la reunión puede archivarla; cross-tenant → 403.
+- Participantes: no pueden archivarla (afecta a la agenda del host, no a la suya).
+
+### Añadir a Google Calendar (implementado, sin OAuth)
+
+- Botón **“Google Calendar”** en:
+  - `/nexus/agenda` (cada reunión programada/live),
+  - pestaña de agenda del Operations Hub,
+  - drawer de la reunión en la agenda.
+- Abre un evento **prellenado** de Google Calendar con título, hora, detalles y liga.
+- Host: usa la liga genérica de la sala. Participante: usa su liga personal (`?p=`).
+- Es un **clic manual**; no escribe por API ni actualiza al reagendar/cancelar.
+- Los invitados siguen recibiendo su `.ics`; no se duplica el evento de Google.
+- Para sincronización automática real se necesita OAuth (ver
+  [AGENDA-SOBERANA-MULTITENANT-ROADMAP.md](./AGENDA-SOBERANA-MULTITENANT-ROADMAP.md)).
 
 ---
 
@@ -150,7 +177,27 @@ bun run seed:decks     # siembra los decks versionados
 
 ---
 
-## 7. Pendientes generales
+## 7. Multi-tenant (Academy / Growth OS)
+
+La revisión completa de herencia multi-tenant vive en:
+
+**[AGENDA-SOBERANA-MULTITENANT-ROADMAP.md](./AGENDA-SOBERANA-MULTITENANT-ROADMAP.md)**
+
+Resumen del veredicto:
+
+- El **modelo de datos** sí está scoped por `canonical_org_id`.
+- El **booking público** (`bookSlot`) atribuye a `projectId = 1` (Pandora's), no al tenant.
+- **Growth OS** no tiene agenda de tenant; solo un link fijo a `/schedule/pandoras`.
+- **Academy** no tiene rutas de agenda/meet; sus links a `/schedule/pandoras` son relativos.
+- El **catálogo de decks** (`nexus_presentations`) es global, sin tenant.
+- Los **correos** (invitaciones, recordatorios, follow-ups) son de Pandora's.
+
+Hay **2 P0** (atribución y fallbacks a `pandoras`) y **4 P1** (superficie de agenda,
+configuración por tenant, decks y branding).
+
+---
+
+## 8. Pendientes generales
 
 - [ ] Verificación end-to-end en staging (agendar → entrar → presentar → finalizar → seguimiento).
 - [ ] `NEXT_PUBLIC_APP_URL` correcto en producción (los links de email dependen de él).

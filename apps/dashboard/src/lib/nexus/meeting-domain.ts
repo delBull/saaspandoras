@@ -25,6 +25,22 @@ export class MeetingPolicy {
 
     return true;
   }
+
+  static canArchive(meeting: any, authCtx: NexusAuthContext): boolean {
+    if (!authCtx.isAuthenticated || !authCtx.collaboratorId || !authCtx.canonicalOrgId) {
+      return false;
+    }
+    if (meeting.canonicalOrgId !== authCtx.canonicalOrgId) {
+      return false;
+    }
+    if (meeting.hostCollaboratorId !== authCtx.collaboratorId) {
+      return false;
+    }
+    if (meeting.archivedAt) {
+      return true; // idempotente: ya está archivada
+    }
+    return meeting.status === 'ended';
+  }
 }
 
 export class CancelMeetingHandler {
@@ -64,6 +80,60 @@ export class CancelMeetingHandler {
         resourceId: meetingId,
         action: 'UPDATE',
         newState: { status: 'cancelled' },
+        result: 'SUCCESS',
+      });
+    });
+
+    return { success: true };
+  }
+}
+
+export class ArchiveMeetingHandler {
+  /**
+   * Borrado lógico: la reunión deja de aparecer en la agenda del host.
+   * No borra minuta, asistencia, tareas ni follow-ups (historial intacto).
+   */
+  static async execute(
+    meetingId: string,
+    authCtx: NexusAuthContext
+  ): Promise<{ success: boolean; error?: string }> {
+    if (!authCtx.isAuthenticated || !authCtx.collaboratorId || !authCtx.canonicalOrgId) {
+      return { success: false, error: 'Unauthorized' };
+    }
+    const orgId = authCtx.canonicalOrgId;
+
+    const meetingRow = await db
+      .select()
+      .from(meetings)
+      .where(and(eq(meetings.id, meetingId), eq(meetings.canonicalOrgId, orgId)))
+      .then((res) => res[0]);
+
+    if (!meetingRow) {
+      return { success: false, error: 'Meeting not found' };
+    }
+
+    if (!MeetingPolicy.canArchive(meetingRow, authCtx)) {
+      return { success: false, error: 'Forbidden or invalid meeting state' };
+    }
+
+    if (meetingRow.archivedAt) {
+      return { success: true };
+    }
+
+    await db.transaction(async (tx) => {
+      await tx
+        .update(meetings)
+        .set({ archivedAt: new Date(), updatedAt: new Date() })
+        .where(eq(meetings.id, meetingId));
+
+      await tx.insert(nexusAuditEvents).values({
+        canonicalOrgId: orgId,
+        actorIdentityId: authCtx.collaboratorId!,
+        eventType: 'MEETING_ARCHIVED',
+        resourceType: 'meeting',
+        resourceId: meetingId,
+        action: 'UPDATE',
+        newState: { archived: true, status: meetingRow.status },
         result: 'SUCCESS',
       });
     });

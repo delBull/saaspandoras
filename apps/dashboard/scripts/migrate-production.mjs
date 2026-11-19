@@ -65,6 +65,7 @@ const REQUIRED_COLUMNS = {
     'ai_summary',
     'title',
     'follow_up_enabled',
+    'archived_at',
   ],
   meeting_participants: [
     'id',
@@ -144,6 +145,10 @@ const DDL = {
   ],
   dealRoomId: [`ALTER TABLE "meetings" ADD COLUMN IF NOT EXISTS "deal_room_id" text`],
   title: [`ALTER TABLE "meetings" ADD COLUMN IF NOT EXISTS "title" text`],
+  archive: [
+    `ALTER TABLE "meetings" ADD COLUMN IF NOT EXISTS "archived_at" timestamptz`,
+    `CREATE INDEX IF NOT EXISTS "meetings_archived_at_idx" ON "meetings" ("archived_at")`,
+  ],
   followUpControls: [
     `ALTER TABLE "meetings" ADD COLUMN IF NOT EXISTS "follow_up_enabled" boolean NOT NULL DEFAULT true`,
     `ALTER TABLE "meeting_participants" ADD COLUMN IF NOT EXISTS "summary_sent_at" timestamptz`,
@@ -266,6 +271,7 @@ async function main() {
         for (const statement of DDL.reminders) await client.query(statement);
         for (const statement of DDL.dealRoomId) await client.query(statement);
         for (const statement of DDL.title) await client.query(statement);
+        for (const statement of DDL.archive) await client.query(statement);
         for (const statement of DDL.followUpControls) await client.query(statement);
         for (const statement of DDL.actionItemSource) await client.query(statement);
         for (const statement of DDL.dealRoomPresentation) await client.query(statement);

@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { AddToGoogleCalendarButton } from "@/components/meet/AddToGoogleCalendarButton";
 import { X, Mic, FileText, CheckCircle2, CloudLightning, Loader2, UploadCloud } from "lucide-react";
 
 interface ActionItem {
@@ -21,6 +22,8 @@ interface MeetingDetailsDrawerProps {
     hostName: string;
     status: string;
     isHost?: boolean;
+    joinPath?: string | null;
+    endsAt?: Date | string | null;
   } | null;
 }
 
@@ -212,6 +215,17 @@ export function MeetingDetailsDrawer({ isOpen, onClose, meeting }: MeetingDetail
             {/* Content Scrollable */}
             <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-8">
               
+              {meeting.status !== "ended" && (
+                <AddToGoogleCalendarButton
+                  title={meeting.title}
+                  startsAt={meeting.date}
+                  endsAt={meeting.endsAt}
+                  meetingPath={meeting.joinPath}
+                  hostName={meeting.hostName}
+                  variant="full"
+                />
+              )}
+
               {/* Upload Section — solo el host procesa la minuta */}
               {meeting.isHost !== false && (
               <div className="border border-dashed border-white/10 rounded-xl p-8 flex flex-col items-center justify-center text-center bg-white/[0.02]">

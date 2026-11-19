@@ -5,6 +5,7 @@ import { Calendar, ExternalLink, Loader2, RefreshCw, Video, AlertTriangle } from
 import { getNexusClientHeaders } from "@/lib/nexus/client-auth-headers";
 import { findPresentation } from "@/lib/nexus/presentations-catalog";
 import { MeetingShareButton } from "@/components/meet/MeetingShareButton";
+import { AddToGoogleCalendarButton } from "@/components/meet/AddToGoogleCalendarButton";
 
 interface AgendaMeeting {
   id: string;
@@ -214,12 +215,21 @@ export function OperationsAgendaTab() {
 
                     <div className="flex flex-wrap items-center gap-2 shrink-0">
                       {(isLive || meeting.status === "scheduled") && (
-                        <MeetingShareButton
-                          meetingId={meeting.id}
-                          title={meeting.title ?? deck?.title ?? "Pandora's · Sovereign Meet"}
-                          startsAt={start}
-                          endsAt={end}
-                        />
+                        <>
+                          <MeetingShareButton
+                            meetingId={meeting.id}
+                            title={meeting.title ?? deck?.title ?? "Pandora's · Sovereign Meet"}
+                            startsAt={start}
+                            endsAt={end}
+                          />
+                          <AddToGoogleCalendarButton
+                            title={meeting.title ?? deck?.title ?? "Sovereign Meet"}
+                            startsAt={start}
+                            endsAt={end}
+                            meetingPath={meeting.joinPath}
+                            hostName={meeting.role === "host" ? "Tú" : undefined}
+                          />
+                        </>
                       )}
                       {canJoin ? (
                         <a

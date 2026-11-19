@@ -4,7 +4,10 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { Video, FileText, Radio, KeyRound, Check } from "lucide-react";
 import { MeetingShareButton } from "@/components/meet/MeetingShareButton";
+import { AddToGoogleCalendarButton } from "@/components/meet/AddToGoogleCalendarButton";
+import { shortMeetingPath } from "@/lib/meet/meeting-links";
 import { CancelMeetingButton } from "./CancelMeetingButton";
+import { ArchiveMeetingButton } from "./ArchiveMeetingButton";
 import { MeetingDetailsDrawer } from "./MeetingDetailsDrawer";
 
 interface AgendaListClientProps {
@@ -79,6 +82,7 @@ export function AgendaListClient({ agendaRows, collaboratorId, now, joinUrls }: 
     const minutesUntilStart = (startsAt.getTime() - now.getTime()) / 60000;
     const canJoin = row.meeting.status === "live" || (row.meeting.status === "scheduled" && minutesUntilStart <= 15 && minutesUntilStart > -60);
     const canCancel = isHost && row.meeting.status === "scheduled";
+    const canArchive = isHost && row.meeting.status === "ended";
     // Asunto propio (reunión externa) > cita de agenda > genérico.
     const title =
       (typeof row.meeting.title === "string" && row.meeting.title.trim()) ||
@@ -162,12 +166,21 @@ export function AgendaListClient({ agendaRows, collaboratorId, now, joinUrls }: 
 
             <div className="flex flex-wrap items-center gap-2">
               {(isLive || isScheduled) && (
-                <MeetingShareButton
-                  meetingId={row.meeting.id}
-                  title={title}
-                  startsAt={startsAt}
-                  endsAt={endsAt}
-                />
+                <>
+                  <MeetingShareButton
+                    meetingId={row.meeting.id}
+                    title={title}
+                    startsAt={startsAt}
+                    endsAt={endsAt}
+                  />
+                  <AddToGoogleCalendarButton
+                    title={title}
+                    startsAt={startsAt}
+                    endsAt={endsAt}
+                    meetingPath={isHost ? shortMeetingPath(row.meeting.id) : joinUrl ?? shortMeetingPath(row.meeting.id)}
+                    hostName={row.host?.name ?? "Admin"}
+                  />
+                </>
               )}
               {isHost && joinUrl && (
                 <button
@@ -205,6 +218,7 @@ export function AgendaListClient({ agendaRows, collaboratorId, now, joinUrls }: 
                 </Link>
               )}
               {canCancel && <CancelMeetingButton meetingId={row.meeting.id} />}
+              {canArchive && <ArchiveMeetingButton meetingId={row.meeting.id} />}
               <button
                 onClick={() =>
                   setSelectedMeeting({
@@ -214,6 +228,8 @@ export function AgendaListClient({ agendaRows, collaboratorId, now, joinUrls }: 
                     hostName: row.host?.name ?? "Admin",
                     status: row.meeting.status,
                     isHost,
+                    joinPath: isHost ? shortMeetingPath(row.meeting.id) : joinUrl,
+                    endsAt,
                   })
                 }
                 className="flex items-center justify-center gap-2 px-4 py-2.5 bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-800 rounded-lg text-xs font-mono uppercase tracking-widest transition-colors"

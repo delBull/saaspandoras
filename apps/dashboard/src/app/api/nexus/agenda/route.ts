@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getNexusAuthContext } from "@saasfly/shared";
 import { db } from "@saasfly/db-core";
-import { eq, and, or, inArray, sql } from "@saasfly/db-core";
+import { eq, and, or, inArray, isNull, sql } from "@saasfly/db-core";
 import { meetings, meetingParticipants, meetingPresenceSessions, nexusCollaborators } from "@saasfly/db-core/schema";
 import { shortMeetingPath } from "@/lib/meet/meeting-links";
 
@@ -59,7 +59,7 @@ export async function GET(request: Request) {
         dealRoomId: meetings.dealRoomId,
       })
       .from(meetings)
-      .where(and(eq(meetings.canonicalOrgId, orgId), eq(meetings.hostCollaboratorId, collaboratorId)));
+      .where(and(eq(meetings.canonicalOrgId, orgId), isNull(meetings.archivedAt), eq(meetings.hostCollaboratorId, collaboratorId)));
 
     // 2) Reuniones donde soy participante. `identity_id` guarda el email con el
     // que se invitó (AgendaCore), así que se compara por id y por email; nunca
@@ -96,6 +96,7 @@ export async function GET(request: Request) {
             .where(
               and(
                 eq(meetings.canonicalOrgId, orgId),
+                isNull(meetings.archivedAt),
                 inArray(meetings.id, participantMeetingIds)
               )
             )

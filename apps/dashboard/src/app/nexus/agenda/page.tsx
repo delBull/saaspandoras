@@ -1,6 +1,6 @@
 import { getNexusAuthContext } from "@saasfly/shared";
 import { db } from "@saasfly/db-core";
-import { eq, or, and, inArray, sql } from "@saasfly/db-core";
+import { eq, or, and, inArray, isNull, sql } from "@saasfly/db-core";
 import { meetings, meetingParticipants, schedulingBookings, nexusCollaborators } from "@saasfly/db-core";
 import jwt from "jsonwebtoken";
 import Link from "next/link";
@@ -86,6 +86,7 @@ export default async function NexusAgendaPage({ searchParams }: { searchParams: 
   if (participantMeetingIds.length > 0) {
     whereClause = and(
       eq(meetings.canonicalOrgId, orgId),
+      isNull(meetings.archivedAt),
       inArray(meetings.status, ["scheduled", "live", "ended"]),
       or(
         eq(meetings.hostCollaboratorId, Number(collaboratorId)),
@@ -95,6 +96,7 @@ export default async function NexusAgendaPage({ searchParams }: { searchParams: 
   } else {
     whereClause = and(
       eq(meetings.canonicalOrgId, orgId),
+      isNull(meetings.archivedAt),
       inArray(meetings.status, ["scheduled", "live", "ended"]),
       eq(meetings.hostCollaboratorId, Number(collaboratorId))
     );

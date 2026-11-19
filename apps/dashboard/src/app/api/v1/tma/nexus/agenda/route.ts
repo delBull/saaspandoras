@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@saasfly/db';
-import { eq, or, and, inArray } from "@saasfly/db-core";
+import { eq, or, and, inArray, isNull } from "@saasfly/db-core";
 import {
   meetings,
   meetingParticipants,
@@ -38,6 +38,7 @@ export async function GET(req: Request) {
     if (participantMeetingIds.length > 0) {
       whereClause = and(
         eq(meetings.canonicalOrgId, orgId),
+        isNull(meetings.archivedAt),
         inArray(meetings.status, ['scheduled', 'live']),
         or(
           eq(meetings.hostCollaboratorId, Number(collaboratorId)),
@@ -47,6 +48,7 @@ export async function GET(req: Request) {
     } else {
       whereClause = and(
         eq(meetings.canonicalOrgId, orgId),
+        isNull(meetings.archivedAt),
         inArray(meetings.status, ['scheduled', 'live']),
         eq(meetings.hostCollaboratorId, Number(collaboratorId))
       );
