@@ -20,6 +20,7 @@ vi.mock("@saasfly/db-core", () => {
   return {
     db: { select: () => ({ from: () => ({ where: () => result }) }) },
     meetings: {},
+    nexusCollaborators: { id: "id", name: "name" },
     eq: (...args: any[]) => args,
     and: (...args: any[]) => args,
   };
@@ -52,11 +53,12 @@ beforeAll(async () => {
   ({ POST } = await import("../route"));
 });
 
-function signedRef(collaboratorId: string | number) {
-  return jwt.sign({ meetingId: MEETING_ID, collaboratorId, orgId: "pandoras" }, "secret-test", {
-    algorithm: "HS256",
-    expiresIn: "15m",
-  });
+function signedRef(collaboratorId: string | number, extra: Record<string, unknown> = {}) {
+  return jwt.sign(
+    { meetingId: MEETING_ID, collaboratorId, orgId: "pandoras", ...extra },
+    "secret-test",
+    { algorithm: "HS256", expiresIn: "15m" }
+  );
 }
 
 function request(ref: string) {
@@ -84,6 +86,28 @@ describe("🎥 Meet token (/api/v1/meet/token)", () => {
     expect(res.status).toBe(200);
     const data = await res.json();
     expect(data.role).toBe("participant");
+  });
+
+  it("TK-05: el nombre firmado se usa en la sala (no 'Collaborator abc')", async () => {
+    const res = await POST(request(signedRef(HOST_ID, { name: "Marco Muñoz", email: "marco@pandoras.finance" })));
+
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.displayName).toBe("Marco Muñoz");
+
+    const decoded = jwt.decode(data.token) as any;
+    expect(decoded.context.user.name).toBe("Marco Muñoz");
+    expect(decoded.context.user.email).toBe("marco@pandoras.finance");
+  });
+
+  it("TK-06: un invitado muestra su correo como nombre, no 'Invitado'", async () => {
+    const res = await POST(
+      request(signedRef(`guest:${MEETING_ID}`, { email: "eduardo@celeste.com" }))
+    );
+
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.displayName).toBe("eduardo");
   });
 
   it("TK-03: un joinRef inválido se rechaza con 403", async () => {

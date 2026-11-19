@@ -1689,6 +1689,10 @@ export const meetingParticipants = pgTable("meeting_participants", {
   invitedAt: timestamp("invited_at", { withTimezone: true }).defaultNow(),
   joinedAt: timestamp("joined_at", { withTimezone: true }),
   leftAt: timestamp("left_at", { withTimezone: true }),
+
+  // Recordatorios (idempotencia: NULL = pendiente de enviar)
+  reminder24hSentAt: timestamp("reminder_24h_sent_at", { withTimezone: true }),
+  reminder1hSentAt: timestamp("reminder_1h_sent_at", { withTimezone: true }),
 });
 
 export const meetingPresenceSessions = pgTable("meeting_presence_sessions", {

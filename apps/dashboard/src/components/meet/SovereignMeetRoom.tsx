@@ -2,7 +2,7 @@
 
 import { JitsiMeeting } from "@jitsi/react-sdk";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Loader2, MonitorPlay, PhoneOff, X, BookOpen, NotebookPen, Save } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, MonitorPlay, PhoneOff, X, BookOpen, NotebookPen, Save, Link2, Check, ClipboardList } from "lucide-react";
 import { findPresentation } from "@/lib/nexus/presentations-catalog";
 
 interface SovereignMeetRoomProps {
@@ -31,6 +31,7 @@ const DESKTOP_TOOLBAR: string[] = [
     'filmstrip',
     'videoquality',
     'closedcaptions',
+    'reactions',
     'mute-everyone',
     'security',
 ];
@@ -71,6 +72,8 @@ export function SovereignMeetRoom({
     const [retryKey, setRetryKey] = useState(0);
     const [isMobile, setIsMobile] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
+    const externalApiRef = useRef<{ executeCommand?: (command: string) => void } | null>(null);
+    const [linkCopied, setLinkCopied] = useState(false);
     const deckFrameRef = useRef<HTMLIFrameElement>(null);
 
     const isHost = role === "host" || role === "co_host";
@@ -93,7 +96,37 @@ export function SovereignMeetRoom({
     const [notesSaved, setNotesSaved] = useState(false);
     const [showNotes, setShowNotes] = useState(false);
     const [ending, setEnding] = useState(false);
+
+    // Minuta de la sesión (acciones) + resumen de grabación
+    const [showMinutes, setShowMinutes] = useState(false);
+    const [showMore, setShowMore] = useState(false);
+    const [minutesItems, setMinutesItems] = useState<Array<{ id: string; task: string; assigneeName?: string | null; status: string }>>([]);
+    const [minutesLoaded, setMinutesLoaded] = useState(false);
+    const [minutesLoading, setMinutesLoading] = useState(false);
+    const [minutesError, setMinutesError] = useState<string | null>(null);
+    const [newTask, setNewTask] = useState("");
+    const [newAssignee, setNewAssignee] = useState("");
+    const [savingTask, setSavingTask] = useState(false);
+    const [processingRecording, setProcessingRecording] = useState(false);
+    const [recordingSummary, setRecordingSummary] = useState<string | null>(null);
     const [meetingEnded, setMeetingEnded] = useState(false);
+    // null = desconocido (no se muestra aviso). Solo aplica a invitados.
+    const [hostPresent, setHostPresent] = useState<boolean | null>(null);
+
+    /**
+     * Delega permisos de dispositivos al iframe cross-origin de JaaS.
+     * El SDK no declara `allow`, y el navegador lo exige aparte del header
+     * Permissions-Policy del documento padre.
+     */
+    const applyIframePermissions = useCallback(() => {
+        const frame = containerRef.current?.querySelector("iframe");
+        if (!frame) return false;
+        // Forma "bare": cada feature se concede al origen del propio iframe (8x8.vc).
+        // Es la sintaxis que entienden Chromium, Firefox y Safari; `*` no es universal.
+        frame.allow = "camera; microphone; display-capture; fullscreen; autoplay; clipboard-write";
+        frame.allowFullscreen = true;
+        return true;
+    }, []);
 
     const hasDeck = Boolean(presentationId);
     const catalogPresentation = useMemo(() => findPresentation(presentationId), [presentationId]);
@@ -112,6 +145,46 @@ export function SovereignMeetRoom({
     const guardrails = deckMeta?.guardrails ?? catalogPresentation?.guardrails ?? [];
     const deckTitle = deckMeta?.title ?? catalogPresentation?.title ?? "Presentación";
     const currentBlock = scriptBlocks[deckState.slide];
+
+    // Aviso "esperando al anfitrión" para invitados. Sondeo ligero; no bloquea la sala.
+    useEffect(() => {
+        if (isHost) return;
+        let cancelled = false;
+
+        const check = async () => {
+            try {
+                const res = await fetch(
+                    `/api/v1/meet/host-presence?meetingId=${encodeURIComponent(meetingId)}`,
+                    { cache: "no-store" }
+                );
+                if (!res.ok) return;
+                const data = await res.json();
+                if (cancelled) return;
+                setHostPresent(typeof data.hostPresent === "boolean" ? data.hostPresent : null);
+            } catch {
+                /* silencioso: es un aviso de UI, no un requisito para entrar */
+            }
+        };
+
+        void check();
+        const timer = setInterval(check, 15_000);
+        return () => {
+            cancelled = true;
+            clearInterval(timer);
+        };
+    }, [isHost, meetingId]);
+
+    // Cuando la reunión se cierra (el host finaliza o el estado pasa a 'ended'),
+    // los participantes deben salir de la sala, no quedarse colgados como en un
+    // "end meeting for all" de Zoom/Meet.
+    useEffect(() => {
+        if (!meetingEnded) return;
+        try {
+            externalApiRef.current?.executeCommand?.("hangup");
+        } catch {
+            /* si el SDK aún no está listo, el overlay de cierre cubre el caso */
+        }
+    }, [meetingEnded]);
 
     // Si el script de Jitsi no carga (CSP, red, bloqueo del navegador), esto evita
     // que el usuario se quede para siempre en "Estableciendo conexión soberana".
@@ -303,6 +376,85 @@ export function SovereignMeetRoom({
         if (showNotes && isHost && !notesLoaded) void loadNotes();
     }, [showNotes, isHost, notesLoaded, loadNotes]);
 
+    const loadMinutes = useCallback(async () => {
+        setMinutesLoading(true);
+        setMinutesError(null);
+        try {
+            const res = await fetch(`/api/v1/meet/action-items?meetingId=${encodeURIComponent(meetingId)}`, {
+                cache: "no-store",
+            });
+            if (!res.ok) {
+                setMinutesError("No se pudo cargar la minuta.");
+                return;
+            }
+            const data = await res.json();
+            setMinutesItems(Array.isArray(data.items) ? data.items : []);
+        } catch {
+            setMinutesError("Error de red al cargar la minuta.");
+        } finally {
+            setMinutesLoading(false);
+            setMinutesLoaded(true);
+        }
+    }, [meetingId]);
+
+    const addActionItem = useCallback(async (event: React.FormEvent) => {
+        event.preventDefault();
+        const task = newTask.trim();
+        if (!task) return;
+        setSavingTask(true);
+        setMinutesError(null);
+        try {
+            const res = await fetch("/api/v1/meet/action-items", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    meetingId,
+                    task,
+                    ...(newAssignee.trim() ? { assigneeName: newAssignee.trim() } : {}),
+                }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                setMinutesError(data.error ?? "No se pudo guardar la tarea.");
+                return;
+            }
+            if (data.item) setMinutesItems((prev) => [...prev, data.item]);
+            setNewTask("");
+            setNewAssignee("");
+        } catch {
+            setMinutesError("Error de red al guardar la tarea.");
+        } finally {
+            setSavingTask(false);
+        }
+    }, [meetingId, newTask, newAssignee]);
+
+    const processRecording = useCallback(async (file: File) => {
+        setProcessingRecording(true);
+        setMinutesError(null);
+        setRecordingSummary(null);
+        try {
+            const form = new FormData();
+            form.append("meetingId", meetingId);
+            form.append("file", file);
+            const res = await fetch("/api/v1/internal/nexus/meets/process", { method: "POST", body: form });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                setMinutesError(data.error ?? "No se pudo procesar la grabación.");
+                return;
+            }
+            setRecordingSummary(typeof data.summary === "string" ? data.summary : null);
+            await loadMinutes();
+        } catch {
+            setMinutesError("Error de red al procesar la grabación.");
+        } finally {
+            setProcessingRecording(false);
+        }
+    }, [meetingId, loadMinutes]);
+
+    useEffect(() => {
+        if (showMinutes && isHost && !minutesLoaded) void loadMinutes();
+    }, [showMinutes, isHost, minutesLoaded, loadMinutes]);
+
     const updateDeck = useCallback(
         async (patch: { open?: boolean; slide?: number }) => {
             setDeckBusy(true);
@@ -437,11 +589,31 @@ export function SovereignMeetRoom({
                                     </button>
                                 </div>
                             )}
+                            {(!isMobile || showMore) && (
+                        <>
+<button
+                                type="button"
+                                onClick={() => {
+                                    setShowMinutes((v) => !v);
+                                    setShowScript(false);
+                                    setShowNotes(false);
+                                }}
+                                className={`px-3 py-2 rounded-full text-xs font-mono flex items-center gap-1.5 border backdrop-blur transition-colors ${
+                                    showMinutes
+                                        ? "bg-emerald-500/30 border-emerald-400/50 text-emerald-100"
+                                        : "bg-black/60 border-white/15 text-zinc-300 hover:text-white"
+                                }`}
+                                title="Minuta y grabación (solo host)"
+                            >
+                                <ClipboardList className="w-3.5 h-3.5" />
+                                Minuta
+                            </button>
                             <button
                                 type="button"
                                 onClick={() => {
                                     setShowNotes((v) => !v);
                                     setShowScript(false);
+                                    setShowMinutes(false);
                                 }}
                                 className={`px-3 py-2 rounded-full text-xs font-mono flex items-center gap-1.5 border backdrop-blur transition-colors ${
                                     showNotes
@@ -459,6 +631,7 @@ export function SovereignMeetRoom({
                                     onClick={() => {
                                         setShowScript((v) => !v);
                                         setShowNotes(false);
+                                        setShowMinutes(false);
                                     }}
                                     className={`px-3 py-2 rounded-full text-xs font-mono flex items-center gap-1.5 border backdrop-blur transition-colors ${
                                         showScript
@@ -474,6 +647,42 @@ export function SovereignMeetRoom({
                         </>
                     )}
                     <button
+                        type="button"
+                        onClick={async () => {
+                            try {
+                                // Se copia la liga GENÉRICA de la sala, nunca la del host
+                                // (que incluye su joinRef personal).
+                                const shareUrl = `${window.location.origin}/meet/${meetingId}`;
+                                await navigator.clipboard.writeText(shareUrl);
+                                setLinkCopied(true);
+                                setTimeout(() => setLinkCopied(false), 2000);
+                            } catch {
+                                /* el portapapeles requiere contexto seguro; sin acción */
+                            }
+                        }}
+                        className="bg-black/60 hover:bg-black/80 text-zinc-200 px-3 py-2 rounded-full text-xs font-mono flex items-center gap-1.5 border border-white/15 backdrop-blur"
+                        title="Copiar enlace genérico de la sala"
+                    >
+                        {linkCopied ? <Check className="w-4 h-4 text-emerald-400" /> : <Link2 className="w-4 h-4" />}
+                        {linkCopied ? "Copiada" : "Liga"}
+                    </button>
+                                            </>)}
+                    {isMobile && (
+                        <button
+                            type="button"
+                            onClick={() => setShowMore((v) => !v)}
+                            className={`w-9 h-9 rounded-full text-sm border backdrop-blur transition-colors ${
+                                showMore
+                                    ? "bg-white/15 border-white/30 text-white"
+                                    : "bg-black/60 border-white/15 text-zinc-300 hover:text-white"
+                            }`}
+                            title="Más controles"
+                            aria-label="Más controles"
+                        >
+                            {showMore ? "×" : "⋯"}
+                        </button>
+                    )}
+<button
                         type="button"
                         disabled={ending || meetingEnded}
                         onClick={endMeeting}
@@ -583,11 +792,94 @@ export function SovereignMeetRoom({
                 </aside>
             )}
 
+            {/* Minuta de la sesión (host): tareas + grabación a resumen */}
+            {isHost && showMinutes && (
+                <aside className="absolute top-28 right-3 z-30 w-[min(22rem,calc(100vw-1.5rem))] max-h-[70dvh] overflow-y-auto rounded-xl bg-black/85 border border-emerald-500/30 backdrop-blur p-4 space-y-3 sm:top-20">
+                    <header className="flex items-center justify-between">
+                        <p className="text-[10px] font-mono uppercase tracking-widest text-emerald-300">Minuta de la sesión</p>
+                        <button type="button" onClick={() => setShowMinutes(false)} className="text-zinc-500 hover:text-white">
+                            <X className="w-4 h-4" />
+                        </button>
+                    </header>
+
+                    {minutesLoading && <p className="text-[11px] text-zinc-500 font-mono">Cargando…</p>}
+
+                    {minutesItems.length > 0 ? (
+                        <ul className="space-y-1.5">
+                            {minutesItems.map((item) => (
+                                <li key={item.id} className="text-[11px] text-zinc-300 leading-relaxed flex gap-2">
+                                    <span className="text-emerald-400">·</span>
+                                    <span>
+                                        {item.task}
+                                        {item.assigneeName ? (
+                                            <span className="text-zinc-500"> — {item.assigneeName}</span>
+                                        ) : null}
+                                    </span>
+                                </li>
+                            ))}
+                        </ul>
+                    ) : (
+                        !minutesLoading && <p className="text-[11px] text-zinc-500">Aún no hay acuerdos anotados.</p>
+                    )}
+
+                    <form onSubmit={addActionItem} className="space-y-2 pt-2 border-t border-white/10">
+                        <input
+                            value={newTask}
+                            onChange={(e) => setNewTask(e.target.value)}
+                            placeholder="Acuerdo o tarea…"
+                            className="w-full rounded-lg bg-black/60 border border-white/10 px-2 py-1.5 text-[11px] text-zinc-200 focus:outline-none focus:border-emerald-500/50"
+                        />
+                        <div className="flex gap-2">
+                            <input
+                                value={newAssignee}
+                                onChange={(e) => setNewAssignee(e.target.value)}
+                                placeholder="Responsable (opcional)"
+                                className="flex-1 rounded-lg bg-black/60 border border-white/10 px-2 py-1.5 text-[11px] text-zinc-200 focus:outline-none focus:border-emerald-500/50"
+                            />
+                            <button
+                                type="submit"
+                                disabled={savingTask || newTask.trim().length < 3}
+                                className="px-3 py-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/15 hover:bg-emerald-500/25 disabled:opacity-50 text-emerald-100 text-[11px] font-mono"
+                            >
+                                {savingTask ? "..." : "Añadir"}
+                            </button>
+                        </div>
+                    </form>
+
+                    <div className="pt-3 border-t border-white/10 space-y-2">
+                        <p className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">Grabación → resumen</p>
+                        <label className="block">
+                            <input
+                                type="file"
+                                accept="audio/*,video/*"
+                                disabled={processingRecording}
+                                onChange={(event) => {
+                                    const file = event.target.files?.[0];
+                                    if (file) void processRecording(file);
+                                    event.target.value = "";
+                                }}
+                                className="block w-full text-[10px] text-zinc-400 file:mr-2 file:rounded file:border-0 file:bg-white/10 file:px-2 file:py-1 file:text-zinc-200"
+                            />
+                        </label>
+                        <p className="text-[10px] text-zinc-500">
+                            {processingRecording
+                                ? "Procesando con Gemini… (puede tardar)"
+                                : "Sube el audio o video de la sesión; se extraen resumen y tareas."}
+                        </p>
+                        {recordingSummary && (
+                            <p className="text-[11px] text-zinc-300 leading-relaxed">{recordingSummary}</p>
+                        )}
+                    </div>
+
+                    {minutesError && <p className="text-[11px] text-rose-300">{minutesError}</p>}
+                </aside>
+            )}
+
             {/* Injected deck: same slide for everyone, controlled by the host */}
             {deckState.open && presentation && (
                 <div className={`absolute inset-x-0 bottom-0 z-20 bg-black flex flex-col ${isHost ? "top-24 sm:top-20" : "top-0"}`}>
                     <div className="flex items-center justify-between px-4 py-2 border-b border-white/10 bg-black/80">
-                        <span className="text-[10px] font-mono uppercase tracking-widest text-lime-400">
+                        <span className="min-w-0 truncate text-[10px] font-mono uppercase tracking-widest text-lime-400">
                             Presentación soberana · {deckTitle}
                         </span>
                         <div className="flex items-center gap-2">
@@ -617,6 +909,24 @@ export function SovereignMeetRoom({
                 </div>
             )}
 
+            {!isHost && hostPresent === false && !deckState.open && !meetingEnded && !loading && (
+                <div className="absolute top-4 left-1/2 z-30 -translate-x-1/2 max-w-[calc(100vw-2rem)] rounded-full border border-amber-500/30 bg-amber-950/80 px-4 py-2 text-[11px] font-mono text-amber-200 backdrop-blur">
+                    Esperando al anfitrión… puedes entrar y esperar.
+                </div>
+            )}
+
+            {meetingEnded && (
+                <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/95 text-center p-6">
+                    <p className="text-sm text-zinc-300">La sesión terminó.</p>
+                    <a
+                        href="/nexus/agenda"
+                        className="mt-4 px-4 py-2 rounded-lg border border-lime-500/30 bg-lime-500/10 hover:bg-lime-500/20 text-lime-200 text-xs font-mono"
+                    >
+                        Ir a la agenda
+                    </a>
+                </div>
+            )}
+
             <div className="flex-1 w-full relative">
                 <JitsiMeeting
                     key={retryKey}
@@ -625,6 +935,8 @@ export function SovereignMeetRoom({
                     jwt={jwt}
                     configOverwrite={{
                         defaultLanguage: "es",
+                        // Título visible de la sesión (el deck o el nombre del producto).
+                        subject: deckTitle && deckTitle !== "Presentación" ? deckTitle : "Sovereign Meet",
                         startWithAudioMuted: false,
                         startWithVideoMuted: false,
                         prejoinPageEnabled: true,
@@ -663,8 +975,10 @@ export function SovereignMeetRoom({
                         email: "",
                     }}
                     onApiReady={(externalApi) => {
+                        externalApiRef.current = externalApi as unknown as { executeCommand?: (command: string) => void };
                         setLoading(false);
                         setFrameError(null);
+                        applyIframePermissions();
 
                         externalApi.on("videoConferenceJoined", () => {
                             console.log("[Sovereign Meet] Joined room.");
@@ -681,17 +995,15 @@ export function SovereignMeetRoom({
                         });
                     }}
                     getIFrameRef={(iframeRef) => {
-                        // El SDK entrega el CONTENEDOR, no el iframe; y no declara `allow`.
-                        // Sin delegar permisos, el iframe cross-origin de JaaS no recibe
-                        // cámara, micrófono ni pantalla (se queda en "conectando").
-                        const delegatePermissions = () => {
-                            const frame = iframeRef.querySelector("iframe");
-                            if (!frame) return false;
-                            frame.allow =
-                                "camera *; microphone *; display-capture *; fullscreen *; autoplay *; clipboard-write *";
-                            return true;
-                        };
-                        if (!delegatePermissions()) requestAnimationFrame(delegatePermissions);
+                        // El SDK entrega el CONTENEDOR, no el iframe. Se reintenta unos
+                        // segundos por si el iframe se monta después.
+                        if (!applyIframePermissions()) {
+                            let tries = 0;
+                            const timer = setInterval(() => {
+                                tries += 1;
+                                if (applyIframePermissions() || tries >= 15) clearInterval(timer);
+                            }, 200);
+                        }
                         iframeRef.style.height = "100%";
                         iframeRef.style.width = "100%";
                         iframeRef.style.border = "none";

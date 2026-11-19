@@ -328,7 +328,20 @@ export function middleware(request: NextRequest) {
 
   response.headers.set('X-XSS-Protection', '1; mode=block');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-    response.headers.set('Permissions-Policy', 'camera=(), display-capture=(), fullscreen=(self), geolocation=(), microphone=(self), payment=(), usb=()');
+    // La sala de Sovereign Meet corre en un iframe cross-origin (8x8.vc): si no se delega
+    // camera/microphone/display-capture a ese origen, el navegador niega los dispositivos
+    // aunque el usuario los conceda ("Permissions policy violation: camera is not allowed").
+    // Se mantiene DENEGADO en el resto de la app.
+    const isMeetRoom = pathname === '/meet' || pathname.startsWith('/meet/');
+    response.headers.set(
+      'Permissions-Policy',
+      isMeetRoom
+        // OJO: la gramática de Permissions-Policy NO admite comodines de subdominio
+        // ("https://*.8x8.vc" invalida la lista y el navegador deniega). Se usa el origen
+        // exacto que sirve JaaS: https://8x8.vc
+        ? 'camera=(self "https://8x8.vc"), microphone=(self "https://8x8.vc"), display-capture=(self "https://8x8.vc"), fullscreen=(self "https://8x8.vc"), geolocation=(self), payment=(), usb=()'
+        : 'camera=(), microphone=(self), geolocation=(), payment=(), usb=()'
+    );
 
   // 🛡️ Anti-cache for HTML pages: Prevent stale JS causing login redirect loops
   if (!pathname.startsWith('/api') && !pathname.startsWith('/_next')) {

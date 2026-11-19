@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@saasfly/db-core";
-import { meetings } from "@saasfly/db-core";
+import { meetings, nexusCollaborators } from "@saasfly/db-core";
 import { eq, and } from "@saasfly/db-core";
 import jwt from "jsonwebtoken";
 
@@ -14,6 +14,9 @@ interface JoinRefPayload {
   /** El host firma un id numérico; el invitado firma 'guest:<meetingId>'. */
   collaboratorId: string | number;
   orgId: string;
+  /** Nombre y correo firmados por la página del meet (si vienen). */
+  name?: string | null;
+  email?: string | null;
 }
 
 export async function POST(req: NextRequest) {
@@ -82,7 +85,31 @@ export async function POST(req: NextRequest) {
     const isGuestLead = collaboratorId.startsWith('guest:');
     const isHost = !isGuestLead && meeting.hostCollaboratorId?.toString() === collaboratorId;
     const role = isHost ? "host" : "participant";
-    const participantName = isGuestLead ? "Invitado" : `Collaborator ${collaboratorId.substring(0, 8)}`;
+
+    // Nombre visible en la sala: como en Zoom/Meet, la persona debe aparecer con su
+    // nombre, no con "Invitado"/"Collaborator abc123". Prioridad:
+    //   1) claim firmado por la página del meet
+    //   2) colaborador en DB (para los enlaces de agenda que no firman nombre)
+    //   3) correo / identificador corto
+    const claimName = typeof joinPayload.name === 'string' ? joinPayload.name.trim() : '';
+    const claimEmail = typeof joinPayload.email === 'string' ? joinPayload.email.trim() : '';
+    let resolvedName: string | null = claimName || null;
+
+    if (!resolvedName && !isGuestLead) {
+      const numericId = Number(collaboratorId);
+      if (Number.isFinite(numericId)) {
+        const [collab] = await db
+          .select({ name: nexusCollaborators.name })
+          .from(nexusCollaborators)
+          .where(eq(nexusCollaborators.id, numericId))
+          .limit(1);
+        resolvedName = collab?.name ?? null;
+      }
+    }
+
+    const participantName = isGuestLead
+      ? (claimEmail ? claimEmail.split('@')[0] : 'Invitado')
+      : (resolvedName ?? `Participante ${collaboratorId.substring(0, 6)}`);
 
     // --- 4. Generate Jitsi JWT (RS256 for JaaS) ---
     const privateKey = Buffer.from(JITSI_PRIVATE_KEY_B64, "base64").toString("utf8");
@@ -109,7 +136,7 @@ export async function POST(req: NextRequest) {
         user: {
           id: collaboratorId,
           name: participantName,
-          email: "",
+          email: claimEmail || "",
           moderator: isHost,
         },
       },
@@ -126,6 +153,8 @@ export async function POST(req: NextRequest) {
       roomName: meeting.jitsiRoomId || meetingId, // Use Sovereign Jitsi Room ID if available
       appId: JITSI_APP_ID,
       role,
+      displayName: participantName,
+      scheduledFor: meeting.startsAt ? new Date(meeting.startsAt).toISOString() : null,
       presentationId: meeting.presentationId, // Forward presentation ID for Pitch
     });
   } catch (error) {

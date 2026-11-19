@@ -158,14 +158,9 @@ const nextConfig = {
           // Control referrer leakage
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
 
-          // Restrict browser features. La sala de Sovereign Meet corre en un iframe
-          // cross-origin (8x8.vc): sin delegar camera/microphone/display-capture a ese
-          // origen, el navegador niega los dispositivos aunque el usuario los conceda.
-          {
-            key: 'Permissions-Policy',
-            value:
-              'camera=(self "https://8x8.vc" "https://*.8x8.vc"), microphone=(self "https://8x8.vc" "https://*.8x8.vc"), display-capture=(self "https://8x8.vc" "https://*.8x8.vc"), fullscreen=(self "https://8x8.vc" "https://*.8x8.vc"), geolocation=(), payment=(), usb=()',
-          },
+          // Permissions-Policy se define en `src/middleware.ts` (una sola fuente,
+          // condicional por ruta: /meet delega cámara/mic a 8x8.vc y el resto la deniega).
+          // Duplicarlo aquí provoca intersección de políticas y bloquea los dispositivos.
 
           // HSTS: force HTTPS for 1 year (only applies on HTTPS connections)
           { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },

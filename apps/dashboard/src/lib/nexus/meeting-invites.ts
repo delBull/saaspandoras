@@ -1,5 +1,6 @@
 import { sendEmail } from "@saasfly/shared";
 import { findPresentation } from "@/lib/nexus/presentations-catalog";
+import { icsAttachment } from "@/lib/nexus/ics";
 
 /**
  * 🏛️ ARCHITECTURE NOTE: Invitaciones a una presentación (una sola implementación)
@@ -117,6 +118,19 @@ export async function sendMeetingInvites(input: {
       const outcome = await sendEmail({
         to: email,
         subject: `Presentación agendada · ${counterparty}`,
+        // Evento de calendario, como Zoom/Meet. Uno por destinatario para no
+        // repartir la liga personal de los demás.
+        attachments: [
+          icsAttachment({
+            uid: `${meetingId}@dash.pandoras.finance`,
+            start: startsAt,
+            end: endsAt ? new Date(endsAt) : new Date(startsAt.getTime() + 30 * 60_000),
+            summary: `Presentación · ${counterparty}`,
+            description: `${deckTitle ? `${deckTitle}\n\n` : ""}Entra a la sala: ${joinUrl}`,
+            location: joinUrl,
+            attendeeEmail: email,
+          }),
+        ],
         html: inviteEmailHtml({
           startsAt,
           endsAt,

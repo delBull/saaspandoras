@@ -2,6 +2,7 @@ name: Cron Jobs
 
 on:
   schedule:
+    - cron: '*/15 * * * *'  # Recordatorios de reunión (24 h / 1 h antes)
     - cron: '*/30 * * * *'  # Webhooks and fast background jobs (cada 30 min en vez de cada 5 min)
     - cron: '0 */2 * * *'   # Marketing, agendas, reminders y nexus (cada 2 horas en vez de cada 15 min)
     - cron: '0 */6 * * *'   # Gas checks, workflows pesados y reconciliaciones (cada 6 horas)
@@ -66,6 +67,25 @@ jobs:
           curl -s -o /dev/null -w "%{http_code}" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             "https://dash.pandoras.finance/api/cron/scheduling-reminders"
+
+  meeting-reminders:
+    if: github.event.schedule == '*/15 * * * *'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Call meeting-reminders
+        run: |
+          RESPONSE=$(curl -s -w "%{http_code}" -o /tmp/reminders.json \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "https://dash.pandoras.finance/api/cron/meeting-reminders")
+
+          echo "HTTP $RESPONSE"
+          cat /tmp/reminders.json || true
+
+          if [ "$RESPONSE" != "200" ]; then
+            echo "::error::meeting-reminders failed with HTTP $RESPONSE"
+            exit 1
+          fi
 
   agenda-followups:
     if: github.event.schedule == '0 */2 * * *'

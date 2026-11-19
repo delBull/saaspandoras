@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getNexusAuthContext } from "@saasfly/shared";
 import { db } from "@saasfly/db-core";
 import { eq, and, or, inArray } from "@saasfly/db-core";
-import { meetings, meetingParticipants } from "@saasfly/db-core/schema";
+import { meetings, meetingParticipants, meetingPresenceSessions } from "@saasfly/db-core/schema";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -75,6 +75,56 @@ export async function GET(request: Request) {
     const byId = new Map<string, (typeof hosted)[number]>();
     for (const row of [...hosted, ...invited]) byId.set(row.id, row);
 
+    // Asistencia real: participantes con >= 60 s de permanencia en la sala.
+    const meetingIds = Array.from(byId.keys());
+    const participantsByMeeting = new Map<string, string[]>();
+    const attendedByMeeting = new Map<string, number>();
+
+    if (meetingIds.length > 0) {
+      const participants = await db
+        .select({ id: meetingParticipants.id, meetingId: meetingParticipants.meetingId })
+        .from(meetingParticipants)
+        .where(inArray(meetingParticipants.meetingId, meetingIds));
+
+      for (const row of participants) {
+        const list = participantsByMeeting.get(row.meetingId) ?? [];
+        list.push(row.id);
+        participantsByMeeting.set(row.meetingId, list);
+      }
+
+      const sessions = await db
+        .select({
+          meetingId: meetingPresenceSessions.meetingId,
+          participantId: meetingPresenceSessions.participantId,
+          joinedAt: meetingPresenceSessions.joinedAt,
+          lastSeenAt: meetingPresenceSessions.lastSeenAt,
+          leftAt: meetingPresenceSessions.leftAt,
+        })
+        .from(meetingPresenceSessions)
+        .where(inArray(meetingPresenceSessions.meetingId, meetingIds));
+
+      const secondsByParticipant = new Map<string, number>();
+      for (const session of sessions) {
+        if (!session.participantId) continue;
+        const end = session.leftAt ?? session.lastSeenAt;
+        const seconds = Math.max(
+          0,
+          Math.round((new Date(end).getTime() - new Date(session.joinedAt).getTime()) / 1000)
+        );
+        secondsByParticipant.set(
+          session.participantId,
+          (secondsByParticipant.get(session.participantId) ?? 0) + seconds
+        );
+      }
+
+      for (const [meetingKey, ids] of participantsByMeeting) {
+        attendedByMeeting.set(
+          meetingKey,
+          ids.filter((id) => (secondsByParticipant.get(id) ?? 0) >= 60).length
+        );
+      }
+    }
+
     const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).getTime();
     const items = Array.from(byId.values())
       .filter((row) => {
@@ -95,6 +145,10 @@ export async function GET(request: Request) {
         hasDealRoom: Boolean(row.dealRoomId),
         role: hosted.some((h) => h.id === row.id) ? "host" : "participant",
         joinPath: `/meet/${row.id}`,
+        attendance: {
+          attended: attendedByMeeting.get(row.id) ?? 0,
+          total: (participantsByMeeting.get(row.id) ?? []).length,
+        },
       }));
 
     return NextResponse.json({ meetings: items, meta: { collaboratorId, orgId, total: items.length } });

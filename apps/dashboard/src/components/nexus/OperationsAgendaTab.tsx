@@ -14,6 +14,7 @@ interface AgendaMeeting {
   hasDealRoom: boolean;
   role: "host" | "participant";
   joinPath: string;
+  attendance?: { attended: number; total: number };
 }
 
 const STATUS_STYLE: Record<string, string> = {
@@ -133,6 +134,13 @@ export function OperationsAgendaTab() {
                   </span>
                   {deck && (
                     <span className="text-[10px] font-mono text-purple-300 truncate max-w-[16rem]">{deck.title}</span>
+                  )}
+                  {meeting.attendance && meeting.attendance.total > 0 && (
+                    <span className="text-[10px] font-mono text-zinc-500">
+                      {meeting.status === "ended"
+                        ? `Asistencia ${meeting.attendance.attended}/${meeting.attendance.total}`
+                        : `${meeting.attendance.total} invitado${meeting.attendance.total === 1 ? "" : "s"}`}
+                    </span>
                   )}
                 </div>
                 <p className="text-xs text-zinc-200">
