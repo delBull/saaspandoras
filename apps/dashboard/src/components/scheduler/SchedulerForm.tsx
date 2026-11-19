@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { getAvailableSlots, bookSlot } from "@/actions/scheduling";
 import { format, isSameDay } from "date-fns";
 import { es } from "date-fns/locale";
@@ -80,6 +80,11 @@ export function SchedulerForm({
   const [joinLink, setJoinLink] = useState<string | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
 
+  // Flujo por pasos: fecha → horario → datos. Los refs permiten avanzar con scroll suave
+  // para que el usuario perciba el movimiento (clave en móvil).
+  const timeSectionRef = useRef<HTMLDivElement>(null);
+  const nameInputRef = useRef<HTMLInputElement>(null);
+
   const config = MEETING_CONFIG[meetingType] || MEETING_CONFIG.strategy;
 
   useEffect(() => {
@@ -136,13 +141,34 @@ export function SchedulerForm({
     return group ? group.slots : [];
   }, [slotsByDay, selectedDate]);
 
+  function scrollToTimeSection() {
+    window.requestAnimationFrame(() => {
+      timeSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+
+  function handleSelectDate(key: string) {
+    setSelectedDate(key);
+    // Si ya había un horario de otro día, se limpia para no confirmar una hora ambigua.
+    setSelectedSlot(null);
+    setIsDrawerOpen(false);
+    window.setTimeout(scrollToTimeSection, 80);
+  }
+
   function handleSelectSlot(slot: Slot) {
     setSelectedSlot(slot);
     setIsDrawerOpen(true);
+    // Enfoca el primer campo cuando la animación del drawer ya terminó.
+    window.setTimeout(() => nameInputRef.current?.focus(), 260);
   }
 
   function handleCloseDrawer() {
     setIsDrawerOpen(false);
+  }
+
+  function handleBackToTime() {
+    setIsDrawerOpen(false);
+    window.setTimeout(scrollToTimeSection, 120);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -309,6 +335,33 @@ export function SchedulerForm({
         </div>
       </div>
 
+      {/* Indicador de pasos: el usuario ve dónde está y qué sigue */}
+      <div className="mb-5 flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest">
+        {[
+          { n: 1, label: "Fecha", done: Boolean(selectedDate), active: !selectedDate },
+          { n: 2, label: "Horario", done: Boolean(selectedSlot), active: Boolean(selectedDate) && !selectedSlot },
+          { n: 3, label: "Datos", done: false, active: Boolean(selectedSlot) },
+        ].map((step, index) => (
+          <div key={step.n} className="flex items-center gap-2">
+            <span
+              className={`flex h-5 w-5 items-center justify-center rounded-full border text-[9px] ${
+                step.done
+                  ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-300"
+                  : step.active
+                  ? "border-[#D4A853] bg-[#D4A853]/15 text-[#D4A853]"
+                  : "border-zinc-800 bg-zinc-900/40 text-zinc-600"
+              }`}
+            >
+              {step.done ? "✓" : step.n}
+            </span>
+            <span className={step.active ? "text-zinc-200" : step.done ? "text-emerald-300/80" : "text-zinc-600"}>
+              {step.label}
+            </span>
+            {index < 2 && <span className="text-zinc-800">—</span>}
+          </div>
+        ))}
+      </div>
+
       {/* 2. Step 1: Calendly-Style Date Selector Strip */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
@@ -331,7 +384,7 @@ export function SchedulerForm({
               <button
                 key={key}
                 type="button"
-                onClick={() => setSelectedDate(key)}
+                onClick={() => handleSelectDate(key)}
                 className={`relative flex flex-col items-center justify-center p-3 rounded-xl border transition-all duration-200 text-center ${
                   isSelected
                     ? "bg-[#D4A853]/15 border-[#D4A853] text-white shadow-[0_0_15px_rgba(212,168,83,0.15)] ring-1 ring-[#D4A853]/40"
@@ -356,8 +409,13 @@ export function SchedulerForm({
         </div>
       </div>
 
-      {/* 3. Step 2: Time Slots Grid for Selected Day */}
-      <div className="mt-6 pt-6 border-t border-zinc-800/60 space-y-4">
+      {/* 3. Step 2: Time Slots Grid for Selected Day (aparece al elegir fecha) */}
+      <div
+        ref={timeSectionRef}
+        className={`mt-6 scroll-mt-24 border-t border-zinc-800/60 space-y-4 transition-all duration-300 ${
+          selectedDate ? "pt-6 opacity-100" : "pt-0 opacity-100"
+        }`}
+      >
         <div className="flex items-center justify-between">
           <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
             <Clock className="w-3.5 h-3.5 text-[#D4A853]" /> 2. Horarios Disponibles
@@ -369,12 +427,21 @@ export function SchedulerForm({
           )}
         </div>
 
-        {activeDaySlots.length === 0 ? (
+        {!selectedDate ? (
+          <p className="text-xs text-zinc-500 py-4 text-center italic">
+            Elige una fecha arriba para ver sus horarios.
+          </p>
+        ) : activeDaySlots.length === 0 ? (
           <p className="text-xs text-zinc-500 py-6 text-center italic">
-            Selecciona un día en el panel superior para ver sus horarios disponibles.
+            Ese día ya no tiene horarios disponibles.
           </p>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            className="grid grid-cols-2 sm:grid-cols-3 gap-2.5"
+          >
             {activeDaySlots.map((slot) => {
               const timeFormatted = format(new Date(slot.startTime), "HH:mm");
               const isSlotActive = selectedSlot?.id === slot.id && isDrawerOpen;
@@ -402,7 +469,7 @@ export function SchedulerForm({
                 </button>
               );
             })}
-          </div>
+          </motion.div>
         )}
       </div>
 
@@ -440,13 +507,23 @@ export function SchedulerForm({
                       <p className="text-[11px] text-zinc-400">Paso final para reservar tu espacio</p>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={handleCloseDrawer}
-                    className="p-1.5 rounded-lg bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={handleBackToTime}
+                      className="px-2 py-1 rounded-lg text-[10px] font-mono text-zinc-400 hover:text-[#D4A853] hover:bg-zinc-900 transition-colors"
+                      title="Volver a los horarios"
+                    >
+                      ← Horario
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleCloseDrawer}
+                      className="p-1.5 rounded-lg bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
 
                 {/* Selected Slot Summary Card */}
@@ -464,7 +541,7 @@ export function SchedulerForm({
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-zinc-500 font-mono text-[11px]">DURACIÓN & CANAL</span>
                     <span className="text-zinc-300">
-                      {config.duration} min • Google Meet (Encriptado)
+                      {config.duration} min • Pandora&apos;s Sovereign Meet
                     </span>
                   </div>
                 </div>
@@ -476,6 +553,7 @@ export function SchedulerForm({
                       <User className="w-3 h-3 text-[#D4A853]" /> Tu Nombre Completo *
                     </label>
                     <input
+                      ref={nameInputRef}
                       required
                       placeholder="Ej. Roberto González"
                       className="w-full bg-zinc-900/90 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-white focus:border-[#D4A853] focus:ring-1 focus:ring-[#D4A853]/30 outline-none transition-all placeholder:text-zinc-600"
