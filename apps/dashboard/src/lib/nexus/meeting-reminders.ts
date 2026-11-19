@@ -1,3 +1,4 @@
+import { shortMeetingUrl } from "@/lib/meet/meeting-links";
 import { db } from "@saasfly/db";
 import { meetings, meetingParticipants } from "@saasfly/db/schema";
 import { and, eq, gte, lte } from "@saasfly/db-core";
@@ -116,9 +117,8 @@ async function sendRemindersForWindow(
 
     for (const participant of pending) {
       const email = String(participant.email).trim().toLowerCase();
-      const joinUrl = participant.joinToken
-        ? `${baseUrl}/meet/${meeting.id}?p=${participant.joinToken}`
-        : `${baseUrl}/meet/${meeting.id}`;
+      // Mismo enlace corto que la invitación original (una sola fuente).
+      const joinUrl = shortMeetingUrl(baseUrl, meeting.id, participant.joinToken);
 
       try {
         const result = await sendEmail({

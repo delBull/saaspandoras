@@ -1,3 +1,4 @@
+import { shortMeetingPath } from '@/lib/meet/meeting-links';
 import { db } from '@saasfly/db';
 import { eq, and } from "@saasfly/db-core";
 import { meetings, nexusAuditEvents, nexusCollaborators } from '@saasfly/db/schema';
@@ -176,7 +177,7 @@ export class LaunchImmediateMeetingHandler {
       });
     });
 
-    return { success: true, meetingId: newMeetingId, meetingLink: `/meet/${newMeetingId}` };
+    return { success: true, meetingId: newMeetingId, meetingLink: shortMeetingPath(newMeetingId) };
   }
 }
 

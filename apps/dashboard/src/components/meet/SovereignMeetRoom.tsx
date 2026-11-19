@@ -4,6 +4,7 @@ import { JitsiMeeting } from "@jitsi/react-sdk";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Loader2, MonitorPlay, PhoneOff, X, BookOpen, NotebookPen, Save, Link2, Check, ClipboardList } from "lucide-react";
 import { findPresentation } from "@/lib/nexus/presentations-catalog";
+import { shortMeetingPath, shareOrCopyMeeting } from "@/lib/meet/meeting-links";
 
 interface SovereignMeetRoomProps {
     roomName: string; // JaaS room name — appId prefix is added internally
@@ -13,6 +14,7 @@ interface SovereignMeetRoomProps {
     jwt: string;
     appId: string;
     presentationId?: string | null;
+    scheduledFor?: string | null;
 }
 
 // Toolbar buttons for desktop (full feature set)
@@ -65,7 +67,8 @@ export function SovereignMeetRoom({
     role,
     jwt,
     appId,
-    presentationId
+    presentationId,
+    scheduledFor
 }: SovereignMeetRoomProps) {
     const [loading, setLoading] = useState(true);
     const [frameError, setFrameError] = useState<string | null>(null);
@@ -652,8 +655,14 @@ export function SovereignMeetRoom({
                             try {
                                 // Se copia la liga GENÉRICA de la sala, nunca la del host
                                 // (que incluye su joinRef personal).
-                                const shareUrl = `${window.location.origin}/meet/${meetingId}`;
-                                await navigator.clipboard.writeText(shareUrl);
+                                const shareUrl = `${window.location.origin}${shortMeetingPath(meetingId)}`;
+                                const outcome = await shareOrCopyMeeting({
+                                    title: deckMeta?.title ?? "Pandora's · Sovereign Meet",
+                                    startsAt: scheduledFor ?? null,
+                                    endsAt: null,
+                                    url: shareUrl,
+                                });
+                                if (outcome === "failed") return;
                                 setLinkCopied(true);
                                 setTimeout(() => setLinkCopied(false), 2000);
                             } catch {

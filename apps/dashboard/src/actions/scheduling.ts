@@ -1,5 +1,6 @@
 'use server';
 
+import { shortMeetingUrl } from '@/lib/meet/meeting-links';
 import crypto from "crypto";
 
 import { db } from "@saasfly/db-core";
@@ -576,7 +577,7 @@ export async function createAdminBooking(userId: string, data: {
                 email: data.leadEmail,
                 notes: `(Admin Manual) ${data.title}` + (sovereignMeeting ? `\nSala: ${sovereignMeeting.jitsiRoomId}` : '')
             }, true, null, sovereignMeeting
-                ? `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://dash.pandoras.finance'}/meet/${sovereignMeeting.meetingId}`
+                ? shortMeetingUrl(process.env.NEXT_PUBLIC_APP_URL ?? 'https://dash.pandoras.finance', sovereignMeeting.meetingId)
                 : null),
             // Use existing emailer (might need adjustment to send "Confirmed" directly)
             sendBookingPendingEmail(data.leadEmail, {

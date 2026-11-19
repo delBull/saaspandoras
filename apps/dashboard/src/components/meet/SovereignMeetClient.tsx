@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { SovereignMeetRoom } from "./SovereignMeetRoom";
 import { findPresentation } from "@/lib/nexus/presentations-catalog";
 import { LobbyGlobe } from "./LobbyGlobe";
+import { shouldShowLobby } from "@/lib/meet/lobby-policy";
 
 /**
  * 🏛️ ARCHITECTURE NOTE: Sovereign Agenda Core (Jitsi Adapter)
@@ -32,9 +33,15 @@ interface SovereignMeetClientProps {
      * which verifies the signature and generates the Jitsi JWT.
      */
     joinRef: string;
+    /**
+     * `?lobby=1` (solo host): muestra el lobby como lo vería un invitado.
+     * Es puramente visual: el rol sigue viniendo del token firmado, así que no
+     * altera permisos ni la identidad de la reunión.
+     */
+    previewLobby?: boolean;
 }
 
-export function SovereignMeetClient({ joinRef }: SovereignMeetClientProps) {
+export function SovereignMeetClient({ joinRef, previewLobby = false }: SovereignMeetClientProps) {
     const [token, setToken] = useState<string | null>(null);
     const [appId, setAppId] = useState<string | null>(null);
     const [roomName, setRoomName] = useState<string | null>(null);
@@ -145,7 +152,7 @@ export function SovereignMeetClient({ joinRef }: SovereignMeetClientProps) {
     // Ubicación del invitado: solo se usa en el navegador (no se envía al servidor).
     // Si el permiso ya fue denegado, no se vuelve a preguntar.
     useEffect(() => {
-        if (role === "host" || typeof navigator === "undefined" || !navigator.geolocation) return;
+        if ((role === "host" && !previewLobby) || typeof navigator === "undefined" || !navigator.geolocation) return;
         let cancelled = false;
 
         const ask = async () => {
@@ -180,7 +187,7 @@ export function SovereignMeetClient({ joinRef }: SovereignMeetClientProps) {
         return () => {
             cancelled = true;
         };
-    }, [role]);
+    }, [role, previewLobby]);
 
     if (loading) {
         return (
@@ -224,7 +231,15 @@ export function SovereignMeetClient({ joinRef }: SovereignMeetClientProps) {
     }
 
     const isHost = role === "host";
-    const waitingForHost = !isHost && Boolean(meetingId) && hostPresent === false && !entered;
+    const lobbyPreview = isHost && previewLobby;
+    // Regla única y testeada en `lib/meet/lobby-policy.ts`.
+    const waitingForHost = shouldShowLobby({
+        hasMeeting: Boolean(meetingId),
+        isHost,
+        hostPresent,
+        entered,
+        previewLobby,
+    });
     const deck = findPresentation(presentationId);
 
     if (waitingForHost) {
@@ -293,9 +308,15 @@ export function SovereignMeetClient({ joinRef }: SovereignMeetClientProps) {
                                     {deck?.title ?? "Sesión privada"}
                                 </p>
                             </div>
-                            <span className="flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-[10px] font-mono uppercase tracking-wider text-amber-300">
-                                <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
-                                En espera
+                            <span
+                                className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-mono uppercase tracking-wider ${
+                                    lobbyPreview
+                                        ? "border-purple-500/30 bg-purple-500/10 text-purple-300"
+                                        : "border-amber-500/30 bg-amber-500/10 text-amber-300"
+                                }`}
+                            >
+                                <span className={`h-1.5 w-1.5 rounded-full animate-pulse ${lobbyPreview ? "bg-purple-400" : "bg-amber-400"}`} />
+                                {lobbyPreview ? "Vista previa" : "En espera"}
                             </span>
                         </div>
 
@@ -322,10 +343,14 @@ export function SovereignMeetClient({ joinRef }: SovereignMeetClientProps) {
                                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-lime-400 opacity-60" />
                                     <span className="relative inline-flex h-2 w-2 rounded-full bg-lime-500" />
                                 </span>
-                                El anfitrión todavía no ha abierto la sala
+                                {lobbyPreview
+                                    ? "Así verá el invitado la sala mientras espera"
+                                    : "El anfitrión todavía no ha abierto la sala"}
                             </div>
                             <p className="text-xs leading-relaxed text-zinc-500">
-                                Entrarás automáticamente cuando esté dentro. Puedes dejar esta ventana abierta.
+                                {lobbyPreview
+                                    ? "Entra para probar la transición. Esta vista no cambia tu rol de anfitrión."
+                                    : "Entrarás automáticamente cuando esté dentro. Puedes dejar esta ventana abierta."}
                             </p>
                             {origin && (
                                 <p className="text-[10px] leading-relaxed text-zinc-600">
@@ -346,7 +371,7 @@ export function SovereignMeetClient({ joinRef }: SovereignMeetClientProps) {
                             onClick={enterRoom}
                             className="w-full rounded-xl border border-lime-500/30 bg-lime-500/10 px-4 py-3 text-[11px] font-mono uppercase tracking-widest text-lime-200 transition-colors hover:bg-lime-500/20"
                         >
-                            Entrar de todos modos
+                            {lobbyPreview ? "Entrar a la sala" : "Entrar de todos modos"}
                         </button>
                         <p className="text-center text-[10px] font-mono uppercase tracking-widest text-zinc-600">
                             Tu cámara y micrófono se pedirán al entrar
@@ -361,11 +386,12 @@ export function SovereignMeetClient({ joinRef }: SovereignMeetClientProps) {
         <SovereignMeetRoom
             roomName={roomName}
             meetingId={meetingId}
-            displayName={displayName ?? (role === "host" ? "Host" : "Participante")}
+            displayName={displayName ?? (role === "host" ? "Pandora's" : "Participante")}
             role={role || "participant"}
             jwt={token}
             appId={appId}
             presentationId={presentationId}
+            scheduledFor={scheduledFor}
         />
     );
 }

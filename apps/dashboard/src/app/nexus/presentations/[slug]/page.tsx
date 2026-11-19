@@ -48,11 +48,11 @@ export default async function PresentationScriptPage({ params }: { params: Promi
               Abrir deck
             </Link>
             <Link
-              href="/nexus/agenda"
+              href={`/nexus/agenda?deck=${presentation.slug}&schedule=1`}
               className="flex items-center gap-2 px-4 py-2 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-xs font-mono text-zinc-300"
             >
               <Calendar className="w-3.5 h-3.5 text-purple-300" />
-              Agendar sesión
+              Agendar con este deck
             </Link>
           </div>
         </header>

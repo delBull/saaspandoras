@@ -19,9 +19,9 @@ export const metadata: Metadata = {
 export default async function MeetRefPage({
     searchParams,
 }: {
-    searchParams: Promise<{ ref?: string }>;
+    searchParams: Promise<{ ref?: string; lobby?: string }>;
 }) {
-    const { ref } = await searchParams;
+    const { ref, lobby } = await searchParams;
 
     if (!ref) {
         return (
@@ -37,7 +37,7 @@ export default async function MeetRefPage({
 
     return (
         <main className="w-full h-screen bg-black overflow-hidden">
-            <SovereignMeetClient joinRef={ref} />
+            <SovereignMeetClient joinRef={ref} previewLobby={lobby === "1"} />
         </main>
     );
 }

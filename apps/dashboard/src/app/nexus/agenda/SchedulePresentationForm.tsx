@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { CalendarPlus, Check, Copy, Loader2, AlertTriangle, X } from "lucide-react";
 import { NEXUS_PRESENTATIONS } from "@/lib/nexus/presentations-catalog";
+import { shortMeetingPath, shareOrCopyMeeting } from "@/lib/meet/meeting-links";
 
 interface CreateResult {
   meetingId: string;
@@ -38,12 +39,20 @@ function defaultStart(): string {
  * Camino 2 de agenda: reunión con deck desde la Agenda Soberana (sin Deal Room).
  * El camino 1 es Deal Room → Clients & CRM → "Agendar presentación".
  */
-export function SchedulePresentationForm() {
+interface SchedulePresentationFormProps {
+  /** Deck preseleccionado (p. ej. al llegar desde el guión: ?deck=celeste). */
+  initialDeck?: string | null;
+  /** Abre el formulario al montar (?schedule=1). */
+  initialOpen?: boolean;
+}
+
+export function SchedulePresentationForm({ initialDeck, initialOpen = false }: SchedulePresentationFormProps = {}) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const defaultDeck = initialDeck ?? "celeste";
+  const [open, setOpen] = useState(initialOpen);
   const [scheduledFor, setScheduledFor] = useState(defaultStart);
   const [durationMinutes, setDurationMinutes] = useState(30);
-  const [presentationId, setPresentationId] = useState("celeste");
+  const [presentationId, setPresentationId] = useState(defaultDeck);
   const [participants, setParticipants] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -57,6 +66,7 @@ export function SchedulePresentationForm() {
     setParticipants("");
     setScheduledFor(defaultStart());
     setDurationMinutes(30);
+    setPresentationId(defaultDeck);
     setCopied(false);
   };
 
@@ -114,14 +124,19 @@ export function SchedulePresentationForm() {
     }
   };
 
-  const copyJoinUrl = async (url: string) => {
-    try {
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      setCopied(false);
-    }
+  // Compartir como Zoom: título del deck + día/hora + enlace corto.
+  const shareResult = async () => {
+    if (!result) return;
+    const deck = NEXUS_PRESENTATIONS.find((item) => item.slug === result.presentationId);
+    const outcome = await shareOrCopyMeeting({
+      title: deck?.title ?? "Pandora's · Sovereign Meet",
+      startsAt: result.scheduledFor,
+      endsAt: result.endsAt,
+      url: `${window.location.origin}${shortMeetingPath(result.meetingId)}`,
+    });
+    if (outcome === "failed") return;
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
@@ -158,11 +173,11 @@ export function SchedulePresentationForm() {
               <div className="flex flex-wrap items-center gap-2 pt-1">
                 <button
                   type="button"
-                  onClick={() => copyJoinUrl(result.joinUrl)}
+                  onClick={shareResult}
                   className="px-3 py-1.5 rounded-lg border border-lime-500/30 bg-lime-500/10 hover:bg-lime-500/20 text-lime-200 text-[11px] font-mono flex items-center gap-1.5"
                 >
                   {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                  Copiar link de la sala
+                  Compartir invitación
                 </button>
                 <button type="button" onClick={reset} className="text-[11px] font-mono text-zinc-500 hover:text-zinc-300">
                   Cerrar

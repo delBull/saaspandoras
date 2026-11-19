@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Building2, Briefcase, Handshake, ArrowUpRight, FolderGit2, CheckCircle2, Calendar, Video, AlertTriangle, Loader2, Check, Copy } from 'lucide-react';
 import { getNexusClientHeaders } from '@/lib/nexus/client-auth-headers';
 import { NEXUS_PRESENTATIONS, findPresentation } from '@/lib/nexus/presentations-catalog';
+import { shortMeetingPath, shareOrCopyMeeting } from '@/lib/meet/meeting-links';
 
 interface Deal {
   id: string;
@@ -77,6 +78,7 @@ export function OperationsClientsTab({ onOpenApprovals }: OperationsClientsTabPr
   const [copied, setCopied] = useState(false);
   const [deckSaving, setDeckSaving] = useState(false);
   const [deckError, setDeckError] = useState<string | null>(null);
+  const schedulePanelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchDeals = async () => {
@@ -118,6 +120,16 @@ export function OperationsClientsTab({ onOpenApprovals }: OperationsClientsTabPr
     };
     fetchDeals();
   }, []);
+
+  // El panel se monta debajo de las acciones rápidas; sin esto, en pantallas
+  // chicas el clic parecía no hacer nada porque el formulario quedaba fuera de vista.
+  useEffect(() => {
+    if (!scheduleOpen) return;
+    const id = window.setTimeout(() => {
+      schedulePanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 40);
+    return () => window.clearTimeout(id);
+  }, [scheduleOpen]);
 
   const resetScheduleForm = () => {
     setScheduleOpen(false);
@@ -464,7 +476,7 @@ export function OperationsClientsTab({ onOpenApprovals }: OperationsClientsTabPr
 
               {/* Schedule Panel */}
               {(scheduleOpen || scheduleResult) && (
-                <div className="border-t border-white/10 p-5 bg-black/30">
+                <div ref={schedulePanelRef} className="border-t border-white/10 p-5 bg-black/30 scroll-mt-6">
                   {scheduleResult ? (
                     <div className="space-y-3">
                       <div className="flex items-center gap-2">
@@ -515,11 +527,20 @@ export function OperationsClientsTab({ onOpenApprovals }: OperationsClientsTabPr
                         </Link>
                         <button
                           type="button"
-                          onClick={() => copyMeetingId(scheduleResult.joinUrl)}
+                          onClick={async () => {
+                            const outcome = await shareOrCopyMeeting({
+                              title: `${selectedDeal?.organization ?? 'Reunión'} · Pandora's`,
+                              startsAt: scheduleResult.scheduledFor,
+                              endsAt: scheduleResult.endsAt,
+                              url: `${window.location.origin}${shortMeetingPath(scheduleResult.meetingId)}`,
+                            });
+                            setCopied(outcome !== 'failed');
+                            if (outcome !== 'failed') setTimeout(() => setCopied(false), 2000);
+                          }}
                           className="px-3 py-1.5 rounded-lg border border-lime-500/30 bg-lime-500/10 hover:bg-lime-500/20 text-lime-200 text-[11px] font-mono flex items-center gap-1.5"
                         >
                           {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                          Copiar link de la sala
+                          Compartir invitación
                         </button>
                         <Link
                           href={scheduleResult.agendaUrl}

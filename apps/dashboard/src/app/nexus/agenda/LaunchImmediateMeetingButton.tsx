@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Video, Loader2, CheckCircle2 } from "lucide-react";
 import { launchImmediateMeetingAction } from "./actions";
 
 export function LaunchImmediateMeetingButton() {
+  const router = useRouter();
   const [isPending, setIsPending] = useState(false);
   const [success, setSuccess] = useState(false);
 
@@ -17,7 +19,11 @@ export function LaunchImmediateMeetingButton() {
         alert("Error al lanzar la reunión: " + res.error);
       } else {
         setSuccess(true);
-        setTimeout(() => setSuccess(false), 3000);
+        setTimeout(() => setSuccess(false), 3500);
+        // La sala nueva es `live` y va en el bloque "Ahora" (arriba). Refrescamos
+        // y subimos para que la reunión recién creada quede a la vista.
+        router.refresh();
+        window.scrollTo({ top: 0, behavior: "smooth" });
       }
     } catch (err) {
       console.error(err);
@@ -41,7 +47,7 @@ export function LaunchImmediateMeetingButton() {
       ) : success ? (
         <>
           <CheckCircle2 size={16} className="text-black" />
-          <span>¡Sala Creada!</span>
+          <span>Sala creada · arriba</span>
         </>
       ) : (
         <>

@@ -88,16 +88,30 @@ describe("🎥 Meet token (/api/v1/meet/token)", () => {
     expect(data.role).toBe("participant");
   });
 
-  it("TK-05: el nombre firmado se usa en la sala (no 'Collaborator abc')", async () => {
+  it("TK-05: el nombre firmado se usa en la sala para un participante (no 'Collaborator abc')", async () => {
+    const res = await POST(request(signedRef(999, { name: "Eduardo Celeste", email: "eduardo@celeste.com" })));
+
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.role).toBe("participant");
+    expect(data.displayName).toBe("Eduardo Celeste");
+
+    const decoded = jwt.decode(data.token) as any;
+    expect(decoded.context.user.name).toBe("Eduardo Celeste");
+    expect(decoded.context.user.email).toBe("eduardo@celeste.com");
+  });
+
+  it("TK-07: el host aparece como Pandora's, aunque el joinRef traiga su nombre personal", async () => {
     const res = await POST(request(signedRef(HOST_ID, { name: "Marco Muñoz", email: "marco@pandoras.finance" })));
 
     expect(res.status).toBe(200);
     const data = await res.json();
-    expect(data.displayName).toBe("Marco Muñoz");
+    expect(data.role).toBe("host");
+    expect(data.displayName).toBe("Pandora's");
 
     const decoded = jwt.decode(data.token) as any;
-    expect(decoded.context.user.name).toBe("Marco Muñoz");
-    expect(decoded.context.user.email).toBe("marco@pandoras.finance");
+    expect(decoded.context.user.name).toBe("Pandora's");
+    expect(decoded.context.user.moderator).toBe(true);
   });
 
   it("TK-06: un invitado muestra su correo como nombre, no 'Invitado'", async () => {

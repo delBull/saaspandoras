@@ -37,10 +37,10 @@ export default async function MeetPage({
     searchParams,
 }: {
     params: Promise<{ meetingId: string }>;
-    searchParams: Promise<{ p?: string }>;
+    searchParams: Promise<{ p?: string; lobby?: string }>;
 }) {
     const { meetingId } = await params;
-    const { p: participantToken } = await searchParams;
+    const { p: participantToken, lobby } = await searchParams;
     const MEET_JOIN_SECRET = process.env.MEET_JOIN_SECRET;
 
     if (!MEET_JOIN_SECRET) {
@@ -110,7 +110,7 @@ export default async function MeetPage({
 
     return (
         <main className="w-full h-screen bg-black overflow-hidden">
-            <SovereignMeetClient joinRef={joinRef} />
+            <SovereignMeetClient joinRef={joinRef} previewLobby={lobby === "1"} />
         </main>
     );
 }

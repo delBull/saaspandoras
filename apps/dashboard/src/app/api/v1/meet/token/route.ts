@@ -107,9 +107,13 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // El host representa a la casa en la sala: no exponemos su nombre personal
+    // en la etiqueta de Jitsi (el nombre real sigue disponible en Nexus).
     const participantName = isGuestLead
       ? (claimEmail ? claimEmail.split('@')[0] : 'Invitado')
-      : (resolvedName ?? `Participante ${collaboratorId.substring(0, 6)}`);
+      : isHost
+        ? "Pandora's"
+        : (resolvedName ?? `Participante ${collaboratorId.substring(0, 6)}`);
 
     // --- 4. Generate Jitsi JWT (RS256 for JaaS) ---
     const privateKey = Buffer.from(JITSI_PRIVATE_KEY_B64, "base64").toString("utf8");

@@ -16,6 +16,7 @@
  *    - Discord Webhook integration.
  */
 
+import { shortMeetingUrl } from '@/lib/meet/meeting-links';
 import { db } from '@saasfly/db';
 import { marketingLeads, clients, projects, nexusCollaborators, users } from '@saasfly/db/schema';
 import { eq, sql } from "@saasfly/db-core";
@@ -152,7 +153,7 @@ export async function syncBookingToPipeline(params: SyncBookingPipelineParams): 
 
     sovereignMeetingId = meeting.id;
     const leadToken = meeting.participants?.[0]?.joinToken;
-    finalMeetingLink = `${appBaseUrl}/meet/${meeting.id}${leadToken ? `?p=${leadToken}` : ''}`;
+    finalMeetingLink = shortMeetingUrl(appBaseUrl, meeting.id, leadToken ?? null);
 
     if (!hostCollaboratorId) {
       console.warn(

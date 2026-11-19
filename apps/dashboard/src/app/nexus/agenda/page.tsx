@@ -1,6 +1,6 @@
 import { getNexusAuthContext } from "@saasfly/shared";
 import { db } from "@saasfly/db-core";
-import { eq, or, and, inArray } from "@saasfly/db-core";
+import { eq, or, and, inArray, sql } from "@saasfly/db-core";
 import { meetings, meetingParticipants, schedulingBookings, nexusCollaborators } from "@saasfly/db-core";
 import jwt from "jsonwebtoken";
 import Link from "next/link";
@@ -8,13 +8,13 @@ import { ArrowLeft, Calendar, Video } from "lucide-react";
 import { CancelMeetingButton } from "./CancelMeetingButton";
 import { LaunchImmediateMeetingButton } from "./LaunchImmediateMeetingButton";
 import { SchedulePresentationForm } from "./SchedulePresentationForm";
-import { CopyLinkButton } from "./CopyLinkButton";
 import { AgendaListClient } from "./AgendaListClient";
+import { shortMeetingPath } from "@/lib/meet/meeting-links";
 export const dynamic = "force-dynamic";
 
-export default async function NexusAgendaPage({ searchParams }: { searchParams: Promise<{ token?: string }> }) {
+export default async function NexusAgendaPage({ searchParams }: { searchParams: Promise<{ token?: string; deck?: string; schedule?: string }> }) {
   const MEET_JOIN_SECRET = process.env.MEET_JOIN_SECRET;
-  const { token } = await searchParams;
+  const { token, deck, schedule } = await searchParams;
   const authCtx = await getNexusAuthContext(null, token);
 
   if (!authCtx.isAuthenticated || !authCtx.collaboratorId) {
@@ -25,16 +25,62 @@ export default async function NexusAgendaPage({ searchParams }: { searchParams: 
     );
   }
 
-  const { canonicalOrgId, collaboratorId } = authCtx;
-  const orgId = canonicalOrgId ?? "pandoras";
+  const { collaboratorId } = authCtx;
 
-  // Find meetings where user is participant
+  // Fuente de verdad del tenant: `nexusCollaborators.canonicalOrgId`. Si el
+  // contexto no la trae (p. ej. magic link sin proyectos asignados), se resuelve
+  // aquí; si tampoco existe, se falla cerrado.
+  let canonicalOrgId = authCtx.canonicalOrgId;
+  if (!canonicalOrgId) {
+    const [collabOrg] = await db
+      .select({ canonicalOrgId: nexusCollaborators.canonicalOrgId })
+      .from(nexusCollaborators)
+      .where(eq(nexusCollaborators.id, collaboratorId))
+      .limit(1);
+    canonicalOrgId = collabOrg?.canonicalOrgId ?? null;
+  }
+
+  // 🛡️ Fail-closed: sin organización canónica NO se cae a "pandoras". Ese fallback
+  // mostraba la agenda de la casa a colaboradores de otros tenants cuando su
+  // resolución de tenant era ambigua o inexistente.
+  if (!canonicalOrgId) {
+    return (
+      <main className="min-h-screen bg-black text-white flex items-center justify-center p-8">
+        <div className="max-w-md text-center space-y-3">
+          <p className="text-[10px] font-mono uppercase tracking-[0.3em] text-amber-300">Agenda no disponible</p>
+          <h1 className="text-xl font-semibold">Tu organización no está resuelta</h1>
+          <p className="text-sm text-zinc-400 leading-relaxed">
+            Tu identidad es válida, pero no tiene un tenant canónico asignado. Pide a un
+            administrador que vincule tu colaborador a una organización para ver tu agenda.
+          </p>
+        </div>
+      </main>
+    );
+  }
+  const orgId = canonicalOrgId;
+
+  // Reuniones donde soy participante. `identity_id` guarda el email o el id con el
+  // que se invitó (así lo escribe AgendaCore), por eso se compara también por email.
+  const email = authCtx.email?.toLowerCase().trim() || null;
   const participantRows = await db
-    .select({ meetingId: meetingParticipants.meetingId })
+    .select({
+      meetingId: meetingParticipants.meetingId,
+      joinToken: meetingParticipants.joinToken,
+    })
     .from(meetingParticipants)
-    .where(eq(meetingParticipants.identityId, collaboratorId.toString()));
+    .where(
+      email
+        ? or(
+            eq(meetingParticipants.identityId, collaboratorId.toString()),
+            sql`lower(${meetingParticipants.identityId}) = ${email}`
+          )
+        : eq(meetingParticipants.identityId, collaboratorId.toString())
+    );
 
-  const participantMeetingIds = participantRows.map((r) => r.meetingId);
+  const participantMeetingIds = Array.from(new Set(participantRows.map((r) => r.meetingId)));
+  const participantTokenByMeeting = new Map(
+    participantRows.map((row) => [row.meetingId, row.joinToken] as const)
+  );
 
   let whereClause;
   if (participantMeetingIds.length > 0) {
@@ -75,16 +121,30 @@ export default async function NexusAgendaPage({ searchParams }: { searchParams: 
     const minutesUntilStart = (startsAt.getTime() - now.getTime()) / 60000;
     const canJoin = row.meeting.status === "live" || (row.meeting.status === "scheduled" && minutesUntilStart <= 15 && minutesUntilStart > -60);
     
-    if (canJoin && MEET_JOIN_SECRET) {
+    if (!canJoin) {
+      joinUrls[row.meeting.id] = null;
+      return;
+    }
+
+    const isHost = String(row.meeting.hostCollaboratorId) === String(collaboratorId);
+    if (isHost && MEET_JOIN_SECRET) {
+      // El host entra con una referencia firmada: el servidor lo reconoce por id,
+      // nunca por nombre ni email.
       const joinRef = jwt.sign(
         { meetingId: row.meeting.id, collaboratorId: collaboratorId.toString(), orgId },
         MEET_JOIN_SECRET,
         { algorithm: "HS256", expiresIn: "15m" }
       );
       joinUrls[row.meeting.id] = `/meet?ref=${joinRef}`;
-    } else {
-      joinUrls[row.meeting.id] = null;
+      return;
     }
+
+    // Participante: se usa SU token personal (?p=), que es lo que registra
+    // asistencia. Antes se firmaba un ref genérico y la asistencia se perdía.
+    joinUrls[row.meeting.id] = shortMeetingPath(
+      row.meeting.id,
+      participantTokenByMeeting.get(row.meeting.id) ?? null
+    );
   });
 
   return (
@@ -105,7 +165,7 @@ export default async function NexusAgendaPage({ searchParams }: { searchParams: 
             </p>
           </div>
           <div className="flex flex-col items-end gap-2">
-            <SchedulePresentationForm />
+            <SchedulePresentationForm initialDeck={deck ?? null} initialOpen={schedule === "1"} />
             <LaunchImmediateMeetingButton />
           </div>
         </header>

@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { getNexusAuthContext } from "@saasfly/shared";
 import { db } from "@saasfly/db-core";
-import { eq, and, or, inArray } from "@saasfly/db-core";
-import { meetings, meetingParticipants, meetingPresenceSessions } from "@saasfly/db-core/schema";
+import { eq, and, or, inArray, sql } from "@saasfly/db-core";
+import { meetings, meetingParticipants, meetingPresenceSessions, nexusCollaborators } from "@saasfly/db-core/schema";
+import { shortMeetingPath } from "@/lib/meet/meeting-links";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -23,9 +24,28 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Unauthorized", code: "UNAUTHORIZED" }, { status: 401 });
     }
 
-    const orgId = auth.canonicalOrgId ?? "pandoras";
+    // Fuente de verdad del tenant: la fila del colaborador. Si el contexto no la
+    // trae (magic link sin proyectos), se resuelve aquí antes de fallar.
+    let canonicalOrgId = auth.canonicalOrgId;
+    if (!canonicalOrgId) {
+      const [collabOrg] = await db
+        .select({ canonicalOrgId: nexusCollaborators.canonicalOrgId })
+        .from(nexusCollaborators)
+        .where(eq(nexusCollaborators.id, auth.collaboratorId))
+        .limit(1);
+      canonicalOrgId = collabOrg?.canonicalOrgId ?? null;
+    }
+
+    // 🛡️ Fail-closed: sin tenant canónico no se cae a "pandoras".
+    if (!canonicalOrgId) {
+      return NextResponse.json(
+        { error: "Tu identidad no tiene una organización canónica resuelta.", code: "ORG_UNRESOLVED" },
+        { status: 403 }
+      );
+    }
+    const orgId = canonicalOrgId;
     const collaboratorId = auth.collaboratorId;
-    const email = auth.email?.toLowerCase() ?? null;
+    const email = auth.email?.toLowerCase().trim() || null;
 
     // 1) Reuniones donde soy host
     const hosted = await db
@@ -40,17 +60,25 @@ export async function GET(request: Request) {
       .from(meetings)
       .where(and(eq(meetings.canonicalOrgId, orgId), eq(meetings.hostCollaboratorId, collaboratorId)));
 
-    // 2) Reuniones donde soy participante (por id de colaborador o por email)
+    // 2) Reuniones donde soy participante. `identity_id` guarda el email con el
+    // que se invitó (AgendaCore), así que se compara por id y por email; nunca
+    // se mezcla con el host, que se resuelve por `host_collaborator_id`.
     const participantConditions = [
       eq(meetingParticipants.identityId, String(collaboratorId)),
-      ...(email ? [eq(meetingParticipants.email, email)] : []),
+      ...(email ? [sql`lower(${meetingParticipants.identityId}) = ${email}`] : []),
     ];
     const participantRows = await db
-      .select({ meetingId: meetingParticipants.meetingId })
+      .select({
+        meetingId: meetingParticipants.meetingId,
+        joinToken: meetingParticipants.joinToken,
+      })
       .from(meetingParticipants)
       .where(participantConditions.length > 1 ? or(...participantConditions) : participantConditions[0]);
 
     const participantMeetingIds = Array.from(new Set(participantRows.map((row) => row.meetingId)));
+    const participantTokenByMeeting = new Map(
+      participantRows.map((row) => [row.meetingId, row.joinToken] as const)
+    );
     const invited =
       participantMeetingIds.length > 0
         ? await db
@@ -136,20 +164,25 @@ export async function GET(request: Request) {
         const bTime = b.startsAt ? new Date(b.startsAt).getTime() : 0;
         return aTime - bTime;
       })
-      .map((row) => ({
+      .map((row) => {
+        const isHost = hosted.some((h) => h.id === row.id);
+        return {
         id: row.id,
         startsAt: row.startsAt,
         endsAt: row.endsAt,
         status: row.status,
         presentationId: row.presentationId,
         hasDealRoom: Boolean(row.dealRoomId),
-        role: hosted.some((h) => h.id === row.id) ? "host" : "participant",
-        joinPath: `/meet/${row.id}`,
+        role: isHost ? "host" : "participant",
+        // El participante entra con SU token (?p=) para que la asistencia se
+        // registre; el host entra con la sesión, que lo identifica por id.
+        joinPath: shortMeetingPath(row.id, isHost ? null : participantTokenByMeeting.get(row.id) ?? null),
         attendance: {
           attended: attendedByMeeting.get(row.id) ?? 0,
           total: (participantsByMeeting.get(row.id) ?? []).length,
         },
-      }));
+        };
+      });
 
     return NextResponse.json({ meetings: items, meta: { collaboratorId, orgId, total: items.length } });
   } catch (error) {

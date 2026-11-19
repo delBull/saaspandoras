@@ -1,3 +1,4 @@
+import { shortMeetingUrl } from '@/lib/meet/meeting-links';
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@saasfly/db-core";
 import { meetings, nexusCollaborators } from "@saasfly/db-core/schema";
@@ -59,7 +60,7 @@ export async function POST(req: NextRequest) {
 
     const protocol = req.headers.get("x-forwarded-proto") || "http";
     const host = req.headers.get("host") || "localhost:3000";
-    const guestLink = `${protocol}://${host}/meet/${meeting.id}?ref=${guestJoinRef}`;
+    const guestLink = `${shortMeetingUrl(`${protocol}://${host}`, meeting.id)}?ref=${guestJoinRef}`;
 
     return NextResponse.json({
       ok: true,

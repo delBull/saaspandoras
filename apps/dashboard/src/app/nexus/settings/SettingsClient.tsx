@@ -10,6 +10,7 @@ import {
   X,
   CreditCard,
   User,
+  CalendarDays,
 } from "lucide-react";
 import { CognitiveAgentsManager } from "./CognitiveAgentsManager";
 import { ConfigureAgendaButton } from "@/components/scheduler/ConfigureAgendaButton";
@@ -113,7 +114,17 @@ export default function NexusSettingsPage({ isUserAdmin = false, userRole = "OPE
 
           <div className="flex items-center gap-2">
             {canManageAgenda && (
-              <ConfigureAgendaButton tenantSlug="pandoras" vertical="HERMES" />
+              <>
+                <a
+                  href="/nexus/agenda"
+                  className="text-xs bg-zinc-900/80 text-zinc-300 hover:text-white hover:bg-zinc-800 border border-zinc-800 px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 font-medium"
+                  title="Abrir la Agenda Soberana (reuniones y Meet Inmediata)"
+                >
+                  <CalendarDays className="w-3.5 h-3.5" />
+                  <span>Abrir Agenda</span>
+                </a>
+                <ConfigureAgendaButton tenantSlug="pandoras" vertical="HERMES" />
+              </>
             )}
             {isUserAdmin && (
               <Dialog open={isTerminalOpen} onOpenChange={setIsTerminalOpen}>

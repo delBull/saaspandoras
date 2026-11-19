@@ -1,3 +1,4 @@
+import { shortMeetingUrl } from "@/lib/meet/meeting-links";
 import { sendEmail } from "@saasfly/shared";
 import { findPresentation } from "@/lib/nexus/presentations-catalog";
 import { icsAttachment } from "@/lib/nexus/ics";
@@ -110,9 +111,9 @@ export async function sendMeetingInvites(input: {
       continue;
     }
 
-    const joinUrl = recipient.joinToken
-      ? `${baseUrl}/meet/${meetingId}?p=${recipient.joinToken}`
-      : `${baseUrl}/meet/${meetingId}`;
+    // Enlace corto: los enlaces con ?p= medían ~80 caracteres y se partían en
+    // WhatsApp. `/m/<code>` redirige al canónico conservando el token.
+    const joinUrl = shortMeetingUrl(baseUrl, meetingId, recipient.joinToken);
 
     try {
       const outcome = await sendEmail({
