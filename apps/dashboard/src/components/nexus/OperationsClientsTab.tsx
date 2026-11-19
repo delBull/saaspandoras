@@ -598,11 +598,20 @@ export function OperationsClientsTab({ onOpenApprovals }: OperationsClientsTabPr
                           </select>
                         </label>
                         <label className="text-[11px] font-mono text-zinc-500 space-y-1">
-                          <span>{selectedDeal.presentationId ? 'Deck (del deal)' : 'Deck (opcional)'}</span>
+                          <span>{selectedDeal.presentationId ? 'Deck del deal (editable)' : 'Deck (opcional)'}</span>
                           <select
                             value={selectedDeal.presentationId ?? presentationId}
-                            onChange={(e) => setPresentationId(e.target.value)}
-                            disabled={Boolean(selectedDeal.presentationId)}
+                            onChange={(e) => {
+                              const next = e.target.value;
+                              // Si el deal ya tiene deck, cambiarlo aquí actualiza el deal
+                              // (el servidor prioriza el deck del deal al agendar).
+                              if (selectedDeal.presentationId) {
+                                void handleDeckChange(next);
+                              } else {
+                                setPresentationId(next);
+                              }
+                            }}
+                            disabled={deckSaving}
                             className="w-full rounded-lg bg-black/50 border border-white/10 px-2 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-sky-500/50 disabled:opacity-60"
                           >
                             <option value="">Sin deck</option>
@@ -610,6 +619,11 @@ export function OperationsClientsTab({ onOpenApprovals }: OperationsClientsTabPr
                               <option key={deck.slug} value={deck.slug}>{deck.title}</option>
                             ))}
                           </select>
+                          <span className="text-[10px] text-zinc-600">
+                            {selectedDeal.presentationId
+                              ? 'Cambiar aquí actualiza el deck del deal. Para una prueba puntual, usa un deal sin deck.'
+                              : 'Se usará este deck al crear la reunión.'}
+                          </span>
                         </label>
                       </div>
 

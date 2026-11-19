@@ -472,10 +472,21 @@ export function SovereignMeetRoom({
             const res = await fetch("/api/v1/internal/nexus/meets/process", { method: "POST", body: form });
             const data = await res.json().catch(() => ({}));
             if (!res.ok) {
-                setMinutesError(data.error ?? "No se pudo procesar la grabación.");
+                setMinutesError(
+                    data.code === "AI_NOT_CONFIGURED"
+                        ? "La IA no está configurada en producción. Falta GEMINI_API_KEY."
+                        : data.error ?? "No se pudo procesar la grabación."
+                );
                 return;
             }
-            setRecordingSummary(typeof data.summary === "string" ? data.summary : null);
+            if (typeof data.summary !== "string" || !data.summary.trim()) {
+                setMinutesError("El modelo no devolvió un resumen. Intenta con otro audio.");
+                return;
+            }
+            setRecordingSummary(data.summary);
+            if (data.tasksSynced === false) {
+                setMinutesError("Resumen guardado, pero no se pudieron guardar las tareas.");
+            }
             await loadMinutes();
         } catch {
             setMinutesError("Error de red al procesar la grabación.");

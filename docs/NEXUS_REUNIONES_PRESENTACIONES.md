@@ -45,6 +45,22 @@ Las dos vías para agendar producen el mismo objeto reunión:
 | Deal Room → Clients & CRM → "Agendar presentación" | `POST /api/nexus/deals/:id/schedule` | hereda deck del deal y deal_room_id |
 | Agenda Soberana → "Agendar presentación" | `POST /api/v1/nexus/agenda/meet/create` | reunión suelta con deck del catálogo |
 
+### Minuta IA — proveedores y configuración (implementado)
+
+- **Gemini primero:** `GEMINI_API_KEY` (o `GOOGLE_GENERATIVE_AI_API_KEY`),
+  modelo `gemini-2.5-flash` por defecto (`GEMINI_MEETING_MODEL`).
+- **OpenAI como fallback:** `OPENAI_API_KEY`, transcripción `whisper-1` y resumen
+  `gpt-4o-mini` (`OPENAI_TRANSCRIBE_MODEL`/`OPENAI_MEETING_MODEL`).
+- Si no hay ninguno: `503 AI_NOT_CONFIGURED` con mensaje claro; no se inventa resumen.
+- Solo audio ≤ 10 MB; video → 415.
+- El **resumen se guarda antes** de las tareas. Si fallan las tareas, el resumen no
+  se pierde y el follow-up ya no devuelve `409 NO_SUMMARY`.
+- `POST /api/v1/meet/follow-up` sigue exigiendo reunión `ended`; si está `live`,
+  devuelve `409 MEETING_NOT_ENDED`.
+
+> Operación: cambiar una env en Vercel **no** afecta deployments existentes; hay que
+> redeployar para que la función reciba la nueva variable.
+
 ### Borrado lógico de reuniones pasadas (implementado)
 
 - En `/nexus/agenda` → bloque **Anteriores**, el host ve **“Eliminar”**.

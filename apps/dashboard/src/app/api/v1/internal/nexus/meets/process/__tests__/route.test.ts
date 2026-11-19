@@ -7,7 +7,7 @@ let deletedWhere: any = null;
 let insertedValues: any = null;
 let statusPatch: any = null;
 
-const state = vi.hoisted(() => ({ geminiCalls: 0 }));
+const state = vi.hoisted(() => ({ geminiCalls: 0, openaiCalls: 0 }));
 
 vi.mock("@saasfly/shared", () => ({
   getNexusAuthContext: vi.fn(async () => mockSessionAuth),
@@ -42,6 +42,39 @@ vi.mock("@google/generative-ai", () => ({
   },
 }));
 
+vi.mock("openai", () => ({
+  default: class {
+    audio = {
+      transcriptions: {
+        create: async () => {
+          state.openaiCalls += 1;
+          return { text: "Transcripción de prueba" };
+        },
+      },
+    };
+    chat = {
+      completions: {
+        create: async () => ({
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({
+                  summary: "Resumen OpenAI",
+                  actionItems: [{ task: "Tarea OpenAI", assignee: "Luis" }],
+                }),
+              },
+            },
+          ],
+        }),
+      },
+    };
+  },
+}));
+
+vi.mock("openai/uploads", () => ({
+  toFile: async () => ({}),
+}));
+
 vi.mock("@saasfly/db-core", () => {
   const tx = {
     update: () => ({
@@ -69,6 +102,12 @@ vi.mock("@saasfly/db-core", () => {
           findFirst: async () => meetingRow,
         },
       },
+      update: () => ({
+        set: (patch: any) => {
+          statusPatch = patch;
+          return { where: async () => undefined };
+        },
+      }),
       transaction: async (cb: any) => cb(tx),
     },
     meetings: { id: "id", canonicalOrgId: "canonical_org_id" },
@@ -101,6 +140,7 @@ describe("🎙️ Minuta IA (/api/v1/internal/nexus/meets/process)", () => {
     process.env.GEMINI_API_KEY = "test-key";
     process.env.GEMINI_MEETING_MODEL = "gemini-2.5-flash";
     state.geminiCalls = 0;
+    state.openaiCalls = 0;
     deletedWhere = null;
     insertedValues = null;
     statusPatch = null;
@@ -125,6 +165,8 @@ describe("🎙️ Minuta IA (/api/v1/internal/nexus/meets/process)", () => {
   it("PRC-01: el host con enlace temporal procesa audio y conserva las tareas manuales", async () => {
     const res = await POST(request(audioFile()));
     expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.provider).toBe("gemini");
     expect(state.geminiCalls).toBe(1);
 
     // Solo borra las tareas de IA, nunca las manuales.
@@ -138,6 +180,36 @@ describe("🎙️ Minuta IA (/api/v1/internal/nexus/meets/process)", () => {
       task: "Llamar al cliente",
       source: "ai",
     });
+  });
+
+  it("PRC-07: sin Gemini usa OpenAI como fallback y guarda el resumen", async () => {
+    delete process.env.GEMINI_API_KEY;
+    delete process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+    process.env.OPENAI_API_KEY = "test-openai";
+
+    const res = await POST(request(audioFile()));
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.provider).toBe("openai");
+    expect(body.summary).toBe("Resumen OpenAI");
+    expect(state.geminiCalls).toBe(0);
+    expect(state.openaiCalls).toBe(1);
+    expect(insertedValues?.[0]).toMatchObject({ task: "Tarea OpenAI", source: "ai" });
+  });
+
+  it("PRC-08: sin ningún proveedor de IA responde 503 AI_NOT_CONFIGURED", async () => {
+    delete process.env.GEMINI_API_KEY;
+    delete process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+    delete process.env.OPENAI_API_KEY;
+
+    const res = await POST(request(audioFile()));
+    const body = await res.json();
+
+    expect(res.status).toBe(503);
+    expect(body.code).toBe("AI_NOT_CONFIGURED");
+    expect(state.geminiCalls).toBe(0);
+    expect(state.openaiCalls).toBe(0);
   });
 
   it("PRC-02: un participante con su ref NO puede procesar la minuta", async () => {
