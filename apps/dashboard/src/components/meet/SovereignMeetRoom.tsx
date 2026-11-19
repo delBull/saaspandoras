@@ -67,6 +67,8 @@ export function SovereignMeetRoom({
     presentationId
 }: SovereignMeetRoomProps) {
     const [loading, setLoading] = useState(true);
+    const [frameError, setFrameError] = useState<string | null>(null);
+    const [retryKey, setRetryKey] = useState(0);
     const [isMobile, setIsMobile] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
     const deckFrameRef = useRef<HTMLIFrameElement>(null);
@@ -110,6 +112,16 @@ export function SovereignMeetRoom({
     const guardrails = deckMeta?.guardrails ?? catalogPresentation?.guardrails ?? [];
     const deckTitle = deckMeta?.title ?? catalogPresentation?.title ?? "Presentación";
     const currentBlock = scriptBlocks[deckState.slide];
+
+    // Si el script de Jitsi no carga (CSP, red, bloqueo del navegador), esto evita
+    // que el usuario se quede para siempre en "Estableciendo conexión soberana".
+    useEffect(() => {
+        if (!loading) return;
+        const timer = setTimeout(() => {
+            setFrameError("La sala no respondió. Revisa tu conexión e inténtalo de nuevo.");
+        }, 15_000);
+        return () => clearTimeout(timer);
+    }, [loading, retryKey]);
 
     useEffect(() => {
         const check = () => setIsMobile(window.innerWidth < 768);
@@ -354,8 +366,27 @@ export function SovereignMeetRoom({
         <div
             className="w-full h-full min-h-[100dvh] bg-black overflow-hidden relative flex flex-col"
             ref={containerRef}
+            role="region"
+            aria-label="Sala de videollamada soberana"
         >
-            {loading && (
+            {frameError && (
+                <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-black/95 text-white p-6 text-center">
+                    <p className="text-sm text-zinc-300 max-w-sm">{frameError}</p>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setFrameError(null);
+                            setLoading(true);
+                            setRetryKey((key) => key + 1);
+                        }}
+                        className="mt-5 px-4 py-2 rounded-lg border border-lime-500/30 bg-lime-500/10 hover:bg-lime-500/20 text-lime-200 text-xs font-mono"
+                    >
+                        Reintentar
+                    </button>
+                </div>
+            )}
+
+            {loading && !frameError && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-black text-white z-10">
                     <div className="relative mb-6">
                         <div className="absolute inset-0 bg-lime-500/20 blur-xl rounded-full animate-pulse" />
@@ -368,9 +399,9 @@ export function SovereignMeetRoom({
             )}
 
             {/* Host controls: presentation + end meeting */}
-            {isHost && (
-                <div className="absolute top-4 left-4 z-30 flex flex-wrap items-center gap-2">
-                    {hasDeck && (
+            {isHost && !loading && !frameError && (
+                <div className="absolute top-4 left-4 z-30 flex max-w-[calc(100vw-1.5rem)] flex-wrap items-center gap-2 rounded-2xl bg-black/45 p-1.5 backdrop-blur-sm">
+                    {hasDeck && presentation && (
                         <>
                             <button
                                 type="button"
@@ -408,7 +439,10 @@ export function SovereignMeetRoom({
                             )}
                             <button
                                 type="button"
-                                onClick={() => setShowNotes((v) => !v)}
+                                onClick={() => {
+                                    setShowNotes((v) => !v);
+                                    setShowScript(false);
+                                }}
                                 className={`px-3 py-2 rounded-full text-xs font-mono flex items-center gap-1.5 border backdrop-blur transition-colors ${
                                     showNotes
                                         ? "bg-sky-500/30 border-sky-400/50 text-sky-100"
@@ -422,7 +456,10 @@ export function SovereignMeetRoom({
                             {presentation && (
                                 <button
                                     type="button"
-                                    onClick={() => setShowScript((v) => !v)}
+                                    onClick={() => {
+                                        setShowScript((v) => !v);
+                                        setShowNotes(false);
+                                    }}
                                     className={`px-3 py-2 rounded-full text-xs font-mono flex items-center gap-1.5 border backdrop-blur transition-colors ${
                                         showScript
                                             ? "bg-purple-500/30 border-purple-400/50 text-purple-100"
@@ -450,14 +487,14 @@ export function SovereignMeetRoom({
             )}
 
             {isHost && deckError && (
-                <div className="absolute top-20 left-4 z-30 max-w-xs text-[11px] text-red-300 bg-red-950/80 border border-red-500/40 rounded-lg px-3 py-2">
+                <div className="absolute bottom-24 left-4 z-30 max-w-[min(20rem,calc(100vw-2rem))] text-[11px] text-red-300 bg-red-950/80 border border-red-500/40 rounded-lg px-3 py-2">
                     {deckError}
                 </div>
             )}
 
             {/* Presenter script (host only) */}
             {isHost && showScript && presentation && (
-                <aside className="absolute top-20 right-4 z-30 w-80 max-h-[70dvh] overflow-y-auto rounded-xl bg-black/85 border border-purple-500/30 backdrop-blur p-4 space-y-3">
+                <aside className="absolute top-28 right-3 z-30 w-[min(20rem,calc(100vw-1.5rem))] max-h-[70dvh] overflow-y-auto rounded-xl bg-black/85 border border-purple-500/30 backdrop-blur p-4 space-y-3 sm:top-20">
                     <header className="flex items-center justify-between">
                         <div>
                             <p className="text-[10px] font-mono uppercase tracking-widest text-purple-300">Guión · {deckTitle}</p>
@@ -515,7 +552,7 @@ export function SovereignMeetRoom({
 
             {/* Contexto de la sesión (host-only, persistido por reunión) */}
             {isHost && showNotes && (
-                <aside className="absolute top-20 right-4 z-30 w-80 max-h-[70dvh] overflow-y-auto rounded-xl bg-black/85 border border-sky-500/30 backdrop-blur p-4 space-y-3">
+                <aside className="absolute top-28 right-3 z-30 w-[min(20rem,calc(100vw-1.5rem))] max-h-[70dvh] overflow-y-auto rounded-xl bg-black/85 border border-sky-500/30 backdrop-blur p-4 space-y-3 sm:top-20">
                     <header className="flex items-center justify-between">
                         <p className="text-[10px] font-mono uppercase tracking-widest text-sky-300">Contexto de esta sesión</p>
                         <button type="button" onClick={() => setShowNotes(false)} className="text-zinc-500 hover:text-white">
@@ -548,7 +585,7 @@ export function SovereignMeetRoom({
 
             {/* Injected deck: same slide for everyone, controlled by the host */}
             {deckState.open && presentation && (
-                <div className="absolute inset-0 z-20 bg-black flex flex-col">
+                <div className={`absolute inset-x-0 bottom-0 z-20 bg-black flex flex-col ${isHost ? "top-24 sm:top-20" : "top-0"}`}>
                     <div className="flex items-center justify-between px-4 py-2 border-b border-white/10 bg-black/80">
                         <span className="text-[10px] font-mono uppercase tracking-widest text-lime-400">
                             Presentación soberana · {deckTitle}
@@ -582,6 +619,7 @@ export function SovereignMeetRoom({
 
             <div className="flex-1 w-full relative">
                 <JitsiMeeting
+                    key={retryKey}
                     domain="8x8.vc"
                     roomName={fullRoomName}
                     jwt={jwt}
@@ -626,6 +664,7 @@ export function SovereignMeetRoom({
                     }}
                     onApiReady={(externalApi) => {
                         setLoading(false);
+                        setFrameError(null);
 
                         externalApi.on("videoConferenceJoined", () => {
                             console.log("[Sovereign Meet] Joined room.");
@@ -642,6 +681,17 @@ export function SovereignMeetRoom({
                         });
                     }}
                     getIFrameRef={(iframeRef) => {
+                        // El SDK entrega el CONTENEDOR, no el iframe; y no declara `allow`.
+                        // Sin delegar permisos, el iframe cross-origin de JaaS no recibe
+                        // cámara, micrófono ni pantalla (se queda en "conectando").
+                        const delegatePermissions = () => {
+                            const frame = iframeRef.querySelector("iframe");
+                            if (!frame) return false;
+                            frame.allow =
+                                "camera *; microphone *; display-capture *; fullscreen *; autoplay *; clipboard-write *";
+                            return true;
+                        };
+                        if (!delegatePermissions()) requestAnimationFrame(delegatePermissions);
                         iframeRef.style.height = "100%";
                         iframeRef.style.width = "100%";
                         iframeRef.style.border = "none";

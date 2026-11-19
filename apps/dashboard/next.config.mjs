@@ -158,10 +158,13 @@ const nextConfig = {
           // Control referrer leakage
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
 
-          // Restrict browser features (mic allowed same-origin for Hermes terminal voice; no camera/geolocation)
+          // Restrict browser features. La sala de Sovereign Meet corre en un iframe
+          // cross-origin (8x8.vc): sin delegar camera/microphone/display-capture a ese
+          // origen, el navegador niega los dispositivos aunque el usuario los conceda.
           {
             key: 'Permissions-Policy',
-            value: 'camera=(), microphone=(self), geolocation=(), payment=(), usb=()',
+            value:
+              'camera=(self "https://8x8.vc" "https://*.8x8.vc"), microphone=(self "https://8x8.vc" "https://*.8x8.vc"), display-capture=(self "https://8x8.vc" "https://*.8x8.vc"), fullscreen=(self "https://8x8.vc" "https://*.8x8.vc"), geolocation=(), payment=(), usb=()',
           },
 
           // HSTS: force HTTPS for 1 year (only applies on HTTPS connections)
@@ -180,10 +183,14 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.thirdweb.com https://cdn.jsdelivr.net",
+              // Jitsi (JaaS) carga `external_api.js` en el documento padre; sin este
+              // origen la sala se queda en "Estableciendo conexión soberana".
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.thirdweb.com https://cdn.jsdelivr.net https://8x8.vc https://*.8x8.vc https://meet.jit.si",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
               "img-src 'self' data: blob: https: ipfs:",
+              // Streams/videos que Jitsi reproduce localmente (blob:) y desde su CDN.
+              "media-src 'self' blob: data: https:",
               "connect-src 'self' https: wss: data:",
               // Proveedores de rampa (tarjeta) que thirdweb embebe durante el checkout.
               // Sin esto el modal del proveedor se abre y el navegador lo bloquea
