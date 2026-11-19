@@ -4,6 +4,7 @@ import { JitsiMeeting } from "@jitsi/react-sdk";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Loader2, MonitorPlay, PhoneOff, X, BookOpen, NotebookPen, Save, Link2, Check, ClipboardList } from "lucide-react";
 import { findPresentation } from "@/lib/nexus/presentations-catalog";
+import { MeetClosedScreen } from "./MeetClosedScreen";
 import { shortMeetingPath, shareOrCopyMeeting } from "@/lib/meet/meeting-links";
 
 interface SovereignMeetRoomProps {
@@ -115,6 +116,9 @@ export function SovereignMeetRoom({
     const [processingRecording, setProcessingRecording] = useState(false);
     const [recordingSummary, setRecordingSummary] = useState<string | null>(null);
     const [meetingEnded, setMeetingEnded] = useState(false);
+    // "ended" = se cerró para todos; "left" = el usuario salió y la sala sigue.
+    const [exitState, setExitState] = useState<"ended" | "left" | null>(null);
+    const meetingEndedRef = useRef(false);
     // null = desconocido (no se muestra aviso). Solo aplica a invitados.
     const [hostPresent, setHostPresent] = useState<boolean | null>(null);
 
@@ -182,6 +186,10 @@ export function SovereignMeetRoom({
     // Cuando la reunión se cierra (el host finaliza o el estado pasa a 'ended'),
     // los participantes deben salir de la sala, no quedarse colgados como en un
     // "end meeting for all" de Zoom/Meet.
+    useEffect(() => {
+        meetingEndedRef.current = meetingEnded;
+    }, [meetingEnded]);
+
     useEffect(() => {
         if (!meetingEnded) return;
         try {
@@ -926,19 +934,23 @@ export function SovereignMeetRoom({
                 </div>
             )}
 
-            {meetingEnded && (
-                <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/95 text-center p-6">
-                    <p className="text-sm text-zinc-300">La sesión terminó.</p>
-                    <a
-                        href="/nexus/agenda"
-                        className="mt-4 px-4 py-2 rounded-lg border border-lime-500/30 bg-lime-500/10 hover:bg-lime-500/20 text-lime-200 text-xs font-mono"
-                    >
-                        Ir a la agenda
-                    </a>
-                </div>
+            {(meetingEnded || exitState) && (
+                <MeetClosedScreen
+                    reason={meetingEnded ? "ended" : exitState === "ended" ? "ended" : "left"}
+                    isHost={isHost}
+                    title={meetingTitle ?? deckTitle}
+                    scheduledFor={scheduledFor ?? null}
+                    canRejoin={!meetingEnded && exitState === "left"}
+                    onRejoin={() => {
+                        if (typeof window !== "undefined") window.location.reload();
+                    }}
+                />
             )}
 
-            <div className="flex-1 w-full relative">
+            <div
+                className="flex-1 w-full relative"
+                style={(meetingEnded || exitState) ? { display: "none" } : undefined}
+            >
                 <JitsiMeeting
                     key={retryKey}
                     domain="8x8.vc"
@@ -996,13 +1008,14 @@ export function SovereignMeetRoom({
                         });
 
                         externalApi.on("readyToClose", () => {
-                            // Host closing the call ends the meeting (queues follow-up).
-                            if (isHost) {
+                            // Host closing the call ends the meeting (queues follow-up),
+                            // pero NO se redirige a Nexus: se muestra la pantalla de cierre.
+                            if (isHost && !meetingEndedRef.current) {
                                 void endMeeting();
+                                setExitState("ended");
+                                return;
                             }
-                            if (typeof window !== "undefined") {
-                                window.location.href = "/";
-                            }
+                            setExitState(isHost ? "ended" : "left");
                         });
                     }}
                     getIFrameRef={(iframeRef) => {

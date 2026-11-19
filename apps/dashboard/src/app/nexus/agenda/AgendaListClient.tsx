@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Video, FileText, Radio } from "lucide-react";
+import { Video, FileText, Radio, KeyRound, Check } from "lucide-react";
 import { MeetingShareButton } from "@/components/meet/MeetingShareButton";
 import { CancelMeetingButton } from "./CancelMeetingButton";
 import { MeetingDetailsDrawer } from "./MeetingDetailsDrawer";
@@ -59,6 +59,7 @@ const AgendaSection = ({
 
 export function AgendaListClient({ agendaRows, collaboratorId, now, joinUrls }: AgendaListClientProps) {
   const [selectedMeeting, setSelectedMeeting] = useState<any | null>(null);
+  const [copiedHostId, setCopiedHostId] = useState<string | null>(null);
 
   const live = agendaRows
     .filter((row) => row.meeting.status === "live")
@@ -167,6 +168,28 @@ export function AgendaListClient({ agendaRows, collaboratorId, now, joinUrls }: 
                   startsAt={startsAt}
                   endsAt={endsAt}
                 />
+              )}
+              {isHost && joinUrl && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(`${window.location.origin}${joinUrl}`);
+                      setCopiedHostId(row.meeting.id);
+                      setTimeout(() => setCopiedHostId(null), 2000);
+                    } catch {
+                      /* el portapapeles requiere contexto seguro */
+                    }
+                  }}
+                  className="flex items-center justify-center gap-1.5 px-2.5 py-2.5 rounded-lg border border-purple-500/30 bg-purple-500/10 hover:bg-purple-500/20 text-purple-200 text-[10px] font-mono uppercase tracking-wider transition-colors"
+                  title="Copiar enlace de anfitrión. Válido 15 min; quien lo tenga entra con controles de host."
+                  aria-label="Copiar enlace de anfitrión"
+                >
+                  {copiedHostId === row.meeting.id ? <Check size={14} /> : <KeyRound size={14} />}
+                  <span className="hidden sm:inline">
+                    {copiedHostId === row.meeting.id ? "Copiado" : "Host"}
+                  </span>
+                </button>
               )}
               {canJoin && (
                 <Link

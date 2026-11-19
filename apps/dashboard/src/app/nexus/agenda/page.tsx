@@ -163,6 +163,11 @@ export default async function NexusAgendaPage({ searchParams }: { searchParams: 
             <p className="text-zinc-500 font-mono text-xs uppercase tracking-widest">
               Reuniones, AI Ingestion y Action Items
             </p>
+            <p className="text-zinc-600 text-[10px] font-mono mt-2 max-w-xl leading-relaxed">
+              El anfitrión se reconoce por tu sesión de Nexus, no por el dispositivo. En otro
+              equipo, inicia sesión aquí. En los 15 min previos también puedes copiar el
+              enlace de anfitrión (quien lo tenga entra con tus controles).
+            </p>
           </div>
           <div className="flex flex-col items-end gap-2">
             <SchedulePresentationForm initialDeck={deck ?? null} initialOpen={schedule === "1"} />
