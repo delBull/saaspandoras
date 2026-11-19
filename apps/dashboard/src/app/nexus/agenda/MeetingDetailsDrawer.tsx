@@ -20,6 +20,7 @@ interface MeetingDetailsDrawerProps {
     date: Date;
     hostName: string;
     status: string;
+    isHost?: boolean;
   } | null;
 }
 
@@ -28,6 +29,8 @@ export function MeetingDetailsDrawer({ isOpen, onClose, meeting }: MeetingDetail
   const [isLoading, setIsLoading] = useState(false);
   const [summary, setSummary] = useState<string | null>(null);
   const [actionItems, setActionItems] = useState<ActionItem[]>([]);
+  const [sendingSummary, setSendingSummary] = useState(false);
+  const [summarySendMessage, setSummarySendMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -55,6 +58,17 @@ export function MeetingDetailsDrawer({ isOpen, onClose, meeting }: MeetingDetail
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !meeting) return;
+
+    if (!file.type.startsWith("audio/")) {
+      alert("Solo se aceptan archivos de audio (MP3, M4A, WAV, OGG, WebM).");
+      e.target.value = "";
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      alert("El audio es demasiado grande (máx. 10 MB ≈ 40 min a 32 kbps).");
+      e.target.value = "";
+      return;
+    }
 
     setIsUploading(true);
     
@@ -91,6 +105,41 @@ export function MeetingDetailsDrawer({ isOpen, onClose, meeting }: MeetingDetail
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
+    }
+  };
+
+  const sendSummary = async () => {
+    if (!meeting) return;
+    setSendingSummary(true);
+    setSummarySendMessage(null);
+    try {
+      const res = await fetch("/api/v1/meet/follow-up", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ meetingId: meeting.id }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setSummarySendMessage(
+          data.code === "NO_SUMMARY"
+            ? "Aún no hay resumen. Procesa el audio primero."
+            : data.code === "MEETING_NOT_ENDED"
+              ? "Finaliza la reunión para enviar el resumen."
+              : data.error ?? "No se pudo enviar el resumen."
+        );
+        return;
+      }
+      setSummarySendMessage(
+        data.sent > 0
+          ? `Enviado a ${data.sent} participante${data.sent === 1 ? "" : "s"}.`
+          : data.skipped > 0
+            ? "El resumen ya se había enviado."
+            : "No hay participantes con email para enviar."
+      );
+    } catch {
+      setSummarySendMessage("Error de red al enviar el resumen.");
+    } finally {
+      setSendingSummary(false);
     }
   };
 
@@ -163,20 +212,22 @@ export function MeetingDetailsDrawer({ isOpen, onClose, meeting }: MeetingDetail
             {/* Content Scrollable */}
             <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-8">
               
-              {/* Upload Section */}
+              {/* Upload Section — solo el host procesa la minuta */}
+              {meeting.isHost !== false && (
               <div className="border border-dashed border-white/10 rounded-xl p-8 flex flex-col items-center justify-center text-center bg-white/[0.02]">
                 <div className="w-12 h-12 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mb-4">
                   <Mic className="w-5 h-5 text-blue-400" />
                 </div>
-                <h3 className="text-white font-medium mb-2">Ingesta Multimodal (IA)</h3>
+                <h3 className="text-white font-medium mb-2">Minuta con IA</h3>
                 <p className="text-zinc-500 text-sm max-w-sm mb-6">
-                  Sube la grabación de audio o video (MP4/M4A) de esta reunión. Gemini 1.5 Pro transcribirá y extraerá las tareas automáticamente.
+                  Sube solo el audio de esta reunión (máx. 10 MB ≈ 40 min a 32 kbps).
+                  Gemini extrae resumen y tareas; las tareas manuales se conservan.
                 </p>
                 <input 
                   type="file" 
                   ref={fileInputRef} 
                   onChange={handleFileChange} 
-                  accept="audio/*,video/mp4" 
+                  accept="audio/*" 
                   className="hidden" 
                 />
                 <button
@@ -191,6 +242,7 @@ export function MeetingDetailsDrawer({ isOpen, onClose, meeting }: MeetingDetail
                   )}
                 </button>
               </div>
+              )}
 
               {isLoading && (
                 <div className="flex justify-center p-8">
@@ -250,6 +302,25 @@ export function MeetingDetailsDrawer({ isOpen, onClose, meeting }: MeetingDetail
                     ))}
                   </div>
                 </motion.div>
+              )}
+
+              {!isLoading && summary && meeting.isHost !== false && (
+                <div className="space-y-2">
+                  <button
+                    type="button"
+                    onClick={sendSummary}
+                    disabled={sendingSummary}
+                    className="w-full rounded-lg border border-lime-500/30 bg-lime-500/10 px-3 py-2 text-[11px] font-mono uppercase tracking-wider text-lime-200 hover:bg-lime-500/20 disabled:opacity-50"
+                  >
+                    {sendingSummary ? "Enviando…" : "Enviar resumen a participantes"}
+                  </button>
+                  <p className="text-[10px] leading-relaxed text-zinc-500">
+                    Incluye resumen y tareas. Solo a quienes asistieron y aún no lo hayan recibido.
+                  </p>
+                  {summarySendMessage && (
+                    <p className="text-[10px] text-zinc-300">{summarySendMessage}</p>
+                  )}
+                </div>
               )}
 
             </div>

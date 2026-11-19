@@ -53,11 +53,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "La reunión fue cancelada", code: "MEETING_CANCELLED" }, { status: 409 });
     }
 
+    // Identidad canónica de presencia:
+    //   - invitado con link personal → participant:<id>
+    //   - host (sesión O joinRef firmado) → collaborator:<id>
+    // Antes, el host que entraba con enlace temporal quedaba como "140" y
+    // host-presence (que busca "collaborator:140") no lo detectaba.
     const identity = actor.participantId
       ? `participant:${actor.participantId}`
-      : actor.via === "session"
-      ? `collaborator:${actor.actorCollaboratorId}`
-      : actor.actorCollaboratorId;
+      : `collaborator:${actor.actorCollaboratorId}`;
 
     const now = new Date();
 

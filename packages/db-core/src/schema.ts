@@ -1640,6 +1640,9 @@ export const meetings = pgTable("meetings", {
   presentationId: text("presentation_id"), // slug del deck (p. ej. "celeste")
   // Asunto de la reunión. Presentaciones: título del deck. Externas: título libre.
   title: text("title"),
+  // Si el host quiere el correo automático de cortesía al finalizar. El envío
+  // manual del resumen no depende de este flag.
+  followUpEnabled: boolean("follow_up_enabled").default(true).notNull(),
 
   
   status: meetingStatusEnum("status").default("scheduled").notNull(),
@@ -1695,6 +1698,9 @@ export const meetingParticipants = pgTable("meeting_participants", {
   // Recordatorios (idempotencia: NULL = pendiente de enviar)
   reminder24hSentAt: timestamp("reminder_24h_sent_at", { withTimezone: true }),
   reminder1hSentAt: timestamp("reminder_1h_sent_at", { withTimezone: true }),
+
+  // Resumen post-sesión enviado (independiente del correo de cortesía).
+  summarySentAt: timestamp("summary_sent_at", { withTimezone: true }),
 });
 
 export const meetingPresenceSessions = pgTable("meeting_presence_sessions", {
@@ -1725,7 +1731,14 @@ export const meetingActionItems = pgTable("meeting_action_items", {
   assigneeIdentityId: varchar("assignee_identity_id", { length: 255 }), // Can link to user/collaborator if resolved
   
   status: meetingActionItemStatusEnum("status").default("pending").notNull(),
-  
+
+  /**
+   * Origen de la tarea:
+   *   manual → la escribió el host en la Minuta (nunca se borra al procesar audio)
+   *   ai     → la generó el resumen de la grabación (se reemplaza al reprocesar)
+   */
+  source: varchar("source", { length: 16 }).default("manual").notNull(),
+
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });

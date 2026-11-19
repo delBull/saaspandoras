@@ -88,7 +88,21 @@ describe("📴 Cierre de reunión (/api/v1/meet/end)", () => {
     expect(patches.some((patch) => patch.status === "ended")).toBe(true);
     const endPatch = patches.find((patch) => patch.status === "ended");
     expect(endPatch?.endedAt).toBeInstanceOf(Date);
+    expect(endPatch?.followUpEnabled).toBe(true);
     expect(followUpCalls).toEqual([MEETING_ID]);
+  });
+
+  it("END-07: el host puede finalizar SIN enviar el correo de seguimiento", async () => {
+    const res = await POST(request({ meetingId: MEETING_ID, sendFollowUp: false }));
+
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.ok).toBe(true);
+    expect(data.followUp).toEqual({ dispatched: 0, pending: 0, skipped: true });
+
+    const endPatch = patches.find((patch) => patch.status === "ended");
+    expect(endPatch?.followUpEnabled).toBe(false);
+    expect(followUpCalls).toHaveLength(0);
   });
 
   it("END-02: a participant cannot close the meeting", async () => {

@@ -64,6 +64,7 @@ const REQUIRED_COLUMNS = {
     'presenter_notes',
     'ai_summary',
     'title',
+    'follow_up_enabled',
   ],
   meeting_participants: [
     'id',
@@ -74,9 +75,11 @@ const REQUIRED_COLUMNS = {
     'follow_up_status',
     'reminder_24h_sent_at',
     'reminder_1h_sent_at',
+    'summary_sent_at',
   ],
   nexus_deal_rooms: ['presentation_id'],
   nexus_presentations: ['slug', 'title', 'slides', 'guardrails', 'target_minutes'],
+  meeting_action_items: ['source'],
 };
 
 const REQUIRED_TABLES = ['meeting_presence_sessions', 'meeting_presentation_state', 'nexus_presentations'];
@@ -141,6 +144,17 @@ const DDL = {
   ],
   dealRoomId: [`ALTER TABLE "meetings" ADD COLUMN IF NOT EXISTS "deal_room_id" text`],
   title: [`ALTER TABLE "meetings" ADD COLUMN IF NOT EXISTS "title" text`],
+  followUpControls: [
+    `ALTER TABLE "meetings" ADD COLUMN IF NOT EXISTS "follow_up_enabled" boolean NOT NULL DEFAULT true`,
+    `ALTER TABLE "meeting_participants" ADD COLUMN IF NOT EXISTS "summary_sent_at" timestamptz`,
+  ],
+  actionItemSource: [
+    `ALTER TABLE "meeting_action_items" ADD COLUMN IF NOT EXISTS "source" varchar(16) NOT NULL DEFAULT 'manual'`,
+    `DO $$ BEGIN
+       ALTER TABLE "meeting_action_items"
+         ADD CONSTRAINT "meeting_action_items_source_chk" CHECK ("source" IN ('manual', 'ai'));
+     EXCEPTION WHEN duplicate_object THEN null; END $$`,
+  ],
   dealRoomPresentation: [
     `ALTER TABLE "nexus_deal_rooms" ADD COLUMN IF NOT EXISTS "presentation_id" varchar(64)`,
   ],
@@ -252,6 +266,8 @@ async function main() {
         for (const statement of DDL.reminders) await client.query(statement);
         for (const statement of DDL.dealRoomId) await client.query(statement);
         for (const statement of DDL.title) await client.query(statement);
+        for (const statement of DDL.followUpControls) await client.query(statement);
+        for (const statement of DDL.actionItemSource) await client.query(statement);
         for (const statement of DDL.dealRoomPresentation) await client.query(statement);
         for (const statement of DDL.presentationState) await client.query(statement);
         for (const statement of DDL.presenceSessions) await client.query(statement);

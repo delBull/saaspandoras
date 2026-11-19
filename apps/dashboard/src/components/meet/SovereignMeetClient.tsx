@@ -398,6 +398,7 @@ export function SovereignMeetClient({ joinRef, previewLobby = false }: Sovereign
             presentationId={presentationId}
             scheduledFor={scheduledFor}
             meetingTitle={meetingTitle}
+            joinRef={joinRef}
         />
     );
 }

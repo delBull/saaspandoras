@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import jwt from "jsonwebtoken";
 
 let meetingRow: any = null;
 let stateRow: any = null;
@@ -148,6 +149,24 @@ describe("🎬 In-room presentation state (/api/v1/meet/presentation)", () => {
       slide: 4,
       status: "scheduled",
     });
+  });
+
+  it("PRS-09: el host con enlace temporal (sin sesión) también controla el deck", async () => {
+    process.env.MEET_JOIN_SECRET = "secret-test";
+    mockAuth = { isAuthenticated: false, collaboratorId: null };
+
+    const ref = jwt.sign(
+      { meetingId: MEETING_ID, collaboratorId: 7, orgId: "pandoras" },
+      "secret-test",
+      { algorithm: "HS256", expiresIn: "15m" }
+    );
+
+    const res = await presentationPost(
+      postRequest({ meetingId: MEETING_ID, ref, open: true, slide: 1 })
+    );
+
+    expect(res.status).toBe(200);
+    expect(lastPatch).toMatchObject({ presentationOpen: true, slideIndex: 1 });
   });
 
   it("PRS-08: GET validates the meeting id shape", async () => {

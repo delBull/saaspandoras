@@ -1,0 +1,411 @@
+{
+  "slug": "aurora-demo",
+  "title": "Aurora · Sistema Comercial (Demo)",
+  "subtitle": "Captación y conversión comercial para Aurora Bay Residences & Spa. Piloto de 90 días con atribución y medición semanal. Datos ficticios para ensayo.",
+  "category": "Demo interna · Hospitalidad",
+  "status": "PUBLISHED",
+  "targetMinutes": 35,
+  "proposalKey": "aurora-demo",
+  "guardrails": [
+    "Deck de prueba: Aurora Bay y sus cifras son ficticias; no presentar a un cliente real.",
+    "No garantizar prospectos, visitas ni ventas: se presenta el sistema y cómo se mide.",
+    "Usar solo los datos de ejemplo de este deck (86 fracciones · $112k/$149k · promedio $128k · equipos Puerto Vallarta y CDMX).",
+    "El 6% de Marina Group es información de ejemplo y se marca como 'a confirmar de qué se calcula'.",
+    "Los ~$11.0M USD son inventario nominal, NO ventas ni ingreso atribuible a Pandora's.",
+    "Publicidad fondeada por Aurora y separada de honorarios. No hay success fee en la base.",
+    "La automatización de WhatsApp se presenta sujeta a aprobación de Meta; al inicio la atención es humana asistida."
+  ],
+  "slides": [
+    {
+      "id": "s1-portada",
+      "title": "Apertura",
+      "minutes": 2,
+      "notes": [
+        "Ensayo: este deck es ficticio (Aurora Bay). Úsalo para probar la sala, el deck y los controles antes de la presentación real.",
+        "Agradece el tiempo y confirma quién está en la llamada (dirección y área comercial).",
+        "Encuadra: 30-35 minutos; al final se validan 4 datos y deciden si arranca el piloto.",
+        "Abre el deck cuando termines el encuadre (botón Presentar deck en la sala)."
+      ],
+      "blocks": [
+        {
+          "type": "hero",
+          "kicker": "Propuesta de colaboración comercial · demo",
+          "title": "PANDORA'S",
+          "subtitle": "Sistema de captación y conversión comercial para Aurora Bay Residences & Spa.",
+          "footnote": "Dirección Comercial · Piloto de 90 días · Ensayo interno"
+        }
+      ]
+    },
+    {
+      "id": "s2-oportunidad",
+      "title": "La oportunidad",
+      "minutes": 4,
+      "notes": [
+        "Repite lo que ellos dijeron: 86 fracciones disponibles, $112k (2 rec) y $149k (3 rec), promedio $128k.",
+        "Perfil: uso vacacional, compradores de CDMX, Guadalajara y extranjeros. Equipo: 1 asesora en Puerto Vallarta y 2 vendedores en CDMX.",
+        "Estancia Discovery (USD 210/noche, descontable del anticipo) como activo existente, condiciones a confirmar.",
+        "Si surge el inventario total, aclara que es valor nominal de lo disponible, no ventas."
+      ],
+      "blocks": [
+        {
+          "type": "hero",
+          "title": "El producto ya existe. Falta demanda calificada.",
+          "subtitle": "Lo confirmado por el equipo de Aurora (ejemplo)."
+        },
+        {
+          "type": "metrics",
+          "items": [
+            {
+              "value": "86",
+              "label": "fracciones disponibles"
+            },
+            {
+              "value": "$112k",
+              "label": "2 recámaras (aprox.)"
+            },
+            {
+              "value": "$149k",
+              "label": "3 recámaras (aprox.)"
+            },
+            {
+              "value": "$128k",
+              "label": "ticket promedio"
+            }
+          ]
+        },
+        {
+          "type": "info",
+          "boxes": [
+            {
+              "title": "Mercados",
+              "text": "Ciudad de México, Guadalajara y compradores extranjeros."
+            },
+            {
+              "title": "Motivación principal",
+              "text": "Uso vacacional (segunda residencia y renta)."
+            },
+            {
+              "title": "Activo comercial",
+              "text": "Estancia Discovery: USD 210/noche, descontable del anticipo (condiciones a confirmar)."
+            },
+            {
+              "title": "Equipo actual",
+              "text": "1 asesora en Puerto Vallarta y 2 vendedores en CDMX."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "s3-diagnostico",
+      "title": "Diagnóstico",
+      "minutes": 5,
+      "notes": [
+        "Nombra su propio diagnóstico: el cuello de botella es conseguir interesados calificados.",
+        "Presenta las tres hipótesis como hipótesis: dependencia de Marina Group (6%, base de cálculo a confirmar), falta de proceso único y falta de medición.",
+        "Pregunta antes de afirmar: ¿cuántos interesados reciben al mes y cuántos llegan a visita?",
+        "Compromiso explícito: el diagnóstico se valida con datos en la semana 1."
+      ],
+      "blocks": [
+        {
+          "type": "hero",
+          "title": "El cuello de botella no es el precio: es llegar a más interesados.",
+          "subtitle": "Hipótesis de diagnóstico preliminar, a validar con datos en la semana 1."
+        },
+        {
+          "type": "numbered",
+          "items": [
+            {
+              "title": "Dependencia de terceros",
+              "text": "Parte del inventario se comercializa por Marina Group, que cobra 6% según lo informado. Llega demanda, pero no es propia ni medible. A confirmar: 6% de qué."
+            },
+            {
+              "title": "Sin un proceso único",
+              "text": "Cada asesor opera a su manera: no hay embudo común ni criterios de calificación acordados."
+            },
+            {
+              "title": "Sin medición",
+              "text": "No se sabe qué canal trae prospectos que visitan y compran. Sin dato, no hay optimización."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "s4-solucion",
+      "title": "La solución",
+      "minutes": 5,
+      "notes": [
+        "Explica el servicio como sistema único: captar, atender, precalificar, convertir a visita y medir.",
+        "Deja claro el límite: Pandora's opera el sistema; Aurora conserva el cierre y la relación con el comprador.",
+        "Sobre automatización: al inicio es atención humana asistida; el asistente en WhatsApp requiere aprobación de Meta."
+      ],
+      "blocks": [
+        {
+          "type": "hero",
+          "title": "Un solo servicio: captar, atender y llevar a la visita."
+        },
+        {
+          "type": "pillars",
+          "items": [
+            {
+              "title": "1. Captación",
+              "text": "Audiencias, campañas y landing orientadas a compradores de fracción."
+            },
+            {
+              "title": "2. Atención y precalificación",
+              "text": "Al inicio, atención humana asistida con guiones y bandeja compartida. El asistente automatizado se habilita sólo tras validación técnica y aprobación de Meta."
+            },
+            {
+              "title": "3. Conversión a visita",
+              "text": "Coordinación con el equipo de Aurora para confirmar disponibilidad y condiciones."
+            },
+            {
+              "title": "4. Seguimiento y medición",
+              "text": "Origen, etapa, responsable, visita y resultado en un solo lugar."
+            }
+          ]
+        },
+        {
+          "type": "note",
+          "text": "Modelo: Pandora's opera el sistema y coordina la captación. Aurora conserva el cierre de la venta y la relación con el comprador."
+        }
+      ]
+    },
+    {
+      "id": "s5-como",
+      "title": "El recorrido del prospecto",
+      "minutes": 4,
+      "notes": [
+        "Recorre el flujo completo con etapas y responsables, de captación a registro y atribución.",
+        "Detente en la entrega al equipo de ellos: qué recibe, con qué criterios y quién responde.",
+        "Si preguntan por su CRM actual, deja abierto integrarse o usar el entorno de Pandora's (se define en semana 1)."
+      ],
+      "blocks": [
+        {
+          "type": "hero",
+          "title": "El recorrido del prospecto",
+          "subtitle": "Cada etapa con responsable y registro."
+        },
+        {
+          "type": "steps",
+          "items": [
+            {
+              "label": "01",
+              "title": "Captación",
+              "text": "Campañas y landing"
+            },
+            {
+              "label": "02",
+              "title": "Precalificación",
+              "text": "Criterios acordados"
+            },
+            {
+              "label": "03",
+              "title": "Seguimiento",
+              "text": "Bandeja compartida"
+            },
+            {
+              "label": "04",
+              "title": "Visita",
+              "text": "Estancia Discovery"
+            },
+            {
+              "label": "05",
+              "title": "Cierre",
+              "text": "Equipo de Aurora"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "s6-plan",
+      "title": "Plan de 90 días",
+      "minutes": 4,
+      "notes": [
+        "Semana 1 diagnóstico · semanas 2-3 construcción · semana 4 activación (meta, depende de accesos y aprobaciones).",
+        "Semanas 5-11 optimización semanal · semana 12 reporte final y decisión de continuidad.",
+        "Pide aquí los accesos y materiales: sin ellos la semana 4 se mueve, y decirlo ahora evita fricción después."
+      ],
+      "blocks": [
+        {
+          "type": "hero",
+          "title": "Qué pasa y cuándo"
+        },
+        {
+          "type": "steps",
+          "items": [
+            {
+              "label": "Semana 1",
+              "title": "Diagnóstico",
+              "text": "Oferta, audiencias, activos, CRM y proceso"
+            },
+            {
+              "label": "Semanas 2-3",
+              "title": "Construcción",
+              "text": "Landing, catálogo, guiones y campañas en borrador"
+            },
+            {
+              "label": "Semana 4",
+              "title": "Activación (meta)",
+              "text": "Depende de accesos, materiales y aprobaciones"
+            },
+            {
+              "label": "Semanas 5-11",
+              "title": "Optimización",
+              "text": "Ajustes semanales de audiencia, mensaje y creativo"
+            },
+            {
+              "label": "Semana 12",
+              "title": "Cierre",
+              "text": "Reporte final y decisión de continuidad"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "s7-entregables",
+      "title": "Qué incluye",
+      "minutes": 3,
+      "notes": [
+        "Recorre los entregables sin leerlos todos: destaca landing + catálogo, CRM con pipeline, campañas y reporte semanal.",
+        "Contenido: 4 piezas al mes incluidas; 8 como ampliación sujeta a material y aprobaciones a tiempo."
+      ],
+      "blocks": [
+        {
+          "type": "hero",
+          "title": "Qué incluye el servicio"
+        },
+        {
+          "type": "checklist",
+          "items": [
+            "Diagnóstico comercial y definición de oferta",
+            "Landing page y catálogo digital comercial",
+            "Configuración de CRM y pipeline de ventas",
+            "Asistente de atención y precalificación (sujeto a validación técnica)",
+            "Diseño, lanzamiento y optimización de campañas",
+            "4 piezas de contenido al mes incluidas (8 como ampliación, con material y aprobaciones a tiempo)",
+            "Seguimiento de prospectos y coordinación de visitas",
+            "Reporte semanal y reunión de revisión"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "s8-inversion",
+      "title": "Propuesta económica",
+      "minutes": 5,
+      "notes": [
+        "Cifras: $2,200 de configuración + $1,600/mes por 3 meses = $7,000 de honorarios en 90 días.",
+        "Publicidad aparte, la paga Aurora directo a plataformas; escenario de trabajo $1,200-2,500/mes a validar.",
+        "No incluye IVA, viajes, producción audiovisual especial ni comisión por ventas.",
+        "Si piden incentivo por ventas: se negocia por separado con reglas de atribución. No improvisar descuentos ni plazos."
+      ],
+      "blocks": [
+        {
+          "type": "hero",
+          "title": "Propuesta económica",
+          "subtitle": "Todos los importes en USD (dólares estadounidenses)."
+        },
+        {
+          "type": "prices",
+          "items": [
+            {
+              "label": "Configuración inicial",
+              "value": "$2,200",
+              "note": "Pago único"
+            },
+            {
+              "label": "Operación mensual",
+              "value": "$1,600",
+              "note": "Por mes · 3 meses"
+            },
+            {
+              "label": "Total 90 días",
+              "value": "$7,000",
+              "note": "Honorarios de servicio",
+              "accent": true
+            }
+          ],
+          "footnote": "Publicidad aparte: la paga Aurora directamente a las plataformas (escenario de trabajo USD 1,200–2,500/mes, a validar). No incluye impuestos, viajes, producción audiovisual especial ni comisión por ventas."
+        }
+      ]
+    },
+    {
+      "id": "s9-indicadores",
+      "title": "Qué medimos",
+      "minutes": 3,
+      "notes": [
+        "CPL, porcentaje de prospectos calificados, solicitudes y visitas Discovery, ventas atribuibles si se acuerda.",
+        "Di la frase completa: no se garantizan prospectos, visitas ni ventas; el resultado también depende de su oferta, disponibilidad y velocidad de cierre."
+      ],
+      "blocks": [
+        {
+          "type": "hero",
+          "title": "Qué medimos cada semana"
+        },
+        {
+          "type": "metrics",
+          "items": [
+            {
+              "value": "CPL",
+              "label": "costo por prospecto"
+            },
+            {
+              "value": "%",
+              "label": "prospectos calificados"
+            },
+            {
+              "value": "Discovery",
+              "label": "solicitudes y visitas"
+            },
+            {
+              "value": "Ventas",
+              "label": "atribuibles (si se acuerda)"
+            }
+          ]
+        },
+        {
+          "type": "note",
+          "text": "Reportamos con transparencia. No garantizamos prospectos, visitas ni ventas: el resultado depende también de la oferta, la disponibilidad y la velocidad de cierre del equipo de Aurora."
+        }
+      ]
+    },
+    {
+      "id": "s10-siguientes",
+      "title": "Siguientes pasos",
+      "minutes": 2,
+      "notes": [
+        "Cierra con los 3 pasos: validar 4 datos (anticipo, reglas Discovery, presupuesto de pauta, accesos) → aceptar la propuesta → kickoff.",
+        "Confirma que el documento de aceptación se firma en el Deal Room de Aurora (demo).",
+        "Finaliza la reunión con el botón Finalizar: dispara el seguimiento por email a los asistentes."
+      ],
+      "blocks": [
+        {
+          "type": "closing",
+          "title": "Arrancamos con lo que ya sabemos",
+          "steps": [
+            {
+              "label": "Paso 1",
+              "title": "Validar 4 datos",
+              "text": "Anticipo, reglas Discovery, presupuesto de pauta y accesos"
+            },
+            {
+              "label": "Paso 2",
+              "title": "Aceptar la propuesta",
+              "text": "Documento de aceptación y condiciones"
+            },
+            {
+              "label": "Paso 3",
+              "title": "Kickoff",
+              "text": "Semana 1 de diagnóstico"
+            }
+          ],
+          "footnote": "El documento de aceptación se firma en el Deal Room de Aurora (demo)."
+        }
+      ]
+    }
+  ]
+}

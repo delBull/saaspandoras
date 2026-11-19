@@ -17,6 +17,8 @@ interface SovereignMeetRoomProps {
     presentationId?: string | null;
     scheduledFor?: string | null;
     meetingTitle?: string | null;
+    /** Ref firmado de la sala: permite operar al host aunque no tenga sesión Nexus. */
+    joinRef: string;
 }
 
 // Toolbar buttons for desktop (full feature set)
@@ -71,7 +73,8 @@ export function SovereignMeetRoom({
     appId,
     presentationId,
     scheduledFor,
-    meetingTitle
+    meetingTitle,
+    joinRef
 }: SovereignMeetRoomProps) {
     const [loading, setLoading] = useState(true);
     const [frameError, setFrameError] = useState<string | null>(null);
@@ -119,6 +122,10 @@ export function SovereignMeetRoom({
     // "ended" = se cerró para todos; "left" = el usuario salió y la sala sigue.
     const [exitState, setExitState] = useState<"ended" | "left" | null>(null);
     const meetingEndedRef = useRef(false);
+    const [showEndConfirm, setShowEndConfirm] = useState(false);
+    const [sendFollowUpOnEnd, setSendFollowUpOnEnd] = useState(true);
+    const [sendingSummary, setSendingSummary] = useState(false);
+    const [summarySendMessage, setSummarySendMessage] = useState<string | null>(null);
     // null = desconocido (no se muestra aviso). Solo aplica a invitados.
     const [hostPresent, setHostPresent] = useState<boolean | null>(null);
 
@@ -303,7 +310,7 @@ export function SovereignMeetRoom({
                 await fetch("/api/v1/meet/presence", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ meetingId, event }),
+                    body: JSON.stringify({ meetingId, event, ref: joinRef }),
                     keepalive: event !== "heartbeat",
                 });
             } catch {
@@ -326,7 +333,7 @@ export function SovereignMeetRoom({
             if (timer) clearInterval(timer);
             clearTimeout(timeout);
             try {
-                const payload = JSON.stringify({ meetingId, event: "leave" });
+                const payload = JSON.stringify({ meetingId, event: "leave", ref: joinRef });
                 const blob = new Blob([payload], { type: "application/json" });
                 navigator.sendBeacon?.("/api/v1/meet/presence", blob);
             } catch {
@@ -343,7 +350,7 @@ export function SovereignMeetRoom({
             window.removeEventListener("pagehide", handleExit);
             window.removeEventListener("beforeunload", handleExit);
         };
-    }, [meetingId]);
+    }, [meetingId, joinRef]);
 
     // Push the synchronized slide index into the deck iframe.
     useEffect(() => {
@@ -356,9 +363,10 @@ export function SovereignMeetRoom({
     // Guión contextual de ESTA sesión (host-only): se carga al abrir el panel.
     const loadNotes = useCallback(async () => {
         try {
-            const res = await fetch(`/api/v1/meet/notes?meetingId=${encodeURIComponent(meetingId)}`, {
-                cache: "no-store",
-            });
+            const res = await fetch(
+                `/api/v1/meet/notes?meetingId=${encodeURIComponent(meetingId)}&ref=${encodeURIComponent(joinRef)}`,
+                { cache: "no-store" }
+            );
             if (!res.ok) return;
             const data = await res.json();
             setNotes(data.notes ?? "");
@@ -366,7 +374,7 @@ export function SovereignMeetRoom({
         } catch {
             setNotesLoaded(true);
         }
-    }, [meetingId]);
+    }, [meetingId, joinRef]);
 
     const saveNotes = useCallback(async () => {
         setNotesSaving(true);
@@ -375,7 +383,7 @@ export function SovereignMeetRoom({
             const res = await fetch("/api/v1/meet/notes", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ meetingId, notes }),
+                body: JSON.stringify({ meetingId, notes, ref: joinRef }),
             });
             if (res.ok) setNotesSaved(true);
         } catch {
@@ -383,7 +391,7 @@ export function SovereignMeetRoom({
         } finally {
             setNotesSaving(false);
         }
-    }, [meetingId, notes]);
+    }, [meetingId, notes, joinRef]);
 
     useEffect(() => {
         if (showNotes && isHost && !notesLoaded) void loadNotes();
@@ -393,9 +401,10 @@ export function SovereignMeetRoom({
         setMinutesLoading(true);
         setMinutesError(null);
         try {
-            const res = await fetch(`/api/v1/meet/action-items?meetingId=${encodeURIComponent(meetingId)}`, {
-                cache: "no-store",
-            });
+            const res = await fetch(
+                `/api/v1/meet/action-items?meetingId=${encodeURIComponent(meetingId)}&ref=${encodeURIComponent(joinRef)}`,
+                { cache: "no-store" }
+            );
             if (!res.ok) {
                 setMinutesError("No se pudo cargar la minuta.");
                 return;
@@ -408,7 +417,7 @@ export function SovereignMeetRoom({
             setMinutesLoading(false);
             setMinutesLoaded(true);
         }
-    }, [meetingId]);
+    }, [meetingId, joinRef]);
 
     const addActionItem = useCallback(async (event: React.FormEvent) => {
         event.preventDefault();
@@ -422,6 +431,7 @@ export function SovereignMeetRoom({
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     meetingId,
+                    ref: joinRef,
                     task,
                     ...(newAssignee.trim() ? { assigneeName: newAssignee.trim() } : {}),
                 }),
@@ -439,15 +449,25 @@ export function SovereignMeetRoom({
         } finally {
             setSavingTask(false);
         }
-    }, [meetingId, newTask, newAssignee]);
+    }, [meetingId, newTask, newAssignee, joinRef]);
 
     const processRecording = useCallback(async (file: File) => {
-        setProcessingRecording(true);
         setMinutesError(null);
+        if (!file.type.startsWith("audio/")) {
+            setMinutesError("Solo se aceptan archivos de audio (MP3, M4A, WAV, OGG, WebM).");
+            return;
+        }
+        if (file.size > 10 * 1024 * 1024) {
+            setMinutesError("El audio es demasiado grande (máx. 10 MB ≈ 40 min a 32 kbps).");
+            return;
+        }
+
+        setProcessingRecording(true);
         setRecordingSummary(null);
         try {
             const form = new FormData();
             form.append("meetingId", meetingId);
+            form.append("ref", joinRef);
             form.append("file", file);
             const res = await fetch("/api/v1/internal/nexus/meets/process", { method: "POST", body: form });
             const data = await res.json().catch(() => ({}));
@@ -462,7 +482,7 @@ export function SovereignMeetRoom({
         } finally {
             setProcessingRecording(false);
         }
-    }, [meetingId, loadMinutes]);
+    }, [meetingId, joinRef, loadMinutes]);
 
     useEffect(() => {
         if (showMinutes && isHost && !minutesLoaded) void loadMinutes();
@@ -476,7 +496,7 @@ export function SovereignMeetRoom({
                 const res = await fetch("/api/v1/meet/presentation", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ meetingId, ...patch }),
+                    body: JSON.stringify({ meetingId, ref: joinRef, ...patch }),
                 });
                 const data = await res.json().catch(() => ({}));
                 if (!res.ok) {
@@ -495,16 +515,17 @@ export function SovereignMeetRoom({
                 setDeckBusy(false);
             }
         },
-        [deckState.status]
+        [deckState.status, joinRef]
     );
 
-    const endMeeting = useCallback(async () => {
+    const endMeeting = useCallback(async (options?: { sendFollowUp?: boolean }) => {
+        const sendFollowUp = options?.sendFollowUp !== false;
         setEnding(true);
         try {
             const res = await fetch("/api/v1/meet/end", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ meetingId }),
+                body: JSON.stringify({ meetingId, ref: joinRef, sendFollowUp }),
             });
             if (res.ok) {
                 setMeetingEnded(true);
@@ -516,7 +537,42 @@ export function SovereignMeetRoom({
         } finally {
             setEnding(false);
         }
-    }, [meetingId]);
+    }, [meetingId, joinRef]);
+
+    // Envío manual del resumen + tareas (host). No depende del correo de cortesía.
+    const sendSummary = useCallback(async () => {
+        setSendingSummary(true);
+        setSummarySendMessage(null);
+        try {
+            const res = await fetch("/api/v1/meet/follow-up", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ meetingId, ref: joinRef }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                setSummarySendMessage(
+                    data.code === "NO_SUMMARY"
+                        ? "Aún no hay resumen. Procesa el audio primero."
+                        : data.code === "MEETING_NOT_ENDED"
+                          ? "Finaliza la reunión para enviar el resumen."
+                          : data.error ?? "No se pudo enviar el resumen."
+                );
+                return;
+            }
+            setSummarySendMessage(
+                data.sent > 0
+                    ? `Enviado a ${data.sent} participante${data.sent === 1 ? "" : "s"}.`
+                    : data.skipped > 0
+                      ? "El resumen ya se había enviado."
+                      : "No hay participantes con email para enviar."
+            );
+        } catch {
+            setSummarySendMessage("Error de red al enviar el resumen.");
+        } finally {
+            setSendingSummary(false);
+        }
+    }, [meetingId, joinRef]);
 
     const toolbarButtons = isMobile
         ? MOBILE_TOOLBAR
@@ -704,7 +760,7 @@ export function SovereignMeetRoom({
 <button
                         type="button"
                         disabled={ending || meetingEnded}
-                        onClick={endMeeting}
+                        onClick={() => setShowEndConfirm(true)}
                         className="bg-red-600/90 hover:bg-red-500 text-white px-4 py-2 rounded-full font-bold text-xs uppercase tracking-wider disabled:opacity-50 transition-colors flex items-center gap-2"
                         title="Finaliza la reunión y encola el seguimiento por email"
                     >
@@ -870,7 +926,7 @@ export function SovereignMeetRoom({
                         <label className="block">
                             <input
                                 type="file"
-                                accept="audio/*,video/*"
+                                accept="audio/*"
                                 disabled={processingRecording}
                                 onChange={(event) => {
                                     const file = event.target.files?.[0];
@@ -883,7 +939,7 @@ export function SovereignMeetRoom({
                         <p className="text-[10px] text-zinc-500">
                             {processingRecording
                                 ? "Procesando con Gemini… (puede tardar)"
-                                : "Sube el audio o video de la sesión; se extraen resumen y tareas."}
+                                : "Sube solo el audio de la sesión (máx. 10 MB ≈ 40 min a 32 kbps). Se extraen resumen y tareas; las tareas manuales se conservan. Requiere sesión de Nexus o enlace de host."}
                         </p>
                         {recordingSummary && (
                             <p className="text-[11px] text-zinc-300 leading-relaxed">{recordingSummary}</p>
@@ -891,6 +947,27 @@ export function SovereignMeetRoom({
                     </div>
 
                     {minutesError && <p className="text-[11px] text-rose-300">{minutesError}</p>}
+
+                    <div className="pt-3 border-t border-white/10 space-y-2">
+                        <p className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">
+                            Seguimiento
+                        </p>
+                        <button
+                            type="button"
+                            onClick={sendSummary}
+                            disabled={sendingSummary}
+                            className="w-full rounded-lg border border-lime-500/30 bg-lime-500/10 px-3 py-2 text-[11px] font-mono uppercase tracking-wider text-lime-200 hover:bg-lime-500/20 disabled:opacity-50"
+                        >
+                            {sendingSummary ? "Enviando…" : "Enviar resumen a participantes"}
+                        </button>
+                        <p className="text-[10px] leading-relaxed text-zinc-500">
+                            Incluye resumen y tareas. Se envía solo a quienes asistieron y aún no lo
+                            hayan recibido.
+                        </p>
+                        {summarySendMessage && (
+                            <p className="text-[10px] text-zinc-300">{summarySendMessage}</p>
+                        )}
+                    </div>
                 </aside>
             )}
 
@@ -934,6 +1011,70 @@ export function SovereignMeetRoom({
                 </div>
             )}
 
+            {showEndConfirm && !meetingEnded && (
+                <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
+                    <div className="w-full max-w-md rounded-2xl border border-white/10 bg-zinc-950 p-6 shadow-2xl">
+                        <div className="flex items-start justify-between gap-3">
+                            <div>
+                                <p className="text-[10px] font-mono uppercase tracking-[0.3em] text-red-300/80">
+                                    Cerrar sesión
+                                </p>
+                                <h2 className="mt-2 text-lg font-semibold text-white">¿Finalizar la reunión?</h2>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setShowEndConfirm(false)}
+                                className="text-zinc-500 hover:text-white"
+                                aria-label="Cancelar"
+                            >
+                                <X className="h-4 w-4" />
+                            </button>
+                        </div>
+
+                        <p className="mt-2 text-xs leading-relaxed text-zinc-400">
+                            Se cerrará para todos los participantes. El resumen con tareas se envía
+                            aparte, cuando tú lo decidas.
+                        </p>
+
+                        <label className="mt-4 flex items-start gap-2 rounded-xl border border-white/10 bg-white/[0.02] p-3 text-[11px] text-zinc-300">
+                            <input
+                                type="checkbox"
+                                checked={sendFollowUpOnEnd}
+                                onChange={(event) => setSendFollowUpOnEnd(event.target.checked)}
+                                className="mt-0.5 h-3.5 w-3.5 accent-lime-500"
+                            />
+                            <span>
+                                Enviar correo de seguimiento a los participantes al cerrar.
+                                <span className="mt-0.5 block text-[10px] text-zinc-500">
+                                    Si lo desactivas, no se envía nada ahora. Podrás enviar el resumen después.
+                                </span>
+                            </span>
+                        </label>
+
+                        <div className="mt-5 flex items-center justify-end gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setShowEndConfirm(false)}
+                                className="rounded-lg border border-white/10 px-3 py-2 text-[11px] font-mono uppercase tracking-wider text-zinc-400 hover:text-white"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setShowEndConfirm(false);
+                                    void endMeeting({ sendFollowUp: sendFollowUpOnEnd });
+                                }}
+                                className="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-[11px] font-mono font-bold uppercase tracking-wider text-white hover:bg-red-500"
+                            >
+                                <PhoneOff className="h-3.5 w-3.5" />
+                                Finalizar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {(meetingEnded || exitState) && (
                 <MeetClosedScreen
                     reason={meetingEnded ? "ended" : exitState === "ended" ? "ended" : "left"}
@@ -944,6 +1085,9 @@ export function SovereignMeetRoom({
                     onRejoin={() => {
                         if (typeof window !== "undefined") window.location.reload();
                     }}
+                    onSendSummary={sendSummary}
+                    sendingSummary={sendingSummary}
+                    summaryMessage={summarySendMessage}
                 />
             )}
 
@@ -1011,7 +1155,9 @@ export function SovereignMeetRoom({
                             // Host closing the call ends the meeting (queues follow-up),
                             // pero NO se redirige a Nexus: se muestra la pantalla de cierre.
                             if (isHost && !meetingEndedRef.current) {
-                                void endMeeting();
+                                // Cerrar desde Jitsi no envía correo por sorpresa:
+                                // el host puede enviarlo desde la pantalla de cierre.
+                                void endMeeting({ sendFollowUp: false });
                                 setExitState("ended");
                                 return;
                             }

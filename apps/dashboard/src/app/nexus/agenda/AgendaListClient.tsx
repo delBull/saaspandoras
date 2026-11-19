@@ -213,6 +213,7 @@ export function AgendaListClient({ agendaRows, collaboratorId, now, joinUrls }: 
                     date: startsAt,
                     hostName: row.host?.name ?? "Admin",
                     status: row.meeting.status,
+                    isHost,
                   })
                 }
                 className="flex items-center justify-center gap-2 px-4 py-2.5 bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-800 rounded-lg text-xs font-mono uppercase tracking-widest transition-colors"

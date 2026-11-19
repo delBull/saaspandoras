@@ -395,6 +395,130 @@ export const NEXUS_PRESENTATIONS: NexusPresentation[] = [
       },
     ],
   },
+  {
+    slug: "aurora-demo",
+    title: "Aurora · Sistema Comercial (Demo)",
+    subtitle:
+      "Captación y conversión comercial para Aurora Bay Residences & Spa. Piloto de 90 días con atribución y medición semanal. Datos ficticios para ensayo.",
+    category: "Demo interna · Hospitalidad",
+    tags: ["Aurora Bay (demo)", "86 fracciones", "Estancia Discovery", "Ensayo interno"],
+    href: "/pitch/deck/aurora-demo",
+    status: "Deck de prueba",
+    targetMinutes: 35,
+    guardrails: [
+      "Deck de prueba: Aurora Bay y sus cifras son ficticias; no presentar a un cliente real.",
+      "No garantizar prospectos, visitas ni ventas: se presenta el sistema y cómo se mide.",
+      "Usar solo los datos de ejemplo de este deck (86 fracciones · $112k/$149k · promedio $128k · equipos Puerto Vallarta y CDMX).",
+      "El 6% de Marina Group es información de ejemplo y se marca como 'a confirmar de qué se calcula'.",
+      "Los ~$11.0M USD son inventario nominal, NO ventas ni ingreso atribuible a Pandora's.",
+      "Publicidad fondeada por Aurora y separada de honorarios. No hay success fee en la base.",
+      "La automatización de WhatsApp se presenta sujeta a aprobación de Meta; al inicio la atención es humana asistida.",
+    ],
+    script: [
+      {
+        slide: "s1-portada",
+        title: "Apertura y encuadre",
+        minutes: 2,
+        beats: [
+          "Ensayo: este deck es ficticio (Aurora Bay). Úsalo para probar la sala, el deck y los controles antes de la presentación real.",
+          "Agradece el tiempo y confirma quién está en la llamada (dirección y área comercial).",
+          "Encuadra: 30-35 minutos; al final se validan 4 datos y deciden si arranca el piloto.",
+          "Abre el deck cuando termines el encuadre (botón Presentar deck en la sala).",
+        ],
+      },
+      {
+        slide: "s2-oportunidad",
+        title: "La oportunidad",
+        minutes: 4,
+        beats: [
+          "Repite lo que ellos dijeron: 86 fracciones disponibles, $112k (2 rec) y $149k (3 rec), promedio $128k.",
+          "Perfil: uso vacacional, compradores de CDMX, Guadalajara y extranjeros. Equipo: 1 asesora en Puerto Vallarta y 2 vendedores en CDMX.",
+          "Estancia Discovery (USD 210/noche, descontable del anticipo) como activo existente, condiciones a confirmar.",
+          "Si surge el inventario total, aclara que es valor nominal de lo disponible, no ventas.",
+        ],
+      },
+      {
+        slide: "s3-diagnostico",
+        title: "Diagnóstico",
+        minutes: 5,
+        beats: [
+          "Nombra su propio diagnóstico: el cuello de botella es conseguir interesados calificados.",
+          "Presenta las tres hipótesis como hipótesis: dependencia de Marina Group (6%, base de cálculo a confirmar), falta de proceso único y falta de medición.",
+          "Pregunta antes de afirmar: ¿cuántos interesados reciben al mes y cuántos llegan a visita?",
+          "Compromiso explícito: el diagnóstico se valida con datos en la semana 1.",
+        ],
+      },
+      {
+        slide: "s4-solucion",
+        title: "La solución",
+        minutes: 5,
+        beats: [
+          "Explica el servicio como sistema único: captar, atender, precalificar, convertir a visita y medir.",
+          "Deja claro el límite: Pandora's opera el sistema; Aurora conserva el cierre y la relación con el comprador.",
+          "Sobre automatización: al inicio es atención humana asistida; el asistente en WhatsApp requiere aprobación de Meta.",
+        ],
+      },
+      {
+        slide: "s5-como",
+        title: "El recorrido del prospecto",
+        minutes: 4,
+        beats: [
+          "Recorre el flujo completo con etapas y responsables, de captación a registro y atribución.",
+          "Detente en la entrega al equipo de ellos: qué recibe, con qué criterios y quién responde.",
+          "Si preguntan por su CRM actual, deja abierto integrarse o usar el entorno de Pandora's (se define en semana 1).",
+        ],
+      },
+      {
+        slide: "s6-plan",
+        title: "Plan de 90 días",
+        minutes: 4,
+        beats: [
+          "Semana 1 diagnóstico · semanas 2-3 construcción · semana 4 activación (meta, depende de accesos y aprobaciones).",
+          "Semanas 5-11 optimización semanal · semana 12 reporte final y decisión de continuidad.",
+          "Pide aquí los accesos y materiales: sin ellos la semana 4 se mueve, y decirlo ahora evita fricción después.",
+        ],
+      },
+      {
+        slide: "s7-entregables",
+        title: "Qué incluye",
+        minutes: 3,
+        beats: [
+          "Recorre los entregables sin leerlos todos: destaca landing + catálogo, CRM con pipeline, campañas y reporte semanal.",
+          "Contenido: 4 piezas al mes incluidas; 8 como ampliación sujeta a material y aprobaciones a tiempo.",
+        ],
+      },
+      {
+        slide: "s8-inversion",
+        title: "Propuesta económica",
+        minutes: 5,
+        beats: [
+          "Cifras: $2,200 de configuración + $1,600/mes por 3 meses = $7,000 de honorarios en 90 días.",
+          "Publicidad aparte, la paga Aurora directo a plataformas; escenario de trabajo $1,200-2,500/mes a validar.",
+          "No incluye IVA, viajes, producción audiovisual especial ni comisión por ventas.",
+          "Si piden incentivo por ventas: se negocia por separado con reglas de atribución. No improvisar descuentos ni plazos.",
+        ],
+      },
+      {
+        slide: "s9-indicadores",
+        title: "Qué medimos",
+        minutes: 3,
+        beats: [
+          "CPL, porcentaje de prospectos calificados, solicitudes y visitas Discovery, ventas atribuibles si se acuerda.",
+          "Di la frase completa: no se garantizan prospectos, visitas ni ventas; el resultado también depende de su oferta, disponibilidad y velocidad de cierre.",
+        ],
+      },
+      {
+        slide: "s10-siguientes",
+        title: "Siguientes pasos",
+        minutes: 2,
+        beats: [
+          "Cierra con los 3 pasos: validar 4 datos (anticipo, reglas Discovery, presupuesto de pauta, accesos) → aceptar la propuesta → kickoff.",
+          "Confirma que el documento de aceptación se firma en el Deal Room de Aurora (demo).",
+          "Finaliza la reunión con el botón Finalizar: dispara el seguimiento por email a los asistentes.",
+        ],
+      },
+    ],
+  },
 ];
 
 export const PRESENTATION_SLUGS = NEXUS_PRESENTATIONS.map((presentation) => presentation.slug);

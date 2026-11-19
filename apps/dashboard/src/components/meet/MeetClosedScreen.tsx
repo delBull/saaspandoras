@@ -12,6 +12,10 @@ interface MeetClosedScreenProps {
   /** Solo tiene sentido si la reunión sigue viva y el usuario salió. */
   canRejoin: boolean;
   onRejoin: () => void;
+  /** Envío manual del resumen + tareas (solo host). */
+  onSendSummary?: () => void | Promise<void>;
+  sendingSummary?: boolean;
+  summaryMessage?: string | null;
 }
 
 /**
@@ -28,6 +32,9 @@ export function MeetClosedScreen({
   scheduledFor,
   canRejoin,
   onRejoin,
+  onSendSummary,
+  sendingSummary = false,
+  summaryMessage = null,
 }: MeetClosedScreenProps) {
   const ended = reason === "ended";
 
@@ -47,8 +54,8 @@ export function MeetClosedScreen({
 
   const body = ended
     ? isHost
-      ? "Se cerró para todos. La minuta, la grabación y las tareas se generan desde la agenda."
-      : "El anfitrión cerró la reunión para todos. Si hay minuta o tareas, quedarán en la agenda."
+      ? "Se cerró para todos. Puedes enviar el resumen con tareas a los participantes cuando quieras."
+      : "El anfitrión cerró la reunión para todos. Si hay resumen o tareas, quedarán en la agenda."
     : "Saliste de la reunión. Si el anfitrión la mantiene abierta, puedes volver a entrar.";
 
   return (
@@ -100,12 +107,26 @@ export function MeetClosedScreen({
         {ended && (
           <p className="mt-4 flex items-start gap-2 text-[11px] leading-relaxed text-zinc-500">
             <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-lime-500/70" />
-            El seguimiento (minuta, tareas y grabación) vive en la agenda de Nexus. No se
-            envía nada a los invitados sin que el anfitrión lo revise.
+            El seguimiento (resumen, tareas y grabación) queda en la agenda de Nexus. No se
+            envía nada a los invitados sin que el anfitrión lo decida.
           </p>
         )}
 
         <div className="mt-6 flex flex-col gap-2">
+          {isHost && onSendSummary && (
+            <button
+              type="button"
+              onClick={() => void onSendSummary()}
+              disabled={sendingSummary}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-lime-500/30 bg-lime-500/10 px-4 py-3 text-[11px] font-mono uppercase tracking-widest text-lime-200 transition-colors hover:bg-lime-500/20 disabled:opacity-50"
+            >
+              {sendingSummary ? "Enviando…" : "Enviar resumen a participantes"}
+            </button>
+          )}
+          {summaryMessage && (
+            <p className="text-center text-[10px] leading-relaxed text-zinc-400">{summaryMessage}</p>
+          )}
+
           {canRejoin && (
             <button
               type="button"

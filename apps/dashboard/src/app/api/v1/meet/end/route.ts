@@ -26,12 +26,16 @@ export const maxDuration = 60;
  */
 
 export async function POST(req: NextRequest) {
-  let body: { ref?: unknown; meetingId?: unknown };
+  let body: { ref?: unknown; meetingId?: unknown; sendFollowUp?: unknown };
   try {
     body = await req.json();
   } catch {
     body = {};
   }
+
+  // El correo de cortesía es opcional: el host puede desactivarlo al finalizar.
+  // El envío manual del resumen no depende de este flag.
+  const sendFollowUp = body.sendFollowUp !== false;
 
   try {
     const { actor, error } = await resolveRoomActor(req.headers, body.ref, body.meetingId);
@@ -72,7 +76,7 @@ export async function POST(req: NextRequest) {
     const endedAt = new Date();
     const [updated] = await db
       .update(meetings)
-      .set({ status: "ended", endedAt, updatedAt: endedAt })
+      .set({ status: "ended", endedAt, updatedAt: endedAt, followUpEnabled: sendFollowUp })
       .where(eq(meetings.id, meeting.id))
       .returning({ id: meetings.id, endedAt: meetings.endedAt });
 
@@ -90,15 +94,28 @@ export async function POST(req: NextRequest) {
       console.error("[MeetEnd] No se pudo cerrar el estado del deck:", error);
     }
 
-    // Seguimiento inmediato (único mecanismo, mismo que usa el cron como red de seguridad).
-    // Si falla, la reunión ya quedó `ended` y el cron lo reintenta: no se miente al cliente.
-    let followUp: { dispatched: number; pending: number; noShow?: number; error?: string } = { dispatched: 0, pending: 0 };
-    try {
-      const summary = await runSovereignFollowUps(updated.id);
-      followUp = { dispatched: summary.sent, pending: summary.pending, noShow: summary.noShow };
-    } catch (err) {
-      console.error("[MeetEnd] follow-up error:", err);
-      followUp = { dispatched: 0, pending: 0, error: "FOLLOW_UP_FAILED_RETRY_VIA_CRON" };
+    // Seguimiento inmediato SOLO si el host lo pidió. Si falla, la reunión ya quedó
+    // `ended` y el cron lo reintenta: no se miente al cliente.
+    let followUp: {
+      dispatched: number;
+      pending: number;
+      noShow?: number;
+      skipped?: boolean;
+      error?: string;
+    } = { dispatched: 0, pending: 0, skipped: !sendFollowUp };
+
+    if (sendFollowUp) {
+      try {
+        const followUpSummary = await runSovereignFollowUps(updated.id);
+        followUp = {
+          dispatched: followUpSummary.sent,
+          pending: followUpSummary.pending,
+          noShow: followUpSummary.noShow,
+        };
+      } catch (err) {
+        console.error("[MeetEnd] follow-up error:", err);
+        followUp = { dispatched: 0, pending: 0, error: "FOLLOW_UP_FAILED_RETRY_VIA_CRON" };
+      }
     }
 
     return NextResponse.json({
