@@ -16,6 +16,11 @@ interface MeetClosedScreenProps {
   onSendSummary?: () => void | Promise<void>;
   sendingSummary?: boolean;
   summaryMessage?: string | null;
+  canSendSummary?: boolean;
+  /** Subir audio DESPUÉS de cerrar la sala (host). */
+  onProcessAudio?: (file: File) => void | Promise<void>;
+  processingAudio?: boolean;
+  audioMessage?: string | null;
 }
 
 /**
@@ -35,6 +40,10 @@ export function MeetClosedScreen({
   onSendSummary,
   sendingSummary = false,
   summaryMessage = null,
+  canSendSummary = true,
+  onProcessAudio,
+  processingAudio = false,
+  audioMessage = null,
 }: MeetClosedScreenProps) {
   const ended = reason === "ended";
 
@@ -113,7 +122,40 @@ export function MeetClosedScreen({
         )}
 
         <div className="mt-6 flex flex-col gap-2">
-          {isHost && onSendSummary && (
+          {isHost && onProcessAudio && !canSendSummary && (
+            <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
+              <p className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">
+                Minuta
+              </p>
+              <label
+                className={`mt-2 flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-lime-500/30 bg-lime-500/10 px-3 py-2.5 text-[10px] font-mono uppercase tracking-wider text-lime-200 transition-colors hover:bg-lime-500/20 ${
+                  processingAudio ? "pointer-events-none opacity-50" : ""
+                }`}
+              >
+                <input
+                  type="file"
+                  accept="audio/*"
+                  disabled={processingAudio}
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (file) void onProcessAudio(file);
+                    event.target.value = "";
+                  }}
+                  className="hidden"
+                />
+                {processingAudio ? "Procesando audio…" : "Subir audio y generar resumen"}
+              </label>
+              <p className="mt-1 text-[10px] leading-relaxed text-zinc-500">
+                MP3/M4A/WAV ≤ 10 MB. Se conservan las tareas manuales. Después podrás enviar el
+                resumen.
+              </p>
+              {audioMessage && (
+                <p className="mt-1 text-[10px] leading-relaxed text-rose-300">{audioMessage}</p>
+              )}
+            </div>
+          )}
+
+          {isHost && onSendSummary && canSendSummary && (
             <button
               type="button"
               onClick={() => void onSendSummary()}

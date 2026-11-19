@@ -57,7 +57,11 @@ export async function GET(req: NextRequest) {
       .where(eq(meetingActionItems.meetingId, meeting.id))
       .orderBy(asc(meetingActionItems.createdAt));
 
-    return NextResponse.json({ meetingId: meeting.id, items });
+    return NextResponse.json({
+      meetingId: meeting.id,
+      items,
+      summary: meeting.aiSummary ?? null,
+    });
   } catch (error) {
     console.error("[MeetActionItems] GET error:", error);
     return NextResponse.json({ error: "Error interno", code: "INTERNAL" }, { status: 500 });

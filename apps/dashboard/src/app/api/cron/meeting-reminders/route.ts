@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runMeetingReminders } from "@/lib/nexus/meeting-reminders";
+import { reapStaleLiveMeetings } from "@/lib/nexus/meeting-reaper";
 
 /**
  * Recordatorios de reunión: 24 h y 1 h antes.
@@ -19,9 +20,17 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    // Higiene: cierra reuniones `live` colgadas antes de calcular recordatorios.
+    let reaped = 0;
+    try {
+      reaped = (await reapStaleLiveMeetings()).reaped;
+    } catch (reaperError) {
+      console.error("[MeetingReminders] Reaper error:", reaperError);
+    }
+
     const summary = await runMeetingReminders();
-    console.log("[MeetingReminders] cron:", summary);
-    return NextResponse.json({ success: true, ...summary });
+    console.log("[MeetingReminders] cron:", summary, "reaped:", reaped);
+    return NextResponse.json({ success: true, reaped, ...summary });
   } catch (error) {
     console.error("[MeetingReminders] Cron Error:", error);
     return NextResponse.json({ success: false, error: "Internal Server Error" }, { status: 500 });

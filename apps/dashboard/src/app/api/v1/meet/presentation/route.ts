@@ -4,7 +4,7 @@ import { meetings, meetingPresentationState } from "@saasfly/db-core";
 import { and, eq } from "@saasfly/db-core";
 import { resolveDealPublicId } from "@/lib/meet/deal-context";
 import { getDeck } from "@/lib/nexus/deck-repository";
-import { isKnownPresentation } from "@/lib/nexus/presentations-catalog";
+import { findPresentation, isKnownPresentation } from "@/lib/nexus/presentations-catalog";
 import { isMeetingHost, resolveRoomActor } from "@/lib/meet/room-credentials";
 
 export const runtime = "nodejs";
@@ -190,9 +190,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // El servidor también acota: un estado viejo no puede dejar el deck en un
+    // slide que no existe (el cliente envía +1 sin límite).
+    const catalog = findPresentation(meeting.presentationId);
+    const maxSlide = Math.max((catalog?.script.length ?? 1) - 1, 0);
+
     const current = await readDeckState(meeting.id);
     const nextOpen = hasOpen ? (body.open as boolean) : current?.presentationOpen ?? false;
-    const nextSlide = slideIndex !== null ? slideIndex : current?.slideIndex ?? 0;
+    const requestedSlide = slideIndex !== null ? slideIndex : current?.slideIndex ?? 0;
+    const nextSlide = Math.min(Math.max(requestedSlide, 0), maxSlide);
 
     const [saved] = await db
       .insert(meetingPresentationState)

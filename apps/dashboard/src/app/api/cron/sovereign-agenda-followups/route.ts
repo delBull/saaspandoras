@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { runSovereignFollowUps } from '@/lib/nexus/agenda-followups';
+import { reapStaleLiveMeetings } from '@/lib/nexus/meeting-reaper';
 
 /**
  * Red de seguridad del seguimiento post-presentación.
@@ -23,9 +24,18 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    // Reaper primero: una reunión live colgada no debe quedar viva ni disparar
+    // correos (el reaper pone follow_up_enabled = false).
+    let reaped = 0;
+    try {
+      reaped = (await reapStaleLiveMeetings()).reaped;
+    } catch (reaperError) {
+      console.error('[Sovereign Agenda] Reaper error:', reaperError);
+    }
+
     const summary = await runSovereignFollowUps();
-    console.log('[Sovereign Agenda] Follow-up cron:', summary);
-    return NextResponse.json({ success: true, ...summary });
+    console.log('[Sovereign Agenda] Follow-up cron:', summary, 'reaped:', reaped);
+    return NextResponse.json({ success: true, reaped, ...summary });
   } catch (error) {
     console.error('[Sovereign Agenda] Cron Error:', error);
     return NextResponse.json({ success: false, error: 'Internal Server Error' }, { status: 500 });

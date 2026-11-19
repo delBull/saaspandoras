@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { findPresentation } from "@/lib/nexus/presentations-catalog";
 import jwt from "jsonwebtoken";
 
 let meetingRow: any = null;
@@ -167,6 +168,16 @@ describe("🎬 In-room presentation state (/api/v1/meet/presentation)", () => {
 
     expect(res.status).toBe(200);
     expect(lastPatch).toMatchObject({ presentationOpen: true, slideIndex: 1 });
+  });
+
+  it("PRS-10: acota un slide fuera del deck al último existente", async () => {
+    const catalog = findPresentation("real-estate-growth");
+    const maxSlide = Math.max((catalog?.script.length ?? 1) - 1, 0);
+
+    const res = await presentationPost(postRequest({ meetingId: MEETING_ID, slide: 15 }));
+
+    expect(res.status).toBe(200);
+    expect(lastPatch).toMatchObject({ slideIndex: maxSlide });
   });
 
   it("PRS-08: GET validates the meeting id shape", async () => {

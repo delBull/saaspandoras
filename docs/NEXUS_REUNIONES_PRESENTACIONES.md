@@ -45,6 +45,48 @@ Las dos vías para agendar producen el mismo objeto reunión:
 | Deal Room → Clients & CRM → "Agendar presentación" | `POST /api/nexus/deals/:id/schedule` | hereda deck del deal y deal_room_id |
 | Agenda Soberana → "Agendar presentación" | `POST /api/v1/nexus/agenda/meet/create` | reunión suelta con deck del catálogo |
 
+### Sala: dock del host y controles (implementado)
+
+- Los controles del host viven en un **dock vertical a la izquierda**, colapsable
+  (handle `PanelLeftOpen`/`PanelLeftClose`). Ya no hay barra superior que tape el deck.
+- El deck ocupa **todo el alto**; el header del deck deja espacio a la izquierda.
+- **Presentar/Ocultar deck**, slide anterior/siguiente, Minuta, Contexto, Guión,
+  Liga, Silenciar y Finalizar.
+- El slide está **acotado** al número real de slides en cliente y servidor; el botón
+  siguiente se deshabilita en el último.
+- Controles básicos de Jitsi **siempre visibles** (`toolbarConfig.alwaysVisible` y
+  `TOOLBAR_ALWAYS_VISIBLE: true`), también en móvil.
+- **Silenciar a todos**: el dock ejecuta `muteEveryone`; en móvil el host también
+  tiene el botón nativo `mute-everyone`. Jitsi **no permite por API** impedir que un
+  participante se desmutee: para bloquearlo hay que usar el diálogo nativo de
+  “Mute everyone” y desmarcar “Permitir que se desmuteen”. No se promete enforcement
+  que el proveedor no expone.
+
+### Minuta después de cerrar la sala (implementado)
+
+- La pantalla de cierre permite **subir el audio** (MP3/M4A/WAV ≤ 10 MB) y generar el
+  resumen sin volver a entrar.
+- El botón **“Enviar resumen”** se habilita solo cuando existe un resumen; antes
+  muestra “Sube el audio para generar el resumen”.
+- `GET /api/v1/meet/action-items` devuelve también el `summary`, para que el host que
+  recarga la sala no pierda el estado.
+- El 409 `NO_SUMMARY` ya no aparece por pulsar el botón sin resumen: se evita en UI y
+  el endpoint sigue validando.
+
+### Reaper de reuniones `live` colgadas (implementado)
+
+Una Meet Inmediata nace `live` y no tiene `endsAt`. Si se cierra la pestaña sin
+pulsar Finalizar, quedaba `live` para siempre en “Ahora”.
+
+- Corre en el cron de **recordatorios cada 15 min** y en el de follow-ups.
+- `live` con `endsAt` → cierra 30 min después de terminar.
+- `live` sin `endsAt` → cierra 2 h después de iniciar.
+- Al cerrar: `status = ended`, `follow_up_enabled = false` (no manda correos por
+  sorpresa) y cierra sesiones de presencia abiertas.
+- No borra nada; la reunión pasa a **Anteriores**, donde el host puede archivarla.
+- El 19 nov 2026 se cerró manualmente `83694dbc…` (2 h 49 min en live, sin
+  participantes): quedó `ended`, `follow_up_enabled = false`.
+
 ### Deck embebido en la sala (X-Frame-Options)
 
 - `/pitch/*` responde `X-Frame-Options: SAMEORIGIN` (excepción en `middleware.ts`).

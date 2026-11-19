@@ -2,7 +2,7 @@
 
 import { JitsiMeeting } from "@jitsi/react-sdk";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Loader2, MonitorPlay, PhoneOff, X, BookOpen, NotebookPen, Save, Link2, Check, ClipboardList } from "lucide-react";
+import { ChevronUp, ChevronDown, Loader2, MonitorPlay, PhoneOff, X, BookOpen, NotebookPen, Save, Link2, Check, ClipboardList, PanelLeftClose, PanelLeftOpen, MicOff } from "lucide-react";
 import { findPresentation } from "@/lib/nexus/presentations-catalog";
 import { MeetClosedScreen } from "./MeetClosedScreen";
 import { shortMeetingPath, shareOrCopyMeeting } from "@/lib/meet/meeting-links";
@@ -108,7 +108,7 @@ export function SovereignMeetRoom({
 
     // Minuta de la sesión (acciones) + resumen de grabación
     const [showMinutes, setShowMinutes] = useState(false);
-    const [showMore, setShowMore] = useState(false);
+    const [dockOpen, setDockOpen] = useState(true);
     const [minutesItems, setMinutesItems] = useState<Array<{ id: string; task: string; assigneeName?: string | null; status: string }>>([]);
     const [minutesLoaded, setMinutesLoaded] = useState(false);
     const [minutesLoading, setMinutesLoading] = useState(false);
@@ -160,7 +160,10 @@ export function SovereignMeetRoom({
         }));
     const guardrails = deckMeta?.guardrails ?? catalogPresentation?.guardrails ?? [];
     const deckTitle = deckMeta?.title ?? catalogPresentation?.title ?? meetingTitle ?? "Presentación";
-    const currentBlock = scriptBlocks[deckState.slide];
+    const maxSlideIndex = Math.max(scriptBlocks.length - 1, 0);
+    // Un estado viejo pudo quedar fuera de rango; nunca mostrar/pedir un slide inexistente.
+    const safeSlide = Math.min(deckState.slide, maxSlideIndex);
+    const currentBlock = scriptBlocks[safeSlide];
 
     // Aviso "esperando al anfitrión" para invitados. Sondeo ligero; no bloquea la sala.
     useEffect(() => {
@@ -357,8 +360,8 @@ export function SovereignMeetRoom({
         if (!deckState.open) return;
         const frame = deckFrameRef.current;
         if (!frame?.contentWindow) return;
-        frame.contentWindow.postMessage({ type: "pandora:presentation:go", index: deckState.slide }, "*");
-    }, [deckState.open, deckState.slide]);
+        frame.contentWindow.postMessage({ type: "pandora:presentation:go", index: safeSlide }, "*");
+    }, [deckState.open, safeSlide]);
 
     // Guión contextual de ESTA sesión (host-only): se carga al abrir el panel.
     const loadNotes = useCallback(async () => {
@@ -411,6 +414,9 @@ export function SovereignMeetRoom({
             }
             const data = await res.json();
             setMinutesItems(Array.isArray(data.items) ? data.items : []);
+            if (typeof data.summary === "string") {
+                setRecordingSummary(data.summary.trim() || null);
+            }
         } catch {
             setMinutesError("Error de red al cargar la minuta.");
         } finally {
@@ -552,6 +558,10 @@ export function SovereignMeetRoom({
 
     // Envío manual del resumen + tareas (host). No depende del correo de cortesía.
     const sendSummary = useCallback(async () => {
+        if (!recordingSummary) {
+            setSummarySendMessage("Primero sube el audio en Minuta y genera el resumen.");
+            return;
+        }
         setSendingSummary(true);
         setSummarySendMessage(null);
         try {
@@ -586,7 +596,9 @@ export function SovereignMeetRoom({
     }, [meetingId, joinRef]);
 
     const toolbarButtons = isMobile
-        ? MOBILE_TOOLBAR
+        ? isHost
+            ? [...new Set([...MOBILE_TOOLBAR, 'mute-everyone'])]
+            : MOBILE_TOOLBAR
         : isHost
         ? [...new Set([...DESKTOP_TOOLBAR, ...HOST_EXTRAS])]
         : DESKTOP_TOOLBAR;
@@ -630,64 +642,87 @@ export function SovereignMeetRoom({
                 </div>
             )}
 
-            {/* Host controls: presentation + end meeting */}
+            {/* Host dock vertical: no cubre la parte superior del deck */}
             {isHost && !loading && !frameError && (
-                <div className="absolute top-4 left-4 z-30 flex max-w-[calc(100vw-1.5rem)] flex-wrap items-center gap-2 rounded-2xl bg-black/45 p-1.5 backdrop-blur-sm">
-                    {hasDeck && presentation && (
-                        <>
-                            <button
-                                type="button"
-                                disabled={deckBusy || meetingEnded}
-                                onClick={() => updateDeck({ open: !deckState.open, slide: deckState.slide })}
-                                className="bg-lime-500 text-black px-4 py-2 rounded-full font-bold text-xs uppercase tracking-wider hover:bg-lime-400 disabled:opacity-50 transition-colors flex items-center gap-2 shadow-lg shadow-lime-500/20 border border-lime-400/50"
-                            >
-                                <MonitorPlay className="w-4 h-4" />
-                                {deckState.open ? "Ocultar deck" : "Presentar deck"}
-                            </button>
-                            {deckState.open && (
-                                <div className="flex items-center gap-1 bg-black/70 border border-white/15 rounded-full px-1.5 py-1 backdrop-blur">
+                <div className="absolute left-2 top-1/2 z-30 -translate-y-1/2 sm:left-3">
+                    {dockOpen ? (
+                        <div className="flex max-h-[82vh] w-[3.6rem] flex-col items-stretch gap-1.5 overflow-y-auto rounded-2xl border border-white/10 bg-black/55 p-1.5 shadow-2xl backdrop-blur-md">
+                            <div className="flex w-full items-center justify-between px-1">
+                                <span className="hidden text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-500 sm:inline">
+                                    Host
+                                </span>
+                                <button
+                                    type="button"
+                                    onClick={() => setDockOpen(false)}
+                                    className="text-zinc-500 hover:text-white"
+                                    title="Ocultar controles"
+                                    aria-label="Ocultar controles"
+                                >
+                                    <PanelLeftClose className="h-4 w-4" />
+                                </button>
+                            </div>
+
+                            {hasDeck && presentation && (
+                                <>
                                     <button
                                         type="button"
-                                        disabled={deckBusy || deckState.slide === 0}
-                                        onClick={() => updateDeck({ slide: Math.max(deckState.slide - 1, 0) })}
-                                        className="p-1.5 rounded-full hover:bg-white/10 disabled:opacity-40 text-white"
-                                        title="Slide anterior"
+                                        disabled={deckBusy || meetingEnded}
+                                        onClick={() => updateDeck({ open: !deckState.open, slide: safeSlide })}
+                                        className="flex w-full items-center justify-center gap-2 rounded-lg border border-lime-400/50 bg-lime-500 px-2 py-2 text-[10px] font-bold uppercase tracking-wider text-black transition-colors hover:bg-lime-400 disabled:opacity-50 justify-center px-2"
+                                        title={deckState.open ? "Ocultar deck para todos" : "Presentar deck para todos"}
                                     >
-                                        <ChevronLeft className="w-4 h-4" />
+                                        <MonitorPlay className="h-4 w-4 shrink-0" />
+                                        <span className="hidden">
+                                            {deckState.open ? "Ocultar deck" : "Presentar deck"}
+                                        </span>
                                     </button>
-                                    <span className="text-[10px] font-mono text-zinc-300 min-w-[3rem] text-center">
-                                        {deckState.slide + 1}/{scriptBlocks.length || "?"}
-                                    </span>
-                                    <button
-                                        type="button"
-                                        disabled={deckBusy}
-                                        onClick={() => updateDeck({ slide: deckState.slide + 1 })}
-                                        className="p-1.5 rounded-full hover:bg-white/10 disabled:opacity-40 text-white"
-                                        title="Slide siguiente"
-                                    >
-                                        <ChevronRight className="w-4 h-4" />
-                                    </button>
-                                </div>
+
+                                    {deckState.open && (
+                                        <div className="flex w-full flex-col items-center gap-1 rounded-lg border border-white/10 bg-black/50 p-1">
+                                            <button
+                                                type="button"
+                                                disabled={deckBusy || safeSlide === 0}
+                                                onClick={() => updateDeck({ slide: Math.max(safeSlide - 1, 0) })}
+                                                className="rounded-md p-1.5 text-white hover:bg-white/10 disabled:opacity-40"
+                                                title="Slide anterior"
+                                            >
+                                                <ChevronUp className="h-4 w-4" />
+                                            </button>
+                                            <span className="min-w-[2.5rem] text-center text-[9px] font-mono text-zinc-300">
+                                                {safeSlide + 1}/{scriptBlocks.length || "?"}
+                                            </span>
+                                            <button
+                                                type="button"
+                                                disabled={deckBusy || safeSlide >= maxSlideIndex}
+                                                onClick={() => updateDeck({ slide: Math.min(safeSlide + 1, maxSlideIndex) })}
+                                                className="rounded-md p-1.5 text-white hover:bg-white/10 disabled:opacity-40"
+                                                title="Slide siguiente"
+                                            >
+                                                <ChevronDown className="h-4 w-4" />
+                                            </button>
+                                        </div>
+                                    )}
+                                </>
                             )}
-                            {(!isMobile || showMore) && (
-                        <>
-<button
+
+                            <button
                                 type="button"
                                 onClick={() => {
                                     setShowMinutes((v) => !v);
                                     setShowScript(false);
                                     setShowNotes(false);
                                 }}
-                                className={`px-3 py-2 rounded-full text-xs font-mono flex items-center gap-1.5 border backdrop-blur transition-colors ${
+                                className={`flex w-full items-center justify-center gap-2 rounded-lg border px-2 py-2 text-[10px] font-mono uppercase tracking-wider transition-colors justify-center px-2 ${
                                     showMinutes
-                                        ? "bg-emerald-500/30 border-emerald-400/50 text-emerald-100"
-                                        : "bg-black/60 border-white/15 text-zinc-300 hover:text-white"
+                                        ? "border-emerald-400/50 bg-emerald-500/30 text-emerald-100"
+                                        : "border-white/10 bg-white/[0.04] text-zinc-300 hover:bg-white/10 hover:text-white"
                                 }`}
                                 title="Minuta y grabación (solo host)"
                             >
-                                <ClipboardList className="w-3.5 h-3.5" />
-                                Minuta
+                                <ClipboardList className="h-3.5 w-3.5 shrink-0" />
+                                <span className="hidden">Minuta</span>
                             </button>
+
                             <button
                                 type="button"
                                 onClick={() => {
@@ -695,16 +730,17 @@ export function SovereignMeetRoom({
                                     setShowScript(false);
                                     setShowMinutes(false);
                                 }}
-                                className={`px-3 py-2 rounded-full text-xs font-mono flex items-center gap-1.5 border backdrop-blur transition-colors ${
+                                className={`flex w-full items-center justify-center gap-2 rounded-lg border px-2 py-2 text-[10px] font-mono uppercase tracking-wider transition-colors justify-center px-2 ${
                                     showNotes
-                                        ? "bg-sky-500/30 border-sky-400/50 text-sky-100"
-                                        : "bg-black/60 border-white/15 text-zinc-300 hover:text-white"
+                                        ? "border-sky-400/50 bg-sky-500/30 text-sky-100"
+                                        : "border-white/10 bg-white/[0.04] text-zinc-300 hover:bg-white/10 hover:text-white"
                                 }`}
                                 title="Contexto de la sesión (solo host)"
                             >
-                                <NotebookPen className="w-3.5 h-3.5" />
-                                Contexto
+                                <NotebookPen className="h-3.5 w-3.5 shrink-0" />
+                                <span className="hidden">Contexto</span>
                             </button>
+
                             {presentation && (
                                 <button
                                     type="button"
@@ -713,76 +749,99 @@ export function SovereignMeetRoom({
                                         setShowNotes(false);
                                         setShowMinutes(false);
                                     }}
-                                    className={`px-3 py-2 rounded-full text-xs font-mono flex items-center gap-1.5 border backdrop-blur transition-colors ${
+                                    className={`flex w-full items-center justify-center gap-2 rounded-lg border px-2 py-2 text-[10px] font-mono uppercase tracking-wider transition-colors justify-center px-2 ${
                                         showScript
-                                            ? "bg-purple-500/30 border-purple-400/50 text-purple-100"
-                                            : "bg-black/60 border-white/15 text-zinc-300 hover:text-white"
+                                            ? "border-purple-400/50 bg-purple-500/30 text-purple-100"
+                                            : "border-white/10 bg-white/[0.04] text-zinc-300 hover:bg-white/10 hover:text-white"
                                     }`}
                                     title="Guión del presentador"
                                 >
-                                    <BookOpen className="w-3.5 h-3.5" />
-                                    Guión
+                                    <BookOpen className="h-3.5 w-3.5 shrink-0" />
+                                    <span className="hidden">Guión</span>
                                 </button>
                             )}
-                        </>
-                    )}
-                    <button
-                        type="button"
-                        onClick={async () => {
-                            try {
-                                // Se copia la liga GENÉRICA de la sala, nunca la del host
-                                // (que incluye su joinRef personal).
-                                const shareUrl = `${window.location.origin}${shortMeetingPath(meetingId)}`;
-                                const outcome = await shareOrCopyMeeting({
-                                    title: deckMeta?.title ?? meetingTitle ?? "Pandora's · Sovereign Meet",
-                                    startsAt: scheduledFor ?? null,
-                                    endsAt: null,
-                                    url: shareUrl,
-                                });
-                                if (outcome === "failed") return;
-                                setLinkCopied(true);
-                                setTimeout(() => setLinkCopied(false), 2000);
-                            } catch {
-                                /* el portapapeles requiere contexto seguro; sin acción */
-                            }
-                        }}
-                        className="bg-black/60 hover:bg-black/80 text-zinc-200 px-3 py-2 rounded-full text-xs font-mono flex items-center gap-1.5 border border-white/15 backdrop-blur"
-                        title="Copiar enlace genérico de la sala"
-                    >
-                        {linkCopied ? <Check className="w-4 h-4 text-emerald-400" /> : <Link2 className="w-4 h-4" />}
-                        {linkCopied ? "Copiada" : "Liga"}
-                    </button>
-                                            </>)}
-                    {isMobile && (
+
+                            <button
+                                type="button"
+                                onClick={async () => {
+                                    try {
+                                        const shareUrl = `${window.location.origin}${shortMeetingPath(meetingId)}`;
+                                        const outcome = await shareOrCopyMeeting({
+                                            title: deckMeta?.title ?? meetingTitle ?? "Pandora's · Sovereign Meet",
+                                            startsAt: scheduledFor ?? null,
+                                            endsAt: null,
+                                            url: shareUrl,
+                                        });
+                                        if (outcome === "failed") return;
+                                        setLinkCopied(true);
+                                        setTimeout(() => setLinkCopied(false), 2000);
+                                    } catch {
+                                        /* el portapapeles requiere contexto seguro; sin acción */
+                                    }
+                                }}
+                                className="flex w-full items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-2 py-2 text-[10px] font-mono uppercase tracking-wider text-zinc-300 transition-colors hover:bg-white/10 hover:text-white justify-center px-2"
+                                title="Copiar enlace genérico de la sala"
+                            >
+                                {linkCopied ? (
+                                    <Check className="h-4 w-4 shrink-0 text-emerald-400" />
+                                ) : (
+                                    <Link2 className="h-4 w-4 shrink-0" />
+                                )}
+                                <span className="hidden">{linkCopied ? "Copiada" : "Liga"}</span>
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    const api = externalApiRef.current;
+                                    try {
+                                        api?.executeCommand?.("muteEveryone");
+                                    } catch {
+                                        try {
+                                            api?.executeCommand?.("mute-everyone");
+                                        } catch {
+                                            /* si el SDK no expone el comando, se usa el toolbar nativo */
+                                        }
+                                    }
+                                }}
+                                className="flex w-full items-center justify-center gap-2 rounded-lg border border-amber-500/25 bg-amber-500/10 px-2 py-2 text-[10px] font-mono uppercase tracking-wider text-amber-200 transition-colors hover:bg-amber-500/20 justify-center px-2"
+                                title="Silenciar a todos. Para bloquear el auto-desmuteo, usa el diálogo nativo de Jitsi (Mute everyone → desmarcar 'Permitir que se desmuteen')."
+                            >
+                                <MicOff className="h-3.5 w-3.5 shrink-0" />
+                                <span className="hidden">Silenciar</span>
+                            </button>
+
+                            <div className="mt-1 border-t border-white/10 pt-1.5">
+                                <button
+                                    type="button"
+                                    disabled={ending || meetingEnded}
+                                    onClick={() => setShowEndConfirm(true)}
+                                    className="flex w-full items-center justify-center gap-2 rounded-lg bg-red-600/90 px-2 py-2 text-[10px] font-bold uppercase tracking-wider text-white transition-colors hover:bg-red-500 disabled:opacity-50 justify-center px-2"
+                                    title="Finaliza la reunión y encola el seguimiento por email"
+                                >
+                                    <PhoneOff className="h-4 w-4 shrink-0" />
+                                    <span className="hidden">
+                                        {meetingEnded ? "Finalizada" : ending ? "Finalizando..." : "Finalizar"}
+                                    </span>
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
                         <button
                             type="button"
-                            onClick={() => setShowMore((v) => !v)}
-                            className={`w-9 h-9 rounded-full text-sm border backdrop-blur transition-colors ${
-                                showMore
-                                    ? "bg-white/15 border-white/30 text-white"
-                                    : "bg-black/60 border-white/15 text-zinc-300 hover:text-white"
-                            }`}
-                            title="Más controles"
-                            aria-label="Más controles"
+                            onClick={() => setDockOpen(true)}
+                            className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-black/55 text-zinc-300 shadow-xl backdrop-blur-md transition-colors hover:text-white"
+                            title="Mostrar controles"
+                            aria-label="Mostrar controles"
                         >
-                            {showMore ? "×" : "⋯"}
+                            <PanelLeftOpen className="h-4 w-4" />
                         </button>
                     )}
-<button
-                        type="button"
-                        disabled={ending || meetingEnded}
-                        onClick={() => setShowEndConfirm(true)}
-                        className="bg-red-600/90 hover:bg-red-500 text-white px-4 py-2 rounded-full font-bold text-xs uppercase tracking-wider disabled:opacity-50 transition-colors flex items-center gap-2"
-                        title="Finaliza la reunión y encola el seguimiento por email"
-                    >
-                        <PhoneOff className="w-4 h-4" />
-                        {meetingEnded ? "Finalizada" : ending ? "Finalizando..." : "Finalizar"}
-                    </button>
                 </div>
             )}
 
             {isHost && deckError && (
-                <div className="absolute bottom-24 left-4 z-30 max-w-[min(20rem,calc(100vw-2rem))] text-[11px] text-red-300 bg-red-950/80 border border-red-500/40 rounded-lg px-3 py-2">
+                <div className="absolute bottom-4 left-20 z-30 max-w-[min(20rem,calc(100vw-6rem))] sm:left-60 text-[11px] text-red-300 bg-red-950/80 border border-red-500/40 rounded-lg px-3 py-2">
                     {deckError}
                 </div>
             )}
@@ -805,7 +864,7 @@ export function SovereignMeetRoom({
                     {currentBlock ? (
                         <div className="space-y-2">
                             <p className="text-xs font-semibold text-white">
-                                {deckState.slide + 1}. {currentBlock.title}
+                                {safeSlide + 1}. {currentBlock.title}
                                 <span className="ml-2 text-[10px] font-mono text-zinc-500">{currentBlock.minutes} min</span>
                             </p>
                             <ul className="space-y-1.5">
@@ -966,14 +1025,15 @@ export function SovereignMeetRoom({
                         <button
                             type="button"
                             onClick={sendSummary}
-                            disabled={sendingSummary}
+                            disabled={sendingSummary || !recordingSummary}
                             className="w-full rounded-lg border border-lime-500/30 bg-lime-500/10 px-3 py-2 text-[11px] font-mono uppercase tracking-wider text-lime-200 hover:bg-lime-500/20 disabled:opacity-50"
                         >
                             {sendingSummary ? "Enviando…" : "Enviar resumen a participantes"}
                         </button>
                         <p className="text-[10px] leading-relaxed text-zinc-500">
-                            Incluye resumen y tareas. Se envía solo a quienes asistieron y aún no lo
-                            hayan recibido.
+                            {recordingSummary
+                                ? "Incluye resumen y tareas. Se envía solo a quienes asistieron y aún no lo hayan recibido."
+                                : "Sube el audio de la sesión para generar el resumen. Sin resumen no hay correo que enviar."}
                         </p>
                         {summarySendMessage && (
                             <p className="text-[10px] text-zinc-300">{summarySendMessage}</p>
@@ -984,14 +1044,14 @@ export function SovereignMeetRoom({
 
             {/* Injected deck: same slide for everyone, controlled by the host */}
             {deckState.open && presentation && (
-                <div className={`absolute inset-x-0 bottom-0 z-20 bg-black flex flex-col ${isHost ? "top-24 sm:top-20" : "top-0"}`}>
-                    <div className="flex items-center justify-between px-4 py-2 border-b border-white/10 bg-black/80">
+                <div className="absolute inset-x-0 bottom-0 top-0 z-20 bg-black flex flex-col">
+                    <div className={`flex items-center justify-between py-2 border-b border-white/10 bg-black/80 ${isHost ? "pl-16 pr-4" : "px-4"}`}>
                         <span className="min-w-0 truncate text-[10px] font-mono uppercase tracking-widest text-lime-400">
                             Presentación soberana · {deckTitle}
                         </span>
                         <div className="flex items-center gap-2">
                             <span className="text-[10px] font-mono text-zinc-500">
-                                Slide {deckState.slide + 1}
+                                Slide {safeSlide + 1}
                                 {isHost ? " · control del host" : " · siguiendo al host"}
                             </span>
                             {isHost && (
@@ -1008,7 +1068,7 @@ export function SovereignMeetRoom({
                     </div>
                     <iframe
                         ref={deckFrameRef}
-                        src={`${catalogPresentation?.href ?? `/pitch/deck/${presentationId}`}?embed=1&slide=${deckState.slide}`}
+                        src={`${catalogPresentation?.href ?? `/pitch/deck/${presentationId}`}?embed=1&slide=${safeSlide}`}
                         title={deckTitle}
                         className="flex-1 w-full border-0 bg-black"
                         allow="fullscreen"
@@ -1099,6 +1159,10 @@ export function SovereignMeetRoom({
                     onSendSummary={sendSummary}
                     sendingSummary={sendingSummary}
                     summaryMessage={summarySendMessage}
+                    canSendSummary={Boolean(recordingSummary)}
+                    onProcessAudio={processRecording}
+                    processingAudio={processingRecording}
+                    audioMessage={minutesError}
                 />
             )}
 
@@ -1137,6 +1201,9 @@ export function SovereignMeetRoom({
                         disableThirdPartyRequests: false,
 
                         // --- Toolbar ---
+                        toolbarConfig: {
+                            alwaysVisible: true,
+                        },
                         toolbarButtons,
                     }}
                     interfaceConfigOverwrite={{
@@ -1144,7 +1211,9 @@ export function SovereignMeetRoom({
                         SHOW_JITSI_WATERMARK: false,
                         SHOW_BRAND_WATERMARK: false,
                         SHOW_WATERMARK_FOR_GUESTS: false,
-                        TOOLBAR_ALWAYS_VISIBLE: !isMobile, // Auto-hide on mobile saves space
+                        // Controles básicos siempre visibles, también en móvil: en la
+                        // práctica se necesitan (micrófono, cámara, chat, salir).
+                        TOOLBAR_ALWAYS_VISIBLE: true,
                         DEFAULT_REMOTE_DISPLAY_NAME: "Participante",
                         DISABLE_VIDEO_BACKGROUND: false, // Allow virtual backgrounds
                     }}
