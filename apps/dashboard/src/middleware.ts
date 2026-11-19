@@ -321,8 +321,12 @@ export function middleware(request: NextRequest) {
 
   response.headers.set('X-Content-Type-Options', 'nosniff');
   
-  // Allow iframing for checkout and schedule widgets
-  if (!pathname.startsWith('/pay') && !pathname.startsWith('/schedule')) {
+  // Allow iframing for checkout, schedule widgets and the in-room pitch deck.
+  // El deck se embebe same-origin (`/pitch/deck/...` dentro de `/meet`); con DENY
+  // el navegador mostraba "refused to connect" en el iframe de la sala.
+  if (pathname.startsWith('/pitch')) {
+    response.headers.set('X-Frame-Options', 'SAMEORIGIN');
+  } else if (!pathname.startsWith('/pay') && !pathname.startsWith('/schedule')) {
     response.headers.set('X-Frame-Options', 'DENY');
   }
 
@@ -371,8 +375,8 @@ export function middleware(request: NextRequest) {
       "frame-src 'self' https://telegram.org https://vercel.live https://*.thirdweb.com https://verify.walletconnect.org https://*.walletconnect.org https://8x8.vc https://*.8x8.vc",
       "base-uri 'self'",
       "form-action 'self'",
-      // Sin `frame-ancestors` global: /pay y /schedule son embebibles por diseño
-      // (el middleware exceptúa su X-Frame-Options: DENY).
+      // Sin `frame-ancestors` global: /pay, /schedule y /pitch son embebibles por
+      // diseño (el middleware exceptúa su X-Frame-Options: DENY).
       "worker-src 'self' blob:",
       "manifest-src 'self'",
       "upgrade-insecure-requests",

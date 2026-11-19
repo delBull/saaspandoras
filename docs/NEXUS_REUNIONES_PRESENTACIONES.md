@@ -45,6 +45,14 @@ Las dos vías para agendar producen el mismo objeto reunión:
 | Deal Room → Clients & CRM → "Agendar presentación" | `POST /api/nexus/deals/:id/schedule` | hereda deck del deal y deal_room_id |
 | Agenda Soberana → "Agendar presentación" | `POST /api/v1/nexus/agenda/meet/create` | reunión suelta con deck del catálogo |
 
+### Deck embebido en la sala (X-Frame-Options)
+
+- `/pitch/*` responde `X-Frame-Options: SAMEORIGIN` (excepción en `middleware.ts`).
+- Antes respondía `DENY` y el iframe de `/meet` fallaba con **“refused to connect”**.
+- No se declara `frame-ancestors` global: la excepción es por ruta.
+- El deck también se puede abrir en pestaña aparte (`/pitch/deck/<slug>`), pero para
+  presentarlo dentro de la sala el header debe ser `SAMEORIGIN`.
+
 ### Minuta IA — proveedores y configuración (implementado)
 
 - **Gemini primero:** `GEMINI_API_KEY` (o `GOOGLE_GENERATIVE_AI_API_KEY`),
