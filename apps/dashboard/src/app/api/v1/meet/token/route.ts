@@ -160,6 +160,7 @@ export async function POST(req: NextRequest) {
       displayName: participantName,
       scheduledFor: meeting.startsAt ? new Date(meeting.startsAt).toISOString() : null,
       presentationId: meeting.presentationId, // Forward presentation ID for Pitch
+      title: meeting.title ?? null, // Asunto (reuniones externas sin deck)
     });
   } catch (error) {
     console.error("[Sovereign Meet] Token Error:", error);

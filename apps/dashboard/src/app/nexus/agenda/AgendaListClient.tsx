@@ -78,7 +78,10 @@ export function AgendaListClient({ agendaRows, collaboratorId, now, joinUrls }: 
     const minutesUntilStart = (startsAt.getTime() - now.getTime()) / 60000;
     const canJoin = row.meeting.status === "live" || (row.meeting.status === "scheduled" && minutesUntilStart <= 15 && minutesUntilStart > -60);
     const canCancel = isHost && row.meeting.status === "scheduled";
-    const title = row.booking ? `Reunión con ${row.booking.leadName}` : "Sovereign Meet";
+    // Asunto propio (reunión externa) > cita de agenda > genérico.
+    const title =
+      (typeof row.meeting.title === "string" && row.meeting.title.trim()) ||
+      (row.booking ? `Reunión con ${row.booking.leadName}` : "Sovereign Meet");
     const joinUrl = joinUrls[row.meeting.id];
 
     const isLive = row.meeting.status === "live";

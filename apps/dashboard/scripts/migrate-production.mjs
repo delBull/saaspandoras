@@ -1,270 +1,327 @@
+#!/usr/bin/env node
 /**
- * 🚀 Pandoras Production / Staging Migration Runner
+ * 🚀 Pandora's — Verificador / aplicador de esquema de PRODUCCIÓN
  * apps/dashboard/scripts/migrate-production.mjs
  *
- * Runs essential SQL migrations safely and idempotently on Neon PostgreSQL.
+ * Reglas de este script (a diferencia del anterior):
+ *   1. SOLO lee `.env.production` (o DATABASE_URL_PRODUCTION). Nunca `.env`,
+ *      `.env.staging` ni `.env.local`: esos son otros entornos.
+ *   2. Verifica que la base sea realmente la de Pandora's antes de tocar nada.
+ *   3. Por defecto NO escribe: reporta qué falta (`--apply` para lo aditivo).
+ *   4. No aplica migraciones de otros módulos (CRM, reporting, ad budgets,
+ *      demo links, artifact delivery): solo el dominio de reuniones/decks.
+ *
+ * Uso:
+ *   node scripts/migrate-production.mjs            # verificar (read-only)
+ *   node scripts/migrate-production.mjs --apply    # aplicar DDL aditivo faltante
+ *
+ * Salida: exit 0 = al día; exit 1 = faltan cosas o error.
  */
 
-import { neon } from '@neondatabase/serverless';
+import { Client } from 'pg';
 import dotenv from 'dotenv';
-import fs from 'fs';
-import path from 'path';
 
-const prodParsed = dotenv.config({ path: '.env.production' }).parsed || {};
-const envParsed = dotenv.config({ path: '.env' }).parsed || {};
-const stagingParsed = dotenv.config({ path: '.env.staging' }).parsed || {};
-const localParsed = dotenv.config({ path: '.env.local' }).parsed || {};
+const apply = process.argv.includes('--apply');
 
-// Strict priority: Explicit override -> .env.production -> .env (Production Neon ep-spring-mountain) -> remote staging -> process.env
-const candidates = [
-  process.env.DATABASE_URL_OVERRIDE,
-  prodParsed.DATABASE_URL_OVERRIDE,
-  prodParsed.DATABASE_URL,
-  envParsed.DATABASE_URL,
-  process.env.DATABASE_URL_STAGING,
-  stagingParsed.DATABASE_URL,
-  process.env.DATABASE_URL,
-  localParsed.DATABASE_URL_STAGING,
-];
+// ── 1. URL: una sola fuente, la de producción ────────────────────────────────
+const parsed = dotenv.config({ path: '.env.production' }).parsed ?? {};
+const databaseUrl =
+  process.env.DATABASE_URL_PRODUCTION ||
+  parsed.DATABASE_URL ||
+  process.env.DATABASE_URL_OVERRIDE ||
+  '';
 
-const dbUrls = Array.from(
-  new Set(
-    candidates.filter((url) => url && !url.includes('localhost') && !url.includes('127.0.0.1'))
-  )
-);
-
-if (dbUrls.length === 0) {
-  console.error("❌ Fatal: Valid remote Neon DATABASE_URL is missing in environment (localhost rejected).");
+if (!databaseUrl) {
+  console.error('❌ Falta DATABASE_URL de producción (.env.production o DATABASE_URL_PRODUCTION).');
   process.exit(1);
 }
 
-async function migrateDatabase(dbUrl) {
-  const host = new URL(dbUrl).host;
-  console.log(`\n⚡ [Pandoras Migration Runner] Connecting to database: ${host}...`);
-  const sql = neon(dbUrl);
-  
-  // 1. nexus_collaborators table
-  console.log("📦 Applying nexus_collaborators DDL & RBAC columns...");
-  await sql`
-    CREATE TABLE IF NOT EXISTS "nexus_collaborators" (
-      "id" SERIAL PRIMARY KEY,
-      "name" VARCHAR(255) NOT NULL,
-      "email" VARCHAR(255) NOT NULL,
-      "token" VARCHAR(128) NOT NULL,
-      "role" VARCHAR(32) DEFAULT 'COLLABORATOR' NOT NULL,
-      "permissions" JSONB DEFAULT '{}'::jsonb,
-      "expires_at" TIMESTAMP WITH TIME ZONE NOT NULL,
-      "last_access_at" TIMESTAMP WITH TIME ZONE,
-      "created_at" TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
-      CONSTRAINT "nexus_collaborators_email_unique" UNIQUE("email"),
-      CONSTRAINT "nexus_collaborators_token_unique" UNIQUE("token")
-    );
-  `;
-  await sql`ALTER TABLE "nexus_collaborators" ADD COLUMN IF NOT EXISTS "role" VARCHAR(32) DEFAULT 'COLLABORATOR' NOT NULL;`;
-  await sql`ALTER TABLE "nexus_collaborators" ADD COLUMN IF NOT EXISTS "permissions" JSONB DEFAULT '{}'::jsonb;`;
-  // Migration 0048 & 0050 — Nexus collaborators provisioning & omnichannel status
-  await sql`ALTER TABLE "nexus_collaborators" ADD COLUMN IF NOT EXISTS "status" VARCHAR(16) DEFAULT 'ACTIVE' NOT NULL;`;
-  await sql`ALTER TABLE "nexus_collaborators" ADD COLUMN IF NOT EXISTS "status_changed_at" TIMESTAMP WITH TIME ZONE;`;
-  await sql`ALTER TABLE "nexus_collaborators" ADD COLUMN IF NOT EXISTS "discord_user_id" VARCHAR(255);`;
-  await sql`ALTER TABLE "nexus_collaborators" ADD COLUMN IF NOT EXISTS "whatsapp_phone" VARCHAR(50);`;
-  await sql`CREATE UNIQUE INDEX IF NOT EXISTS "nexus_collaborators_email_unique" ON "nexus_collaborators" ("email");`;
-  await sql`CREATE UNIQUE INDEX IF NOT EXISTS "nexus_collaborators_token_unique" ON "nexus_collaborators" ("token");`;
+let host;
+try {
+  host = new URL(databaseUrl).host;
+} catch {
+  console.error('❌ DATABASE_URL no es una URL válida.');
+  process.exit(1);
+}
 
-  console.log("✅ nexus_collaborators migrated successfully!");
+if (/localhost|127\.0\.0\.1|0\.0\.0\.0/.test(host)) {
+  console.error(`❌ ${host} es local. Este script es solo para producción.`);
+  process.exit(1);
+}
 
-  // Migration 0049 — Scheduling slots reservations & sovereign holds
-  console.log("📦 Applying scheduling_slots reservation columns...");
-  await sql`ALTER TABLE "scheduling_slots" ADD COLUMN IF NOT EXISTS "reserved_until" TIMESTAMP WITH TIME ZONE;`;
-  await sql`ALTER TABLE "scheduling_slots" ADD COLUMN IF NOT EXISTS "reserved_by" VARCHAR(255);`;
-  console.log("✅ scheduling_slots reservations migrated successfully!");
+// ── 2. Qué debe existir para el dominio de reuniones/decks ───────────────────
+const REQUIRED_COLUMNS = {
+  meetings: [
+    'id',
+    'canonical_org_id',
+    'host_collaborator_id',
+    'status',
+    'starts_at',
+    'ends_at',
+    'jitsi_room_id',
+    'presentation_id',
+    'deal_room_id',
+    'presenter_notes',
+    'ai_summary',
+    'title',
+  ],
+  meeting_participants: [
+    'id',
+    'meeting_id',
+    'identity_id',
+    'email',
+    'join_token',
+    'follow_up_status',
+    'reminder_24h_sent_at',
+    'reminder_1h_sent_at',
+  ],
+  nexus_deal_rooms: ['presentation_id'],
+  nexus_presentations: ['slug', 'title', 'slides', 'guardrails', 'target_minutes'],
+};
 
-  // Migration 0038 & 0043 — hermes_conversations collaborator & identity links
-  console.log("📦 Applying hermes_conversations assigned_collaborator_id & identity_id columns...");
-  await sql`ALTER TABLE "hermes_conversations" ADD COLUMN IF NOT EXISTS "assigned_collaborator_id" integer;`;
-  await sql`ALTER TABLE "hermes_conversations" ADD COLUMN IF NOT EXISTS "identity_id" uuid;`;
-  console.log("✅ hermes_conversations columns migrated successfully!");
+const REQUIRED_TABLES = ['meeting_presence_sessions', 'meeting_presentation_state', 'nexus_presentations'];
 
-  // Migration 0052 — contact_doctrine_seals table (K25 Sovereign Knowledge Vault)
-  console.log("📦 Applying contact_doctrine_seals DDL...");
+// Migraciones 0095–0100: otros módulos. Se reportan, no se aplican aquí.
+const LATER_FEATURE_TABLES = [
+  'hermes_artifact_versions',
+  'hermes_artifact_storage',
+  'tenant_authorization_grants',
+  'nexus_team_memberships',
+  'crm_pipelines',
+  'crm_stages',
+  'crm_opportunities',
+  'ad_spend_entries',
+  'report_snapshots',
+  'ad_budget_commitments',
+  'demo_links',
+];
+
+const HOST_FK = 'meetings_host_collaborator_id_nexus_collaborators_id_fk';
+
+async function tableExists(client, table) {
+  const { rows } = await client.query('select to_regclass($1) is not null as exists', [`public.${table}`]);
+  return Boolean(rows[0]?.exists);
+}
+
+async function columnType(client, table, column) {
+  const { rows } = await client.query(
+    `select data_type from information_schema.columns
+     where table_schema = 'public' and table_name = $1 and column_name = $2`,
+    [table, column]
+  );
+  return rows[0]?.data_type ?? null;
+}
+
+async function constraintExists(client, name) {
+  const { rows } = await client.query(
+    `select 1 from pg_constraint where conname = $1 and conrelid = 'meetings'::regclass`,
+    [name]
+  );
+  return rows.length > 0;
+}
+
+const DDL = {
+  joinToken: [
+    `ALTER TABLE "meeting_participants" ADD COLUMN IF NOT EXISTS "join_token" varchar(64)`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS "meeting_participants_join_token_idx"
+       ON "meeting_participants" ("join_token") WHERE "join_token" IS NOT NULL`,
+  ],
+  presenterNotes: [`ALTER TABLE "meetings" ADD COLUMN IF NOT EXISTS "presenter_notes" text`],
+  email: [`ALTER TABLE "meeting_participants" ADD COLUMN IF NOT EXISTS "email" varchar(255)`],
+  followUp: [
+    `DO $$ BEGIN
+       CREATE TYPE "public"."meeting_follow_up_status" AS ENUM('pending', 'sent', 'no_action');
+     EXCEPTION WHEN duplicate_object THEN null; END $$`,
+    `ALTER TABLE "meeting_participants" ADD COLUMN IF NOT EXISTS "follow_up_status"
+       "public"."meeting_follow_up_status" DEFAULT 'pending' NOT NULL`,
+  ],
+  reminders: [
+    `ALTER TABLE "meeting_participants" ADD COLUMN IF NOT EXISTS "reminder_24h_sent_at" timestamptz`,
+    `ALTER TABLE "meeting_participants" ADD COLUMN IF NOT EXISTS "reminder_1h_sent_at" timestamptz`,
+  ],
+  dealRoomId: [`ALTER TABLE "meetings" ADD COLUMN IF NOT EXISTS "deal_room_id" text`],
+  title: [`ALTER TABLE "meetings" ADD COLUMN IF NOT EXISTS "title" text`],
+  dealRoomPresentation: [
+    `ALTER TABLE "nexus_deal_rooms" ADD COLUMN IF NOT EXISTS "presentation_id" varchar(64)`,
+  ],
+  presentationState: [
+    `CREATE TABLE IF NOT EXISTS "meeting_presentation_state" (
+       "meeting_id" text PRIMARY KEY,
+       "presentation_id" text NOT NULL,
+       "slide_index" integer NOT NULL DEFAULT 0,
+       "presentation_open" boolean NOT NULL DEFAULT false,
+       "updated_by" text,
+       "updated_at" timestamptz NOT NULL DEFAULT now()
+     )`,
+    `ALTER TABLE "meeting_presentation_state" ADD COLUMN IF NOT EXISTS "presentation_open" boolean NOT NULL DEFAULT false`,
+  ],
+  presenceSessions: [
+    `CREATE TABLE IF NOT EXISTS "meeting_presence_sessions" (
+       "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+       "meeting_id" text NOT NULL REFERENCES "meetings"("id") ON DELETE CASCADE,
+       "participant_id" text,
+       "identity" text NOT NULL,
+       "joined_at" timestamptz NOT NULL DEFAULT now(),
+       "last_seen_at" timestamptz NOT NULL DEFAULT now(),
+       "left_at" timestamptz,
+       "source" varchar(32) NOT NULL DEFAULT 'client'
+     )`,
+    `CREATE INDEX IF NOT EXISTS "meeting_presence_sessions_meeting_idx"
+       ON "meeting_presence_sessions" ("meeting_id", "joined_at" DESC)`,
+  ],
+  presentations: [
+    `CREATE TABLE IF NOT EXISTS "nexus_presentations" (
+       "slug" varchar(64) PRIMARY KEY,
+       "title" text NOT NULL,
+       "subtitle" text,
+       "category" varchar(128),
+       "status" varchar(32) NOT NULL DEFAULT 'DRAFT',
+       "target_minutes" integer NOT NULL DEFAULT 30,
+       "proposal_key" varchar(64),
+       "guardrails" jsonb NOT NULL DEFAULT '[]'::jsonb,
+       "slides" jsonb NOT NULL DEFAULT '[]'::jsonb,
+       "updated_at" timestamptz NOT NULL DEFAULT now()
+     )`,
+  ],
+};
+
+
+async function missingRequirements(client) {
+  const missing = [];
+  for (const [table, columns] of Object.entries(REQUIRED_COLUMNS)) {
+    if (!(await tableExists(client, table))) {
+      missing.push(`${table} (tabla)`);
+      continue;
+    }
+    for (const column of columns) {
+      if (!(await columnType(client, table, column))) missing.push(`${table}.${column}`);
+    }
+  }
+  for (const table of REQUIRED_TABLES) {
+    if (!(await tableExists(client, table))) missing.push(`${table} (tabla)`);
+  }
+  return missing;
+}
+
+async function main() {
+  console.log(`\n🔎 Destino: ${host}`);
+  const client = new Client({ connectionString: databaseUrl, ssl: { rejectUnauthorized: false } });
+  await client.connect();
+
   try {
-    await sql`
-      CREATE TABLE IF NOT EXISTS "contact_doctrine_seals" (
-        "id" UUID PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-        "lead_id" UUID NOT NULL REFERENCES "marketing_leads"("id") ON DELETE CASCADE,
-        "version" INTEGER DEFAULT 1 NOT NULL,
-        "cid" VARCHAR(128) NOT NULL,
-        "ipfs_uri" VARCHAR(160),
-        "content_hash" VARCHAR(64) NOT NULL,
-        "contact_ref" VARCHAR(64) NOT NULL,
-        "hmac_signature" VARCHAR(128),
-        "agent_signature" TEXT,
-        "pinned" BOOLEAN DEFAULT false NOT NULL,
-        "integrity" BOOLEAN DEFAULT false NOT NULL,
-        "pending_replica" BOOLEAN DEFAULT true NOT NULL,
-        "provider" VARCHAR(32),
-        "sealed_at" TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
-        CONSTRAINT "contact_doctrine_seals_lead_version_uq" UNIQUE("lead_id", "version")
+    // ── Guarda de identidad de la base ───────────────────────────────────────
+    const canonical = ['meetings', 'nexus_collaborators', 'meeting_participants'];
+    const missingCanonical = [];
+    for (const table of canonical) {
+      if (!(await tableExists(client, table))) missingCanonical.push(table);
+    }
+    if (missingCanonical.length > 0) {
+      console.error(
+        `❌ Esta no parece la base de Pandora's: faltan ${missingCanonical.join(', ')}.\n` +
+          '   Abortado sin tocar nada. Revisa .env.production.'
       );
-    `;
-    await sql`CREATE INDEX IF NOT EXISTS "contact_doctrine_seals_lead_idx" ON "contact_doctrine_seals" ("lead_id");`;
-    await sql`CREATE INDEX IF NOT EXISTS "contact_doctrine_seals_cid_idx" ON "contact_doctrine_seals" ("cid");`;
-    console.log("✅ contact_doctrine_seals migrated successfully!");
-  } catch (err) {
-    console.warn(`⚠️ [Pandoras Migration Runner] Skipping contact_doctrine_seals on ${host} (${err.message})`);
-  }
+      process.exitCode = 1;
+      return;
+    }
 
-  // 2. hermes_tenant_credits table
-  console.log("📦 Applying hermes_tenant_credits DDL...");
-  await sql`
-    CREATE TABLE IF NOT EXISTS "hermes_tenant_credits" (
-      "id" VARCHAR(128) PRIMARY KEY NOT NULL,
-      "tenant_id" VARCHAR(128) NOT NULL,
-      "credit_balance_usd" NUMERIC(12, 4) DEFAULT '0.0000' NOT NULL,
-      "total_deposited_usd" NUMERIC(12, 4) DEFAULT '0.0000' NOT NULL,
-      "total_spent_usd" NUMERIC(12, 4) DEFAULT '0.0000' NOT NULL,
-      "markup_percentage" INTEGER DEFAULT 35 NOT NULL,
-      "is_sandbox_enabled" BOOLEAN DEFAULT true NOT NULL,
-      "sandbox_balance_usd" NUMERIC(12, 4) DEFAULT '0.0000' NOT NULL,
-      "created_at" TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
-      "updated_at" TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
-      CONSTRAINT "hermes_tenant_credits_tenant_id_unique" UNIQUE("tenant_id")
-    );
-  `;
-  await sql`CREATE UNIQUE INDEX IF NOT EXISTS "hermes_tenant_credits_tenant_unique" ON "hermes_tenant_credits" ("tenant_id");`;
+    // ── Columnas requeridas ──────────────────────────────────────────────────
+    let missing = await missingRequirements(client);
+    let hostType = await columnType(client, 'meetings', 'host_collaborator_id');
+    let hostIsInteger = hostType === 'integer';
+    let hasHostFk = await constraintExists(client, HOST_FK);
 
-  // 3. hermes_compute_usage_events table
-  console.log("📦 Applying hermes_compute_usage_events DDL...");
-  await sql`
-    CREATE TABLE IF NOT EXISTS "hermes_compute_usage_events" (
-      "id" VARCHAR(128) PRIMARY KEY NOT NULL,
-      "tenant_id" VARCHAR(128) NOT NULL,
-      "request_id" VARCHAR(128),
-      "capability" VARCHAR(128) NOT NULL,
-      "provider" VARCHAR(64) DEFAULT 'runpod' NOT NULL,
-      "endpoint_id" VARCHAR(128),
-      "execution_seconds" NUMERIC(8, 3) DEFAULT '0.000',
-      "raw_cost_usd" NUMERIC(10, 5) DEFAULT '0.00000' NOT NULL,
-      "markup_cost_usd" NUMERIC(10, 5) DEFAULT '0.00000' NOT NULL,
-      "total_charged_usd" NUMERIC(10, 5) DEFAULT '0.00000' NOT NULL,
-      "currency" VARCHAR(16) DEFAULT 'USD',
-      "status" VARCHAR(32) DEFAULT 'SETTLED',
-      "is_sandbox" BOOLEAN DEFAULT false NOT NULL,
-      "metadata_json" JSONB,
-      "created_at" TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
-    );
-  `;
-  await sql`CREATE INDEX IF NOT EXISTS "hermes_compute_events_tenant_idx" ON "hermes_compute_usage_events" ("tenant_id");`;
-  await sql`CREATE INDEX IF NOT EXISTS "hermes_compute_events_req_idx" ON "hermes_compute_usage_events" ("request_id");`;
+    // ── Reporte ──────────────────────────────────────────────────────────────
+    console.log('\n📋 Esquema de reuniones / decks:');
+    if (missing.length === 0 && hostIsInteger && hasHostFk) {
+      console.log('  ✅ Al día.');
+    } else {
+      for (const item of missing) console.log(`  ❌ Falta: ${item}`);
+      if (!hostIsInteger) console.log(`  ❌ meetings.host_collaborator_id es "${hostType}" (debe ser integer)`);
+      if (!hasHostFk) console.log(`  ❌ Falta la FK ${HOST_FK}`);
+    }
 
-  // 4. hermes_runpod_endpoints table
-  console.log("📦 Applying hermes_runpod_endpoints DDL...");
-  await sql`
-    CREATE TABLE IF NOT EXISTS "hermes_runpod_endpoints" (
-      "id" VARCHAR(128) PRIMARY KEY NOT NULL,
-      "tenant_id" VARCHAR(128),
-      "endpoint_id" VARCHAR(128) NOT NULL,
-      "endpoint_name" VARCHAR(128) NOT NULL,
-      "model_type" VARCHAR(64) NOT NULL,
-      "gpu_type" VARCHAR(64) DEFAULT 'NVIDIA RTX A4000',
-      "per_second_cost_usd" NUMERIC(10, 6) DEFAULT '0.000350',
-      "status" VARCHAR(32) DEFAULT 'ACTIVE',
-      "created_at" TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
-      CONSTRAINT "hermes_runpod_endpoints_endpoint_id_unique" UNIQUE("endpoint_id")
-    );
-  `;
-  await sql`CREATE UNIQUE INDEX IF NOT EXISTS "hermes_runpod_endpoints_ep_unique" ON "hermes_runpod_endpoints" ("endpoint_id");`;
-  await sql`CREATE INDEX IF NOT EXISTS "hermes_runpod_endpoints_tenant_idx" ON "hermes_runpod_endpoints" ("tenant_id");`;
+    // ── Aplicar solo lo aditivo del dominio reuniones ────────────────────────
+    if (apply && (missing.length > 0 || !hostIsInteger || !hasHostFk)) {
+      console.log('\n🛠️  Aplicando DDL aditivo de reuniones…');
+      await client.query('BEGIN');
+      try {
+        for (const statement of DDL.joinToken) await client.query(statement);
+        for (const statement of DDL.presenterNotes) await client.query(statement);
+        for (const statement of DDL.email) await client.query(statement);
+        for (const statement of DDL.followUp) await client.query(statement);
+        for (const statement of DDL.reminders) await client.query(statement);
+        for (const statement of DDL.dealRoomId) await client.query(statement);
+        for (const statement of DDL.title) await client.query(statement);
+        for (const statement of DDL.dealRoomPresentation) await client.query(statement);
+        for (const statement of DDL.presentationState) await client.query(statement);
+        for (const statement of DDL.presenceSessions) await client.query(statement);
+        for (const statement of DDL.presentations) await client.query(statement);
 
-  console.log("✅ All Hermes Compute & Credit tables migrated successfully!");
+        // 0093/0101: la FK solo se corrige con la tabla vacía. Si hay datos,
+        // se aborta para que un humano decida (nunca convertir a ciegas).
+        if (!hostIsInteger) {
+          const { rows } = await client.query('select count(*)::int as n from meetings');
+          if (rows[0].n > 0) {
+            throw new Error(
+              'meetings.host_collaborator_id no es integer y la tabla tiene filas. ' +
+                'Requiere migración manual (0093/0101).'
+            );
+          }
+          await client.query('ALTER TABLE "meetings" DROP CONSTRAINT IF EXISTS "meetings_host_collaborator_id_users_id_fk"');
+          await client.query('ALTER TABLE "meetings" ALTER COLUMN "host_collaborator_id" DROP NOT NULL');
+          await client.query(
+            `ALTER TABLE "meetings" ALTER COLUMN "host_collaborator_id" TYPE integer USING NULLIF(btrim("host_collaborator_id"), '')::integer`
+          );
+        }
+        if (!hasHostFk) {
+          await client.query(
+            `ALTER TABLE "meetings" ADD CONSTRAINT "${HOST_FK}"
+               FOREIGN KEY ("host_collaborator_id") REFERENCES "nexus_collaborators"("id")`
+          );
+        }
 
-  // 5. Sovereign Meet tables
-  console.log("📦 Applying Sovereign Meet DDL...");
-  await sql`
-    DO $$ BEGIN
-      CREATE TYPE "public"."meeting_status" AS ENUM('scheduled', 'starting', 'live', 'ended', 'cancelled');
-    EXCEPTION
-      WHEN duplicate_object THEN null;
-    END $$;
-  `;
-  await sql`
-    DO $$ BEGIN
-      CREATE TYPE "public"."participant_type" AS ENUM('collaborator', 'external_guest', 'anonymous_guest');
-    EXCEPTION
-      WHEN duplicate_object THEN null;
-    END $$;
-  `;
-  await sql`
-    DO $$ BEGIN
-      CREATE TYPE "public"."participant_role" AS ENUM('host', 'co_host', 'participant', 'guest');
-    EXCEPTION
-      WHEN duplicate_object THEN null;
-    END $$;
-  `;
+        await client.query('COMMIT');
 
-  await sql`
-    CREATE TABLE IF NOT EXISTS "meetings" (
-      "id" TEXT PRIMARY KEY NOT NULL,
-      "canonical_org_id" TEXT NOT NULL,
-      "appointment_id" TEXT,
-      "host_collaborator_id" VARCHAR(255) NOT NULL,
-      "status" "public"."meeting_status" DEFAULT 'scheduled' NOT NULL,
-      "starts_at" TIMESTAMP WITH TIME ZONE,
-      "ends_at" TIMESTAMP WITH TIME ZONE,
-      "started_at" TIMESTAMP WITH TIME ZONE,
-      "ended_at" TIMESTAMP WITH TIME ZONE,
-      "created_at" TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
-      "updated_at" TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
-    );
-  `;
+        // Re-verificar de verdad: no basta con asumir que el DDL funcionó.
+        missing = await missingRequirements(client);
+        hostType = await columnType(client, 'meetings', 'host_collaborator_id');
+        hostIsInteger = hostType === 'integer';
+        hasHostFk = await constraintExists(client, HOST_FK);
+        console.log(
+          missing.length === 0 && hostIsInteger && hasHostFk
+            ? '  ✅ DDL aplicado y re-verificado: al día.'
+            : '  ⚠️ DDL aplicado parcialmente; vuelve a correr sin --apply para ver qué falta.'
+        );
+      } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+      }
+    }
 
-  await sql`
-    CREATE TABLE IF NOT EXISTS "meeting_participants" (
-      "id" TEXT PRIMARY KEY NOT NULL,
-      "meeting_id" TEXT NOT NULL,
-      "identity_id" VARCHAR(255),
-      "participant_type" "public"."participant_type" DEFAULT 'anonymous_guest' NOT NULL,
-      "role" "public"."participant_role" DEFAULT 'guest' NOT NULL,
-      "invited_at" TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-      "joined_at" TIMESTAMP WITH TIME ZONE,
-      "left_at" TIMESTAMP WITH TIME ZONE
-    );
-  `;
-  
-  await sql`
-    DO $$ BEGIN
-      ALTER TABLE "meeting_participants" ADD CONSTRAINT "meeting_participants_meeting_id_fkey" FOREIGN KEY ("meeting_id") REFERENCES "public"."meetings"("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
-    EXCEPTION
-      WHEN duplicate_object THEN null;
-    END $$;
-  `;
-  console.log("✅ Sovereign Meet tables migrated successfully!");
+    // ── Otros módulos: informar, nunca aplicar aquí ──────────────────────────
+    const pendingLater = [];
+    for (const table of LATER_FEATURE_TABLES) {
+      if (!(await tableExists(client, table))) pendingLater.push(table);
+    }
+    if (pendingLater.length > 0) {
+      console.log('\nℹ️  Migraciones de otros módulos NO aplicadas (0095–0100):');
+      console.log(`   ${pendingLater.join(', ')}`);
+      console.log('   Este script no las toca. Si esos módulos se van a desplegar, correr su migración.');
+    }
 
-  // Verify
-  const tables = await sql`
-    SELECT table_name FROM information_schema.tables 
-    WHERE table_schema = 'public' 
-      AND table_name IN ('nexus_collaborators', 'hermes_tenant_credits', 'hermes_compute_usage_events', 'hermes_runpod_endpoints');
-  `;
-
-  console.log("🎉 [Pandoras Migration Runner] Verified table existence:");
-  for (const t of tables) {
-    console.log(`  - ${t.table_name} (ONLINE)`);
+    const stillMissing = (missing.length > 0 || !hostIsInteger || !hasHostFk) && !apply;
+    if (stillMissing) {
+      console.log('\n👉 Ejecuta con --apply para crear lo aditivo del dominio de reuniones.');
+      process.exitCode = 1;
+    } else {
+      console.log('\n✅ Dominio de reuniones verificado.');
+    }
+  } finally {
+    await client.end();
   }
 }
 
-async function runAll() {
-  for (const url of dbUrls) {
-    await migrateDatabase(url);
-  }
-}
-
-runAll()
-  .then(() => {
-    console.log("\n🏁 All configured databases migrated cleanly.");
-    process.exit(0);
-  })
-  .catch((err) => {
-    console.error("❌ Migration error:", err);
-    process.exit(1);
-  });
-
+main().catch((error) => {
+  console.error('\n❌ Error:', error.message);
+  process.exit(1);
+});

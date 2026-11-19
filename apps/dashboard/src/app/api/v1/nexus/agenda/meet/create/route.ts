@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkNexusPermission, getNexusAuthContext } from '@saasfly/shared';
 import { AgendaCore } from '@saasfly/agenda-sdk';
-import { isKnownPresentation } from '@/lib/nexus/presentations-catalog';
+import { findPresentation, isKnownPresentation } from '@/lib/nexus/presentations-catalog';
 import { defaultAppBaseUrl, sendMeetingInvites } from '@/lib/nexus/meeting-invites';
 
 export const runtime = 'nodejs';
@@ -23,6 +23,7 @@ export const dynamic = 'force-dynamic';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_PARTICIPANTS = 20;
+const MAX_TITLE_LENGTH = 160;
 const MIN_DURATION_MINUTES = 15;
 const MAX_DURATION_MINUTES = 240;
 const DEFAULT_DURATION_MINUTES = 30;
@@ -78,14 +79,32 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Tipo de sesión: con deck (presentación) o externa (sin deal ni deck).
+  const kind = body.kind === 'external' ? 'external' : 'presentation';
+
+  const rawTitle = typeof body.title === 'string' ? body.title.trim() : '';
+  if (rawTitle.length > MAX_TITLE_LENGTH) {
+    return fail(400, 'TITLE_TOO_LONG', `El asunto no puede exceder ${MAX_TITLE_LENGTH} caracteres.`);
+  }
+  if (kind === 'external' && !rawTitle) {
+    return fail(400, 'TITLE_REQUIRED', 'Una reunión externa necesita un asunto.');
+  }
+
   let presentationId: string | null = null;
-  if (body.presentationId !== undefined && body.presentationId !== null && body.presentationId !== '') {
+  if (kind === 'presentation' && body.presentationId !== undefined && body.presentationId !== null && body.presentationId !== '') {
     const candidate = String(body.presentationId).trim();
     if (!isKnownPresentation(candidate)) {
       return fail(400, 'INVALID_PRESENTATION_ID', 'presentationId no existe en el catálogo de presentaciones.');
     }
     presentationId = candidate;
   }
+
+  // Las externas no llevan deck aunque el cliente mande uno por error.
+  if (kind === 'external') presentationId = null;
+
+  // Asunto: el libre manda; si es presentación y no hay asunto, se usa el del deck.
+  const deckTitle = presentationId ? findPresentation(presentationId)?.title ?? null : null;
+  const title = rawTitle || deckTitle;
 
   const rawParticipants = Array.isArray(body.participants) ? body.participants : [];
   if (rawParticipants.length > MAX_PARTICIPANTS) {
@@ -120,6 +139,7 @@ export async function POST(req: NextRequest) {
       canonicalOrgId,
       hostCollaboratorId,
       presentationId,
+      title,
       scheduledFor: startsAt,
       durationMinutes,
       participants: emails.map((email) => ({ email })),
@@ -143,7 +163,7 @@ export async function POST(req: NextRequest) {
         joinToken: joinTokenByEmail.get(email) ?? null,
       })),
       baseUrl,
-      counterparty: auth.name || 'Sovereign Meet',
+      counterparty: title || auth.name || 'Sovereign Meet',
       dealRoomUrl: null,
     });
 
@@ -156,6 +176,8 @@ export async function POST(req: NextRequest) {
           scheduledFor: meeting.scheduledFor,
           endsAt: meeting.endsAt,
           presentationId,
+          title,
+          kind,
           joinUrl: `${baseUrl}/meet/${meeting.id}`,
           agendaUrl: '/nexus/agenda',
         },

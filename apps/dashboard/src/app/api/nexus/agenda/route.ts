@@ -55,6 +55,7 @@ export async function GET(request: Request) {
         endsAt: meetings.endsAt,
         status: meetings.status,
         presentationId: meetings.presentationId,
+        title: meetings.title,
         dealRoomId: meetings.dealRoomId,
       })
       .from(meetings)
@@ -88,6 +89,7 @@ export async function GET(request: Request) {
               endsAt: meetings.endsAt,
               status: meetings.status,
               presentationId: meetings.presentationId,
+              title: meetings.title,
               dealRoomId: meetings.dealRoomId,
             })
             .from(meetings)
@@ -172,6 +174,7 @@ export async function GET(request: Request) {
         endsAt: row.endsAt,
         status: row.status,
         presentationId: row.presentationId,
+        title: row.title,
         hasDealRoom: Boolean(row.dealRoomId),
         role: isHost ? "host" : "participant",
         // El participante entra con SU token (?p=) para que la asistencia se

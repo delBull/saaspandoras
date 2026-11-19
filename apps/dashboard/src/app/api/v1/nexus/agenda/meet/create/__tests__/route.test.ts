@@ -121,6 +121,56 @@ describe("🗓️ Agenda Soberana — crear presentación (/api/v1/nexus/agenda/
     expect(inviteCalls[0].recipients[0].joinToken).toBe(`tok0`.padEnd(32, "0"));
   });
 
+  it("AGD-06: una reunión externa exige asunto y no toca el deal/room", async () => {
+    const res = await POST(req({ kind: "external", scheduledFor: futureIso() }));
+
+    expect(res.status).toBe(400);
+    expect((await res.json()).code).toBe("TITLE_REQUIRED");
+    expect(createCalls).toHaveLength(0);
+  });
+
+  it("AGD-07: crea una reunión externa sin deck, con título propio e invitaciones", async () => {
+    const res = await POST(
+      req({
+        kind: "external",
+        title: "Llamada con proveedor",
+        scheduledFor: futureIso(),
+        durationMinutes: 30,
+        participants: ["proveedor@example.com"],
+      })
+    );
+
+    expect(res.status).toBe(201);
+    const data = await res.json();
+
+    expect(createCalls[0]).toMatchObject({
+      canonicalOrgId: "pandoras",
+      hostCollaboratorId: 7,
+      title: "Llamada con proveedor",
+      presentationId: null,
+    });
+    expect(data.meeting.title).toBe("Llamada con proveedor");
+    expect(data.meeting.presentationId).toBeNull();
+    expect(data.meeting.kind).toBe("external");
+    expect(inviteCalls[0].deckSlug).toBeNull();
+    expect(inviteCalls[0].counterparty).toBe("Llamada con proveedor");
+  });
+
+  it("AGD-08: una externa ignora un presentationId enviado por error", async () => {
+    const res = await POST(
+      req({
+        kind: "external",
+        title: "Revisión interna",
+        presentationId: "celeste",
+        scheduledFor: futureIso(),
+      })
+    );
+
+    expect(res.status).toBe(201);
+    expect(createCalls[0].presentationId).toBeNull();
+    expect(createCalls[0].title).toBe("Revisión interna");
+  });
+
   it("AGD-05: falla cerrado si la sesión no tiene colaborador", async () => {
     mockAuth.collaboratorId = null;
 

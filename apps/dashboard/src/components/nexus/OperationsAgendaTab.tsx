@@ -12,6 +12,7 @@ interface AgendaMeeting {
   endsAt: string | null;
   status: string;
   presentationId: string | null;
+  title: string | null;
   hasDealRoom: boolean;
   role: "host" | "participant";
   joinPath: string;
@@ -200,6 +201,9 @@ export function OperationsAgendaTab() {
                           </span>
                         )}
                       </div>
+                      {meeting.title && (
+                        <p className="text-sm text-zinc-100 truncate mb-0.5">{meeting.title}</p>
+                      )}
                       <p className="text-xs text-zinc-200">
                         {start
                           ? `${start.toLocaleString("es-MX", { dateStyle: "medium", timeStyle: "short" })}${end ? ` → ${end.toLocaleTimeString("es-MX", { timeStyle: "short" })}` : ""}`
@@ -212,7 +216,7 @@ export function OperationsAgendaTab() {
                       {(isLive || meeting.status === "scheduled") && (
                         <MeetingShareButton
                           meetingId={meeting.id}
-                          title={deck?.title ?? "Pandora's · Sovereign Meet"}
+                          title={meeting.title ?? deck?.title ?? "Pandora's · Sovereign Meet"}
                           startsAt={start}
                           endsAt={end}
                         />

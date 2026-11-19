@@ -53,6 +53,7 @@ export function SovereignMeetClient({ joinRef, previewLobby = false }: Sovereign
     const [meetingId, setMeetingId] = useState<string | null>(null);
     const [displayName, setDisplayName] = useState<string | null>(null);
     const [scheduledFor, setScheduledFor] = useState<string | null>(null);
+    const [meetingTitle, setMeetingTitle] = useState<string | null>(null);
 
     /**
      * Sede del anfitrión/deck para dibujar la ruta. Celeste está en Huatulco;
@@ -100,6 +101,9 @@ export function SovereignMeetClient({ joinRef, previewLobby = false }: Sovereign
                 }
                 if (typeof data.scheduledFor === "string" && data.scheduledFor.trim()) {
                     setScheduledFor(data.scheduledFor);
+                }
+                if (typeof data.title === "string" && data.title.trim()) {
+                    setMeetingTitle(data.title.trim());
                 }
             } catch (err: any) {
                 setError(err.message);
@@ -241,6 +245,7 @@ export function SovereignMeetClient({ joinRef, previewLobby = false }: Sovereign
         previewLobby,
     });
     const deck = findPresentation(presentationId);
+    const sessionTitle = deck?.title ?? meetingTitle ?? "Sesión privada";
 
     if (waitingForHost) {
         const destination = DECK_ORIGINS[presentationId ?? ""] ?? { lat: 19.4326, lon: -99.1332 };
@@ -270,7 +275,7 @@ export function SovereignMeetClient({ joinRef, previewLobby = false }: Sovereign
                             Pandora&apos;s · Sovereign Meet
                         </p>
                         <h1 className="mt-6 max-w-xl text-5xl font-extrabold leading-[1.05] tracking-tight text-white">
-                            {deck?.title ?? "Sesión privada"}
+                            {sessionTitle}
                         </h1>
                         {deck?.subtitle && (
                             <p className="mt-4 max-w-lg text-base leading-relaxed text-zinc-400">{deck.subtitle}</p>
@@ -305,7 +310,7 @@ export function SovereignMeetClient({ joinRef, previewLobby = false }: Sovereign
                                     Sala de espera
                                 </p>
                                 <p className="mt-1 text-sm font-semibold text-white sm:hidden">
-                                    {deck?.title ?? "Sesión privada"}
+                                    {sessionTitle}
                                 </p>
                             </div>
                             <span
@@ -322,7 +327,7 @@ export function SovereignMeetClient({ joinRef, previewLobby = false }: Sovereign
 
                         <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] p-4 space-y-2">
                             <p className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">Sesión</p>
-                            <p className="text-sm text-zinc-200">{deck?.title ?? "Sesión privada"}</p>
+                            <p className="text-sm text-zinc-200">{sessionTitle}</p>
                             {scheduledFor && (
                                 <>
                                     <p className="pt-2 text-[10px] font-mono uppercase tracking-widest text-zinc-500">Cuándo</p>
@@ -392,6 +397,7 @@ export function SovereignMeetClient({ joinRef, previewLobby = false }: Sovereign
             appId={appId}
             presentationId={presentationId}
             scheduledFor={scheduledFor}
+            meetingTitle={meetingTitle}
         />
     );
 }

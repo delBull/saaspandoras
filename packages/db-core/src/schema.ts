@@ -1638,6 +1638,8 @@ export const meetings = pgTable("meetings", {
   
   jitsiRoomId: text("jitsi_room_id"), // Sovereign Jitsi Meet ID
   presentationId: text("presentation_id"), // slug del deck (p. ej. "celeste")
+  // Asunto de la reunión. Presentaciones: título del deck. Externas: título libre.
+  title: text("title"),
 
   
   status: meetingStatusEnum("status").default("scheduled").notNull(),

@@ -15,6 +15,7 @@ interface SovereignMeetRoomProps {
     appId: string;
     presentationId?: string | null;
     scheduledFor?: string | null;
+    meetingTitle?: string | null;
 }
 
 // Toolbar buttons for desktop (full feature set)
@@ -68,7 +69,8 @@ export function SovereignMeetRoom({
     jwt,
     appId,
     presentationId,
-    scheduledFor
+    scheduledFor,
+    meetingTitle
 }: SovereignMeetRoomProps) {
     const [loading, setLoading] = useState(true);
     const [frameError, setFrameError] = useState<string | null>(null);
@@ -146,7 +148,7 @@ export function SovereignMeetRoom({
             minutes: block.minutes,
         }));
     const guardrails = deckMeta?.guardrails ?? catalogPresentation?.guardrails ?? [];
-    const deckTitle = deckMeta?.title ?? catalogPresentation?.title ?? "Presentación";
+    const deckTitle = deckMeta?.title ?? catalogPresentation?.title ?? meetingTitle ?? "Presentación";
     const currentBlock = scriptBlocks[deckState.slide];
 
     // Aviso "esperando al anfitrión" para invitados. Sondeo ligero; no bloquea la sala.
@@ -657,7 +659,7 @@ export function SovereignMeetRoom({
                                 // (que incluye su joinRef personal).
                                 const shareUrl = `${window.location.origin}${shortMeetingPath(meetingId)}`;
                                 const outcome = await shareOrCopyMeeting({
-                                    title: deckMeta?.title ?? "Pandora's · Sovereign Meet",
+                                    title: deckMeta?.title ?? meetingTitle ?? "Pandora's · Sovereign Meet",
                                     startsAt: scheduledFor ?? null,
                                     endsAt: null,
                                     url: shareUrl,

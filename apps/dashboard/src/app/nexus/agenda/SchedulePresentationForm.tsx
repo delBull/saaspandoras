@@ -12,6 +12,7 @@ interface CreateResult {
   scheduledFor: string;
   endsAt: string | null;
   presentationId: string | null;
+  title: string | null;
   invites: { sent: number; failed: number; errors: string[] };
 }
 
@@ -23,6 +24,8 @@ const ERROR_MESSAGES: Record<string, string> = {
   SCHEDULED_FOR_IN_PAST: "La fecha ya pasó.",
   INVALID_DURATION: "La duración debe estar entre 15 y 240 minutos.",
   INVALID_PRESENTATION_ID: "Ese deck no existe en el catálogo.",
+  TITLE_REQUIRED: "Escribe un asunto para la reunión externa.",
+  TITLE_TOO_LONG: "El asunto es demasiado largo (máx. 160 caracteres).",
   INVALID_PARTICIPANT_EMAIL: "Hay emails inválidos en la lista.",
   TOO_MANY_PARTICIPANTS: "Máximo 20 participantes.",
   MEETING_CREATION_FAILED: "No se pudo crear la reunión en el servidor.",
@@ -46,11 +49,15 @@ interface SchedulePresentationFormProps {
   initialOpen?: boolean;
 }
 
+type SessionKind = "presentation" | "external";
+
 export function SchedulePresentationForm({ initialDeck, initialOpen = false }: SchedulePresentationFormProps = {}) {
   const router = useRouter();
   const defaultDeck = initialDeck ?? "celeste";
   const [open, setOpen] = useState(initialOpen);
-  const [scheduledFor, setScheduledFor] = useState(defaultStart);
+  const [kind, setKind] = useState<SessionKind>("presentation");
+  const [title, setTitle] = useState("");
+  const [scheduledFor, setScheduledFor] = useState(defaultStart());
   const [durationMinutes, setDurationMinutes] = useState(30);
   const [presentationId, setPresentationId] = useState(defaultDeck);
   const [participants, setParticipants] = useState("");
@@ -67,6 +74,7 @@ export function SchedulePresentationForm({ initialDeck, initialOpen = false }: S
     setScheduledFor(defaultStart());
     setDurationMinutes(30);
     setPresentationId(defaultDeck);
+    setTitle("");
     setCopied(false);
   };
 
@@ -83,6 +91,12 @@ export function SchedulePresentationForm({ initialDeck, initialOpen = false }: S
       return;
     }
 
+    if (kind === "external" && !title.trim()) {
+      setError(ERROR_MESSAGES.TITLE_REQUIRED ?? "Escribe un asunto.");
+      setPending(false);
+      return;
+    }
+
     const emails = participants
       .split(/[\s,;]+/)
       .map((value) => value.trim())
@@ -94,9 +108,11 @@ export function SchedulePresentationForm({ initialDeck, initialOpen = false }: S
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
+          kind,
           scheduledFor: startsAt.toISOString(),
           durationMinutes,
-          ...(presentationId ? { presentationId } : {}),
+          ...(kind === "presentation" && presentationId ? { presentationId } : {}),
+          ...(kind === "external" ? { title: title.trim() } : {}),
           participants: emails,
         }),
       });
@@ -114,6 +130,7 @@ export function SchedulePresentationForm({ initialDeck, initialOpen = false }: S
         scheduledFor: data.meeting.scheduledFor,
         endsAt: data.meeting.endsAt ?? null,
         presentationId: data.meeting.presentationId ?? null,
+        title: data.meeting.title ?? null,
         invites: data.invites ?? { sent: 0, failed: 0, errors: [] },
       });
       router.refresh();
@@ -129,7 +146,7 @@ export function SchedulePresentationForm({ initialDeck, initialOpen = false }: S
     if (!result) return;
     const deck = NEXUS_PRESENTATIONS.find((item) => item.slug === result.presentationId);
     const outcome = await shareOrCopyMeeting({
-      title: deck?.title ?? "Pandora's · Sovereign Meet",
+      title: result.title ?? deck?.title ?? "Pandora's · Sovereign Meet",
       startsAt: result.scheduledFor,
       endsAt: result.endsAt,
       url: `${window.location.origin}${shortMeetingPath(result.meetingId)}`,
@@ -147,7 +164,7 @@ export function SchedulePresentationForm({ initialDeck, initialOpen = false }: S
         className="inline-flex items-center justify-center gap-2 px-5 py-2.5 border border-lime-500/40 bg-lime-500/10 hover:bg-lime-500/20 text-lime-300 rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition-all"
       >
         <CalendarPlus size={16} />
-        <span>Agendar presentación</span>
+        <span>Agendar sesión</span>
       </button>
 
       {open && (
@@ -187,24 +204,68 @@ export function SchedulePresentationForm({ initialDeck, initialOpen = false }: S
           ) : (
             <>
               <div className="flex items-center justify-between">
-                <p className="text-[10px] font-mono uppercase tracking-widest text-zinc-400">Nueva presentación</p>
+                <p className="text-[10px] font-mono uppercase tracking-widest text-zinc-400">Nueva sesión</p>
                 <button type="button" onClick={reset} className="text-zinc-500 hover:text-white">
                   <X className="w-4 h-4" />
                 </button>
               </div>
 
-              <label className="block text-[11px] font-mono text-zinc-500 space-y-1">
-                <span>Deck</span>
-                <select
-                  value={presentationId}
-                  onChange={(e) => setPresentationId(e.target.value)}
-                  className="w-full rounded-lg bg-black/50 border border-white/10 px-2 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-lime-500/50"
-                >
-                  {NEXUS_PRESENTATIONS.map((deck) => (
-                    <option key={deck.slug} value={deck.slug}>{deck.title}</option>
-                  ))}
-                </select>
-              </label>
+              {/* Tipo de sesión: el deck es opcional; externa = sin deal ni deck. */}
+              <div className="grid grid-cols-2 gap-1 rounded-lg border border-white/10 bg-black/40 p-1">
+                {(
+                  [
+                    { id: "presentation" as const, label: "Presentación" },
+                    { id: "external" as const, label: "Externa" },
+                  ]
+                ).map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => {
+                      setKind(option.id);
+                      setError(null);
+                    }}
+                    className={`rounded-md px-2 py-1.5 text-[11px] font-mono uppercase tracking-wider transition-colors ${
+                      kind === option.id
+                        ? "bg-lime-500/15 text-lime-200 border border-lime-500/30"
+                        : "text-zinc-500 hover:text-zinc-300 border border-transparent"
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+
+              {kind === "external" ? (
+                <label className="block text-[11px] font-mono text-zinc-500 space-y-1">
+                  <span>Asunto</span>
+                  <input
+                    type="text"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    maxLength={160}
+                    required
+                    placeholder="Llamada con proveedor, revisión interna…"
+                    className="w-full rounded-lg bg-black/50 border border-white/10 px-2 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-lime-500/50"
+                  />
+                  <span className="text-[10px] text-zinc-600">
+                    Sin Deal Room ni deck. Se crea solo la sala y se invita por email.
+                  </span>
+                </label>
+              ) : (
+                <label className="block text-[11px] font-mono text-zinc-500 space-y-1">
+                  <span>Deck</span>
+                  <select
+                    value={presentationId}
+                    onChange={(e) => setPresentationId(e.target.value)}
+                    className="w-full rounded-lg bg-black/50 border border-white/10 px-2 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-lime-500/50"
+                  >
+                    {NEXUS_PRESENTATIONS.map((deck) => (
+                      <option key={deck.slug} value={deck.slug}>{deck.title}</option>
+                    ))}
+                  </select>
+                </label>
+              )}
 
               <div className="grid grid-cols-2 gap-2">
                 <label className="block text-[11px] font-mono text-zinc-500 space-y-1">
@@ -255,7 +316,7 @@ export function SchedulePresentationForm({ initialDeck, initialOpen = false }: S
                 className="w-full px-3 py-2 rounded-lg border border-lime-500/30 bg-lime-500/15 hover:bg-lime-500/25 disabled:opacity-50 text-lime-200 text-xs font-mono flex items-center justify-center gap-2"
               >
                 {pending ? <Loader2 className="w-4 h-4 animate-spin" /> : <CalendarPlus className="w-4 h-4" />}
-                {pending ? "Agendando..." : "Crear reunión"}
+                {pending ? "Agendando..." : kind === "external" ? "Crear reunión externa" : "Crear presentación"}
               </button>
             </>
           )}

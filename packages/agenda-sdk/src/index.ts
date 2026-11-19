@@ -13,6 +13,12 @@ export interface CreateMeetingRequest {
     
     /** Optional presentation or resource linked to this meeting */
     presentationId?: string | null;
+
+    /**
+     * Asunto de la reunión. Para presentaciones se usa el título del deck; para
+     * reuniones externas (sin deal ni deck) es un título libre.
+     */
+    title?: string | null;
     
     /** Scheduled start time, defaults to now if omitted */
     scheduledFor?: string | Date;
@@ -54,7 +60,7 @@ export class AgendaCore {
      * Creates a new Meeting and its participants in the database.
      */
     static async createMeeting(req: CreateMeetingRequest) {
-        const { canonicalOrgId, hostCollaboratorId, presentationId, scheduledFor, durationMinutes, collaborators, participants, appointmentId, status } = req;
+        const { canonicalOrgId, hostCollaboratorId, presentationId, title, scheduledFor, durationMinutes, collaborators, participants, appointmentId, status } = req;
         
         if (!canonicalOrgId) {
             throw new Error("[AgendaCore] canonicalOrgId is required to maintain tenant boundaries.");
@@ -76,6 +82,7 @@ export class AgendaCore {
             hostCollaboratorId: hostCollaboratorId || null,
             jitsiRoomId,
             presentationId: presentationId || null,
+            title: title?.trim() || null,
             appointmentId: appointmentId || null,
             status: status ?? 'scheduled',
             startsAt,

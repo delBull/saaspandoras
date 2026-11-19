@@ -162,6 +162,8 @@ export async function POST(
       canonicalOrgId,
       hostCollaboratorId,
       presentationId,
+      // Asunto visible en la agenda: el deal manda (nunca el cliente).
+      title: room.company || room.counterparty || room.title || null,
       scheduledFor: startsAt,
       durationMinutes,
       participants: participantEmails.map((email) => ({ email })),
