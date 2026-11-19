@@ -11,7 +11,8 @@ const MEET_JOIN_SECRET = process.env.MEET_JOIN_SECRET;
 
 interface JoinRefPayload {
   meetingId: string;
-  collaboratorId: string;
+  /** El host firma un id numérico; el invitado firma 'guest:<meetingId>'. */
+  collaboratorId: string | number;
   orgId: string;
 }
 
@@ -51,7 +52,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { meetingId, collaboratorId, orgId } = joinPayload;
+    const { meetingId, orgId } = joinPayload;
+    // Normalizamos aquí: el rol de host firma con un id numérico y más abajo se usan
+    // métodos de string (.startsWith/.substring). Sin esto, entrar como host daba 500.
+    const collaboratorId = String(joinPayload.collaboratorId);
 
     // --- 2. Fetch meeting with tenant boundary check ---
     const [meeting] = await db

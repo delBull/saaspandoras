@@ -12,6 +12,15 @@ app.use(express.json());
 const PORT = process.env.PORT || 3000;
 const DEPLOY_SECRET = process.env.DEPLOY_SECRET;
 
+/**
+ * RUN_ONCE=1 (o `--once`): procesa los jobs pendientes y sale.
+ *
+ * Pensado para Railway Cron: el servicio deja de estar residente (hoy consume ~0.87 GB
+ * de RAM en idle) y solo se paga el tiempo de ejecución. El lock CAS por `status='pending'`
+ * hace que dos instancias simultáneas no procesen el mismo job.
+ */
+const RUN_ONCE = process.env.RUN_ONCE === '1' || process.argv.includes('--once');
+
 if (!DEPLOY_SECRET || DEPLOY_SECRET.trim() === "") {
     console.warn("⚠️ [SECURITY WARNING] DEPLOY_SECRET is not configured or empty.");
 }
@@ -201,10 +210,34 @@ async function cleanupZombies() {
     }
 }
 
-// Start periodic cleanup
-setInterval(() => {
-    cleanupZombies().catch(err => console.error("Cleanup error:", err));
-}, 5 * 60 * 1000);
+// Start periodic cleanup (solo en modo servidor; el cron limpia al arrancar)
+if (!RUN_ONCE) {
+    setInterval(() => {
+        cleanupZombies().catch(err => console.error("Cleanup error:", err));
+    }, 5 * 60 * 1000);
+}
+
+/**
+ * Modo cron: limpia zombies, toma hasta `limit` jobs pendientes y los procesa en serie.
+ * Devuelve cuántos procesó para que el log/exit code lo refleje.
+ */
+async function drainQueueOnce(limit = 5): Promise<number> {
+    await cleanupZombies();
+
+    // `db as any`: el servicio importa drizzle desde dos copias (packages/db y db-core);
+    // el resto del archivo ya resuelve las queries con casts. El lock CAS sigue siendo la garantía.
+    const pending = (await (db as any)
+        .select({ id: schema.deploymentJobs.id })
+        .from(schema.deploymentJobs)
+        .where(eq(schema.deploymentJobs.status as any, 'pending' as any))
+        .limit(limit)) as Array<{ id: number | string }>;
+
+    for (const job of pending) {
+        await runDeploymentJob(String(job.id));
+    }
+
+    return pending.length;
+}
 
 app.post("/deploy/process-job", async (req, res) => {
 
@@ -238,6 +271,18 @@ app.post("/deploy/nft-pass", async (req, res) => {
     }
 });
 
-app.listen(PORT, () => {
-    console.log(`🚀 Deployment Service (Async Worker) running on port ${PORT}`);
-});
+if (RUN_ONCE) {
+    drainQueueOnce()
+        .then((count) => {
+            console.log(JSON.stringify({ timestamp: new Date().toISOString(), event: 'RUN_ONCE_DONE', processed: count }));
+            process.exit(0);
+        })
+        .catch((err) => {
+            console.error('RUN_ONCE failed:', err);
+            process.exit(1);
+        });
+} else {
+    app.listen(PORT, () => {
+        console.log(`🚀 Deployment Service (Async Worker) running on port ${PORT}`);
+    });
+}

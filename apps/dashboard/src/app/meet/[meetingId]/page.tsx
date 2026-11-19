@@ -103,7 +103,7 @@ export default async function MeetPage({
         : participantIdentity || "guest@pandoras.finance";
 
     const joinRef = jwt.sign(
-        { meetingId, collaboratorId, orgId, name, email },
+        { meetingId, collaboratorId: String(collaboratorId), orgId, name, email },
         MEET_JOIN_SECRET,
         { algorithm: "HS256", expiresIn: "15m" }
     );

@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     // Generate the JWT token (joinRef)
     const joinPayload = {
       meetingId: meeting.id,
-      collaboratorId: collaboratorId,
+      collaboratorId: String(collaboratorId),
       orgId: orgId,
     };
 
