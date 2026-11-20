@@ -5223,6 +5223,48 @@ export const nexusTasks = pgTable('nexus_tasks', {
 export type NexusTask = typeof nexusTasks.$inferSelect;
 export type NewNexusTask = typeof nexusTasks.$inferInsert;
 
+/**
+ * Registro de Activos IP (Operations Hub · OPS REGISTER).
+ *
+ * Tenant-scoped por `canonical_org_id` (nunca por input del cliente). El estado y el
+ * riesgo son `varchar` a propósito: evita ENUMs globales difíciles de revertir.
+ * El borrado es lógico (`archived_at`); no hay DELETE desde la UI.
+ */
+export const nexusIpAssets = pgTable('nexus_ip_assets', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  canonicalOrgId: varchar('canonical_org_id', { length: 256 }).notNull(),
+  name: text('name').notNull(),
+  category: varchar('category', { length: 64 }).notNull().default('Marca Denominativa'),
+  classes: varchar('classes', { length: 128 }),
+  jurisdiction: varchar('jurisdiction', { length: 64 }).default('IMPI (México)'),
+  status: varchar('status', { length: 24 }).notNull().default('PLANNED'),
+  priority: varchar('priority', { length: 16 }).default('MEDIUM'),
+  risk: varchar('risk', { length: 16 }).default('LOW'),
+  riskNotes: text('risk_notes'),
+  registryRef: varchar('registry_ref', { length: 128 }),
+  filedAt: timestamp('filed_at', { withTimezone: true }),
+  grantedAt: timestamp('granted_at', { withTimezone: true }),
+  nextAction: text('next_action'),
+  nextActionAt: timestamp('next_action_at', { withTimezone: true }),
+  ownerCollaboratorId: integer('owner_collaborator_id').references(() => nexusCollaborators.id, {
+    onDelete: 'set null',
+  }),
+  createdBy: integer('created_by').references(() => nexusCollaborators.id, { onDelete: 'set null' }),
+  metadata: jsonb('metadata').$type<Record<string, unknown>>().notNull().default({}),
+  archivedAt: timestamp('archived_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => {
+  return {
+    orgStatusIdx: index('idx_nexus_ip_assets_org_status').on(t.canonicalOrgId, t.status),
+    orgCategoryIdx: index('idx_nexus_ip_assets_org_category').on(t.canonicalOrgId, t.category),
+    orgArchivedIdx: index('idx_nexus_ip_assets_org_archived').on(t.canonicalOrgId, t.archivedAt),
+  };
+});
+
+export type NexusIpAsset = typeof nexusIpAssets.$inferSelect;
+export type NewNexusIpAsset = typeof nexusIpAssets.$inferInsert;
+
 export const nexusTaskComments = pgTable('nexus_task_comments', {
   id: uuid('id').defaultRandom().primaryKey(),
   taskId: uuid('task_id').notNull().references(() => nexusTasks.id, { onDelete: 'cascade' }),

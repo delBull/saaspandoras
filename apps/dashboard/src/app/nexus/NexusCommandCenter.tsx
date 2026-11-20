@@ -7,12 +7,11 @@ import type { NexusAuthContext } from "@saasfly/shared";
 import { HermesFloatingGuide } from "@/components/guides/HermesFloatingGuide";
 import type { EcosystemStation, EcosystemTourRole } from "@/lib/guides/ecosystem-guides.data";
 import TasksPanel from "@/components/nexus/TasksPanel";
-import { OperationsHubModal, type Tab } from "@/components/nexus/OperationsHubModal";
+import { OperationsHubModal, OPS_TAB_SLUGS, type Tab } from "@/components/nexus/OperationsHubModal";
 import type { NexusBroadcastItem } from "@/components/nexus/NexusCentralNotificationModal";
 import { NexusCentralNotificationModal } from "@/components/nexus/NexusCentralNotificationModal";
 import NexusSettingsPage from "./settings/SettingsClient";
 import type { TaskItem } from "@/components/nexus/taskTypes";
-import { INITIAL_TASKS } from "@/components/nexus/taskTypes";
 import {
   NEXUS_TOKEN_STORAGE_KEY,
   exchangeNexusSession,
@@ -27,6 +26,7 @@ import { NexusCommandPalette } from "@/components/nexus/shell/NexusCommandPalett
 import { NexusHeader } from "@/components/nexus/shell/NexusHeader";
 import { NexusWorkspace } from "@/components/nexus/shell/NexusWorkspace";
 import { NexusContextBar } from "@/components/nexus/shell/NexusContextBar";
+import { getNexusClientHeaders } from "@/lib/nexus/client-auth-headers";
 import { NexusSidebar } from "@/components/nexus/shell/NexusSidebar";
 import { PresenceDock } from "@/components/nexus/presence-dock";
 import { HermesAmbientDrawer } from "@/components/hermes-portal/HermesAmbientDrawer";
@@ -37,9 +37,12 @@ interface NexusCommandCenterProps {
   initialRole?: string;
   iframeToken?: string;
   token?: string;
+  /** Ruta /nexus/ops: el Operations Hub ocupa la pantalla completa. */
+  opsRoute?: boolean;
+  initialOpsTab?: Tab;
 }
 
-export function NexusCommandCenter({ auth, initialTour, initialRole: _initialRole, iframeToken: _iframeToken, token }: NexusCommandCenterProps) {
+export function NexusCommandCenter({ auth, initialTour, initialRole: _initialRole, iframeToken: _iframeToken, token, opsRoute = false, initialOpsTab }: NexusCommandCenterProps) {
   const activeThirdwebWallet = useActiveWallet();
   const { disconnect: disconnectWallet } = useDisconnect();
 
@@ -48,12 +51,43 @@ export function NexusCommandCenter({ auth, initialTour, initialRole: _initialRol
   const [isTourOpen, setIsTourOpen] = useState(isFirstVisitParam);
   const [showGuideSidebar, setShowGuideSidebar] = useState<boolean | null>(null);
   const [showWelcomePanel, setShowWelcomePanel] = useState(false);
-  const [isOpsModalOpen, setIsOpsModalOpen] = useState(false);
+  const [isOpsModalOpen, setIsOpsModalOpen] = useState(opsRoute);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isHermesAmbientOpen, setIsHermesAmbientOpen] = useState(false);
   const [isUnifiedIndexOpen, setIsUnifiedIndexOpen] = useState(false);
   const sidebarOpen = showGuideSidebar === true;
-  const [opsActiveTab, setOpsActiveTab] = useState<Tab>('WORK_ENGINE');
+  const [opsActiveTab, setOpsActiveTab] = useState<Tab>(initialOpsTab ?? 'WORK_ENGINE');
+
+
+
+  /**
+   * En /nexus/ops el tab vive en la URL: se puede refrescar, compartir y el
+   * botón atrás funciona. En modo modal (home) no se toca la URL.
+   */
+  /** Dominios que viven en su propia página (no en un tab del hub). */
+  const DOMAIN_ROUTES: Record<string, string> = {
+    AGENDA: "/nexus/agenda",
+    DATAROOM: "/nexus/rooms",
+  };
+
+  const runAction = (action: string) => {
+    const route = DOMAIN_ROUTES[action];
+    if (route) {
+      window.location.href = route;
+      return;
+    }
+    // El hub ya no es un modal: cada tab tiene URL propia.
+    const slug = OPS_TAB_SLUGS[action as Tab];
+    window.location.href = slug ? `/nexus/ops?tab=${slug}` : "/nexus/ops";
+  };
+
+  const changeOpsTab = (tab: Tab) => {
+    setOpsActiveTab(tab);
+    if (!opsRoute || typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    url.searchParams.set("tab", OPS_TAB_SLUGS[tab]);
+    window.history.replaceState(null, "", url);
+  };
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -75,19 +109,8 @@ export function NexusCommandCenter({ auth, initialTour, initialRole: _initialRol
     };
   }, [token]);
 
-  const [tasks, setTasks] = useState<TaskItem[]>(() => {
-    if (typeof window === "undefined") return INITIAL_TASKS;
-    try {
-      const stored = localStorage.getItem("pandoras_ip_tasks_30d");
-      if (stored) {
-        const parsed = JSON.parse(stored) as unknown;
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed as TaskItem[];
-      }
-    } catch {
-      // ignore parse error
-    }
-    return INITIAL_TASKS;
-  });
+  // Fuente única: `nexus_tasks` vía /api/nexus/tasks. Sin seeds ni localStorage.
+  const [tasks, setTasks] = useState<TaskItem[]>([]);
 
   const handleToggleTask = async (taskId: string) => {
     const targetTask = tasks.find((t) => t.id === taskId);
@@ -99,21 +122,22 @@ export function NexusCommandCenter({ auth, initialTour, initialRole: _initialRol
     );
 
     try {
-      const storedToken = typeof window !== 'undefined' ? (localStorage.getItem('pandoras_nexus_token') ?? localStorage.getItem('nexus_token')) : null;
-      await fetch('/api/nexus/tasks', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(storedToken ? { 'x-nexus-token': storedToken } : {}),
-        },
+      const res = await fetch('/api/nexus/tasks', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', ...getNexusClientHeaders() },
+        credentials: 'include',
         body: JSON.stringify({
-          kind: 'task-done',
-          taskId,
-          status: nextCompleted ? 'DONE' : 'OPEN',
+          id: taskId,
+          action: nextCompleted ? 'COMPLETE' : 'REOPEN',
         }),
       });
+      if (!res.ok) throw new Error(`PATCH ${res.status}`);
     } catch (err) {
       console.warn('[Nexus] Failed to persist task toggle:', err);
+      // Revertir si no se pudo guardar.
+      setTasks((prev) =>
+        prev.map((t) => (t.id === taskId ? { ...t, completed: targetTask.completed } : t))
+      );
     }
   };
 
@@ -128,25 +152,23 @@ export function NexusCommandCenter({ auth, initialTour, initialRole: _initialRol
         });
         if (res.ok) {
           const data = (await res.json()) as { tasks?: { id: string; title: string; priority?: string; status?: string; dueDate?: string; description?: string; assigneeName?: string; assigneeEmail?: string }[] };
-          if (Array.isArray(data.tasks) && data.tasks.length > 0) {
+          if (Array.isArray(data.tasks)) {
             const serverTasks: TaskItem[] = data.tasks.map((t) => ({
               id: t.id,
-              week: 'Semana 1',
+              week: t.dueDate
+                ? new Date(t.dueDate).toLocaleDateString("es-MX", { day: "2-digit", month: "short" })
+                : "Sin fecha",
               title: t.title,
-              category: 'Operaciones',
+              category: "Operaciones",
               priority: (t.priority === 'CRITICAL' || t.priority === 'HIGH') ? 'HIGH' : t.priority === 'LOW' ? 'LOW' : 'MEDIUM',
               tipo: 'Operación',
               completed: t.status === 'DONE',
-              dueDate: t.dueDate ? (new Date(t.dueDate).toISOString().split('T')[0] ?? '2026-10-30') : '2026-10-30',
-              detail: t.description ?? 'Tarea sincronizada desde Nexus Core.',
+              dueDate: t.dueDate ? new Date(t.dueDate).toISOString().split('T')[0]! : '',
+              detail: t.description ?? "",
               assignee: t.assigneeName ?? t.assigneeEmail ?? undefined,
             }));
-            setTasks(prev => {
-              // Merge preserving unique IDs
-              const existingIds = new Set(serverTasks.map(st => st.id));
-              const localOnly = prev.filter(p => !existingIds.has(p.id));
-              return [...serverTasks, ...localOnly];
-            });
+            // La DB es la única fuente: se reemplaza, nunca se mezcla con locales.
+            setTasks(serverTasks);
           }
         }
       } catch (err) {
@@ -160,17 +182,29 @@ export function NexusCommandCenter({ auth, initialTour, initialRole: _initialRol
     return () => window.removeEventListener('nexus-tasks-updated', handleRefresh);
   }, [auth?.canonicalOrgId]);
   
-  useEffect(() => {
-    try {
-      localStorage.setItem("pandoras_ip_tasks_30d", JSON.stringify(tasks));
-    } catch {
-      // ignore storage error
-    }
-  }, [tasks]);
-
   const [broadcasts, setBroadcasts] = useState<NexusBroadcastItem[]>([]);
   const [unreadBroadcasts, setUnreadBroadcasts] = useState<NexusBroadcastItem[]>([]);
   const [isBroadcastModalOpen, setIsBroadcastModalOpen] = useState(false);
+
+  // P5: Escape cierra solo la capa de arriba. El hub maneja el suyo.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      if (isSettingsOpen) {
+        setIsSettingsOpen(false);
+        return;
+      }
+      if (isBroadcastModalOpen) {
+        setIsBroadcastModalOpen(false);
+        return;
+      }
+      if (isHermesAmbientOpen) {
+        setIsHermesAmbientOpen(false);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isSettingsOpen, isBroadcastModalOpen, isHermesAmbientOpen]);
 
   useEffect(() => {
     async function fetchBroadcasts() {
@@ -368,7 +402,13 @@ export function NexusCommandCenter({ auth, initialTour, initialRole: _initialRol
 
   return (
     <NexusShell>
-      <NexusCommandPalette auth={auth} onOpenSettings={() => setIsSettingsOpen(true)} onOpenHermes={(_initialQuery) => {
+      <NexusCommandPalette auth={auth} onOpenSettings={() => {
+        if (opsRoute) {
+          window.location.href = "/nexus/settings";
+          return;
+        }
+        setIsSettingsOpen(true);
+      }} onOpenHermes={(_initialQuery) => {
         // TODO: Handle passing initial query to Hermes Ambient Drawer if needed later.
         setIsHermesAmbientOpen(true);
       }} />
@@ -380,21 +420,45 @@ export function NexusCommandCenter({ auth, initialTour, initialRole: _initialRol
             if (action === 'hermes') {
               setIsHermesAmbientOpen(true);
             } else if (action === 'UNIFIED_INDEX') {
+              // En /nexus/ops el área de contenido la ocupa el hub: el índice
+              // se abre en el Command Center (una sola capa a la vez).
+              if (opsRoute) {
+                window.location.href = "/nexus";
+                return;
+              }
               setIsUnifiedIndexOpen(true);
             } else if (action === 'SETTINGS') {
               setIsSettingsOpen(true);
             } else {
-              setOpsActiveTab(action as Tab);
-              setIsOpsModalOpen(true);
+              runAction(action);
             }
           }} 
         />
         
         <div className="flex-1 flex flex-col min-w-0 bg-[#0A0A0E]">
-          <NexusHeader role={role} setIsOpsModalOpen={setIsOpsModalOpen} onOpenHermes={() => setIsHermesAmbientOpen(true)} />
+          <NexusHeader role={role} onOpenHermes={() => setIsHermesAmbientOpen(true)} />
 
           <div className="flex-1 flex overflow-hidden min-h-0 relative">
-            {!isUnifiedIndexOpen ? (
+            {opsRoute ? (
+            <OperationsHubModal
+              isOpen={isOpsModalOpen}
+              onClose={() => {
+                if (opsRoute) {
+                  window.location.href = "/nexus";
+                  return;
+                }
+                setIsOpsModalOpen(false);
+              }}
+              tasks={tasks}
+              setTasks={setTasks}
+              userName={auth.name ?? undefined}
+              userEmail={auth.email ?? undefined}
+              userRole={role ?? undefined}
+              permissions={(auth.permissions ?? {}) as unknown as Record<string, boolean>}
+              activeTab={opsActiveTab}
+              onTabChange={changeOpsTab}
+            />
+            ) : !isUnifiedIndexOpen ? (
               <NexusWorkspace 
                 auth={auth} 
                 sidebarOpen={sidebarOpen} 
@@ -513,18 +577,6 @@ export function NexusCommandCenter({ auth, initialTour, initialRole: _initialRol
         customStations={customStations}
       />
 
-      <OperationsHubModal
-        isOpen={isOpsModalOpen}
-        onClose={() => setIsOpsModalOpen(false)}
-        tasks={tasks}
-        setTasks={setTasks}
-        userName={auth.name ?? undefined}
-        userEmail={auth.email ?? undefined}
-        userRole={role ?? undefined}
-        permissions={(auth.permissions ?? {}) as unknown as Record<string, boolean>}
-        activeTab={opsActiveTab}
-        onTabChange={(tab) => setOpsActiveTab(tab)}
-      />
 
       <NexusCentralNotificationModal
         broadcasts={isBroadcastModalOpen && unreadBroadcasts.length > 0 ? unreadBroadcasts : broadcasts}

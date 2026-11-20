@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Shield,
   Plus,
@@ -32,14 +32,13 @@ import { OperationsBroadcastTab } from './OperationsBroadcastTab';
 import { OperationsIncidentCenter } from './OperationsIncidentCenter';
 import { OperationsApprovalsTab } from './OperationsApprovalsTab';
 import { OperationsClientsTab } from './OperationsClientsTab';
-import { OperationsAgendaTab } from './OperationsAgendaTab';
 import { OperationsKnowledgeTab } from './OperationsKnowledgeTab';
 import { OperationsCollaboratorsTab } from './OperationsCollaboratorsTab';
 import TasksPanel from './TasksPanel';
-import { CheckCircle, Building2 } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Building2, LayoutDashboard } from 'lucide-react';
 import { getNexusClientHeaders } from '@/lib/nexus/client-auth-headers';
 
-export type Tab = 'REGISTER' | 'CLIENTS' | 'DATAROOM' | 'AGENDA' | 'WORK_ENGINE' | 'ACTIVITY' | 'KNOWLEDGE' | 'COHORTS' | 'APPROVALS';
+export type Tab = 'REGISTER' | 'CLIENTS' | 'WORK_ENGINE' | 'ACTIVITY' | 'KNOWLEDGE' | 'COHORTS' | 'APPROVALS';
 
 interface IPAsset {
   id: string;
@@ -54,92 +53,24 @@ interface IPAsset {
   findingsCount?: number;
 }
 
-const INITIAL_ASSETS: IPAsset[] = [
-  {
-    id: 'PAND-MARK-HIST',
-    name: 'PANDORAS FOUNDATION (Histórica)',
-    category: 'Marca Denominativa',
-    classes: 'Clase 42 (Servicios Tecnológicos)',
-    status: 'ABANDONED',
-    authority: 'IMPI (México)',
-    owner: 'MXHUB ECOSISTEMA BLOCKCHAIN S.A. DE C.V.',
-    notes: 'Solicitud archivada por el IMPI (Expediente 3394059). Permite reiniciar la estrategia registral limpia desde la marca madre.',
-    riskAssessment: 'LOW',
-    findingsCount: 1
-  },
-  {
-    id: 'PAND-MARK-001',
-    name: 'PANDORAS (Marca Madre)',
-    category: 'Marca Denominativa Principal',
-    classes: 'Clase 36 (Finanzas/RWA) + Clase 42 (Tecnología)',
-    status: 'PENDING',
-    authority: 'IMPI (México) / USPTO (USA)',
-    owner: 'MXHUB ECOSISTEMA BLOCKCHAIN S.A. DE C.V.',
-    notes: 'Examen de anterioridades en Marcanet completado (Riesgo BAJO). Búsqueda realizada para PANDORAS y PANDORA\'S en Clases 36 y 42. Sin marcas idénticas ni conflictos graves.',
-    riskAssessment: 'LOW',
-    findingsCount: 6
-  },
-  {
-    id: 'PAND-MARK-002',
-    name: 'PANDORAS FINANCE',
-    category: 'Marca Secundaria (Financiera)',
-    classes: 'Clase 36 (Finanzas, RWA, Crowdlending)',
-    status: 'PLANNED',
-    authority: 'IMPI (México)',
-    owner: 'MXHUB ECOSISTEMA BLOCKCHAIN S.A. DE C.V.',
-    notes: 'Infraestructura de activos reales, tokenización y comercialización crediticia.',
-    riskAssessment: 'LOW',
-    findingsCount: 0
-  },
-  {
-    id: 'PAND-MARK-003',
-    name: 'PANDORAS OS',
-    category: 'Marca Secundaria (SaaS)',
-    classes: 'Clase 9 (Software) + Clase 42 (SaaS/AI)',
-    status: 'PLANNED',
-    authority: 'IMPI (México)',
-    owner: 'MXHUB ECOSISTEMA BLOCKCHAIN S.A. DE C.V.',
-    notes: 'Sistema operativo comercial, herramientas de inteligencia artificial y dashboards.',
-    riskAssessment: 'LOW',
-    findingsCount: 0
-  },
-  {
-    id: 'PAND-IP-CORE',
-    name: 'Growth OS Kernel & Capital Engine',
-    category: 'Copyright & Trade Secret',
-    classes: 'Código Fuente / Algoritmos',
-    status: 'ACTIVE',
-    authority: 'Safe-Keep / Indautor Depósito',
-    owner: 'Pandoras IP Holding / MXHUB',
-    notes: 'Propiedad inalienable del Holding. Ninguna filial ni inversionista operativo puede reclamar titularidad.',
-    riskAssessment: 'LOW',
-    findingsCount: 0
-  },
-  {
-    id: 'PAND-CONST-v3',
-    name: 'Pandora\'s Product Constitution (10 Principios)',
-    category: 'Marco Doctrinario & Gobernanza de Producto',
-    classes: 'Libro 0 — Documento Supremo',
-    status: 'ACTIVE',
-    authority: 'Pandoras Holdings / Consejo',
-    owner: 'Pandoras IP Holding / MXHUB',
-    notes: 'Los 10 Principios Invariables de Producto y Congelamiento de Arquitectura v3.0 (Architecture Freeze v3.0). Regula el desarrollo de software y capacidades.',
-    riskAssessment: 'LOW',
-    findingsCount: 0
-  },
-  {
-    id: 'PAND-HERMES-RUNTIME',
-    name: 'Hermes Runtime & Multi-Tenant Agent OS',
-    category: 'Trade Secret & Architecture Standard',
-    classes: 'Clase 9 (Software) + Clase 42 (SaaS/AI)',
-    status: 'ACTIVE',
-    authority: 'Pandoras IP Holding',
-    owner: 'MXHUB ECOSISTEMA BLOCKCHAIN S.A. DE C.V.',
-    notes: 'Motor de Ejecución de Inteligencia Autónoma multi-tenant sobre el cual corren los Agent Packs, Capabilities y adaptadores omnicanal.',
-    riskAssessment: 'LOW',
-    findingsCount: 0
-  }
-];
+const INITIAL_ASSETS: IPAsset[] = [];
+
+/** El hub es una pantalla (ruta). El modo modal se retiró: una sola capa. */
+
+/** Slug de URL por tab (única fuente para rutas y sidebar). */
+export const OPS_TAB_SLUGS: Record<Tab, string> = {
+  WORK_ENGINE: "work",
+  CLIENTS: "clients",
+  KNOWLEDGE: "knowledge",
+  ACTIVITY: "activity",
+  APPROVALS: "approvals",
+  COHORTS: "cohorts",
+  REGISTER: "register",
+};
+
+export const OPS_SLUG_TABS: Record<string, Tab> = Object.fromEntries(
+  Object.entries(OPS_TAB_SLUGS).map(([tab, slug]) => [slug, tab as Tab])
+) as Record<string, Tab>;
 
 interface OpsModalProps {
   isOpen: boolean;
@@ -168,6 +99,68 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
     if (onTabChange) onTabChange(newTab);
   };
 
+  const panelRootRef = useRef<HTMLDivElement>(null);
+
+  // P5: accesibilidad y una sola capa.
+  // - Escape cierra (vuelve al Command Center).
+  // - Flechas mueven entre tabs (patrón tablist).
+  // - Tab queda atrapado dentro del hub: el fondo no es navegable.
+  const trapFocus = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== "Tab") return;
+    const root = panelRootRef.current;
+    if (!root) return;
+    const focusable = Array.from(
+      root.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      )
+    ).filter((node) => node.offsetParent !== null);
+    if (focusable.length === 0) return;
+    const first = focusable[0]!;
+    const last = focusable[focusable.length - 1]!;
+    if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    } else if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    }
+  };
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+      if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
+      const active = document.activeElement as HTMLElement | null;
+      if (!active || active.getAttribute("role") !== "tab") return;
+      event.preventDefault();
+      const tabs = Array.from(
+        panelRootRef.current?.querySelectorAll<HTMLButtonElement>('[role="tab"]') ?? []
+      );
+      if (tabs.length === 0) return;
+      const currentIndex = tabs.findIndex((node) => node === active);
+      const nextIndex =
+        event.key === "ArrowRight"
+          ? (currentIndex + 1 + tabs.length) % tabs.length
+          : (currentIndex - 1 + tabs.length) % tabs.length;
+      tabs[nextIndex]?.focus();
+      tabs[nextIndex]?.click();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    // Foco inicial en el tab activo (no en el fondo).
+    const timer = window.setTimeout(() => {
+      panelRootRef.current?.querySelector<HTMLButtonElement>('[role="tab"][aria-selected="true"]')?.focus();
+    }, 40);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.clearTimeout(timer);
+    };
+  }, [isOpen, onClose]);
+
   const containerRef = useRef<HTMLDivElement>(null);
   const [workLeftWidth, setWorkLeftWidth] = useState(50);
   const [activityLeftWidth, setActivityLeftWidth] = useState(50);
@@ -180,13 +173,15 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
 
   const [terminalMode, setTerminalMode] = useState<'TASK' | 'HERMES'>('TASK');
   const [assets, setAssets] = useState<IPAsset[]>(INITIAL_ASSETS);
+  const [assetsLoading, setAssetsLoading] = useState(false);
+  const [assetsError, setAssetsError] = useState<string | null>(null);
+  const [localImportCount, setLocalImportCount] = useState(0);
+  const [importing, setImporting] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState<IPAsset | null>(INITIAL_ASSETS[1] ?? null);
   const [notifying, setNotifying] = useState(false);
   const [notified, setNotified] = useState(false);
 
   // Data Room deals & user-connected documents
-  const [deals, setDeals] = useState<any[]>([]);
-  const [loadingDeals, setLoadingDeals] = useState(false);
 
   // Auto-fallback if a non-admin was on REGISTER
   useEffect(() => {
@@ -215,12 +210,63 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
   const [collaborators, setCollaborators] = useState<any[]>([]);
   const [selectedAssignee, setSelectedAssignee] = useState<string>('');
 
+  const refreshAssets = useCallback(async () => {
+    setAssetsLoading(true);
+    setAssetsError(null);
+    try {
+      const res = await fetch('/api/nexus/ip-assets', {
+        headers: getNexusClientHeaders(),
+        credentials: 'include',
+        cache: 'no-store',
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setAssetsError(
+          data.code === 'ORG_UNRESOLVED'
+            ? 'Tu identidad no tiene una organización asignada.'
+            : data.code === 'MISSING_CAPABILITY'
+              ? 'No tienes permiso para ver el registro de activos.'
+              : data.error ?? 'No se pudieron cargar los activos.'
+        );
+        setAssets([]);
+        return;
+      }
+      const rows = Array.isArray(data.assets) ? data.assets : [];
+      setAssets(rows.map((row: any) => ({
+        id: String(row.id),
+        name: String(row.name ?? 'Sin nombre'),
+        category: String(row.category ?? 'Sin categoría'),
+        classes: String(row.classes ?? ''),
+        status: (row.status ?? 'PLANNED') as IPAsset['status'],
+        authority: String(row.jurisdiction ?? ''),
+        owner: '',
+        notes: String(row.riskNotes ?? ''),
+        riskAssessment: (row.risk ?? undefined) as IPAsset['riskAssessment'],
+      })));
+    } catch {
+      setAssetsError('Error de red al cargar los activos.');
+      setAssets([]);
+    } finally {
+      setAssetsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (tab !== 'REGISTER') return;
+    void refreshAssets();
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('pandoras_ip_assets_custom');
+        const parsed = stored ? JSON.parse(stored) : null;
+        setLocalImportCount(Array.isArray(parsed) ? parsed.length : 0);
+      } catch {
+        setLocalImportCount(0);
+      }
+    }
+  }, [tab, refreshAssets]);
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const storedAssets = localStorage.getItem('pandoras_ip_assets_custom');
-    if (storedAssets) {
-      try { setAssets(JSON.parse(storedAssets)); } catch { }
-    }
 
     fetch('/api/nexus/collaborators/list')
       .then(res => res.json())
@@ -232,33 +278,44 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
       .catch(console.error);
   }, []);
 
-  // Fetch real documents for connected user when entering DATAROOM tab
-  useEffect(() => {
-    if (tab === 'DATAROOM') {
-      setLoadingDeals(true);
-      const storedToken = typeof window !== 'undefined' ? (localStorage.getItem('pandoras_nexus_token') || localStorage.getItem('nexus_token')) : null;
-      fetch('/api/nexus/deals', {
-        headers: {
-          ...getWalletHeaders(),
-          ...(storedToken ? { 'x-nexus-token': storedToken } : {}),
-        },
-        credentials: 'include',
-      })
-        .then(res => res.json())
-        .then(data => {
-          if (Array.isArray(data.rooms)) {
-            setDeals(data.rooms);
-          }
-        })
-        .catch(err => console.error('[OpsHub] Error fetching deals:', err))
-        .finally(() => setLoadingDeals(false));
-    }
-  }, [tab]);
 
-  const saveAssets = (updated: IPAsset[]) => {
-    setAssets(updated);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('pandoras_ip_assets_custom', JSON.stringify(updated));
+  /** Migración única: sube al API lo que quedó en el navegador. No es automática. */
+  const importLocalAssets = async () => {
+    if (typeof window === 'undefined') return;
+    setImporting(true);
+    setAssetsError(null);
+    try {
+      const stored = localStorage.getItem('pandoras_ip_assets_custom');
+      const parsed = stored ? JSON.parse(stored) : [];
+      if (!Array.isArray(parsed) || parsed.length === 0) {
+        setLocalImportCount(0);
+        return;
+      }
+      for (const item of parsed) {
+        const name = typeof item?.name === 'string' ? item.name.trim() : '';
+        if (!name) continue;
+        await fetch('/api/nexus/ip-assets', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...getNexusClientHeaders() },
+          credentials: 'include',
+          body: JSON.stringify({
+            name,
+            category: item?.category,
+            classes: item?.classes,
+            jurisdiction: item?.authority,
+            status: 'PLANNED',
+            risk: item?.riskAssessment,
+            riskNotes: item?.notes,
+          }),
+        });
+      }
+      localStorage.removeItem('pandoras_ip_assets_custom');
+      setLocalImportCount(0);
+      await refreshAssets();
+    } catch {
+      setAssetsError('No se pudieron importar los activos locales.');
+    } finally {
+      setImporting(false);
     }
   };
 
@@ -266,43 +323,52 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
     setTasks(updated);
   };
 
-  const handleAddAsset = (e: React.FormEvent) => {
+  const handleAddAsset = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newAssetName.trim()) return;
 
-    const newAssetItem: IPAsset = {
-      id: `PAND-MARK-${Math.floor(100 + Math.random() * 900)}`,
-      name: newAssetName.trim(),
-      category: newAssetCategory,
-      classes: newAssetClasses,
-      status: 'PENDING',
-      authority: newAssetAuthority,
-      owner: 'MXHUB ECOSISTEMA BLOCKCHAIN S.A. DE C.V.',
-      notes: newAssetNotes.trim() || 'Búsqueda de disponibilidad registrada de forma interactiva.',
-      riskAssessment: newAssetRisk,
-      findingsCount: 0
-    };
-
-    const updatedAssets = [newAssetItem, ...assets];
-    saveAssets(updatedAssets);
-    setSelectedAsset(newAssetItem);
-    setNewAssetName('');
-    setNewAssetNotes('');
-    setShowAssetForm(false);
-
-    const newTask: TaskItem = {
-      id: `TSK-${Math.floor(100 + Math.random() * 900)}`,
-      week: 'Semana 1',
-      title: `Preparación de Solicitud "${newAssetItem.name}"`,
-      category: 'IP & Trademarks',
-      priority: 'HIGH',
-      completed: false,
-      dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] ?? '2026-08-05',
-      detail: `Definición de productos/servicios para ${newAssetItem.classes} y presentación ante ${newAssetItem.authority}.`
-    };
-    saveTasks([newTask, ...tasks]);
-
-    assignTask(`Nueva Búsqueda/Marca Registrada: ${newAssetItem.name} (Riesgo: ${newAssetItem.riskAssessment})`);
+    setAssetsError(null);
+    try {
+      const res = await fetch('/api/nexus/ip-assets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getNexusClientHeaders() },
+        credentials: 'include',
+        body: JSON.stringify({
+          name: newAssetName.trim(),
+          category: newAssetCategory,
+          classes: newAssetClasses,
+          jurisdiction: newAssetAuthority,
+          risk: newAssetRisk,
+          riskNotes: newAssetNotes.trim() || undefined,
+          status: 'PLANNED',
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setAssetsError(data.error ?? 'No se pudo registrar el activo.');
+        return;
+      }
+      await refreshAssets();
+      if (data.asset) {
+        setSelectedAsset({
+          id: String(data.asset.id),
+          name: String(data.asset.name ?? newAssetName),
+          category: String(data.asset.category ?? newAssetCategory),
+          classes: String(data.asset.classes ?? newAssetClasses),
+          status: (data.asset.status ?? 'PLANNED') as IPAsset['status'],
+          authority: String(data.asset.jurisdiction ?? newAssetAuthority),
+          owner: '',
+          notes: String(data.asset.riskNotes ?? ''),
+          riskAssessment: (data.asset.risk ?? newAssetRisk) as IPAsset['riskAssessment'],
+        });
+      }
+      setNewAssetName('');
+      setNewAssetNotes('');
+      setShowAssetForm(false);
+      void assignTask(`Nuevo activo IP registrado: ${newAssetName.trim()}`);
+    } catch {
+      setAssetsError('Error de red al registrar el activo.');
+    }
   };
 
   const handleTerminalTask = (task: TerminalTask) => {
@@ -376,8 +442,6 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
       ? [{ id: 'REGISTER' as Tab, label: `OPS REGISTER (${assets.length})`, icon: <Layers className="w-3.5 h-3.5" /> }]
       : []),
     { id: 'CLIENTS', label: 'CLIENTS & CRM', icon: <Building2 className="w-3.5 h-3.5" /> },
-    { id: 'AGENDA', label: 'AGENDA', icon: <Calendar className="w-3.5 h-3.5" /> },
-    { id: 'DATAROOM', label: 'DATA ROOM & VAULT', icon: <FolderGit2 className="w-3.5 h-3.5" /> },
     ...(isOpsAdmin
       ? [{ id: 'COHORTS' as Tab, label: 'COHORTS', icon: <Shield className="w-3.5 h-3.5" /> }]
       : []),
@@ -398,13 +462,19 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6 bg-black/80 backdrop-blur-md">
+      <div
+        className="absolute inset-0 z-20 flex items-stretch justify-stretch bg-[#07070B]"
+        role="region"
+        aria-label="Operations Hub"
+        ref={panelRootRef}
+        onKeyDown={trapFocus}
+      >
         <motion.div
           initial={{ opacity: 0, scale: 0.96, y: 10 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.96, y: 10 }}
           transition={{ duration: 0.18, ease: 'easeOut' }}
-          className="relative w-full max-w-5xl max-h-[92vh] bg-[#08080A] border border-white/10 rounded-2xl overflow-hidden shadow-[0_0_60px_rgba(168,85,247,0.12)] flex flex-col"
+          className="relative w-full h-[100dvh] max-h-none bg-[#08080A] border-0 rounded-none overflow-hidden flex flex-col"
         >
           {/* Header command bar */}
           <div className="flex items-center justify-between gap-3 px-4 md:px-5 py-3 border-b border-white/10 bg-[#0C0C10]">
@@ -414,16 +484,11 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
               </span>
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-semibold text-zinc-100 tracking-tight truncate">NEXUS OPERATIONS HUB</h3>
-                  <span className="hidden sm:flex items-center gap-1 font-mono text-[9px] text-purple-300/80">
-                    <span className="relative flex h-1.5 w-1.5">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-60" />
-                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-purple-500" />
-                    </span>
-                    LIVE
-                  </span>
+                  <h3 className="text-sm font-semibold text-zinc-100 tracking-tight truncate">OPERATIONS HUB</h3>
                 </div>
-                <p className="text-[10px] font-mono text-zinc-500 truncate">OPERATIONS HUB · IP · DATA ROOM · #pandoras-security</p>
+                <p className="text-[10px] font-mono text-zinc-500 truncate">
+                  Operación diaria · tareas, clientes, aprobaciones y conocimiento
+                </p>
               </div>
             </div>
 
@@ -433,10 +498,11 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
                   setTab('WORK_ENGINE');
                   setTerminalMode(terminalMode === 'HERMES' ? 'TASK' : 'HERMES');
                 }}
+                title="Alternar entre Hermes y el terminal de tareas"
                 className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-mono text-[10px] transition-colors ${terminalMode === 'HERMES' && tab === 'WORK_ENGINE' ? 'border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20' : 'border-indigo-500/30 bg-indigo-500/10 text-indigo-300 hover:bg-indigo-500/20'}`}
               >
                 <TerminalSquare className="w-3 h-3" />
-                {terminalMode === 'HERMES' && tab === 'WORK_ENGINE' ? 'sudo task_terminal' : 'sudo wake_up_hermes'}
+                {terminalMode === 'HERMES' && tab === 'WORK_ENGINE' ? 'Terminal de tareas' : 'Terminal Hermes'}
               </button>
               <span className="hidden lg:flex items-center gap-1.5 font-mono text-[10px] text-zinc-500">
                 <Activity className="w-3 h-3 text-purple-300" />
@@ -444,20 +510,31 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
               </span>
               <button
                 onClick={onClose}
-                className="p-2 text-zinc-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors border border-transparent hover:border-white/10"
+                className="flex items-center gap-1.5 rounded-lg border border-white/10 px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-wider text-zinc-400 transition-colors hover:bg-white/5 hover:text-white"
+                title="Volver al Command Center (Esc)"
               >
-                <X className="w-5 h-5" />
+                <LayoutDashboard className="w-3.5 h-3.5" />
+                Command Center
               </button>
             </div>
           </div>
 
           {/* Tabs */}
-          <div className="flex items-center gap-1.5 px-4 md:px-5 py-2.5 border-b border-white/10 bg-black/30 overflow-x-auto">
+          <div
+            role="tablist"
+            aria-label="Secciones de Operations Hub"
+            className="flex flex-wrap items-center gap-1.5 px-4 md:px-5 py-2 border-b border-white/10 bg-black/30"
+          >
             {TABS.map((t) => (
               <button
                 key={t.id}
+                role="tab"
+                id={`ops-tab-${t.id}`}
+                aria-selected={tab === t.id}
+                aria-controls={`ops-panel-${t.id}`}
+                tabIndex={tab === t.id ? 0 : -1}
                 onClick={() => setTab(t.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-mono text-[10px] tracking-wider transition-all whitespace-nowrap ${tab === t.id
+                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg font-mono text-[11px] tracking-wider transition-all whitespace-nowrap ${tab === t.id
                     ? 'border border-purple-500/30 bg-purple-500/10 text-purple-300'
                     : 'border border-white/10 bg-black/40 text-zinc-500 hover:text-zinc-200 hover:border-white/20'
                   }`}
@@ -467,6 +544,14 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
               </button>
             ))}
           </div>
+
+          <div
+            role="tabpanel"
+            id={`ops-panel-${tab}`}
+            aria-labelledby={`ops-tab-${tab}`}
+            tabIndex={0}
+            className="flex-1 flex flex-col min-h-0 outline-none"
+          >
 
           {/* TAB: WORK ENGINE */}
           {tab === 'WORK_ENGINE' && (
@@ -541,9 +626,10 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
                     <Layers className="w-4 h-4" />
                   </span>
                   <div className="space-y-1 min-w-0">
-                    <p className="text-[11px] font-mono uppercase tracking-wider text-amber-300">Análisis Marcanet Finalizado: PANDORAS / PANDORA'S (Clases 36 + 42)</p>
+                    <p className="text-[11px] font-mono uppercase tracking-wider text-amber-300">Registro de Activos IP</p>
                     <p className="text-xs text-zinc-400 leading-relaxed">
-                      Examen de anterioridad completado (6 hallazgos, 0 conflictos graves). <strong className="text-white">Clasificación: RIESGO BAJO.</strong> Se procede con la marca madre <strong className="text-amber-300">PANDORAS™</strong> a nombre directo de <strong>MXHUB ECOSISTEMA BLOCKCHAIN S.A. DE C.V.</strong>
+                      Marcas, clases, expediente y riesgo por organización.
+                      <span className="text-zinc-500"> {assets.length} {assets.length === 1 ? "activo" : "activos"} registrados.</span>
                     </p>
                   </div>
                 </div>
@@ -555,6 +641,34 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
                   + REGISTRAR MARCA
                 </button>
               </div>
+
+              {assetsError && (
+                <p className="flex items-start gap-2 rounded-lg border border-rose-500/30 bg-rose-500/10 p-3 text-[11px] text-rose-300">
+                  <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  {assetsError}
+                </p>
+              )}
+
+              {localImportCount > 0 && (
+                <div className="flex flex-col gap-2 rounded-xl border border-sky-500/25 bg-sky-500/[0.06] p-3 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-[11px] leading-relaxed text-sky-200">
+                    Hay {localImportCount} {localImportCount === 1 ? "activo" : "activos"} guardados en este
+                    navegador. Se pueden subir a la base una sola vez.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => void importLocalAssets()}
+                    disabled={importing}
+                    className="shrink-0 rounded-lg border border-sky-500/40 bg-sky-500/15 px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider text-sky-100 hover:bg-sky-500/25 disabled:opacity-50"
+                  >
+                    {importing ? "Importando…" : `Importar ${localImportCount}`}
+                  </button>
+                </div>
+              )}
+
+              {assetsLoading && (
+                <p className="text-[11px] font-mono text-zinc-500">Cargando activos…</p>
+              )}
 
               <AnimatePresence>
                 {showAssetForm && (
@@ -644,6 +758,14 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
 
               <div className="space-y-3">
                 <p className="text-[11px] uppercase tracking-wider text-zinc-500 font-mono">Registro Institucional de Activos IP ({assets.length})</p>
+                {assets.length === 0 && (
+                  <div className="rounded-xl border border-white/10 bg-[#0C0C10] p-6 text-center">
+                    <p className="text-xs text-zinc-400">Sin activos registrados.</p>
+                    <p className="mt-1 text-[10px] leading-relaxed text-zinc-600">
+                      Agrega un activo con “+ REGISTRAR MARCA”. Se guarda en la base de la organización.
+                    </p>
+                  </div>
+                )}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {assets.map((asset) => {
                     const isSelected = selectedAsset?.id === asset.id;
@@ -707,203 +829,6 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
             <OperationsClientsTab onOpenApprovals={() => setTab('APPROVALS')} />
           )}
 
-          {/* TAB: AGENDA (mis reuniones) */}
-          {tab === 'AGENDA' && <OperationsAgendaTab />}
-
-          {/* TAB: DATA ROOM */}
-          {tab === 'DATAROOM' && (
-            <div className="p-5 overflow-y-auto flex-1 space-y-6">
-              {/* Header Banner */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border border-purple-500/20 bg-purple-500/[0.04]">
-                <div>
-                  <p className="text-[11px] text-purple-300 font-mono uppercase font-bold flex items-center gap-1.5">
-                    <FolderGit2 className="w-3.5 h-3.5" />
-                    <span>DATA ROOM & EXPEDIENTES CORPORATIVOS</span>
-                  </p>
-                  <p className="text-xs text-zinc-400 mt-0.5">
-                    Acuerdos, contratos bilaterales, NDAs y resoluciones notarizadas vinculadas a tu cuenta.
-                  </p>
-                </div>
-                <a
-                  href="/nexus/rooms"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-3.5 py-1.5 rounded-lg border border-purple-500/30 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 text-xs font-mono flex items-center gap-1.5 transition-colors shrink-0"
-                >
-                  <Handshake className="w-3.5 h-3.5" />
-                  <span>Consola Deal Room (/nexus/rooms)</span>
-                  <ExternalLink className="w-3.5 h-3.5" />
-                </a>
-              </div>
-
-              {/* Connected User Deals Section */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-bold text-white font-mono uppercase tracking-wider flex items-center gap-2">
-                    <FileText className="w-3.5 h-3.5 text-indigo-400" />
-                    <span>DOCUMENTOS & ACUERDOS VINCULADOS ({deals.length})</span>
-                  </h4>
-                  <span className="text-[11px] font-mono text-zinc-400">
-                    {userEmail || userName || 'Usuario Conectado'}
-                  </span>
-                </div>
-
-                {loadingDeals ? (
-                  <div className="p-8 text-center border border-white/5 rounded-xl bg-[#0C0C10]">
-                    <RefreshCw className="w-5 h-5 text-purple-400 animate-spin mx-auto mb-2" />
-                    <p className="text-xs text-zinc-400 font-mono">Cargando expedientes del usuario...</p>
-                  </div>
-                ) : deals.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {deals.map((deal) => (
-                      <a
-                        key={deal.id}
-                        href="/nexus/rooms"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-3.5 rounded-xl border border-white/10 bg-[#0C0C10] hover:border-purple-500/40 hover:bg-purple-950/10 transition-all block group"
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <span className="text-[10px] font-mono px-2 py-0.5 rounded border border-indigo-500/30 bg-indigo-500/10 text-indigo-300 uppercase">
-                            {deal.kind || 'ACUERDO'}
-                          </span>
-                          <span
-                            className={`text-[10px] font-mono px-2 py-0.5 rounded border ${deal.status === 'SIGNED' || deal.status === 'EXECUTED'
-                                ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
-                                : deal.status === 'REVIEW'
-                                  ? 'border-cyan-500/30 bg-cyan-500/10 text-cyan-300'
-                                  : 'border-amber-500/30 bg-amber-500/10 text-amber-300'
-                              }`}
-                          >
-                            {deal.status}
-                          </span>
-                        </div>
-                        <h5 className="text-xs font-bold text-white mt-2 group-hover:text-purple-300 transition-colors line-clamp-1">
-                          {deal.title || 'Acuerdo Institucional'}
-                        </h5>
-                        <p className="text-[11px] text-zinc-400 mt-1 line-clamp-1">
-                          Contraparte: <span className="text-zinc-300">{deal.counterparty || deal.company || 'Ecosistema'}</span>
-                        </p>
-                        <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/5 text-[10px] font-mono text-zinc-500">
-                          <span>{deal.createdAt ? new Date(deal.createdAt).toLocaleDateString() : 'Activo'}</span>
-                          <span className="flex items-center gap-1 text-purple-400 group-hover:translate-x-0.5 transition-transform">
-                            <span>Abrir en Deal Room</span>
-                            <ExternalLink className="w-3 h-3" />
-                          </span>
-                        </div>
-                      </a>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="p-4 rounded-xl border border-white/5 bg-[#0C0C10] text-center space-y-1.5">
-                    <p className="text-xs text-zinc-300 font-medium">No hay acuerdos bilaterales registrados directamente para tu usuario.</p>
-                    <p className="text-[11px] text-zinc-500">
-                      Los documentos que se compartan contigo o en los que figures como firmante en el Deal Room aparecerán listados aquí.
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* Corporate Data Room Directory Structure (Only for Operations/Admins) */}
-              {isOpsAdmin && (
-                <div className="space-y-3 pt-4 border-t border-white/5 mt-4">
-                  <p className="text-[11px] text-zinc-400 font-mono uppercase tracking-wider mt-4">
-                    Estructura General del Corporate Data Room (/nexus)
-                  </p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div className="p-3.5 rounded-xl border border-white/10 bg-[#0C0C10] space-y-1.5 hover:border-white/20 transition-colors">
-                      <div className="flex items-center gap-2 text-purple-300 font-mono text-xs">
-                        <FolderGit2 className="w-4 h-4" />
-                        <span>01_company</span>
-                      </div>
-                      <p className="text-xs text-zinc-400">Estatutos de constitución, libro de accionistas de MXHUB S.A. de C.V. y resoluciones corporativas de asamblea.</p>
-                    </div>
-
-                    <div className="p-3.5 rounded-xl border border-white/10 bg-[#0C0C10] space-y-1.5 hover:border-white/20 transition-colors">
-                      <div className="flex items-center gap-2 text-rose-300 font-mono text-xs">
-                        <Shield className="w-4 h-4" />
-                        <span>02_ip</span>
-                      </div>
-                      <p className="text-xs text-zinc-400">Registro IMPI PANDORAS™, depósitos de código fuente, marcas denominativas y expedientes AEP.</p>
-                    </div>
-
-                    <div className="p-3.5 rounded-xl border border-white/10 bg-[#0C0C10] space-y-1.5 hover:border-white/20 transition-colors">
-                      <div className="flex items-center gap-2 text-indigo-300 font-mono text-xs">
-                        <Code2 className="w-4 h-4" />
-                        <span>03_technology</span>
-                      </div>
-                      <p className="text-xs text-zinc-400">Arquitectura Growth OS v3.0, repositorios bajo control, smart contracts verificados y deployer keys.</p>
-                    </div>
-
-                    <div className="p-3.5 rounded-xl border border-white/10 bg-[#0C0C10] space-y-1.5 hover:border-white/20 transition-colors">
-                      <div className="flex items-center gap-2 text-emerald-300 font-mono text-xs">
-                        <Cpu className="w-4 h-4" />
-                        <span>04_business</span>
-                      </div>
-                      <p className="text-xs text-zinc-400">Modelos financieros, proyecciones de cobro de Platform Fees/Royalty Fees y pipeline de alianzas RWA.</p>
-                    </div>
-
-                    <div className="p-3.5 rounded-xl border border-white/10 bg-[#0C0C10] space-y-1.5 hover:border-white/20 transition-colors">
-                      <div className="flex items-center gap-2 text-cyan-300 font-mono text-xs">
-                        <FolderGit2 className="w-4 h-4" />
-                        <span>05_legal</span>
-                      </div>
-                      <p className="text-xs text-zinc-400">Master License Agreement (Holding ➔ USA LLC), convenios de confidencialidad NDA y licencias territoriales.</p>
-                    </div>
-
-                    <div className="p-3.5 rounded-xl border border-white/10 bg-[#0C0C10] space-y-1.5 hover:border-white/20 transition-colors">
-                      <div className="flex items-center gap-2 text-amber-300 font-mono text-xs">
-                        <ArrowUpRight className="w-4 h-4" />
-                        <span>06_investor</span>
-                      </div>
-                      <p className="text-xs text-zinc-400">Institutional Pitch, Data Room index, modelos SAFE y estructura de participación en Pandoras USA LLC.</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Sovereign Vault / Personal Data Room */}
-              <div className="space-y-3 pt-4 border-t border-white/5 mt-4">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-bold text-emerald-400 font-mono uppercase tracking-wider flex items-center gap-2">
-                    <Shield className="w-3.5 h-3.5" />
-                    <span>SOVEREIGN VAULT (CREDENTIALS)</span>
-                  </h4>
-                </div>
-
-                <div className="p-6 border border-emerald-500/20 rounded-xl bg-emerald-950/10">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <h5 className="text-sm font-bold text-emerald-300">Personal Knowledge & Identity Vault</h5>
-                      <p className="text-xs text-emerald-400/60 mt-1 leading-relaxed">
-                        Tu bóveda de conocimiento soberano. Documentos subidos aquí estarán encriptados y disponibles como contexto prioritario para tus instancias de Hermes.
-                      </p>
-                    </div>
-                    <button className="px-3 py-1.5 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 text-[10px] font-mono border border-emerald-500/30 whitespace-nowrap transition-colors">
-                      + SUBIR CREDENCIAL
-                    </button>
-                  </div>
-
-                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div className="p-3 bg-black/40 border border-emerald-500/10 rounded-lg flex items-center gap-3">
-                      <div className="p-2 bg-emerald-500/10 rounded">
-                        <FileText className="w-4 h-4 text-emerald-400" />
-                      </div>
-                      <div>
-                        <p className="text-xs text-white font-medium">Perfil Profesional KYC</p>
-                        <p className="text-[10px] text-zinc-500 font-mono">Verificado • IPFS K26</p>
-                      </div>
-                    </div>
-                    <div className="p-3 bg-black/40 border border-emerald-500/10 rounded-lg flex flex-col justify-center items-center gap-2 border-dashed opacity-60 hover:opacity-100 cursor-pointer transition-opacity">
-                      <p className="text-[10px] text-emerald-400 font-mono text-center">Sin Documentos Extra</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* TAB: COHORTS */}
           {tab === 'COHORTS' && (
             <OperationsCollaboratorsTab isAdmin={isOpsAdmin} />
           )}
@@ -988,6 +913,7 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
                 CERRAR
               </button>
             </div>
+          </div>
           </div>
         </motion.div>
       </div>

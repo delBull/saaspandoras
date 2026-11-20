@@ -83,6 +83,7 @@ export function middleware(request: NextRequest) {
     // IMPORTANT: every directory under app/nexus must be listed here, because rule 0.2.2 redirects
     // `/nexus/<x>` → `<nexus-host>/<x>`. A missing entry means the redirected URL 404s.
     const nexusSubmodules = [
+      "/ops",
       "/rooms",
       "/agenda",
       "/presentations",
@@ -96,7 +97,9 @@ export function middleware(request: NextRequest) {
     const isNexusSubmodule = nexusSubmodules.some(sub => pathname === sub || pathname.startsWith(`${sub}/`));
     
     if (isNexusSubmodule && !pathname.startsWith("/nexus/")) {
-      return NextResponse.rewrite(new URL(`/nexus${pathname}`, request.url));
+      // Conservar la query (?tab=, ?deck=, ?meeting=…): sin esto, la URL del
+      // hub se "comía" el estado al pasar por el rewrite del subdominio.
+      return NextResponse.rewrite(new URL(`/nexus${pathname}${request.nextUrl.search}`, request.url));
     }
   }
 

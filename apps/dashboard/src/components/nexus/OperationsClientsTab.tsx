@@ -16,9 +16,13 @@ interface Deal {
   organization: string;
   project: string;
   stage: 'PROSPECT' | 'NEGOTIATION' | 'DUE_DILIGENCE' | 'CLOSED' | 'LOST';
-  value: string;
-  owner: string;
-  nextAction: string;
+  /** Estado real del deal room (DRAFT, REVIEW, SIGNED…). Se muestra tal cual. */
+  statusRaw: string | null;
+  /** null = sin dato (nunca se inventa un valor). */
+  value: string | null;
+  owner: string | null;
+  nextAction: string | null;
+  createdAt: string | null;
   rawData?: unknown;
 }
 
@@ -92,6 +96,8 @@ export function OperationsClientsTab({ onOpenApprovals }: OperationsClientsTabPr
     followUpEnabled: boolean;
   }>>([]);
   const [sessionsLoading, setSessionsLoading] = useState(false);
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const schedulePanelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -118,12 +124,30 @@ export function OperationsClientsTab({ onOpenApprovals }: OperationsClientsTabPr
             organization: r.company || r.counterparty || 'Desconocida',
             project: r.title || r.kind || 'Proyecto Sin Nombre',
             stage: r.status === 'SIGNED' ? 'CLOSED' : 'NEGOTIATION',
-            value: 'N/A',
-            owner: r.createdByEmail || 'Nexus',
-            nextAction: 'Revisar expediente',
+            statusRaw: typeof r.status === 'string' ? r.status : null,
+            value: null,
+            owner: r.createdByEmail ?? null,
+            nextAction: null,
+            createdAt: r.createdAt ?? null,
             rawData: r,
           }));
           setDeals(mappedDeals);
+          try {
+            const params = new URLSearchParams(window.location.search);
+            const initialQuery = params.get("q") ?? "";
+            const initialStatus = params.get("status") ?? "ALL";
+            if (initialQuery) setQuery(initialQuery);
+            if (initialStatus) setStatusFilter(initialStatus);
+            const wanted = params.get("deal");
+            if (wanted) {
+              const match = mappedDeals.find(
+                (deal) => deal.publicId === wanted || deal.roomId === wanted
+              );
+              if (match) setSelectedDeal(match);
+            }
+          } catch {
+            // sin URL válida: se queda sin selección
+          }
         }
       } catch (err) {
         console.error('Error fetching deals', err);
@@ -134,6 +158,25 @@ export function OperationsClientsTab({ onOpenApprovals }: OperationsClientsTabPr
     };
     fetchDeals();
   }, []);
+
+  const statusOptions = useMemo(() => {
+    const values = new Set<string>();
+    deals.forEach((deal) => {
+      if (deal.statusRaw) values.add(deal.statusRaw);
+    });
+    return Array.from(values).sort();
+  }, [deals]);
+
+  const filteredDeals = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    return deals.filter((deal) => {
+      if (statusFilter !== "ALL" && deal.statusRaw !== statusFilter) return false;
+      if (!needle) return true;
+      return [deal.organization, deal.project, deal.publicId, deal.owner, deal.id]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(needle));
+    });
+  }, [deals, query, statusFilter]);
 
   // El panel se monta debajo de las acciones rápidas; sin esto, en pantallas
   // chicas el clic parecía no hacer nada porque el formulario quedaba fuera de vista.
@@ -164,8 +207,32 @@ export function OperationsClientsTab({ onOpenApprovals }: OperationsClientsTabPr
     return Array.from(new Set(emails)).join(', ');
   };
 
+  const syncDealToUrl = (deal: Deal | null) => {
+    if (typeof window === "undefined") return;
+    if (!window.location.pathname.endsWith("/ops")) return;
+    const url = new URL(window.location.href);
+    if (deal) {
+      url.searchParams.set("deal", deal.publicId ?? deal.roomId);
+    } else {
+      url.searchParams.delete("deal");
+    }
+    window.history.replaceState(null, "", url);
+  };
+
+  const syncFiltersToUrl = (nextQuery: string, nextStatus: string) => {
+    if (typeof window === "undefined") return;
+    if (!window.location.pathname.endsWith("/ops")) return;
+    const url = new URL(window.location.href);
+    if (nextQuery.trim()) url.searchParams.set("q", nextQuery.trim());
+    else url.searchParams.delete("q");
+    if (nextStatus !== "ALL") url.searchParams.set("status", nextStatus);
+    else url.searchParams.delete("status");
+    window.history.replaceState(null, "", url);
+  };
+
   const selectDeal = (deal: Deal) => {
     setSelectedDeal(deal);
+    syncDealToUrl(deal);
     setSessions([]);
     setSessionsLoading(true);
     fetch(`/api/nexus/deals/${encodeURIComponent(deal.roomId)}/meetings`, {
@@ -314,7 +381,7 @@ export function OperationsClientsTab({ onOpenApprovals }: OperationsClientsTabPr
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <div className="px-3 py-1.5 rounded-lg bg-black/40 border border-white/10 text-zinc-400 text-xs font-mono">
-            {isLoading ? 'Cargando...' : `${deals.length} Active Deals`}
+            {isLoading ? 'Cargando…' : `${deals.length} deals activos`}
           </div>
           <Link
             href="/nexus/rooms"
@@ -334,14 +401,61 @@ export function OperationsClientsTab({ onOpenApprovals }: OperationsClientsTabPr
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="flex flex-col gap-6 xl:flex-row xl:flex-wrap 2xl:flex-nowrap">
         {/* Left Column: Deal List */}
-        <div className="lg:col-span-1 space-y-3">
+        <div className="w-full shrink-0 space-y-3 xl:w-[320px]">
           <h4 className="text-xs font-bold text-zinc-500 font-mono uppercase tracking-wider mb-2">
-            Pipeline Activo
+            Pipeline activo · {filteredDeals.length}/{deals.length}
           </h4>
+          <div className="relative">
+            <input
+              type="search"
+              value={query}
+              onChange={(event) => {
+                setQuery(event.target.value);
+                syncFiltersToUrl(event.target.value, statusFilter);
+              }}
+              placeholder="Buscar por empresa, deal o owner…"
+              className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-[12px] text-zinc-200 outline-none placeholder:text-zinc-600 focus:border-sky-500/40"
+            />
+          </div>
+          {statusOptions.length > 1 && (
+            <div className="flex flex-wrap gap-1.5">
+              <button
+                type="button"
+                onClick={() => {
+                  setStatusFilter("ALL");
+                  syncFiltersToUrl(query, "ALL");
+                }}
+                className={`rounded-md border px-2 py-1 text-[10px] font-mono uppercase tracking-wider transition-colors ${
+                  statusFilter === "ALL"
+                    ? "border-sky-500/40 bg-sky-500/10 text-sky-200"
+                    : "border-white/10 bg-black/40 text-zinc-500 hover:text-zinc-200"
+                }`}
+              >
+                Todos
+              </button>
+              {statusOptions.map((status) => (
+                <button
+                  key={status}
+                  type="button"
+                  onClick={() => {
+                    setStatusFilter(status);
+                    syncFiltersToUrl(query, status);
+                  }}
+                  className={`rounded-md border px-2 py-1 text-[10px] font-mono uppercase tracking-wider transition-colors ${
+                    statusFilter === status
+                      ? "border-sky-500/40 bg-sky-500/10 text-sky-200"
+                      : "border-white/10 bg-black/40 text-zinc-500 hover:text-zinc-200"
+                  }`}
+                >
+                  {status}
+                </button>
+              ))}
+            </div>
+          )}
           <div className="space-y-2">
-            {deals.map(deal => (
+            {filteredDeals.map(deal => (
               <div 
                 key={deal.id}
                 onClick={() => selectDeal(deal)}
@@ -350,7 +464,7 @@ export function OperationsClientsTab({ onOpenApprovals }: OperationsClientsTabPr
                 <div className="flex justify-between items-start mb-2">
                   <span className="text-[10px] text-zinc-500 font-mono">{deal.id}</span>
                   <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded border uppercase ${getStageStyles(deal.stage)}`}>
-                    {deal.stage}
+                    {deal.statusRaw ?? deal.stage}
                   </span>
                 </div>
                 <h5 className="text-sm font-semibold text-zinc-200">{deal.organization}</h5>
@@ -362,11 +476,16 @@ export function OperationsClientsTab({ onOpenApprovals }: OperationsClientsTabPr
                 Sin deals visibles para tu identidad.
               </p>
             )}
+            {!isLoading && deals.length > 0 && filteredDeals.length === 0 && (
+              <p className="text-[11px] text-zinc-500 font-mono p-3 border border-white/5 rounded-xl bg-[#0C0C10]">
+                Ningún deal coincide con la búsqueda.
+              </p>
+            )}
           </div>
         </div>
 
-        {/* Right Column: Deal Detail View */}
-        <div className="lg:col-span-2">
+        {/* Center Column: Deal Detail View */}
+        <div className="min-w-0 flex-1">
           {selectedDeal ? (
             <motion.div 
               key={selectedDeal.id}
@@ -382,7 +501,9 @@ export function OperationsClientsTab({ onOpenApprovals }: OperationsClientsTabPr
                       <span className={`text-[10px] font-mono px-2 py-0.5 rounded border uppercase ${getStageStyles(selectedDeal.stage)}`}>
                         {selectedDeal.stage}
                       </span>
-                      <span className="text-xs text-zinc-500 font-mono">Owner: {selectedDeal.owner}</span>
+                      <span className="text-xs text-zinc-500 font-mono">
+                        Owner: {selectedDeal.owner ?? "sin asignar"}
+                      </span>
                     </div>
                     <h2 className="text-xl font-bold text-white mt-2">{selectedDeal.organization}</h2>
                     <p className="text-sm text-zinc-400 mt-1 flex items-center gap-1.5">
@@ -392,7 +513,7 @@ export function OperationsClientsTab({ onOpenApprovals }: OperationsClientsTabPr
                   </div>
                   <div className="text-right">
                     <p className="text-[10px] text-zinc-500 font-mono uppercase">Deal Value</p>
-                    <p className="text-xl font-mono text-emerald-400">{selectedDeal.value}</p>
+                    <p className="text-xl font-mono text-emerald-400">{selectedDeal.value ?? "—"}</p>
                   </div>
                 </div>
               </div>
@@ -405,7 +526,9 @@ export function OperationsClientsTab({ onOpenApprovals }: OperationsClientsTabPr
                   <div className="space-y-2 text-xs">
                     <p className="flex justify-between text-zinc-400">
                       <span>Próxima Acción:</span>
-                      <span className="text-white text-right w-1/2">{selectedDeal.nextAction}</span>
+                      <span className="text-white text-right w-1/2">
+                        {selectedDeal.nextAction ?? "Sin siguiente paso"}
+                      </span>
                     </p>
                     <p className="flex justify-between text-zinc-400">
                       <span>Deal Room:</span>
@@ -437,62 +560,6 @@ export function OperationsClientsTab({ onOpenApprovals }: OperationsClientsTabPr
                       </Link>
                     )}
                   </div>
-                </div>
-
-                {/* Última sesión: lo que dejó la presentación de este deal */}
-                <div className="p-4 rounded-xl border border-white/5 bg-black/40 space-y-3 md:col-span-2">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-[11px] font-mono text-zinc-500 uppercase">Últimas sesiones</h4>
-                    {sessions[0] && (
-                      <Link
-                        href={`/nexus/agenda?meeting=${encodeURIComponent(sessions[0].id)}`}
-                        className="text-[10px] font-mono text-sky-300 hover:text-sky-200"
-                      >
-                        Abrir en agenda →
-                      </Link>
-                    )}
-                  </div>
-                  {sessionsLoading ? (
-                    <p className="text-[11px] text-zinc-500">Cargando sesiones…</p>
-                  ) : sessions.length === 0 ? (
-                    <p className="text-[11px] text-zinc-500">
-                      Sin sesiones registradas para este deal. Agenda una presentación para empezar.
-                    </p>
-                  ) : (
-                    <div className="space-y-2">
-                      {sessions.slice(0, 3).map((session) => {
-                        const start = session.startedAt ?? session.startsAt;
-                        const end = session.endedAt ?? session.endsAt;
-                        const minutes =
-                          start && end
-                            ? Math.max(1, Math.round((new Date(end).getTime() - new Date(start).getTime()) / 60000))
-                            : null;
-                        return (
-                          <div key={session.id} className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="text-[11px] text-zinc-200">
-                                {start ? new Date(start).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }) : 'Sin fecha'}
-                                {minutes ? ` · ${minutes} min` : ''}
-                              </span>
-                              <span className="text-[9px] font-mono uppercase tracking-widest text-zinc-500">
-                                {session.status}
-                              </span>
-                            </div>
-                            {session.summary && (
-                              <p className="mt-1 line-clamp-3 text-[11px] leading-relaxed text-zinc-400">
-                                {session.summary}
-                              </p>
-                            )}
-                            {session.notes && (
-                              <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-sky-300/80">
-                                Notas: {session.notes}
-                              </p>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
                 </div>
 
                 {/* Quick Actions */}
@@ -761,6 +828,84 @@ export function OperationsClientsTab({ onOpenApprovals }: OperationsClientsTabPr
             </div>
           )}
         </div>
+
+        {/* Right Column: actividad de la cuenta */}
+        <aside className="w-full shrink-0 space-y-3 2xl:w-[340px]">
+          <div className="rounded-xl border border-white/5 bg-black/40 p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h4 className="text-[11px] font-mono text-zinc-500 uppercase">Últimas sesiones</h4>
+              {sessions[0] && (
+                <Link
+                  href={`/nexus/agenda?meeting=${encodeURIComponent(sessions[0].id)}`}
+                  className="text-[10px] font-mono text-sky-300 hover:text-sky-200"
+                >
+                  Abrir en agenda →
+                </Link>
+              )}
+            </div>
+            {sessionsLoading ? (
+              <p className="text-[11px] text-zinc-500">Cargando sesiones…</p>
+            ) : sessions.length === 0 ? (
+              <p className="text-[11px] leading-relaxed text-zinc-500">
+                Sin sesiones registradas. Agenda una presentación para empezar a acumular historial.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {sessions.slice(0, 3).map((session) => {
+                  const start = session.startedAt ?? session.startsAt;
+                  const end = session.endedAt ?? session.endsAt;
+                  const minutes =
+                    start && end
+                      ? Math.max(1, Math.round((new Date(end).getTime() - new Date(start).getTime()) / 60000))
+                      : null;
+                  return (
+                    <div key={session.id} className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[11px] text-zinc-200">
+                          {start
+                            ? new Date(start).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' })
+                            : 'Sin fecha'}
+                          {minutes ? ` · ${minutes} min` : ''}
+                        </span>
+                        <span className="text-[9px] font-mono uppercase tracking-widest text-zinc-500">
+                          {session.status}
+                        </span>
+                      </div>
+                      {session.summary && (
+                        <p className="mt-1 line-clamp-3 text-[11px] leading-relaxed text-zinc-400">
+                          {session.summary}
+                        </p>
+                      )}
+                      {session.notes && (
+                        <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-sky-300/80">
+                          Notas: {session.notes}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <div className="rounded-xl border border-white/5 bg-black/40 p-4 space-y-2">
+            <h4 className="text-[11px] font-mono text-zinc-500 uppercase">Siguiente paso</h4>
+            <p className="text-[11px] leading-relaxed text-zinc-400">
+              {selectedDeal && selectedDeal.nextAction
+                ? selectedDeal.nextAction
+                : selectedDeal
+                  ? "Sin siguiente paso definido."
+                  : "Selecciona un deal para ver su actividad."}
+            </p>
+            <Link
+              href="/nexus/agenda"
+              className="inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-sky-300 hover:text-sky-200"
+            >
+              Ir a la agenda
+              <ArrowUpRight className="w-3 h-3" />
+            </Link>
+          </div>
+        </aside>
       </div>
     </div>
   );

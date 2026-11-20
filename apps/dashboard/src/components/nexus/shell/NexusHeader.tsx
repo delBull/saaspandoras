@@ -6,11 +6,10 @@ import { Activity, TerminalSquare, Handshake, Code2, GraduationCap, BrainCircuit
 
 interface NexusHeaderProps {
   role: string | null;
-  setIsOpsModalOpen: (val: boolean) => void;
   onOpenHermes?: () => void;
 }
 
-export function NexusHeader({ role, setIsOpsModalOpen, onOpenHermes }: NexusHeaderProps) {
+export function NexusHeader({ role, onOpenHermes }: NexusHeaderProps) {
   return (
     <header className="h-12 shrink-0 relative z-20 flex items-center justify-between px-4 md:px-6 bg-[#07070B] border-b border-white/[0.08] font-mono">
       <div className="flex items-center gap-3 min-w-0">
@@ -50,13 +49,13 @@ export function NexusHeader({ role, setIsOpsModalOpen, onOpenHermes }: NexusHead
               HERMES
             </button>
           )}
-          <button
-            onClick={() => setIsOpsModalOpen(true)}
+          <Link
+            href="/nexus/ops"
             className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-purple-500/30 bg-purple-500/10 text-purple-300 text-[10px] tracking-wider hover:bg-purple-500/20 transition-colors shrink-0"
           >
             <TerminalSquare className="w-3 h-3" />
             OPERATIONS HUB
-          </button>
+          </Link>
           <Link
             href="/nexus/rooms"
             className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-amber-500/30 bg-amber-500/10 text-amber-300 text-[10px] tracking-wider hover:bg-amber-500/20 transition-colors shrink-0"

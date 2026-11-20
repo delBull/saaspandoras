@@ -33,7 +33,6 @@ import {
   UserPlus,
   UserCheck,
 } from "lucide-react";
-import { NEXUS_TASKS, taskTitle } from "@/lib/nexus-tasks";
 import { CognitiveProfileWidget } from "@/components/hermes/CognitiveProfileWidget";
 import { ConfigureAgendaButton } from "@/components/scheduler/ConfigureAgendaButton";
 
@@ -172,6 +171,56 @@ function nextStep(room: Room): { label: string; status: Room["status"] } | null 
   }
 }
 
+/**
+ * Resumen cognitivo de Hermes. Se usa en el rail (pantallas anchas) y al final del
+ * detalle en laptops, para no perderlo cuando el rail no cabe.
+ */
+function CognitiveSummaryCard({ summary }: { summary?: string[] | null }) {
+  if (!summary || summary.length === 0) {
+    return (
+      <div className="rounded-xl border border-white/10 bg-[#0C0C10] p-4">
+        <h4 className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">
+          Hermes Cognitive Summary
+        </h4>
+        <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
+          Sin resumen cognitivo para este deal.
+        </p>
+      </div>
+    );
+  }
+  return (
+    <div className="rounded-xl border border-indigo-500/20 bg-indigo-500/[0.04] p-4">
+      <h4 className="mb-3 flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-indigo-300">
+        Hermes Cognitive Summary
+        <span className="rounded-md bg-indigo-500/20 px-1.5 py-0.5 text-[8px] leading-none text-indigo-200">
+          AI GENERATED
+        </span>
+      </h4>
+      <ul className="space-y-2">
+        {summary.map((point, idx) => {
+          const parts = point.split(/(\*\*.*?\*\*)/g);
+          return (
+            <li key={idx} className="flex items-start gap-2 text-[11px] leading-relaxed text-zinc-400">
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-500" />
+              <span>
+                {parts.map((part, j) =>
+                  part.startsWith("**") && part.endsWith("**") ? (
+                    <strong key={j} className="font-semibold text-zinc-200">
+                      {part.slice(2, -2)}
+                    </strong>
+                  ) : (
+                    <span key={j}>{part}</span>
+                  )
+                )}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
 export default function DealRoomConsole() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
@@ -205,6 +254,7 @@ export default function DealRoomConsole() {
   const [nrNote, setNrNote] = useState("");
   const [nrSigners, setNrSigners] = useState("");
   const [nrTaskRef, setNrTaskRef] = useState("");
+  const [linkedTasks, setLinkedTasks] = useState<Array<{ id: string; title: string }>>([]);
   const [nrOpenSign, setNrOpenSign] = useState(false);
 
   const [signersInput, setSignersInput] = useState("");
@@ -246,6 +296,29 @@ export default function DealRoomConsole() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/nexus/tasks", { credentials: "include", cache: "no-store" });
+        if (!res.ok) return;
+        const data = await res.json() as { tasks?: Array<{ id?: string; title?: string }> };
+        if (cancelled || !Array.isArray(data.tasks)) return;
+        setLinkedTasks(
+          data.tasks
+            .filter((task) => typeof task?.id === "string" && typeof task?.title === "string")
+            .map((task) => ({ id: task.id as string, title: task.title as string }))
+        );
+      } catch {
+        // sin tareas: el selector queda vacío, nunca con datos inventados
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const taskLabel = (ref?: string | null) =>
+    ref ? linkedTasks.find((task) => task.id === ref)?.title ?? null : null;
 
   const organizedRooms = useMemo(() => {
     const filteredRooms = showArchived ? rooms : rooms.filter(r => r.status !== "CANCELLED");
@@ -787,7 +860,7 @@ export default function DealRoomConsole() {
                   className="mt-1 w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-white focus:outline-none focus:border-amber-500/40"
                 >
                   <option value="">Sin tarea vinculada</option>
-                  {NEXUS_TASKS.map((t) => (
+                  {linkedTasks.map((t) => (
                     <option key={t.id} value={t.id}>
                       {t.id} · {t.title}
                     </option>
@@ -943,7 +1016,7 @@ export default function DealRoomConsole() {
                       <p className="flex items-center gap-1.5 mt-1 text-[9px] font-mono text-zinc-500">
                         <Link2 className="w-3 h-3 text-amber-300/70 shrink-0" />
                         TAREA OPERATIONS VINCULADA · <span className="text-amber-300">{selected.taskRef}</span>
-                        {taskTitle(selected.taskRef) && <span className="text-zinc-400 truncate">· {taskTitle(selected.taskRef)}</span>}
+                        {taskLabel(selected.taskRef) && <span className="text-zinc-400 truncate">· {taskLabel(selected.taskRef)}</span>}
                         <span className="text-zinc-600 whitespace-nowrap">(interno · no visible al firmante)</span>
                       </p>
                     )}
@@ -972,33 +1045,9 @@ export default function DealRoomConsole() {
                         </div>
                       </div>
                     )}
-                    {selected.cognitiveSummary && selected.cognitiveSummary.length > 0 && (
-                      <div className="mt-4 p-4 rounded-xl border border-indigo-500/20 bg-indigo-500/[0.03] max-w-lg">
-                        <h4 className="text-xs font-semibold text-indigo-400 font-mono tracking-widest uppercase mb-3 flex items-center gap-2">
-                          Hermes Cognitive Summary
-                          <span className="px-1.5 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 text-[9px] leading-none">AI GENERATED</span>
-                        </h4>
-                        <ul className="space-y-2">
-                          {selected.cognitiveSummary.map((point, idx) => {
-                            // Simple markdown parser for the summary points (bold)
-                            const parts = point.split(/(\*\*.*?\*\*)/g);
-                            return (
-                              <li key={idx} className="flex items-start gap-2 text-[11px] text-zinc-400 leading-relaxed">
-                                <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-1.5 shrink-0"></div>
-                                <span>
-                                  {parts.map((p, j) => {
-                                    if (p.startsWith("**") && p.endsWith("**")) {
-                                      return <strong key={j} className="text-zinc-200 font-semibold">{p.slice(2, -2)}</strong>;
-                                    }
-                                    return <span key={j}>{p}</span>;
-                                  })}
-                                </span>
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      </div>
-                    )}
+                    <div className="mt-4 2xl:hidden">
+                      <CognitiveSummaryCard summary={selected.cognitiveSummary} />
+                    </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
@@ -1134,8 +1183,8 @@ export default function DealRoomConsole() {
               </div>
 
               {/* Tabs */}
-              <div className="flex items-center justify-between gap-2 px-4 md:px-5 py-2 border-b border-white/10">
-                <div className="flex items-center gap-1 overflow-x-auto">
+              <div className="flex flex-wrap items-center justify-between gap-2 px-4 md:px-5 py-2 border-b border-white/10">
+                <div className="flex flex-wrap items-center gap-1">
                   <button
                     onClick={() => setView("sections")}
                     className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[9px] font-mono tracking-wider whitespace-nowrap transition-colors ${
@@ -1557,6 +1606,125 @@ export default function DealRoomConsole() {
             </>
           )}
         </div>
+
+      {/* Inspector del deal (3ª columna) */}
+      {selected && (
+        <aside className="hidden 2xl:flex 2xl:w-[340px] shrink-0 flex-col gap-3 overflow-y-auto border-l border-white/10 bg-[#0A0A0E] p-4">
+          <div className="flex items-center justify-between">
+            <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-zinc-500">Inspector</p>
+            <span className="text-[9px] font-mono text-zinc-600">{selected.publicId}</span>
+          </div>
+
+          <CognitiveSummaryCard summary={selected.cognitiveSummary} />
+
+          <div className="rounded-xl border border-white/10 bg-[#0C0C10] p-4">
+            <h4 className="mb-2 text-[10px] font-mono uppercase tracking-widest text-zinc-500">Ficha</h4>
+            <dl className="space-y-1.5 text-[11px]">
+              <div className="flex items-center justify-between gap-2">
+                <dt className="text-zinc-500">Tipo</dt>
+                <dd className="text-right text-zinc-300">{KIND_LABEL[selected.kind]}</dd>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <dt className="text-zinc-500">Estado</dt>
+                <dd className="text-right text-zinc-300">{STATUS_LABEL[selected.status]}</dd>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <dt className="text-zinc-500">Contraparte</dt>
+                <dd className="max-w-[60%] truncate text-right text-zinc-300" title={selected.counterparty}>
+                  {selected.counterparty}
+                </dd>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <dt className="text-zinc-500">Empresa</dt>
+                <dd className="max-w-[60%] truncate text-right text-zinc-300" title={selected.company}>
+                  {selected.company}
+                </dd>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <dt className="text-zinc-500">Creado por</dt>
+                <dd className="max-w-[60%] truncate text-right text-zinc-300">
+                  {selected.creatorDisplay ?? selected.createdBy ?? "sin dato"}
+                </dd>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <dt className="text-zinc-500">Creado</dt>
+                <dd className="text-right text-zinc-400">
+                  {new Date(selected.createdAt).toLocaleDateString("es-MX")}
+                </dd>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <dt className="text-zinc-500">Vigencia</dt>
+                <dd className="text-right text-zinc-400">
+                  {selected.enteredIntoForceAt
+                    ? new Date(selected.enteredIntoForceAt).toLocaleDateString("es-MX")
+                    : "sin definir"}
+                </dd>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <dt className="text-zinc-500">Firmantes</dt>
+                <dd className="text-right text-zinc-300">{selected.signers.length}</dd>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <dt className="text-zinc-500">Compartido con</dt>
+                <dd className="text-right text-zinc-300">{selected.sharedWith?.length ?? 0}</dd>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <dt className="text-zinc-500">Tarea vinculada</dt>
+                <dd
+                  className="max-w-[60%] truncate text-right text-zinc-300"
+                  title={taskLabel(selected.taskRef) ?? undefined}
+                >
+                  {taskLabel(selected.taskRef) ?? "ninguna"}
+                </dd>
+              </div>
+            </dl>
+          </div>
+
+          <div className="rounded-xl border border-white/10 bg-[#0C0C10] p-4">
+            <h4 className="mb-2 text-[10px] font-mono uppercase tracking-widest text-zinc-500">Controles</h4>
+            <div className="space-y-1.5 text-[11px]">
+              <div className="flex items-center justify-between">
+                <span className="text-zinc-500">NDA</span>
+                <span className={selected.ndaEnabled ? "text-purple-300" : "text-zinc-500"}>
+                  {selected.ndaEnabled ? `activo · ${selected.ndaPhase ?? "after_proposal"}` : "inactivo"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-zinc-500">Firma online</span>
+                <span className={selected.openSign ? "text-emerald-300" : "text-zinc-500"}>
+                  {selected.openSign ? "habilitada" : "requiere email"}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-white/10 bg-[#0C0C10] p-4">
+            <div className="mb-2 flex items-center justify-between">
+              <h4 className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">Última actividad</h4>
+              <button
+                type="button"
+                onClick={() => setView("audit")}
+                className="text-[9px] font-mono uppercase tracking-wider text-amber-300/80 hover:text-amber-200"
+              >
+                Ver todo →
+              </button>
+            </div>
+            {selected.audit[0] ? (
+              <div>
+                <p className="text-[11px] text-zinc-300">{selected.audit[0].action}</p>
+                <p className="mt-0.5 text-[10px] text-zinc-500">
+                  {selected.audit[0].actor} · {shortAt(selected.audit[0].at)}
+                </p>
+                {selected.audit[0].detail && (
+                  <p className="mt-1 text-[10px] leading-relaxed text-zinc-500">{selected.audit[0].detail}</p>
+                )}
+              </div>
+            ) : (
+              <p className="text-[11px] text-zinc-500">Sin actividad registrada.</p>
+            )}
+          </div>
+        </aside>
+      )}
       </div>
 
       {confirmDelete && selected && (

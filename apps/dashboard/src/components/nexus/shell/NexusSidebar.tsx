@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -22,6 +22,7 @@ import {
   LayoutDashboard,
   LogOut,
   MonitorPlay,
+  CalendarDays,
   type LucideIcon,
 } from "lucide-react";
 import type { NexusAuthContext } from "@saasfly/shared";
@@ -49,6 +50,20 @@ interface NavigationSection {
 export function NexusSidebar({ auth, onAction }: NexusSidebarProps) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  const [tabSlug, setTabSlug] = useState<string | null>(null);
+
+  useEffect(() => {
+    const read = () => {
+      try {
+        setTabSlug(new URLSearchParams(window.location.search).get("tab"));
+      } catch {
+        setTabSlug(null);
+      }
+    };
+    read();
+    window.addEventListener("popstate", read);
+    return () => window.removeEventListener("popstate", read);
+  }, [pathname]);
   const permissions = auth.permissions || {} as Record<string, boolean>;
 
   const navigation: NavigationSection[] = [
@@ -57,30 +72,30 @@ export function NexusSidebar({ auth, onAction }: NexusSidebarProps) {
       items: [
         { name: "Command Center", href: "/nexus", icon: Command, exact: true },
         { name: "Unified Index", href: "#", action: "UNIFIED_INDEX", icon: LayoutDashboard },
-        { name: "My Work", href: "#", action: "WORK_ENGINE", icon: CheckSquare },
-        { name: "Approvals", href: "#", action: "APPROVALS", icon: ShieldCheck },
-        { name: "Activity & Incidents", href: "#", action: "ACTIVITY", icon: AlertOctagon },
+        { name: "My Work", href: "/nexus/ops?tab=work", icon: CheckSquare },
+        { name: "Approvals", href: "/nexus/ops?tab=approvals", icon: ShieldCheck },
+        { name: "Activity & Incidents", href: "/nexus/ops?tab=activity", icon: AlertOctagon },
       ]
     },
     {
       label: "CLIENTS & GROWTH",
       items: [
-        { name: "Organizations", href: "#", action: "CLIENTS", icon: Building2 },
-        { name: "Deals", href: "#", action: "CLIENTS", icon: Briefcase },
-        { name: "Deal Rooms", href: "#", action: "DATAROOM", icon: Handshake, show: permissions.dealRoom },
+        { name: "Clients & CRM", href: "/nexus/ops?tab=clients", icon: Building2 },
+        { name: "Agenda", href: "/nexus/agenda", icon: CalendarDays },
+        { name: "Deal Rooms", href: "/nexus/rooms", icon: Handshake, show: permissions.dealRoom },
       ]
     },
     {
       label: "KNOWLEDGE",
       items: [
-        { name: "Knowledge", href: "#", action: "KNOWLEDGE", icon: BookOpen },
+        { name: "Knowledge", href: "/nexus/ops?tab=knowledge", icon: BookOpen },
         { name: "Presentations", href: "/nexus/presentations", icon: MonitorPlay },
       ]
     },
     {
       label: "SYSTEMS",
       items: [
-        { name: "Developers", href: "#", action: "SETTINGS", icon: Code2, show: auth.role === "SUPER_ADMIN" || auth.role === "ADMIN" },
+        { name: "Developers", href: "/nexus/developers", icon: Code2, show: auth.role === "SUPER_ADMIN" || auth.role === "ADMIN" },
       ]
     },
     {
@@ -92,8 +107,8 @@ export function NexusSidebar({ auth, onAction }: NexusSidebarProps) {
     {
       label: "ADMIN",
       items: [
-        { name: "Collaborators", href: "#", action: "COHORTS", icon: Users, show: auth.role === "SUPER_ADMIN" },
-        { name: "Settings", href: "#", action: "SETTINGS", icon: Settings, show: permissions.settings },
+        { name: "Collaborators", href: "/nexus/ops?tab=cohorts", icon: Users, show: auth.role === "SUPER_ADMIN" },
+        { name: "Settings", href: "/nexus/settings", icon: Settings, show: permissions.settings },
       ]
     }
   ];
@@ -144,9 +159,14 @@ export function NexusSidebar({ auth, onAction }: NexusSidebarProps) {
                     );
                   }
 
-                  const isActive = item.exact 
-                    ? pathname === item.href 
-                    : pathname.startsWith(item.href);
+                  const [itemPath, itemQuery] = item.href.split("?");
+                  const isActive = (() => {
+                    if (item.exact) return pathname === item.href;
+                    if (pathname !== itemPath && !pathname.startsWith(`${itemPath}/`)) return false;
+                    if (!itemQuery) return pathname === itemPath || pathname.startsWith(`${itemPath}/`);
+                    const wantedTab = new URLSearchParams(itemQuery).get("tab");
+                    return tabSlug === wantedTab;
+                  })();
                     
                   const LinkEl = item.external ? "a" : Link;
                   const linkProps = item.external 
