@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getNexusAuthContext } from "@saasfly/shared";
 import { db } from "@saasfly/db-core";
-import { meetings, meetingActionItems } from "@saasfly/db-core";
+import { meetings, meetingActionItems, meetingParticipants } from "@saasfly/db-core";
 import { eq, and } from "@saasfly/db-core";
 
 export async function GET(req: Request, { params }: { params: Promise<{ meetingId: string }> }) {
@@ -25,6 +25,16 @@ export async function GET(req: Request, { params }: { params: Promise<{ meetingI
       return NextResponse.json({ error: "Reunión no encontrada." }, { status: 404 });
     }
 
+    const participants = await db
+      .select({
+        email: meetingParticipants.email,
+        identityId: meetingParticipants.identityId,
+        sentAt: meetingParticipants.summarySentAt,
+        followUpStatus: meetingParticipants.followUpStatus,
+      })
+      .from(meetingParticipants)
+      .where(eq(meetingParticipants.meetingId, meetingId));
+
     const items = await db.query.meetingActionItems.findMany({
       where: eq(meetingActionItems.meetingId, meetingId),
       orderBy: (table, { asc }) => [asc(table.createdAt)]
@@ -35,6 +45,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ meetingI
       summary: meetRow.aiSummary,
       notes: meetRow.presenterNotes ?? "",
       actionItems: items,
+      // Estado del seguimiento: quién ya lo recibió y quién falta.
+      participants: participants.filter((p) => {
+        const identity = (p.identityId ?? p.email ?? "").trim();
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identity);
+      }),
       // Metadatos de la sesión para la agenda (duración real, estado y deck).
       meeting: {
         id: meetRow.id,

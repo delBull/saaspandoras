@@ -69,28 +69,49 @@ export function MeetingDetailsDrawer({ isOpen, onClose, meeting }: MeetingDetail
   const [extraEmailsText, setExtraEmailsText] = useState("");
   const [extraEmailsError, setExtraEmailsError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (isOpen && meeting?.id) {
-      setIsLoading(true);
+  // Estado del seguimiento: quién ya lo recibió y en qué paso va.
+  const [participants, setParticipants] = useState<
+    Array<{ email: string | null; identityId: string | null; sentAt: string | null }>
+  >([]);
+  const [followUpEditing, setFollowUpEditing] = useState(false);
+
+  const loadMeeting = React.useCallback(async () => {
+    if (!meeting?.id) return;
+    setIsLoading(true);
       setSummary(null);
       setActionItems([]);
       setNotes("");
       setNotesSaved(null);
       setMeta(null);
-      fetch(`/api/v1/internal/nexus/meets/${meeting.id}`)
-        .then(res => res.json())
-        .then(data => {
-          if (data.success) {
-            setSummary(data.summary);
-            setActionItems(data.actionItems || []);
-            setNotes(typeof data.notes === "string" ? data.notes : "");
-            setMeta(data.meeting ?? null);
-          }
-        })
-        .catch(console.error)
-        .finally(() => setIsLoading(false));
+    try {
+      const res = await fetch(`/api/v1/internal/nexus/meets/${meeting.id}`, { cache: "no-store" });
+      const data = await res.json();
+      if (data.success) {
+        setSummary(data.summary);
+        setActionItems(data.actionItems || []);
+        setNotes(typeof data.notes === "string" ? data.notes : "");
+        setMeta(data.meeting ?? null);
+        setParticipants(Array.isArray(data.participants) ? data.participants : []);
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsLoading(false);
     }
-  }, [isOpen, meeting?.id]);
+  }, [meeting?.id]);
+
+  useEffect(() => {
+    if (isOpen && meeting?.id) {
+      setSummary(null);
+      setActionItems([]);
+      setNotes("");
+      setNotesSaved(null);
+      setMeta(null);
+      setParticipants([]);
+      setFollowUpEditing(false);
+      void loadMeeting();
+    }
+  }, [isOpen, meeting?.id, loadMeeting]);
 
   const handleUploadClick = () => {
     fileInputRef.current?.click();
@@ -225,7 +246,11 @@ export function MeetingDetailsDrawer({ isOpen, onClose, meeting }: MeetingDetail
             ? "Esos destinatarios ya habían recibido el seguimiento."
             : "No hay destinatarios con email para enviar."
       );
-      if (ok) router.refresh();
+      if (ok) {
+        setFollowUpEditing(false);
+        void loadMeeting();
+        router.refresh();
+      }
     } catch {
       setSummarySendOk(false);
       setSummarySendMessage("Error de red al enviar el seguimiento.");
@@ -322,6 +347,14 @@ export function MeetingDetailsDrawer({ isOpen, onClose, meeting }: MeetingDetail
       console.error('Failed to toggle action item', err);
     }
   };
+
+  const followUpRecipients = participants.filter((p) => {
+    const identity = (p.identityId ?? p.email ?? "").trim();
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identity);
+  });
+  const followUpSent = followUpRecipients.filter((p) => Boolean(p.sentAt));
+  const followUpPending = followUpRecipients.filter((p) => !p.sentAt);
+  const followUpComplete = followUpRecipients.length > 0 && followUpPending.length === 0;
 
   const sessionStart = meta?.startedAt
     ? new Date(meta.startedAt)
@@ -604,79 +637,162 @@ export function MeetingDetailsDrawer({ isOpen, onClose, meeting }: MeetingDetail
 
               {!isLoading && meeting.isHost !== false && meeting.status === "ended" && (
                 <div className="space-y-3 rounded-xl border border-white/10 bg-white/[0.02] p-5">
-                  <div className="flex items-center gap-2 text-lime-400 text-xs font-mono uppercase tracking-widest">
-                    <CheckCircle2 className="w-4 h-4" /> Seguimiento a participantes
-                  </div>
-                  <p className="text-[11px] leading-relaxed text-zinc-500">
-                    {summary
-                      ? "Incluye el resumen, las tareas y el material que marques."
-                      : "Sin resumen IA, el correo sale como seguimiento de la sesión con el material que marques."}
-                  </p>
-                  <textarea
-                    value={message}
-                    onChange={(event) => setMessage(event.target.value.slice(0, 2000))}
-                    rows={3}
-                    placeholder="Mensaje para los participantes (opcional)…"
-                    className="w-full resize-y rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-[12px] leading-relaxed text-zinc-200 outline-none placeholder:text-zinc-600 focus:border-lime-500/40"
-                  />
-                  <div className="grid grid-cols-2 gap-2">
-                    <label className="flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-[10px] text-zinc-300">
-                      <input type="checkbox" checked={includeDeck} onChange={(e) => setIncludeDeck(e.target.checked)} className="h-3.5 w-3.5 accent-lime-500" />
-                      Presentación
-                    </label>
-                    <label className="flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-[10px] text-zinc-300">
-                      <input type="checkbox" checked={includeProposal} onChange={(e) => setIncludeProposal(e.target.checked)} className="h-3.5 w-3.5 accent-lime-500" />
-                      Propuesta
-                    </label>
-                    <label className="flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-[10px] text-zinc-300">
-                      <input type="checkbox" checked={includeTasks} onChange={(e) => setIncludeTasks(e.target.checked)} className="h-3.5 w-3.5 accent-lime-500" />
-                      Tareas
-                    </label>
-                    <label className="flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-[10px] text-zinc-300">
-                      <input type="checkbox" checked={includeRecap} onChange={(e) => setIncludeRecap(e.target.checked)} className="h-3.5 w-3.5 accent-lime-500" />
-                      Lo que vimos
-                    </label>
-                  </div>
-                  <input
-                    value={extraEmailsText}
-                    onChange={(event) => {
-                      setExtraEmailsText(event.target.value);
-                      setExtraEmailsError(null);
-                    }}
-                    placeholder="Correos adicionales (separados por coma)"
-                    className="w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-[12px] text-zinc-200 outline-none placeholder:text-zinc-600 focus:border-lime-500/40"
-                  />
-                  {extraEmailsError && (
-                    <p className="text-[10px] leading-relaxed text-rose-300">{extraEmailsError}</p>
-                  )}
-                  <p className="text-[10px] leading-relaxed text-zinc-600">
-                    Los correos adicionales reciben solo este seguimiento; no reciben recordatorios.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={sendSummary}
-                    disabled={sendingSummary}
-                    className="w-full rounded-lg border border-lime-500/30 bg-lime-500/10 px-3 py-2.5 text-[11px] font-mono uppercase tracking-wider text-lime-200 hover:bg-lime-500/20 disabled:opacity-50"
-                  >
-                    {sendingSummary ? (
-                      <>
-                        <Loader2 size={13} className="animate-spin" /> Enviando…
-                      </>
-                    ) : (
-                      <>
-                        <CloudLightning size={13} /> Enviar seguimiento
-                      </>
-                    )}
-                  </button>
-                  {summarySendMessage && (
-                    <p
-                      className={`flex items-center justify-center gap-1.5 text-[10px] ${
-                        summarySendOk ? "text-lime-300" : "text-rose-300"
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 text-lime-400 text-xs font-mono uppercase tracking-widest">
+                      <CheckCircle2 className="w-4 h-4" /> Seguimiento a participantes
+                    </div>
+                    <span
+                      className={`rounded-md border px-2 py-0.5 text-[9px] font-mono uppercase tracking-wider ${
+                        followUpComplete
+                          ? "border-lime-500/30 bg-lime-500/10 text-lime-300"
+                          : followUpSent.length > 0
+                            ? "border-amber-500/30 bg-amber-500/10 text-amber-300"
+                            : "border-white/10 bg-white/5 text-zinc-400"
                       }`}
                     >
-                      {summarySendOk && <Check size={12} />}
-                      {summarySendMessage}
-                    </p>
+                      {followUpComplete
+                        ? "Completo"
+                        : followUpSent.length > 0
+                          ? `Enviado ${followUpSent.length}/${followUpRecipients.length}`
+                          : "Pendiente"}
+                    </span>
+                  </div>
+
+                  {followUpSent.length > 0 && !followUpEditing ? (
+                    <div className="space-y-3">
+                      <p className="text-[11px] leading-relaxed text-zinc-400">
+                        Este seguimiento ya salió.{" "}
+                        {followUpPending.length > 0
+                          ? `Faltan ${followUpPending.length} de ${followUpRecipients.length} destinatarios.`
+                          : "Todos los destinatarios lo recibieron."}
+                      </p>
+
+                      {followUpPending.length > 0 && (
+                        <div className="rounded-lg border border-white/10 bg-black/30 p-3">
+                          <p className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">
+                            En espera
+                          </p>
+                          <ul className="mt-1 space-y-0.5">
+                            {followUpPending.map((p) => (
+                              <li key={p.identityId ?? p.email} className="text-[11px] text-zinc-300">
+                                · {p.email ?? p.identityId}
+                              </li>
+                            ))}
+                          </ul>
+                          <button
+                            type="button"
+                            onClick={() => setFollowUpEditing(true)}
+                            className="mt-2 text-[10px] font-mono uppercase tracking-wider text-lime-300 hover:text-lime-200"
+                          >
+                            Preparar envío a pendientes →
+                          </button>
+                        </div>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => setFollowUpEditing(true)}
+                        className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 hover:text-zinc-300"
+                      >
+                        Editar mensaje y reenviar
+                      </button>
+
+                      <div className="border-t border-white/5 pt-2">
+                        <p className="text-[10px] leading-relaxed text-zinc-600">
+                          Paso 3 · Seguimiento de respuesta y segunda reunión{" "}
+                          <span className="text-zinc-700">— próximamente</span>
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      {followUpSent.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setFollowUpEditing(false)}
+                          className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 hover:text-zinc-300"
+                        >
+                          ← Volver al estado del seguimiento
+                        </button>
+                      )}
+                      <p className="text-[11px] leading-relaxed text-zinc-500">
+                        {summary
+                          ? "Incluye el resumen, las tareas y el material que marques."
+                          : "Sin resumen IA, el correo sale como seguimiento de la sesión con el material que marques."}
+                        {followUpPending.length > 0 && followUpSent.length > 0
+                          ? " Solo se enviará a quien falta."
+                          : ""}
+                      </p>
+                      <textarea
+                        value={message}
+                        onChange={(event) => setMessage(event.target.value.slice(0, 2000))}
+                        rows={3}
+                        placeholder="Mensaje para los participantes (opcional)…"
+                        className="w-full resize-y rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-[12px] leading-relaxed text-zinc-200 outline-none placeholder:text-zinc-600 focus:border-lime-500/40"
+                      />
+                      <div className="grid grid-cols-2 gap-2">
+                        <label className="flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-[10px] text-zinc-300">
+                          <input type="checkbox" checked={includeDeck} onChange={(e) => setIncludeDeck(e.target.checked)} className="h-3.5 w-3.5 accent-lime-500" />
+                          Presentación
+                        </label>
+                        <label className="flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-[10px] text-zinc-300">
+                          <input type="checkbox" checked={includeProposal} onChange={(e) => setIncludeProposal(e.target.checked)} className="h-3.5 w-3.5 accent-lime-500" />
+                          Propuesta
+                        </label>
+                        <label className="flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-[10px] text-zinc-300">
+                          <input type="checkbox" checked={includeTasks} onChange={(e) => setIncludeTasks(e.target.checked)} className="h-3.5 w-3.5 accent-lime-500" />
+                          Tareas
+                        </label>
+                        <label className="flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-[10px] text-zinc-300">
+                          <input type="checkbox" checked={includeRecap} onChange={(e) => setIncludeRecap(e.target.checked)} className="h-3.5 w-3.5 accent-lime-500" />
+                          Lo que vimos
+                        </label>
+                      </div>
+                      <input
+                        value={extraEmailsText}
+                        onChange={(event) => {
+                          setExtraEmailsText(event.target.value);
+                          setExtraEmailsError(null);
+                        }}
+                        placeholder="Correos adicionales (separados por coma)"
+                        className="w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-[12px] text-zinc-200 outline-none placeholder:text-zinc-600 focus:border-lime-500/40"
+                      />
+                      {extraEmailsError && (
+                        <p className="text-[10px] leading-relaxed text-rose-300">{extraEmailsError}</p>
+                      )}
+                      <p className="text-[10px] leading-relaxed text-zinc-600">
+                        Los correos adicionales reciben solo este seguimiento; no reciben recordatorios.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={sendSummary}
+                        disabled={sendingSummary}
+                        className="w-full rounded-lg border border-lime-500/30 bg-lime-500/10 px-3 py-2.5 text-[11px] font-mono uppercase tracking-wider text-lime-200 hover:bg-lime-500/20 disabled:opacity-50"
+                      >
+                        {sendingSummary ? (
+                          <>
+                            <Loader2 size={13} className="animate-spin" /> Enviando…
+                          </>
+                        ) : (
+                          <>
+                            <CloudLightning size={13} />{" "}
+                            {followUpSent.length > 0 && followUpPending.length > 0
+                              ? `Enviar a pendientes (${followUpPending.length})`
+                              : "Enviar seguimiento"}
+                          </>
+                        )}
+                      </button>
+                      {summarySendMessage && (
+                        <p
+                          className={`flex items-center justify-center gap-1.5 text-[10px] ${
+                            summarySendOk ? "text-lime-300" : "text-rose-300"
+                          }`}
+                        >
+                          {summarySendOk && <Check size={12} />}
+                          {summarySendMessage}
+                        </p>
+                      )}
+                    </>
                   )}
                 </div>
               )}
