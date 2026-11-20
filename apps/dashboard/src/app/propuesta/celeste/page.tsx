@@ -173,15 +173,14 @@ export default async function CelesteProposalPage({
       <div className="mb-8 flex flex-wrap items-center justify-between gap-3 print:hidden">
         <p className="text-xs uppercase tracking-[0.2em] text-purple-400">Documento confidencial</p>
         <div className="flex items-center gap-3">
-          <a
-            href={dealUrl ?? '#deal-room-no-configurado'}
-            aria-disabled={!dealUrl}
-            className={`rounded-lg border border-white/15 px-4 py-2 text-sm ${
-              dealUrl ? 'text-zinc-300 hover:border-white/30 hover:text-white' : 'text-zinc-600 cursor-not-allowed'
-            }`}
-          >
-            {dealUrl ? 'Ver acuerdo y condiciones' : 'Deal Room no vinculado'}
-          </a>
+          {dealUrl && (
+            <a
+              href={dealUrl}
+              className="rounded-lg border border-white/15 px-4 py-2 text-sm text-zinc-300 hover:border-white/30 hover:text-white"
+            >
+              Ver acuerdo y condiciones
+            </a>
+          )}
           <PrintButton />
         </div>
       </div>
@@ -388,12 +387,18 @@ export default async function CelesteProposalPage({
           El acuerdo de servicio y sus anexos están en la sala de acuerdos, junto con el detalle de
           entregables y las condiciones de aceptación.
         </p>
-        <a
-          href={dealUrl ?? '#deal-room-no-configurado'}
-          className="mt-4 inline-block rounded-xl border border-white/15 px-5 py-3 text-sm font-semibold text-zinc-200 hover:border-white/30 hover:text-white"
-        >
-          Abrir sala de acuerdos
-        </a>
+        {dealUrl ? (
+          <a
+            href={dealUrl}
+            className="mt-4 inline-block rounded-xl border border-white/15 px-5 py-3 text-sm font-semibold text-zinc-200 hover:border-white/30 hover:text-white"
+          >
+            Abrir sala de acuerdos
+          </a>
+        ) : (
+          <p className="mt-4 text-xs text-zinc-500">
+            La sala de acuerdos se habilita cuando el Deal Room esté vinculado a este documento.
+          </p>
+        )}
       </section>
 
       <footer className="mt-16 border-t border-white/10 pt-6 text-xs text-zinc-500">
