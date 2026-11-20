@@ -63,7 +63,7 @@ export function MeetingDetailsDrawer({ isOpen, onClose, meeting }: MeetingDetail
   // Formulario de seguimiento (mensaje + material + correos adicionales).
   const [message, setMessage] = useState("");
   const [includeDeck, setIncludeDeck] = useState(true);
-  const [includeProposal, setIncludeProposal] = useState(true);
+  const [includeProposal, setIncludeProposal] = useState(false);
   const [includeTasks, setIncludeTasks] = useState(true);
   const [includeRecap, setIncludeRecap] = useState(true);
   const [extraEmailsText, setExtraEmailsText] = useState("");

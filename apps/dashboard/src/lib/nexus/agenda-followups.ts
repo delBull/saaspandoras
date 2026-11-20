@@ -533,7 +533,8 @@ export async function sendMeetingSummaryFollowUp(
       kind,
       introMessage: options.message ?? null,
       includeDeck: options.includeDeck !== false,
-      includeProposal: options.includeProposal !== false,
+      // La propuesta es opt-in: no se adjunta el documento salvo que el host lo pida.
+      includeProposal: options.includeProposal === true,
       includeTasks: options.includeTasks !== false,
       recap,
       includeRecap: options.includeRecap !== false,

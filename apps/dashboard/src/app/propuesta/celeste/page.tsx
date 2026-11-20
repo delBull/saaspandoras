@@ -4,12 +4,12 @@ import { PrintButton } from './PrintButton';
 export const metadata: Metadata = {
   title: "Propuesta comercial — Celeste × Pandora's",
   description:
-    'Propuesta de operación gestionada para Celeste: captación medible, precalificación, CRM y reporting semanal. 12 semanas, alcance y condiciones cerradas.',
+    'Propuesta de infraestructura comercial para Celeste: implementación y operación de 90 días, con captación, CRM, visitas y medición.',
   robots: { index: false, follow: false },
   openGraph: {
     title: "Propuesta comercial — Celeste × Pandora's",
     description:
-      'Captación medible, CRM y reporting semanal. Alcance, calendario e inversión en USD.',
+      'Implementación + operación de 90 días. Alcance, calendario e inversión en USD.',
     type: 'article',
   },
 };
@@ -79,11 +79,11 @@ const scope = [
 ] as const;
 
 const phases = [
-  { week: 'Semana 1', title: 'Diagnóstico', detail: 'Oferta, audiencias, activos, CRM y proceso' },
-  { week: 'Semanas 2–3', title: 'Construcción', detail: 'Landing, catálogo, guiones y campañas en borrador' },
-  { week: 'Semana 4', title: 'Activación (meta)', detail: 'Depende de accesos, materiales y aprobaciones' },
-  { week: 'Semanas 5–11', title: 'Optimización', detail: 'Ajustes semanales de audiencia, mensaje y creativo' },
-  { week: 'Semana 12', title: 'Cierre', detail: 'Reporte final y decisión de continuidad' },
+  { week: 'Semana 1', title: 'Fase 1 · Diagnóstico y arquitectura', detail: 'Oferta, audiencias, activos, CRM y pipeline' },
+  { week: 'Semanas 2–3', title: 'Fase 1 · Implementación', detail: 'Landing, catálogo, guiones, CRM y tracking; campañas en borrador' },
+  { week: 'Semana 4', title: 'Fase 1 · Lanzamiento', detail: 'Campañas y atención operando (depende de accesos, materiales y aprobaciones)' },
+  { week: 'Semanas 5–11', title: 'Fase 2 · Operación', detail: 'Optimización semanal, contenido, seguimiento y reporte' },
+  { week: 'Semana 12', title: 'Cierre', detail: 'Reporte final, entrega de activos y decisión de continuidad' },
 ] as const;
 
 const included = [
@@ -103,7 +103,7 @@ const notIncluded = [
   'Viajes y gastos de traslado',
   'Producción audiovisual especial (estudio, locación, equipo profesional)',
   'Servicios externos extraordinarios (desarrollo a medida, integraciones fuera de alcance)',
-  'Comisión por ventas',
+  'Incentivo por ventas atribuibles (se pacta por separado y no forma parte de los honorarios)',
 ] as const;
 
 const assumptions = [
@@ -197,7 +197,7 @@ export default async function CelesteProposalPage({
           </div>
           <div className="text-right text-[10px] uppercase tracking-[0.15em] text-zinc-500">
             <p>Propuesta</p>
-            <p className="text-zinc-400">v2.1</p>
+            <p className="text-zinc-400">v2.2 · 20 nov 2026</p>
           </div>
         </div>
         <div className="brand-rule mb-6 h-px w-full bg-purple-500/40" />
@@ -205,10 +205,10 @@ export default async function CelesteProposalPage({
           Propuesta comercial
         </p>
         <h1 className="mt-3 text-3xl font-bold leading-tight text-white md:text-4xl">
-          Operación gestionada de captación para Celeste
+          Infraestructura comercial para Celeste
         </h1>
         <p className="mt-3 text-base text-zinc-400">
-          Pandora&apos;s opera el sistema y coordina la captación. Celeste conserva el cierre.
+          Pandora&apos;s diseña, implementa y opera el sistema comercial. Celeste conserva el cierre y la relación con el comprador.
         </p>
         <dl className="mt-6 grid gap-2 text-sm text-zinc-400 sm:grid-cols-3">
           <div>
@@ -287,19 +287,19 @@ export default async function CelesteProposalPage({
         <h2 className="mb-4 text-xl font-bold text-white">4. Inversión</h2>
         <div className="grid gap-4 sm:grid-cols-3">
           <div className="rounded-xl border border-white/10 bg-white/[0.02] p-5">
-            <p className="text-xs uppercase tracking-wider text-zinc-500">Configuración inicial</p>
-            <p className="mt-2 text-2xl font-bold text-white">USD 2,500</p>
+            <p className="text-xs uppercase tracking-wider text-zinc-500">Implementación</p>
+            <p className="mt-2 text-2xl font-bold text-white">USD 4,500</p>
             <p className="mt-1 text-xs text-zinc-500">Pago único</p>
           </div>
           <div className="rounded-xl border border-white/10 bg-white/[0.02] p-5">
-            <p className="text-xs uppercase tracking-wider text-zinc-500">Operación mensual</p>
-            <p className="mt-2 text-2xl font-bold text-white">USD 1,800</p>
+            <p className="text-xs uppercase tracking-wider text-zinc-500">Operación</p>
+            <p className="mt-2 text-2xl font-bold text-white">USD 2,500</p>
             <p className="mt-1 text-xs text-zinc-500">Por mes · 3 meses</p>
           </div>
           <div className="rounded-xl border border-purple-500/30 bg-purple-500/[0.06] p-5">
-            <p className="text-xs uppercase tracking-wider text-purple-300">Total del programa</p>
-            <p className="mt-2 text-2xl font-bold text-white">USD 7,900</p>
-            <p className="mt-1 text-xs text-purple-200/70">12 semanas</p>
+            <p className="text-xs uppercase tracking-wider text-purple-300">Total del primer ciclo</p>
+            <p className="mt-2 text-2xl font-bold text-white">USD 12,000</p>
+            <p className="mt-1 text-xs text-purple-200/70">Implementación + 90 días</p>
           </div>
         </div>
 
@@ -310,8 +310,15 @@ export default async function CelesteProposalPage({
             (a validar según alcance y mercado).
           </p>
           <p className="mt-2 text-zinc-400">
-            Un incentivo por ventas atribuibles, si se desea, se negocia por separado con reglas de
-            atribución definidas.
+            <strong className="text-white">Incentivo por ventas (opcional, adicional):</strong> porcentaje
+            a acordar por escrito sobre el importe efectivamente cobrado. Referencia de trabajo:
+            0.75%–1%, con ventana de atribución de 90 días y exclusión de prospectos preexistentes.
+            No sustituye honorarios y requiere revisión legal.
+          </p>
+          <p className="mt-2 text-zinc-400">
+            <strong className="text-white">Propiedad:</strong> la implementación (dominio, landing,
+            catálogo, CRM, datos, cuentas, campañas y documentación) queda bajo control de Celeste.
+            Pandora&apos;s conserva su metodología, herramientas y propiedad intelectual preexistente.
           </p>
         </div>
       </section>
@@ -364,10 +371,10 @@ export default async function CelesteProposalPage({
       <section className="mb-12">
         <h2 className="mb-3 text-xl font-bold text-white">9. Siguientes pasos</h2>
         <ol className="space-y-2 text-sm text-zinc-300">
-          <li>1. Revisión de esta propuesta y ajustes de alcance.</li>
-          <li>2. Firma del acuerdo de servicio y del acuerdo de tratamiento de datos.</li>
-          <li>3. Diagnóstico en la semana 1 con accesos y materiales.</li>
-          <li>4. Arranque de construcción al cerrar el diagnóstico.</li>
+          <li>1. Revisión de esta propuesta con su socia en Brasil.</li>
+          <li>2. Segunda sesión para cerrar anticipo, reglas de la visita Discovery y presupuesto de pauta.</li>
+          <li>3. Aceptación en el Deal Room y firma del acuerdo de servicio.</li>
+          <li>4. Kickoff de implementación en la semana 1.</li>
         </ol>
         <p className="mt-4 text-xs text-zinc-500">
           La formalización (razón social, RFC, domicilio, representante y contacto ARCO de Celeste) es
