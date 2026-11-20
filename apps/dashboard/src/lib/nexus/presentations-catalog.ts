@@ -49,7 +49,7 @@ export const NEXUS_PRESENTATIONS: NexusPresentation[] = [
     subtitle:
       "Infraestructura comercial para Celeste Beach Residences & Spa. Implementación + operación de 90 días con atribución y medición semanal.",
     category: "Deal activo · Hospitalidad",
-    tags: ["Celeste Beach Residences", "104 fracciones", "Implementación USD 4,500", "Operación USD 2,500/mes", "Incentivo 0.75–1%"],
+    tags: ["Celeste Beach Residences", "104 fracciones", "Implementación USD 4,500", "Operación USD 2,500/mes", "Incentivo por definir"],
     href: "/pitch/deck/celeste",
     proposalHref: "/propuesta/celeste",
     status: "Listo para presentar",
@@ -62,7 +62,7 @@ export const NEXUS_PRESENTATIONS: NexusPresentation[] = [
       "Los ~$16.12M USD son inventario nominal, NO ventas ni ingreso atribuible a Pandora's.",
       "Publicidad fondeada por Celeste y separada de honorarios.",
       "Honorarios: implementación USD 4,500 + operación USD 2,500/mes × 3 = USD 12,000. No descontar la implementación.",
-      "Incentivo por ventas opcional 0.75%–1% sobre importe efectivamente cobrado; no sustituye honorarios y requiere revisión legal.",
+      "Incentivo por ventas: porcentaje ABIERTO (no dar cifra); es adicional, no sustituye honorarios y requiere revisión legal.",
       "Contenido: 4 piezas/mes incluidas; 8 solo mediante ampliación cotizada.",
       "Activos (dominio, landing, catálogo, CRM, datos, cuentas, campañas y documentación) bajo control de Celeste; Pandora's conserva metodología, herramientas y PI preexistente.",
       "La automatización de WhatsApp se presenta sujeta a aprobación de Meta; al inicio la atención es humana asistida.",
@@ -158,10 +158,11 @@ export const NEXUS_PRESENTATIONS: NexusPresentation[] = [
         title: "Incentivo por ventas atribuibles",
         minutes: 3,
         beats: [
-          "Opcional y adicional: no sustituye los honorarios ni es la base del negocio.",
-          "0.75%-1% del importe efectivamente cobrado. Ejemplo: 1% de USD 155k = USD 1,550 por venta.",
-          "Reglas: primer contacto documentado, ventana de 90 días, excluir prospectos preexistentes, solo importes cobrados.",
-          "Aclara que requiere revisión legal y que no es comisión inmobiliaria por intermediación.",
+          "No des un porcentaje: se presenta abierto. Se acuerda por escrito después de definir las reglas de atribución.",
+          "Base de cálculo: importe efectivamente cobrado por Celeste en ventas atribuibles; ventana de 90 días.",
+          "Reglas: primer contacto documentado por Pandora's, excluir prospectos preexistentes, solo ventas cobradas.",
+          "Es adicional y no sustituye honorarios; requiere revisión legal. No es comisión inmobiliaria por intermediación.",
+          "Si presionan por un número: 'lo fijamos sobre el ticket promedio (USD 155k) cuando cerremos la atribución'.",
         ],
       },
       {

@@ -14,7 +14,7 @@
     "Los ~$16.12M USD son inventario nominal, NO ventas ni ingreso atribuible a Pandora's.",
     "Publicidad fondeada por Celeste y separada de honorarios.",
     "Honorarios: implementación USD 4,500 + operación USD 2,500/mes × 3 = USD 12,000. No descontar la implementación.",
-    "Incentivo por ventas opcional 0.75%–1% sobre importe efectivamente cobrado; no sustituye honorarios y requiere revisión legal.",
+    "Incentivo por ventas: porcentaje ABIERTO (no dar cifra); es adicional, no sustituye honorarios y requiere revisión legal.",
     "Contenido: 4 piezas/mes incluidas; 8 solo mediante ampliación cotizada.",
     "Activos (dominio, landing, catálogo, CRM, datos, cuentas, campañas y documentación) bajo control de Celeste; Pandora's conserva metodología, herramientas y PI preexistente.",
     "La automatización de WhatsApp se presenta sujeta a aprobación de Meta; al inicio la atención es humana asistida."
@@ -349,27 +349,28 @@
       "title": "Incentivo por ventas atribuibles",
       "minutes": 3,
       "notes": [
-        "Opcional y adicional: no sustituye los honorarios ni es la base del negocio.",
-        "0.75%-1% del importe efectivamente cobrado. Ejemplo: 1% de USD 155k = USD 1,550 por venta.",
-        "Reglas: primer contacto documentado, ventana de 90 días, excluir prospectos preexistentes, solo importes cobrados.",
-        "Aclara que requiere revisión legal y que no es comisión inmobiliaria por intermediación."
+        "No des un porcentaje: se presenta abierto. Se acuerda por escrito después de definir las reglas de atribución.",
+        "Base de cálculo: importe efectivamente cobrado por Celeste en ventas atribuibles; ventana de 90 días.",
+        "Reglas: primer contacto documentado por Pandora's, excluir prospectos preexistentes, solo ventas cobradas.",
+        "Es adicional y no sustituye honorarios; requiere revisión legal. No es comisión inmobiliaria por intermediación.",
+        "Si presionan por un número: 'lo fijamos sobre el ticket promedio (USD 155k) cuando cerremos la atribución'."
       ],
       "blocks": [
         {
           "type": "hero",
           "title": "Incentivo por ventas atribuibles",
-          "subtitle": "Opcional, adicional a honorarios. No los sustituye."
+          "subtitle": "Opcional y adicional a honorarios. El porcentaje se acuerda contigo."
         },
         {
           "type": "metrics",
           "items": [
             {
-              "value": "0.75–1%",
-              "label": "del importe cobrado"
+              "value": "A definir",
+              "label": "porcentaje por venta"
             },
             {
-              "value": "$1,550",
-              "label": "ejemplo 1% de USD 155k"
+              "value": "Sobre cobrado",
+              "label": "base de cálculo"
             },
             {
               "value": "90 días",
@@ -386,7 +387,7 @@
           "boxes": [
             {
               "title": "Qué cuenta",
-              "text": "Ventas atribuibles documentadas desde el primer contacto, sobre importe cobrado."
+              "text": "Ventas atribuibles documentadas desde el primer contacto, sobre importe efectivamente cobrado."
             },
             {
               "title": "Qué no cuenta",
@@ -397,8 +398,8 @@
               "text": "Al cobro efectivo, con evidencia; ventana de atribución de 90 días."
             },
             {
-              "title": "Reglas",
-              "text": "Se define en contrato; revisión legal. No es comisión inmobiliaria."
+              "title": "Cómo se fija",
+              "text": "Porcentaje abierto: se acuerda por escrito sobre el ticket promedio. Revisión legal de la figura."
             }
           ]
         }
