@@ -3,6 +3,9 @@ import { validateDealRoomAccess } from "@/lib/admin-auth";
 import { listRoomsForUser, createRoom } from "@saasfly/nexus-deals-sdk";
 import { DealKind } from "@saasfly/nexus-deals-sdk";
 import { sendDealRoomAlert } from "@saasfly/nexus-deals-sdk";
+import { db } from "@saasfly/db";
+import { clients } from "@saasfly/db/schema";
+import { inArray } from "@saasfly/db-core";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -32,8 +35,26 @@ export async function GET(request: Request) {
       scope,
     });
 
+    // Cliente del CRM (si el deal está vinculado).
+    const clientIds = Array.from(
+      new Set(rooms.map((room: any) => room?.clientId).filter((value: any) => typeof value === "string"))
+    ) as string[];
+
+    let roomsWithClient = rooms as any[];
+    if (clientIds.length > 0) {
+      const clientRows = await db
+        .select({ id: clients.id, name: clients.name, status: clients.status, email: clients.email })
+        .from(clients)
+        .where(inArray(clients.id, clientIds));
+      const byId = new Map(clientRows.map((row) => [row.id, row]));
+      roomsWithClient = rooms.map((room: any) => ({
+        ...room,
+        client: room?.clientId ? byId.get(room.clientId) ?? null : null,
+      }));
+    }
+
     return NextResponse.json({
-      rooms,
+      rooms: roomsWithClient,
       meta: {
         scope,
         isSuperAdmin,

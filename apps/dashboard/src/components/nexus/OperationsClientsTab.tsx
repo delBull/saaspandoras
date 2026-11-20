@@ -23,6 +23,9 @@ interface Deal {
   owner: string | null;
   nextAction: string | null;
   createdAt: string | null;
+  /** Cliente del CRM vinculado al deal (si existe). */
+  clientName?: string | null;
+  clientStatus?: string | null;
   rawData?: unknown;
 }
 
@@ -129,6 +132,8 @@ export function OperationsClientsTab({ onOpenApprovals }: OperationsClientsTabPr
             owner: r.createdByEmail ?? null,
             nextAction: null,
             createdAt: r.createdAt ?? null,
+            clientName: r.client?.name ?? null,
+            clientStatus: r.client?.status ?? null,
             rawData: r,
           }));
           setDeals(mappedDeals);
@@ -533,6 +538,14 @@ export function OperationsClientsTab({ onOpenApprovals }: OperationsClientsTabPr
                     <p className="flex justify-between text-zinc-400">
                       <span>Deal Room:</span>
                       <span className="text-white font-mono">{selectedDeal.publicId ?? 'Sin sala pública'}</span>
+                    </p>
+                    <p className="flex justify-between text-zinc-400">
+                      <span>Cliente CRM:</span>
+                      <span className={selectedDeal.clientStatus ? "text-white" : "text-zinc-600"}>
+                        {selectedDeal.clientStatus
+                          ? `${selectedDeal.clientStatus}${selectedDeal.clientName ? ` · ${selectedDeal.clientName}` : ""}`
+                          : "sin vincular"}
+                      </span>
                     </p>
                     <label className="flex flex-col gap-1 pt-1">
                       <span className="text-zinc-400 text-[11px]">Deck del deal (se inyecta en la reunión)</span>

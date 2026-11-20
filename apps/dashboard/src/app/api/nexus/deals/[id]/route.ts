@@ -18,6 +18,9 @@ import { DealKind } from "@saasfly/nexus-deals-sdk";
 import { sendDealRoomAlert } from "@saasfly/nexus-deals-sdk";
 import { sendDealCancelledEmail } from "@saasfly/nexus-deals-sdk";
 import { isKnownPresentation } from "@/lib/nexus/presentations-catalog";
+import { db } from "@saasfly/db";
+import { clients } from "@saasfly/db/schema";
+import { eq } from "@saasfly/db-core";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -64,6 +67,17 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     const body = await request.json();
     let updated = room;
+
+    // Estado del cliente del CRM derivado del deal.
+    const CLIENT_STATUS_BY_DEAL: Record<string, "lead" | "negotiating" | "closed_won"> = {
+      DRAFT: "lead",
+      PROPOSAL_SENT: "negotiating",
+      REVIEW: "negotiating",
+      ACCEPTED: "negotiating",
+      SIGNED: "closed_won",
+      EXECUTING: "closed_won",
+      EXECUTED: "closed_won",
+    };
 
     if (body.sectionCode && typeof body.content === "string") {
       const after = await updateSection((await params).id, String(body.sectionCode), body.content, actor);
@@ -130,6 +144,21 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     }
     if (typeof body.removeSignerId === "string") {
       updated = (await removeSigner((await params).id, body.removeSignerId, actor))!;
+    }
+
+    // Si el deal cambió de estado y tiene cliente, se refleja en el CRM.
+    if (typeof body.status === "string" && room.clientId) {
+      const nextClientStatus = CLIENT_STATUS_BY_DEAL[body.status];
+      if (nextClientStatus) {
+        try {
+          await db
+            .update(clients)
+            .set({ status: nextClientStatus, updatedAt: new Date() })
+            .where(eq(clients.id, room.clientId));
+        } catch (clientError) {
+          console.error("[Deals] No se pudo sincronizar el estado del cliente:", clientError);
+        }
+      }
     }
 
     return NextResponse.json({ room: updated });

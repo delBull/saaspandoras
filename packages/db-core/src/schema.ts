@@ -3622,6 +3622,8 @@ export const nexusDealRooms = pgTable("nexus_deal_rooms", {
   ndaVersion: varchar("nda_version", { length: 32 }).notNull().default("v1.0"),
   // Multi-collaborator isolation & sharing
   createdBy: text("created_by"),
+  /** Cliente del CRM al que pertenece este Deal Room (opcional). */
+  clientId: text("client_id").references(() => clients.id, { onDelete: "set null" }),
   sharedWith: jsonb("shared_with").$type<Array<{ email: string; name?: string; sharedAt: string; sharedBy: string }>>().default([]).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
