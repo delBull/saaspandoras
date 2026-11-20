@@ -12,9 +12,9 @@ import { AgendaListClient } from "./AgendaListClient";
 import { shortMeetingPath } from "@/lib/meet/meeting-links";
 export const dynamic = "force-dynamic";
 
-export default async function NexusAgendaPage({ searchParams }: { searchParams: Promise<{ token?: string; deck?: string; schedule?: string }> }) {
+export default async function NexusAgendaPage({ searchParams }: { searchParams: Promise<{ token?: string; deck?: string; schedule?: string; meeting?: string }> }) {
   const MEET_JOIN_SECRET = process.env.MEET_JOIN_SECRET;
-  const { token, deck, schedule } = await searchParams;
+  const { token, deck, schedule, meeting } = await searchParams;
   const authCtx = await getNexusAuthContext(null, token);
 
   if (!authCtx.isAuthenticated || !authCtx.collaboratorId) {
@@ -187,7 +187,8 @@ export default async function NexusAgendaPage({ searchParams }: { searchParams: 
             agendaRows={agendaRows} 
             collaboratorId={collaboratorId.toString()} 
             now={now} 
-            joinUrls={joinUrls} 
+            joinUrls={joinUrls}
+            initialMeetingId={meeting ?? null}
           />
         )}
       </div>

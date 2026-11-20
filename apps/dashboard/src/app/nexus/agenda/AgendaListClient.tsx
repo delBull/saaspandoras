@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Video, FileText, Radio, KeyRound, Check, Pencil } from "lucide-react";
+import { Video, FileText, Radio, KeyRound, Check, Pencil, Send } from "lucide-react";
 import { MeetingShareButton } from "@/components/meet/MeetingShareButton";
 import { AddToGoogleCalendarButton } from "@/components/meet/AddToGoogleCalendarButton";
 import { shortMeetingPath } from "@/lib/meet/meeting-links";
@@ -12,6 +12,8 @@ import { MeetingDetailsDrawer } from "./MeetingDetailsDrawer";
 import { EditMeetingDrawer } from "./EditMeetingDrawer";
 
 interface AgendaListClientProps {
+  /** ?meeting=<id> en la URL: abre el detalle de esa reunión. */
+  initialMeetingId?: string | null;
   agendaRows: any[];
   collaboratorId: string | number;
   now: Date;
@@ -61,10 +63,43 @@ const AgendaSection = ({
   </section>
 );
 
-export function AgendaListClient({ agendaRows, collaboratorId, now, joinUrls }: AgendaListClientProps) {
+export function AgendaListClient({ agendaRows, collaboratorId, now, joinUrls, initialMeetingId = null }: AgendaListClientProps) {
   const [selectedMeeting, setSelectedMeeting] = useState<any | null>(null);
   const [editMeetingId, setEditMeetingId] = useState<string | null>(null);
   const [copiedHostId, setCopiedHostId] = useState<string | null>(null);
+
+  /** Abre el detalle de una reunión (donde vive el seguimiento). */
+  const openDetails = (row: any) => {
+    const host = row.meeting.hostCollaboratorId?.toString() === collaboratorId.toString();
+    const startsAt = row.meeting.startsAt ? new Date(row.meeting.startsAt) : now;
+    const endsAt = row.meeting.endsAt ? new Date(row.meeting.endsAt) : new Date(startsAt.getTime() + 30 * 60000);
+    const title =
+      (typeof row.meeting.title === "string" && row.meeting.title.trim()) ||
+      (row.booking ? `Reunión con ${row.booking.leadName}` : "Sovereign Meet");
+    setSelectedMeeting({
+      id: row.meeting.id,
+      title,
+      date: startsAt,
+      hostName: row.host?.name ?? "Admin",
+      status: row.meeting.status,
+      isHost: host,
+      joinPath: host ? shortMeetingPath(row.meeting.id) : joinUrls[row.meeting.id],
+      endsAt,
+    });
+  };
+
+  // Enlace profundo desde Clients & CRM: ?meeting=<id> abre la reunión.
+  const deepLinkDone = useRef(false);
+  useEffect(() => {
+    if (deepLinkDone.current || !initialMeetingId) return;
+    const row = agendaRows.find((r: any) => r.meeting.id === initialMeetingId);
+    if (!row) return;
+    deepLinkDone.current = true;
+    openDetails(row);
+    requestAnimationFrame(() => {
+      document.getElementById(`meeting-${initialMeetingId}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  }, [initialMeetingId, agendaRows]);
 
   const live = agendaRows
     .filter((row) => row.meeting.status === "live")
@@ -233,22 +268,16 @@ export function AgendaListClient({ agendaRows, collaboratorId, now, joinUrls }: 
               {canCancel && <CancelMeetingButton meetingId={row.meeting.id} />}
               {canArchive && <ArchiveMeetingButton meetingId={row.meeting.id} />}
               <button
-                onClick={() =>
-                  setSelectedMeeting({
-                    id: row.meeting.id,
-                    title,
-                    date: startsAt,
-                    hostName: row.host?.name ?? "Admin",
-                    status: row.meeting.status,
-                    isHost,
-                    joinPath: isHost ? shortMeetingPath(row.meeting.id) : joinUrl,
-                    endsAt,
-                  })
-                }
-                className="flex items-center justify-center gap-2 px-4 py-2.5 bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-800 rounded-lg text-xs font-mono uppercase tracking-widest transition-colors"
+                onClick={() => openDetails(row)}
+                className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-xs font-mono uppercase tracking-widest transition-colors ${
+                  isHost && isPast
+                    ? "bg-lime-500/15 border border-lime-500/30 text-lime-300 hover:bg-lime-500/25"
+                    : "bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-800"
+                }`}
+                title={isHost && isPast ? "Abrir seguimiento de esta reunión" : "Abrir detalle de la reunión"}
               >
-                <FileText size={14} />
-                Agenda
+                {isHost && isPast ? <Send size={14} /> : <FileText size={14} />}
+                {isHost && isPast ? "Seguimiento" : "Agenda"}
               </button>
             </div>
           </div>
