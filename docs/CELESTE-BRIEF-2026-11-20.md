@@ -196,6 +196,11 @@ disponibilidad y la velocidad de cierre del equipo de Celeste.
 **Regla:** abre el deck al terminar el encuadre, no antes. Usa **Presentar deck** en la
 sala y avanza con el dock (los beats de cada slide aparecen en el panel **Guión**).
 
+**Cómo se lee el guión:** está escrito para decirlo, no para estudiarlo. Cada bloque
+empieza con **Di:** (lo que se dice), **Pregunta:** (lo que se pregunta) u **Ojo:**
+(lo que no se debe olvidar). Si te trabas, usa la línea **“Si te pierdes”**. No lo
+leas textual: úsalo como carril.
+
 ---
 
 ## 9. Objeciones y respuestas cortas

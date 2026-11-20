@@ -25,9 +25,9 @@
       "title": "Apertura",
       "minutes": 2,
       "notes": [
-        "Saluda y confirma quién está: Eduardo y su equipo comercial. Pregunta si hay alguien más que decida.",
-        "Encuadre: 35-40 min. Al final validamos 4 datos y decides si arrancamos la implementación.",
-        "No abras el deck todavía: ábrelo al terminar el encuadre (botón Presentar deck en la sala)."
+        "Di: «Gracias por el tiempo, Eduardo. En 35 minutos quiero que veas cómo se vería tu operación comercial con nosotros y que al final decidas si vale la pena arrancar.»",
+        "Pregunta: «¿viene alguien más contigo que vaya a decidir?»",
+        "Si te pierdes: «primero entiendo cómo venden hoy; después te muestro la propuesta»."
       ],
       "blocks": [
         {
@@ -44,10 +44,10 @@
       "title": "La oportunidad",
       "minutes": 4,
       "notes": [
-        "104 fracciones · USD 138k (2 rec) / USD 181k (3 rec) · promedio USD 155k. Mercados CDMX, Oaxaca y extranjero; motivo principal uso vacacional.",
-        "Activo comercial: Estancia Discovery USD 250/noche, descontable del anticipo (confirmar condiciones en la llamada).",
-        "Equipo: 1 asesora en Huatulco + 2 vendedores en CDMX. Posadas/Curamoria con 8% (marcar: a confirmar de qué se calcula).",
-        "Pregunta abierta: ¿cuántos interesados y visitas reciben al mes hoy? Su respuesta es la línea base del piloto."
+        "Di: «Tengo entendido que son 104 fracciones, entre 138 y 181 mil dólares, con un promedio de 155 mil.»",
+        "Pregunta: «¿cuántos interesados les llegan al mes y cuántos terminan visitando?»",
+        "Escucha más de lo que hablas: su respuesta es la línea base de todo el piloto.",
+        "Ojo: el 8% de Curamoria es su dato. No lo uses para justificar tu precio."
       ],
       "blocks": [
         {
@@ -104,10 +104,9 @@
       "title": "Diagnóstico",
       "minutes": 4,
       "notes": [
-        "El cuello de botella no es producto ni precio: es volumen de interesados calificados y seguimiento hasta la visita.",
-        "Tres hipótesis: captación intermitente, respuesta lenta sin registro y visitas sin seguimiento medible.",
-        "Pide confirmación: ¿quién responde hoy los mensajes y en cuánto tiempo? ¿Dónde se registra?",
-        "No des cifras: el diagnóstico es hipótesis y se valida en la semana 1 con sus datos."
+        "Di: «Por lo que me cuentas, el problema no es el producto ni el precio. Es que llegan pocos interesados con capital y se pierden en el seguimiento.»",
+        "Pregunta: «¿quién contesta los mensajes hoy, y en cuánto tiempo?»",
+        "Si te pierdes: «esto es una hipótesis; la confirmamos con tus datos en la primera semana»."
       ],
       "blocks": [
         {
@@ -139,10 +138,9 @@
       "title": "Infraestructura comercial",
       "minutes": 5,
       "notes": [
-        "Cambia el marco: Pandora's no administra redes sociales. Diseña, implementa y opera la infraestructura comercial.",
-        "Cuatro componentes como un solo sistema: captar, atender y precalificar, llevar a visita, medir.",
-        "Celeste conserva el cierre y la relación con el comprador; nosotros operamos el sistema y lo medimos.",
-        "La implementación queda como activo de Celeste aunque después cambie de operador. Pandora's conserva metodología, herramientas y PI."
+        "Di: «Nosotros no venimos a manejar redes. Venimos a armarte el sistema completo: atraer, atender, llevar a la visita y medir.»",
+        "Di: «Tú sigues cerrando la venta. Nosotros te ponemos enfrente gente lista para comprar.»",
+        "Pregunta: «¿te hace sentido verlo así, como un sistema y no como campañas sueltas?»"
       ],
       "blocks": [
         {
@@ -182,9 +180,9 @@
       "title": "El recorrido del prospecto",
       "minutes": 3,
       "notes": [
-        "Recorre las etapas sin leerlas: cada una tiene responsable y registro.",
-        "El punto crítico es la solicitud y la visita Discovery: ahí se gana o se pierde la venta.",
-        "Todo queda en el CRM: origen, etapa, responsable, visita y resultado."
+        "Di: «Este es el camino: anuncio, mensaje, calificación, visita y cierre. Cada paso tiene un responsable y queda registrado.»",
+        "Pregunta: «¿dónde sientes que hoy se cae más gente?»",
+        "Ojo: el paso que más pesa es la visita. Ahí se gana o se pierde la venta."
       ],
       "blocks": [
         {
@@ -229,9 +227,9 @@
       "title": "Dos fases, un solo sistema",
       "minutes": 4,
       "notes": [
-        "Fase 1 Implementación (semanas 1-4) y Fase 2 Operación (semanas 5-12). Son dos trabajos distintos.",
-        "La semana 4 se mueve si faltan accesos, materiales o aprobaciones. Decirlo ahora evita fricción después.",
-        "Semana 12: reporte final, entrega de activos y decisión de continuidad."
+        "Di: «Son dos trabajos distintos: primero construimos, después operamos.»",
+        "Di: «Las primeras cuatro semanas armamos todo. De la cinco a la doce lo operamos y lo ajustamos cada semana.»",
+        "Ojo: si falta acceso, fotos o aprobaciones, la semana cuatro se mueve. Mejor decirlo hoy."
       ],
       "blocks": [
         {
@@ -275,9 +273,9 @@
       "title": "Qué incluye el sistema",
       "minutes": 3,
       "notes": [
-        "Destaca cuatro: landing y catálogo, CRM con pipeline, campañas y reporte semanal. No leas los ocho puntos.",
-        "Contenido: 4 piezas al mes incluidas; 8 solo mediante ampliación cotizada.",
-        "Activos bajo control de Celeste: dominio, landing, catálogo, CRM, datos, cuentas, campañas y documentación."
+        "Di: «Esto es lo que queda construido: landing, catálogo, CRM, campañas, seguimiento y reporte semanal.»",
+        "Di: «Incluye cuatro piezas de contenido al mes. Si quieres ocho, se cotiza aparte.»",
+        "Di: «Todo lo digital queda a tu nombre. Nosotros conservamos nuestro método.»"
       ],
       "blocks": [
         {
@@ -308,11 +306,11 @@
       "title": "Inversión: implementación + operación",
       "minutes": 5,
       "notes": [
-        "USD 4,500 de implementación (una vez) + USD 2,500/mes x 3 = USD 12,000 en 90 días. Pauta aparte: USD 1,500-3,000/mes.",
-        "Di el porqué: construir no es operar. La implementación queda como activo de Celeste aunque cambien de operador.",
-        "Pago propuesto: 50% de implementación al inicio y 50% al lanzamiento (semana 4); mensualidad por adelantado.",
-        "No incluye impuestos, viajes, producción audiovisual especial, tokenización, migración ni incentivo por ventas.",
-        "Si hay resistencia: reduce alcance. No ofrezcas descuento automático ni regales horas de implementación."
+        "Di: «Son dos mil quinientos al mes de operación, más cuatro mil quinientos de implementación. En noventa días son doce mil.»",
+        "Di: «La implementación no se repite: es lo que queda construido y es tuyo.»",
+        "Di: «La publicidad va aparte: entre mil quinientos y tres mil al mes, pagados directo a las plataformas.»",
+        "Pregunta: «¿cómo se ve ese número contra lo que ya invierten en vender?»",
+        "Ojo: si te piden descuento, quita alcance. No bajes la implementación."
       ],
       "blocks": [
         {
@@ -349,11 +347,9 @@
       "title": "Incentivo por ventas atribuibles",
       "minutes": 3,
       "notes": [
-        "No des un porcentaje: se presenta abierto. Se acuerda por escrito después de definir las reglas de atribución.",
-        "Base de cálculo: importe efectivamente cobrado por Celeste en ventas atribuibles; ventana de 90 días.",
-        "Reglas: primer contacto documentado por Pandora's, excluir prospectos preexistentes, solo ventas cobradas.",
-        "Es adicional y no sustituye honorarios; requiere revisión legal. No es comisión inmobiliaria por intermediación.",
-        "Si presionan por un número: 'lo fijamos sobre el ticket promedio (USD 155k) cuando cerremos la atribución'."
+        "Di: «Si quieres, además amarramos un incentivo por venta. Es opcional y va aparte de los honorarios.»",
+        "Di: «El porcentaje lo definimos contigo, sobre lo que efectivamente cobres, cuando el comprador venga de nosotros.»",
+        "Ojo: no des un número hoy. Se revisa con abogado y se firma aparte."
       ],
       "blocks": [
         {
@@ -410,9 +406,9 @@
       "title": "Qué medimos",
       "minutes": 3,
       "notes": [
-        "CPL, prospectos, % calificado, solicitudes y visitas Discovery; ventas atribuibles solo si se firma el incentivo.",
-        "Di la frase completa: no garantizamos prospectos, visitas ni ventas; depende también de su oferta, disponibilidad y velocidad de cierre.",
-        "Ofrece reporte semanal y reunión de revisión: la medición es parte del servicio, no un extra."
+        "Di: «Cada semana vas a ver cuánto costó cada interesado, cuántos calificaron y cuántas visitas se agendaron.»",
+        "Di: «Lo que no puedo prometerte son ventas: eso depende también de tu oferta y de tu equipo.»",
+        "Pregunta: «¿qué número te haría decir que esto funcionó?»"
       ],
       "blocks": [
         {
@@ -451,9 +447,9 @@
       "title": "Siguientes pasos",
       "minutes": 2,
       "notes": [
-        "Cierra con tres pasos: validar 4 datos (anticipo, reglas Discovery, presupuesto de pauta y accesos), aceptar la propuesta, kickoff.",
-        "El documento v1.1 se firma en el Deal Room de Celeste; Eduardo ya tiene su liga personal.",
-        "Define qué pasa a los 90 días: continuidad mensual, nuevo alcance o cierre ordenado con activos bajo control de Celeste."
+        "Di: «Si te hace sentido, el siguiente paso es sencillo: defines anticipo, reglas de la visita y presupuesto de pauta, y arrancamos la primera semana.»",
+        "Di: «Te dejo la propuesta en el Deal Room para que la revises con tu socia.»",
+        "Cierra callado. Deja que él hable primero."
       ],
       "blocks": [
         {
