@@ -474,7 +474,7 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.96, y: 10 }}
           transition={{ duration: 0.18, ease: 'easeOut' }}
-          className="relative w-full h-[100dvh] max-h-none bg-[#08080A] border-0 rounded-none overflow-hidden flex flex-col"
+          className="relative w-full h-full max-h-none bg-[#08080A] border-0 rounded-none overflow-hidden flex flex-col"
         >
           {/* Header command bar */}
           <div className="flex items-center justify-between gap-3 px-4 md:px-5 py-3 border-b border-white/10 bg-[#0C0C10]">
