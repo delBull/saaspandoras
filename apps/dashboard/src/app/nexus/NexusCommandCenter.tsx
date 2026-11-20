@@ -58,6 +58,12 @@ export function NexusCommandCenter({ auth, initialTour, initialRole: _initialRol
   const sidebarOpen = showGuideSidebar === true;
   const [opsActiveTab, setOpsActiveTab] = useState<Tab>(initialOpsTab ?? 'WORK_ENGINE');
 
+  // Navegar entre ?tab=... no remonta el componente: hay que sincronizar el tab
+  // activo cuando el servidor entrega un tab inicial distinto (links del sidebar).
+  useEffect(() => {
+    if (initialOpsTab) setOpsActiveTab(initialOpsTab);
+  }, [initialOpsTab]);
+
 
 
   /**
