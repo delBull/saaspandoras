@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useRouter } from "next/navigation";
 import { AddToGoogleCalendarButton } from "@/components/meet/AddToGoogleCalendarButton";
 import { X, Mic, FileText, CheckCircle2, CloudLightning, Loader2, UploadCloud, Pencil, Trash2, Check } from "lucide-react";
 
@@ -34,7 +35,9 @@ export function MeetingDetailsDrawer({ isOpen, onClose, meeting }: MeetingDetail
   const [actionItems, setActionItems] = useState<ActionItem[]>([]);
   const [sendingSummary, setSendingSummary] = useState(false);
   const [summarySendMessage, setSummarySendMessage] = useState<string | null>(null);
+  const [summarySendOk, setSummarySendOk] = useState<boolean | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const router = useRouter();
 
   // Edición de tareas (texto y asignado) + borrado
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
@@ -185,6 +188,7 @@ export function MeetingDetailsDrawer({ isOpen, onClose, meeting }: MeetingDetail
     setExtraEmailsError(null);
     setSendingSummary(true);
     setSummarySendMessage(null);
+    setSummarySendOk(null);
     try {
       const res = await fetch("/api/v1/meet/follow-up", {
         method: "POST",
@@ -202,6 +206,7 @@ export function MeetingDetailsDrawer({ isOpen, onClose, meeting }: MeetingDetail
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
+        setSummarySendOk(false);
         setSummarySendMessage(
           data.code === "MEETING_NOT_ENDED"
             ? "Finaliza la reunión para enviar el seguimiento."
@@ -210,14 +215,19 @@ export function MeetingDetailsDrawer({ isOpen, onClose, meeting }: MeetingDetail
         return;
       }
       const total = (data.sent ?? 0) + (data.extras ?? 0);
+      const skipped = Number(data.skipped ?? 0);
+      const ok = total > 0;
+      setSummarySendOk(ok);
       setSummarySendMessage(
-        total > 0
-          ? `Enviado a ${total} destinatario${total === 1 ? "" : "s"}.`
-          : data.skipped > 0
-            ? "Ya se había enviado a esos destinatarios."
-            : "No hay participantes con email para enviar."
+        ok
+          ? `Enviado a ${total} destinatario${total === 1 ? "" : "s"}.${skipped > 0 ? ` ${skipped} omitido${skipped === 1 ? "" : "s"} (ya lo tenían).` : ""}`
+          : skipped > 0
+            ? "Esos destinatarios ya habían recibido el seguimiento."
+            : "No hay destinatarios con email para enviar."
       );
+      if (ok) router.refresh();
     } catch {
+      setSummarySendOk(false);
       setSummarySendMessage("Error de red al enviar el seguimiento.");
     } finally {
       setSendingSummary(false);
@@ -648,10 +658,25 @@ export function MeetingDetailsDrawer({ isOpen, onClose, meeting }: MeetingDetail
                     disabled={sendingSummary}
                     className="w-full rounded-lg border border-lime-500/30 bg-lime-500/10 px-3 py-2.5 text-[11px] font-mono uppercase tracking-wider text-lime-200 hover:bg-lime-500/20 disabled:opacity-50"
                   >
-                    {sendingSummary ? "Enviando…" : "Enviar seguimiento"}
+                    {sendingSummary ? (
+                      <>
+                        <Loader2 size={13} className="animate-spin" /> Enviando…
+                      </>
+                    ) : (
+                      <>
+                        <CloudLightning size={13} /> Enviar seguimiento
+                      </>
+                    )}
                   </button>
                   {summarySendMessage && (
-                    <p className="text-[10px] text-zinc-300">{summarySendMessage}</p>
+                    <p
+                      className={`flex items-center justify-center gap-1.5 text-[10px] ${
+                        summarySendOk ? "text-lime-300" : "text-rose-300"
+                      }`}
+                    >
+                      {summarySendOk && <Check size={12} />}
+                      {summarySendMessage}
+                    </p>
                   )}
                 </div>
               )}

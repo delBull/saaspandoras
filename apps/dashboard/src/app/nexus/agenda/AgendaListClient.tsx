@@ -14,6 +14,8 @@ import { EditMeetingDrawer } from "./EditMeetingDrawer";
 interface AgendaListClientProps {
   /** ?meeting=<id> en la URL: abre el detalle de esa reunión. */
   initialMeetingId?: string | null;
+  /** Seguimiento enviado por reunión: { sent, total }. */
+  followUpStatus?: Record<string, { sent: number; total: number }>;
   agendaRows: any[];
   collaboratorId: string | number;
   now: Date;
@@ -63,7 +65,7 @@ const AgendaSection = ({
   </section>
 );
 
-export function AgendaListClient({ agendaRows, collaboratorId, now, joinUrls, initialMeetingId = null }: AgendaListClientProps) {
+export function AgendaListClient({ agendaRows, collaboratorId, now, joinUrls, initialMeetingId = null, followUpStatus = {} }: AgendaListClientProps) {
   const [selectedMeeting, setSelectedMeeting] = useState<any | null>(null);
   const [editMeetingId, setEditMeetingId] = useState<string | null>(null);
   const [copiedHostId, setCopiedHostId] = useState<string | null>(null);
@@ -271,13 +273,30 @@ export function AgendaListClient({ agendaRows, collaboratorId, now, joinUrls, in
                 onClick={() => openDetails(row)}
                 className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-xs font-mono uppercase tracking-widest transition-colors ${
                   isHost && isPast
-                    ? "bg-lime-500/15 border border-lime-500/30 text-lime-300 hover:bg-lime-500/25"
+                    ? (followUpStatus[row.meeting.id]?.sent ?? 0) > 0
+                      ? "bg-lime-500/10 border border-lime-500/20 text-lime-200/80 hover:bg-lime-500/20"
+                      : "bg-lime-500/15 border border-lime-500/30 text-lime-300 hover:bg-lime-500/25"
                     : "bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-800"
                 }`}
                 title={isHost && isPast ? "Abrir seguimiento de esta reunión" : "Abrir detalle de la reunión"}
               >
-                {isHost && isPast ? <Send size={14} /> : <FileText size={14} />}
-                {isHost && isPast ? "Seguimiento" : "Agenda"}
+                {isHost && isPast ? (
+                  (followUpStatus[row.meeting.id]?.sent ?? 0) > 0 ? (
+                    <Check size={14} />
+                  ) : (
+                    <Send size={14} />
+                  )
+                ) : (
+                  <FileText size={14} />
+                )}
+                {isHost && isPast
+                  ? (() => {
+                      const state = followUpStatus[row.meeting.id];
+                      if (!state || state.sent === 0) return "Seguimiento";
+                      if (state.sent >= state.total) return "Seguido";
+                      return `Seguido ${state.sent}/${state.total}`;
+                    })()
+                  : "Agenda"}
               </button>
             </div>
           </div>

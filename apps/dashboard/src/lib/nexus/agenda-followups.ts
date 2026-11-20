@@ -311,7 +311,10 @@ export async function runSovereignFollowUps(meetingId?: string): Promise<FollowU
       );
     }
 
-    const presenceKnown = sessions.length > 0;
+    // Solo cuentan las sesiones atribuibles a un participante: si las sesiones
+  // existen pero no están ligadas (identity como texto), la asistencia es
+  // DESCONOCIDA, no "no asistió".
+  const presenceKnown = sessions.some((session) => Boolean(session.participantId));
     const attendanceKnown =
       presenceKnown || allParticipants.some((p) => Boolean(p.joinToken) && Boolean(p.joinedAt));
 
@@ -495,7 +498,10 @@ export async function sendMeetingSummaryFollowUp(
     );
   }
 
-  const presenceKnown = sessions.length > 0;
+  // Solo cuentan las sesiones atribuibles a un participante: si las sesiones
+  // existen pero no están ligadas (identity como texto), la asistencia es
+  // DESCONOCIDA, no "no asistió".
+  const presenceKnown = sessions.some((session) => Boolean(session.participantId));
   const attendanceKnown =
     presenceKnown || participants.some((p) => Boolean(p.joinToken) && Boolean(p.joinedAt));
 
@@ -554,16 +560,9 @@ export async function sendMeetingSummaryFollowUp(
       continue;
     }
 
-    const presenceSeconds = durationByParticipant.get(participant.id) ?? 0;
-    const attended = presenceKnown
-      ? presenceSeconds >= MIN_ATTENDANCE_SECONDS
-      : Boolean(participant.joinedAt);
-
-    if (attendanceKnown && !attended) {
-      result.skipped++;
-      continue;
-    }
-
+    // Envío manual: el host eligió enviar. No se descarta a nadie por
+    // asistencia (un invitado pudo estar presente sin sesión registrada).
+    // Se omite solo si ya recibió el correo o no tiene email válido.
     try {
       const emailResult = await sendEmail({
         to: identity,

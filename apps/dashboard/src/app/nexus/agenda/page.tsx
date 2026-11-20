@@ -114,6 +114,28 @@ export default async function NexusAgendaPage({ searchParams }: { searchParams: 
     .where(whereClause)
     .orderBy(meetings.startsAt);
 
+  // Estado de seguimiento por reunión: quién ya recibió el correo.
+  const meetingIds = agendaRows.map((row) => row.meeting.id);
+  const followUpRows = meetingIds.length
+    ? await db
+        .select({
+          meetingId: meetingParticipants.meetingId,
+          identityId: meetingParticipants.identityId,
+          sentAt: meetingParticipants.summarySentAt,
+        })
+        .from(meetingParticipants)
+        .where(inArray(meetingParticipants.meetingId, meetingIds))
+    : [];
+
+  const followUpStatus: Record<string, { sent: number; total: number }> = {};
+  for (const row of followUpRows) {
+    const identity = (row.identityId ?? "").trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identity)) continue;
+    const entry = (followUpStatus[row.meetingId] ??= { sent: 0, total: 0 });
+    entry.total += 1;
+    if (row.sentAt) entry.sent += 1;
+  }
+
   const now = new Date();
 
   // Pre-calculate join URLs
@@ -189,6 +211,7 @@ export default async function NexusAgendaPage({ searchParams }: { searchParams: 
             now={now} 
             joinUrls={joinUrls}
             initialMeetingId={meeting ?? null}
+            followUpStatus={followUpStatus}
           />
         )}
       </div>
