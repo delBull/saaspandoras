@@ -33,7 +33,19 @@ export async function GET(req: Request, { params }: { params: Promise<{ meetingI
     return NextResponse.json({
       success: true,
       summary: meetRow.aiSummary,
-      actionItems: items
+      notes: meetRow.presenterNotes ?? "",
+      actionItems: items,
+      // Metadatos de la sesión para la agenda (duración real, estado y deck).
+      meeting: {
+        id: meetRow.id,
+        status: meetRow.status,
+        startsAt: meetRow.startsAt,
+        endsAt: meetRow.endsAt,
+        startedAt: meetRow.startedAt,
+        endedAt: meetRow.endedAt,
+        presentationId: meetRow.presentationId,
+        followUpEnabled: meetRow.followUpEnabled
+      }
     });
   } catch (error: any) {
     console.error("Meeting fetch error:", error);

@@ -36,17 +36,45 @@ export function MeetingDetailsDrawer({ isOpen, onClose, meeting }: MeetingDetail
   const [summarySendMessage, setSummarySendMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Notas de la sesión (las mismas de la sala) + metadatos para la agenda.
+  const [notes, setNotes] = useState("");
+  const [notesSaving, setNotesSaving] = useState(false);
+  const [notesSaved, setNotesSaved] = useState<boolean | null>(null);
+  const [meta, setMeta] = useState<{
+    status?: string;
+    startsAt?: string | null;
+    endsAt?: string | null;
+    startedAt?: string | null;
+    endedAt?: string | null;
+    presentationId?: string | null;
+    followUpEnabled?: boolean;
+  } | null>(null);
+
+  // Formulario de seguimiento (mensaje + material + correos adicionales).
+  const [message, setMessage] = useState("");
+  const [includeDeck, setIncludeDeck] = useState(true);
+  const [includeProposal, setIncludeProposal] = useState(true);
+  const [includeTasks, setIncludeTasks] = useState(true);
+  const [includeRecap, setIncludeRecap] = useState(true);
+  const [extraEmailsText, setExtraEmailsText] = useState("");
+  const [extraEmailsError, setExtraEmailsError] = useState<string | null>(null);
+
   useEffect(() => {
     if (isOpen && meeting?.id) {
       setIsLoading(true);
       setSummary(null);
       setActionItems([]);
+      setNotes("");
+      setNotesSaved(null);
+      setMeta(null);
       fetch(`/api/v1/internal/nexus/meets/${meeting.id}`)
         .then(res => res.json())
         .then(data => {
           if (data.success) {
             setSummary(data.summary);
             setActionItems(data.actionItems || []);
+            setNotes(typeof data.notes === "string" ? data.notes : "");
+            setMeta(data.meeting ?? null);
           }
         })
         .catch(console.error)
@@ -111,36 +139,79 @@ export function MeetingDetailsDrawer({ isOpen, onClose, meeting }: MeetingDetail
     }
   };
 
+  const saveNotes = async () => {
+    if (!meeting) return;
+    setNotesSaving(true);
+    setNotesSaved(null);
+    try {
+      const res = await fetch("/api/v1/meet/notes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ meetingId: meeting.id, notes }),
+      });
+      setNotesSaved(res.ok);
+    } catch {
+      setNotesSaved(false);
+    } finally {
+      setNotesSaving(false);
+    }
+  };
+
+  const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
   const sendSummary = async () => {
     if (!meeting) return;
+    const rawExtras = extraEmailsText
+      .split(/[,;\s]+/)
+      .map((value) => value.trim().toLowerCase())
+      .filter((value) => value.length > 0);
+    const invalid = rawExtras.filter((value) => !EMAIL_PATTERN.test(value));
+    if (invalid.length > 0) {
+      setExtraEmailsError(`Correo inválido: ${invalid[0]}`);
+      return;
+    }
+    if (rawExtras.length > 10) {
+      setExtraEmailsError("Máximo 10 correos adicionales.");
+      return;
+    }
+    setExtraEmailsError(null);
     setSendingSummary(true);
     setSummarySendMessage(null);
     try {
       const res = await fetch("/api/v1/meet/follow-up", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ meetingId: meeting.id }),
+        credentials: "include",
+        body: JSON.stringify({
+          meetingId: meeting.id,
+          message: message.trim(),
+          includeDeck,
+          includeProposal,
+          includeTasks,
+          includeRecap,
+          extraEmails: Array.from(new Set(rawExtras)),
+        }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setSummarySendMessage(
-          data.code === "NO_SUMMARY"
-            ? "Aún no hay resumen. Procesa el audio primero."
-            : data.code === "MEETING_NOT_ENDED"
-              ? "Finaliza la reunión para enviar el resumen."
-              : data.error ?? "No se pudo enviar el resumen."
+          data.code === "MEETING_NOT_ENDED"
+            ? "Finaliza la reunión para enviar el seguimiento."
+            : data.error ?? "No se pudo enviar el seguimiento."
         );
         return;
       }
+      const total = (data.sent ?? 0) + (data.extras ?? 0);
       setSummarySendMessage(
-        data.sent > 0
-          ? `Enviado a ${data.sent} participante${data.sent === 1 ? "" : "s"}.`
+        total > 0
+          ? `Enviado a ${total} destinatario${total === 1 ? "" : "s"}.`
           : data.skipped > 0
-            ? "El resumen ya se había enviado."
+            ? "Ya se había enviado a esos destinatarios."
             : "No hay participantes con email para enviar."
       );
     } catch {
-      setSummarySendMessage("Error de red al enviar el resumen.");
+      setSummarySendMessage("Error de red al enviar el seguimiento.");
     } finally {
       setSendingSummary(false);
     }
@@ -167,6 +238,22 @@ export function MeetingDetailsDrawer({ isOpen, onClose, meeting }: MeetingDetail
       console.error('Failed to toggle action item', err);
     }
   };
+
+  const sessionStart = meta?.startedAt
+    ? new Date(meta.startedAt)
+    : meta?.startsAt
+      ? new Date(meta.startsAt)
+      : null;
+  const sessionEnd = meta?.endedAt
+    ? new Date(meta.endedAt)
+    : meta?.endsAt
+      ? new Date(meta.endsAt)
+      : null;
+  const durationMinutes =
+    sessionStart && sessionEnd
+      ? Math.max(1, Math.round((sessionEnd.getTime() - sessionStart.getTime()) / 60000))
+      : null;
+  const durationIsReal = Boolean(meta?.startedAt && meta?.endedAt);
 
   if (!meeting) return null;
 
@@ -280,6 +367,55 @@ export function MeetingDetailsDrawer({ isOpen, onClose, meeting }: MeetingDetail
                 </motion.div>
               )}
 
+              {/* Cierre de la sesión: duración y notas (mismas de la sala) */}
+              {!isLoading && meeting.isHost !== false && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                    <div className="flex items-center gap-2 text-sky-300 text-xs font-mono uppercase tracking-widest">
+                      <FileText className="w-4 h-4" /> Cierre de la sesión
+                    </div>
+                    {durationMinutes !== null && (
+                      <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">
+                        {durationMinutes} min {durationIsReal ? "reales" : "programados"}
+                      </span>
+                    )}
+                  </div>
+                  <textarea
+                    value={notes}
+                    onChange={(event) => {
+                      setNotes(event.target.value.slice(0, 8000));
+                      setNotesSaved(null);
+                    }}
+                    rows={4}
+                    placeholder="Notas de la sesión: objeciones, acuerdos, quién dijo qué…"
+                    className="w-full resize-y rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm leading-relaxed text-zinc-200 outline-none placeholder:text-zinc-600 focus:border-sky-500/40"
+                  />
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-mono text-zinc-600">{notes.length}/8000</span>
+                    <div className="flex items-center gap-2">
+                      {notesSaved === true && (
+                        <span className="text-[10px] font-mono uppercase tracking-widest text-lime-400">
+                          Guardado
+                        </span>
+                      )}
+                      {notesSaved === false && (
+                        <span className="text-[10px] font-mono uppercase tracking-widest text-rose-400">
+                          No se guardó
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={saveNotes}
+                        disabled={notesSaving}
+                        className="rounded-lg border border-sky-500/30 bg-sky-500/10 px-3 py-2 text-[10px] font-mono uppercase tracking-wider text-sky-200 hover:bg-sky-500/20 disabled:opacity-50"
+                      >
+                        {notesSaving ? "Guardando…" : "Guardar notas"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Action Items Section */}
               {!isLoading && actionItems.length > 0 && (
                 <motion.div 
@@ -318,19 +454,64 @@ export function MeetingDetailsDrawer({ isOpen, onClose, meeting }: MeetingDetail
                 </motion.div>
               )}
 
-              {!isLoading && summary && meeting.isHost !== false && (
-                <div className="space-y-2">
+              {!isLoading && meeting.isHost !== false && meeting.status === "ended" && (
+                <div className="space-y-3 rounded-xl border border-white/10 bg-white/[0.02] p-5">
+                  <div className="flex items-center gap-2 text-lime-400 text-xs font-mono uppercase tracking-widest">
+                    <CheckCircle2 className="w-4 h-4" /> Seguimiento a participantes
+                  </div>
+                  <p className="text-[11px] leading-relaxed text-zinc-500">
+                    {summary
+                      ? "Incluye el resumen, las tareas y el material que marques."
+                      : "Sin resumen IA, el correo sale como seguimiento de la sesión con el material que marques."}
+                  </p>
+                  <textarea
+                    value={message}
+                    onChange={(event) => setMessage(event.target.value.slice(0, 2000))}
+                    rows={3}
+                    placeholder="Mensaje para los participantes (opcional)…"
+                    className="w-full resize-y rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-[12px] leading-relaxed text-zinc-200 outline-none placeholder:text-zinc-600 focus:border-lime-500/40"
+                  />
+                  <div className="grid grid-cols-2 gap-2">
+                    <label className="flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-[10px] text-zinc-300">
+                      <input type="checkbox" checked={includeDeck} onChange={(e) => setIncludeDeck(e.target.checked)} className="h-3.5 w-3.5 accent-lime-500" />
+                      Presentación
+                    </label>
+                    <label className="flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-[10px] text-zinc-300">
+                      <input type="checkbox" checked={includeProposal} onChange={(e) => setIncludeProposal(e.target.checked)} className="h-3.5 w-3.5 accent-lime-500" />
+                      Propuesta
+                    </label>
+                    <label className="flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-[10px] text-zinc-300">
+                      <input type="checkbox" checked={includeTasks} onChange={(e) => setIncludeTasks(e.target.checked)} className="h-3.5 w-3.5 accent-lime-500" />
+                      Tareas
+                    </label>
+                    <label className="flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-[10px] text-zinc-300">
+                      <input type="checkbox" checked={includeRecap} onChange={(e) => setIncludeRecap(e.target.checked)} className="h-3.5 w-3.5 accent-lime-500" />
+                      Lo que vimos
+                    </label>
+                  </div>
+                  <input
+                    value={extraEmailsText}
+                    onChange={(event) => {
+                      setExtraEmailsText(event.target.value);
+                      setExtraEmailsError(null);
+                    }}
+                    placeholder="Correos adicionales (separados por coma)"
+                    className="w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-[12px] text-zinc-200 outline-none placeholder:text-zinc-600 focus:border-lime-500/40"
+                  />
+                  {extraEmailsError && (
+                    <p className="text-[10px] leading-relaxed text-rose-300">{extraEmailsError}</p>
+                  )}
+                  <p className="text-[10px] leading-relaxed text-zinc-600">
+                    Los correos adicionales reciben solo este seguimiento; no reciben recordatorios.
+                  </p>
                   <button
                     type="button"
                     onClick={sendSummary}
                     disabled={sendingSummary}
-                    className="w-full rounded-lg border border-lime-500/30 bg-lime-500/10 px-3 py-2 text-[11px] font-mono uppercase tracking-wider text-lime-200 hover:bg-lime-500/20 disabled:opacity-50"
+                    className="w-full rounded-lg border border-lime-500/30 bg-lime-500/10 px-3 py-2.5 text-[11px] font-mono uppercase tracking-wider text-lime-200 hover:bg-lime-500/20 disabled:opacity-50"
                   >
-                    {sendingSummary ? "Enviando…" : "Enviar resumen a participantes"}
+                    {sendingSummary ? "Enviando…" : "Enviar seguimiento"}
                   </button>
-                  <p className="text-[10px] leading-relaxed text-zinc-500">
-                    Incluye resumen y tareas. Solo a quienes asistieron y aún no lo hayan recibido.
-                  </p>
                   {summarySendMessage && (
                     <p className="text-[10px] text-zinc-300">{summarySendMessage}</p>
                   )}

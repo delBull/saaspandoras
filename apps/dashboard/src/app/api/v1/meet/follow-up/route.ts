@@ -23,9 +23,21 @@ export const maxDuration = 60;
  * Autoridad: host por sesión o por `ref` firmado; admins de operaciones también.
  */
 const ADMIN_ROLES = new Set(["SUPER_ADMIN", "ADMIN", "ADMIN_OPERATIONS"]);
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MAX_MESSAGE_LENGTH = 2000;
+const MAX_EXTRA_EMAILS = 10;
 
 export async function POST(req: NextRequest) {
-  let body: { meetingId?: unknown; ref?: unknown };
+  let body: {
+    meetingId?: unknown;
+    ref?: unknown;
+    message?: unknown;
+    includeDeck?: unknown;
+    includeProposal?: unknown;
+    includeTasks?: unknown;
+    includeRecap?: unknown;
+    extraEmails?: unknown;
+  };
   try {
     body = await req.json();
   } catch {
@@ -36,6 +48,31 @@ export async function POST(req: NextRequest) {
   if (!meetingId) {
     return NextResponse.json({ error: "meetingId es requerido", code: "MISSING_MEETING_ID" }, { status: 400 });
   }
+
+  // Ajustes del host. El mensaje se recorta; los correos se validan aquí y se
+  // vuelven a validar en el servicio (nunca se confía en el cliente).
+  const message =
+    typeof body.message === "string" && body.message.trim().length > 0
+      ? body.message.trim().slice(0, MAX_MESSAGE_LENGTH)
+      : null;
+  const rawExtras = Array.isArray(body.extraEmails)
+    ? body.extraEmails
+    : typeof body.extraEmails === "string"
+      ? body.extraEmails.split(/[,;\s]+/)
+      : [];
+  const extraEmails = rawExtras
+    .filter((value): value is string => typeof value === "string")
+    .map((value) => value.trim().toLowerCase())
+    .filter((value) => EMAIL_PATTERN.test(value))
+    .slice(0, MAX_EXTRA_EMAILS);
+  const options = {
+    message,
+    includeDeck: body.includeDeck !== false,
+    includeProposal: body.includeProposal !== false,
+    includeTasks: body.includeTasks !== false,
+    includeRecap: body.includeRecap !== false,
+    extraEmails,
+  };
 
   try {
     const { actor, error } = await resolveRoomActor(req.headers, body.ref, meetingId);
@@ -77,14 +114,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (!meeting.aiSummary?.trim()) {
-      return NextResponse.json(
-        { error: "Aún no hay resumen. Procesa el audio de la reunión primero.", code: "NO_SUMMARY" },
-        { status: 409 }
-      );
-    }
-
-    const result = await sendMeetingSummaryFollowUp(meeting.id);
+    // Sin resumen IA también se puede enviar: el correo queda como seguimiento
+    // (deck + propuesta + mensaje + tareas si existen). El host decide.
+    const result = await sendMeetingSummaryFollowUp(meeting.id, options);
 
     return NextResponse.json({
       ok: true,

@@ -2,7 +2,7 @@
 
 import { JitsiMeeting } from "@jitsi/react-sdk";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronUp, ChevronDown, Loader2, MonitorPlay, PhoneOff, X, BookOpen, NotebookPen, Save, Link2, Check, ClipboardList, PanelLeftClose, PanelLeftOpen, MicOff } from "lucide-react";
+import { ChevronUp, ChevronDown, Loader2, MonitorPlay, PhoneOff, X, BookOpen, NotebookPen, Save, Link2, Check, ClipboardList, PanelLeftClose, PanelLeftOpen, MicOff, Mic } from "lucide-react";
 import { findPresentation } from "@/lib/nexus/presentations-catalog";
 import { MeetClosedScreen } from "./MeetClosedScreen";
 import { shortMeetingPath, shareOrCopyMeeting } from "@/lib/meet/meeting-links";
@@ -128,6 +128,16 @@ export function SovereignMeetRoom({
     const [summarySendMessage, setSummarySendMessage] = useState<string | null>(null);
     // null = desconocido (no se muestra aviso). Solo aplica a invitados.
     const [hostPresent, setHostPresent] = useState<boolean | null>(null);
+    // Grabación de la reunión (host): captura audio de la pestaña + micrófono.
+    const [recording, setRecording] = useState(false);
+    const [recordSeconds, setRecordSeconds] = useState(0);
+    const [recordingError, setRecordingError] = useState<string | null>(null);
+    const [recordingUrl, setRecordingUrl] = useState<string | null>(null);
+    const recorderRef = useRef<MediaRecorder | null>(null);
+    const recordChunksRef = useRef<Blob[]>([]);
+    const recordStreamsRef = useRef<MediaStream[]>([]);
+    const recordAudioCtxRef = useRef<AudioContext | null>(null);
+    const recordTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     /**
      * Delega permisos de dispositivos al iframe cross-origin de JaaS.
@@ -505,6 +515,127 @@ export function SovereignMeetRoom({
         if (showMinutes && isHost && !minutesLoaded) void loadMinutes();
     }, [showMinutes, isHost, minutesLoaded, loadMinutes]);
 
+    // --- Grabación de la reunión (solo host) ---
+    // Jitsi vive en un iframe cross-origin: la única forma de capturar también la
+    // voz de los invitados es compartir la pestaña CON audio (getDisplayMedia).
+    // Es un gesto explícito: el navegador no permite iniciar esto solo.
+    const cleanupRecording = useCallback(() => {
+        recordStreamsRef.current.forEach((stream) => stream.getTracks().forEach((track) => track.stop()));
+        recordStreamsRef.current = [];
+        if (recordAudioCtxRef.current) {
+            void recordAudioCtxRef.current.close().catch(() => undefined);
+            recordAudioCtxRef.current = null;
+        }
+        if (recordTimerRef.current) {
+            clearInterval(recordTimerRef.current);
+            recordTimerRef.current = null;
+        }
+        recorderRef.current = null;
+        setRecording(false);
+        setRecordSeconds(0);
+    }, []);
+
+    const startRecording = useCallback(async () => {
+        if (!isHost || recorderRef.current) return;
+        if (typeof navigator === "undefined" || !navigator.mediaDevices?.getDisplayMedia) {
+            setRecordingError("Tu navegador no permite grabar la reunión desde aquí.");
+            return;
+        }
+        setRecordingError(null);
+        try {
+            const display = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+            if (display.getAudioTracks().length === 0) {
+                display.getTracks().forEach((track) => track.stop());
+                setRecordingError(
+                    "No compartiste el audio. Elige la pestaña de la reunión y activa \u201cCompartir audio de la pestaña\u201d."
+                );
+                return;
+            }
+            display.getVideoTracks().forEach((track) => track.stop());
+
+            let mic: MediaStream | null = null;
+            try {
+                mic = await navigator.mediaDevices.getUserMedia({ audio: true });
+            } catch {
+                mic = null; // sin micrófono: se graba solo el audio de la pestaña
+            }
+
+            const AudioCtx = window.AudioContext;
+            const ctx = new AudioCtx();
+            const destination = ctx.createMediaStreamDestination();
+            [display, mic].forEach((stream) => {
+                if (!stream) return;
+                stream.getAudioTracks().forEach((track) => {
+                    ctx.createMediaStreamSource(new MediaStream([track])).connect(destination);
+                });
+            });
+
+            const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+                ? "audio/webm;codecs=opus"
+                : "audio/webm";
+            const recorder = new MediaRecorder(destination.stream, {
+                mimeType,
+                audioBitsPerSecond: 24000,
+            });
+            recordChunksRef.current = [];
+            recorder.ondataavailable = (event) => {
+                if (event.data.size > 0) recordChunksRef.current.push(event.data);
+            };
+            recorder.onstop = () => {
+                const blob = new Blob(recordChunksRef.current, { type: mimeType });
+                recordChunksRef.current = [];
+                cleanupRecording();
+                if (blob.size === 0) {
+                    setRecordingError("La grabación quedó vacía. Intenta de nuevo.");
+                    return;
+                }
+                if (blob.size > 10 * 1024 * 1024) {
+                    setRecordingError(
+                        `La grabación pesa ${(blob.size / 1024 / 1024).toFixed(1)} MB (máx. 10 MB). Súbela manualmente en Minuta.`
+                    );
+                    return;
+                }
+                setRecordingUrl((previous) => {
+                    if (previous) URL.revokeObjectURL(previous);
+                    return URL.createObjectURL(blob);
+                });
+                const file = new File([blob], `reunion-${meetingId}.webm`, { type: mimeType });
+                void processRecording(file);
+            };
+            display.getAudioTracks()[0]?.addEventListener("ended", () => {
+                if (recorder.state !== "inactive") recorder.stop();
+            });
+
+            recordStreamsRef.current = mic ? [display, mic] : [display];
+            recordAudioCtxRef.current = ctx;
+            recorderRef.current = recorder;
+            recorder.start(5000);
+            setRecording(true);
+            setRecordSeconds(0);
+            recordTimerRef.current = setInterval(() => setRecordSeconds((value) => value + 1), 1000);
+        } catch (error) {
+            const name = (error as { name?: string } | null)?.name;
+            setRecordingError(
+                name === "NotAllowedError" ? "Cancelaste el permiso de grabación." : "No se pudo iniciar la grabación."
+            );
+        }
+    }, [cleanupRecording, isHost, meetingId, processRecording]);
+
+    const stopRecording = useCallback(() => {
+        const recorder = recorderRef.current;
+        if (recorder && recorder.state !== "inactive") {
+            recorder.stop();
+            return;
+        }
+        cleanupRecording();
+    }, [cleanupRecording]);
+
+    // Al salir de la sala sin finalizar, se libera el micrófono y la captura.
+    useEffect(() => () => {
+        recordStreamsRef.current.forEach((stream) => stream.getTracks().forEach((track) => track.stop()));
+        if (recordTimerRef.current) clearInterval(recordTimerRef.current);
+    }, []);
+
     const updateDeck = useCallback(
         async (patch: { open?: boolean; slide?: number }) => {
             setDeckBusy(true);
@@ -546,6 +677,8 @@ export function SovereignMeetRoom({
             });
             if (res.ok) {
                 setMeetingEnded(true);
+                // Detiene la grabación: `onstop` arma el archivo y lo sube para el resumen.
+                stopRecording();
                 return true;
             }
             return false;
@@ -554,46 +687,50 @@ export function SovereignMeetRoom({
         } finally {
             setEnding(false);
         }
-    }, [meetingId, joinRef]);
+    }, [meetingId, joinRef, stopRecording]);
 
-    // Envío manual del resumen + tareas (host). No depende del correo de cortesía.
-    const sendSummary = useCallback(async () => {
-        if (!recordingSummary) {
-            setSummarySendMessage("Primero sube el audio en Minuta y genera el resumen.");
-            return;
-        }
-        setSendingSummary(true);
-        setSummarySendMessage(null);
-        try {
-            const res = await fetch("/api/v1/meet/follow-up", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ meetingId, ref: joinRef }),
-            });
-            const data = await res.json().catch(() => ({}));
-            if (!res.ok) {
+    // Envío manual del seguimiento (host). No depende del correo de cortesía.
+    const sendSummary = useCallback(
+        async (options?: {
+            message?: string;
+            includeDeck?: boolean;
+            includeProposal?: boolean;
+            includeTasks?: boolean;
+            extraEmails?: string[];
+        }) => {
+            setSendingSummary(true);
+            setSummarySendMessage(null);
+            try {
+                const res = await fetch("/api/v1/meet/follow-up", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ meetingId, ref: joinRef, ...options }),
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    setSummarySendMessage(
+                        data.code === "MEETING_NOT_ENDED"
+                            ? "Finaliza la reunión para enviar el seguimiento."
+                            : data.error ?? "No se pudo enviar el seguimiento."
+                    );
+                    return;
+                }
+                const total = (data.sent ?? 0) + (data.extras ?? 0);
                 setSummarySendMessage(
-                    data.code === "NO_SUMMARY"
-                        ? "Aún no hay resumen. Procesa el audio primero."
-                        : data.code === "MEETING_NOT_ENDED"
-                          ? "Finaliza la reunión para enviar el resumen."
-                          : data.error ?? "No se pudo enviar el resumen."
+                    total > 0
+                        ? `Enviado a ${total} destinatario${total === 1 ? "" : "s"}.`
+                        : data.skipped > 0
+                          ? "Ya se había enviado a esos destinatarios."
+                          : "No hay participantes con email para enviar."
                 );
-                return;
+            } catch {
+                setSummarySendMessage("Error de red al enviar el seguimiento.");
+            } finally {
+                setSendingSummary(false);
             }
-            setSummarySendMessage(
-                data.sent > 0
-                    ? `Enviado a ${data.sent} participante${data.sent === 1 ? "" : "s"}.`
-                    : data.skipped > 0
-                      ? "El resumen ya se había enviado."
-                      : "No hay participantes con email para enviar."
-            );
-        } catch {
-            setSummarySendMessage("Error de red al enviar el resumen.");
-        } finally {
-            setSendingSummary(false);
-        }
-    }, [meetingId, joinRef]);
+        },
+        [meetingId, joinRef]
+    );
 
     const toolbarButtons = isMobile
         ? isHost
@@ -703,6 +840,39 @@ export function SovereignMeetRoom({
                                         </div>
                                     )}
                                 </>
+                            )}
+
+                            {isHost && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        if (recording) {
+                                            stopRecording();
+                                        } else {
+                                            void startRecording();
+                                        }
+                                    }}
+                                    className={`flex w-full items-center justify-center gap-2 rounded-lg border px-2 py-2 text-[10px] font-mono uppercase tracking-wider transition-colors justify-center px-2 ${
+                                        recording
+                                            ? "border-red-400/60 bg-red-500/30 text-red-100"
+                                            : "border-white/10 bg-white/[0.04] text-zinc-300 hover:bg-white/10 hover:text-white"
+                                    }`}
+                                    title={
+                                        recording
+                                            ? "Detener grabación. El audio se sube solo para generar el resumen."
+                                            : "Grabar la reunión (comparte la pestaña con audio) para la minuta"
+                                    }
+                                >
+                                    <Mic className="h-3.5 w-3.5 shrink-0" />
+                                    {recording ? (
+                                        <span className="text-[9px] tabular-nums">
+                                            {Math.floor(recordSeconds / 60)}:
+                                            {String(recordSeconds % 60).padStart(2, "0")}
+                                        </span>
+                                    ) : (
+                                        <span className="hidden">Grabar</span>
+                                    )}
+                                </button>
                             )}
 
                             <button
@@ -1024,11 +1194,11 @@ export function SovereignMeetRoom({
                         </p>
                         <button
                             type="button"
-                            onClick={sendSummary}
-                            disabled={sendingSummary || !recordingSummary}
+                            onClick={() => void sendSummary()}
+                            disabled={sendingSummary || !meetingEnded}
                             className="w-full rounded-lg border border-lime-500/30 bg-lime-500/10 px-3 py-2 text-[11px] font-mono uppercase tracking-wider text-lime-200 hover:bg-lime-500/20 disabled:opacity-50"
                         >
-                            {sendingSummary ? "Enviando…" : "Enviar resumen a participantes"}
+                            {sendingSummary ? "Enviando…" : "Enviar seguimiento a participantes"}
                         </button>
                         <p className="text-[10px] leading-relaxed text-zinc-500">
                             {recordingSummary
@@ -1082,6 +1252,23 @@ export function SovereignMeetRoom({
                 </div>
             )}
 
+            {(recording || recordingError) && (
+                <div className="pointer-events-none absolute left-1/2 top-3 z-30 -translate-x-1/2">
+                    <div
+                        className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-[10px] font-mono uppercase tracking-widest backdrop-blur ${
+                            recording
+                                ? "border-red-400/40 bg-red-500/20 text-red-100"
+                                : "border-amber-400/40 bg-amber-500/20 text-amber-100"
+                        }`}
+                    >
+                        {recording && <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-400" />}
+                        {recording
+                            ? `Grabando ${Math.floor(recordSeconds / 60)}:${String(recordSeconds % 60).padStart(2, "0")}`
+                            : recordingError}
+                    </div>
+                </div>
+            )}
+
             {showEndConfirm && !meetingEnded && (
                 <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
                     <div className="w-full max-w-md rounded-2xl border border-white/10 bg-zinc-950 p-6 shadow-2xl">
@@ -1103,8 +1290,10 @@ export function SovereignMeetRoom({
                         </div>
 
                         <p className="mt-2 text-xs leading-relaxed text-zinc-400">
-                            Se cerrará para todos los participantes. El resumen con tareas se envía
-                            aparte, cuando tú lo decidas.
+                            Se cerrará para todos los participantes. Después verás la pantalla de
+                            cierre, donde puedes escribir el mensaje, elegir si incluyes
+                            presentación, propuesta y tareas, y agregar correos adicionales antes de
+                            enviar el seguimiento.
                         </p>
 
                         <label className="mt-4 flex items-start gap-2 rounded-xl border border-white/10 bg-white/[0.02] p-3 text-[11px] text-zinc-300">
@@ -1159,7 +1348,9 @@ export function SovereignMeetRoom({
                     onSendSummary={sendSummary}
                     sendingSummary={sendingSummary}
                     summaryMessage={summarySendMessage}
-                    canSendSummary={Boolean(recordingSummary)}
+                    hasSummary={Boolean(recordingSummary)}
+                    recordingUrl={recordingUrl}
+                    showInternalLinks={isHost}
                     onProcessAudio={processRecording}
                     processingAudio={processingRecording}
                     audioMessage={minutesError}

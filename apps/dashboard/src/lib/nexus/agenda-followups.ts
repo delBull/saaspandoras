@@ -10,6 +10,8 @@ import { eq, and } from '@saasfly/db-core';
 import { WhatsAppAdapter, TelegramAdapter } from '@saasfly/hermes-core';
 import { sendEmail } from '@saasfly/shared';
 import { findPresentation } from '@/lib/nexus/presentations-catalog';
+import { getDeck } from '@/lib/nexus/deck-repository';
+import { buildPresentationRecap } from '@/lib/nexus/presentation-recap';
 
 /**
  * 🏛️ ARCHITECTURE NOTE: Seguimiento post-presentación (una sola implementación)
@@ -47,7 +49,24 @@ export interface SummaryFollowUpResult {
   sent: number;
   skipped: number;
   failed: number;
-  reason?: "NOT_FOUND" | "NOT_ENDED" | "NO_SUMMARY";
+  /** Correos adicionales (no participantes) que recibieron el seguimiento. */
+  extras?: number;
+  /** "summary" si había resumen IA; "courtesy" si solo se envió el seguimiento. */
+  kind?: "summary" | "courtesy";
+  reason?: "NOT_FOUND" | "NOT_ENDED";
+}
+
+/** Ajustes del host antes de disparar el seguimiento (pantalla de finalizar). */
+export interface FollowUpEmailOptions {
+  /** Mensaje libre del host; se inserta arriba del resumen. */
+  message?: string | null;
+  includeDeck?: boolean;
+  includeProposal?: boolean;
+  includeTasks?: boolean;
+  /** Recap de la presentación (títulos del deck, sin el guión del presentador). */
+  includeRecap?: boolean;
+  /** Correos adicionales: solo reciben este seguimiento, no recordatorios. */
+  extraEmails?: string[];
 }
 
 interface SummaryActionItem {
@@ -73,11 +92,34 @@ function followUpEmailHtml(input: {
   summary: string | null;
   actionItems: SummaryActionItem[];
   kind: "courtesy" | "summary";
+  /** Mensaje escrito por el host; si existe, se muestra antes del resumen. */
+  introMessage?: string | null;
+  includeDeck?: boolean;
+  includeProposal?: boolean;
+  includeTasks?: boolean;
+  /** Recap de la presentación (sin guión del presentador). */
+  recap?: string | null;
+  includeRecap?: boolean;
 }): string {
-  const { firstName, meetingTitle, deckTitle, deckUrl, proposalUrl, summary, actionItems, kind } = input;
+  const {
+    firstName,
+    meetingTitle,
+    deckTitle,
+    deckUrl,
+    proposalUrl,
+    summary,
+    actionItems,
+    kind,
+    introMessage = null,
+    includeDeck = true,
+    includeProposal = true,
+    includeTasks = true,
+    recap = null,
+    includeRecap = true,
+  } = input;
 
   const actionsHtml =
-    actionItems.length > 0
+    includeTasks && actionItems.length > 0
       ? `<div style="margin:22px 0 0;padding:18px 20px;background:rgba(132,204,22,0.06);border:1px solid rgba(132,204,22,0.18);border-radius:12px;">
           <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#a3e635;margin-bottom:10px;">Acuerdos y siguientes pasos</div>
           <ul style="margin:0;padding-left:18px;color:rgba(255,255,255,0.8);font-size:14px;line-height:1.7;">
@@ -92,6 +134,24 @@ function followUpEmailHtml(input: {
           </ul>
         </div>`
       : "";
+
+  const recapHtml =
+    includeRecap && recap?.trim()
+      ? `<div style="margin:18px 0 0;padding:18px 20px;background:rgba(129,140,248,0.06);border:1px solid rgba(129,140,248,0.18);border-radius:12px;">
+          <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#a5b4fc;margin-bottom:10px;">Lo que vimos</div>
+          <p style="margin:0;color:rgba(255,255,255,0.8);font-size:13px;line-height:1.75;white-space:pre-line;">${escapeHtml(
+            recap.trim()
+          )}</p>
+        </div>`
+      : "";
+
+  const messageHtml = introMessage?.trim()
+    ? `<div style="margin:18px 0 0;padding:16px 18px;background:rgba(251,191,36,0.06);border:1px solid rgba(251,191,36,0.18);border-radius:12px;">
+        <p style="margin:0;color:rgba(255,255,255,0.86);font-size:14px;line-height:1.7;">${escapeHtml(
+          introMessage.trim()
+        ).replace(/\n/g, "<br/>")}</p>
+      </div>`
+    : "";
 
   return `<!DOCTYPE html>
 <html lang="es"><head><meta charset="UTF-8"/><title>${kind === "summary" ? "Resumen de la sesión" : "Gracias por tu tiempo"}</title></head>
@@ -113,6 +173,8 @@ function followUpEmailHtml(input: {
                 : "Gracias por el tiempo de hoy. Dejamos registrada la sesión y el material presentado."
             }
           </p>
+          ${messageHtml}
+          ${recapHtml}
           ${
             summary
               ? `<div style="margin:18px 0 0;padding:18px 20px;background:rgba(168,85,247,0.06);border:1px solid rgba(168,85,247,0.18);border-radius:12px;">
@@ -123,7 +185,7 @@ function followUpEmailHtml(input: {
           }
           ${actionsHtml}
           ${
-            deckUrl && deckTitle
+            includeDeck && deckUrl && deckTitle
               ? `<table width="100%" cellpadding="0" cellspacing="0" style="margin-top:22px;"><tr><td align="center">
                   <a href="${deckUrl}" target="_blank" style="display:inline-block;background:linear-gradient(135deg,#f59e0b,#b45309);color:#fff;text-decoration:none;font-size:14px;font-weight:600;padding:13px 28px;border-radius:10px;">
                     Ver la presentación · ${escapeHtml(deckTitle)}
@@ -131,7 +193,7 @@ function followUpEmailHtml(input: {
               : ""
           }
           ${
-            proposalUrl
+            includeProposal && proposalUrl
               ? `<p style="margin:16px 0 0;font-size:13px;line-height:1.6;color:rgba(255,255,255,0.75);">
                   Propuesta completa: <a href="${proposalUrl}" style="color:#fbbf24;">ver documento</a>
                 </p>`
@@ -374,13 +436,17 @@ export async function runSovereignFollowUps(meetingId?: string): Promise<FollowU
 }
 
 /**
- * Envío MANUAL del resumen (resumen + tareas) a los asistentes que aún no lo
- * recibieron. No depende de `follow_up_enabled`: es una acción explícita del host.
+ * Envío MANUAL del seguimiento (resumen + tareas cuando existe; cortesía cuando no).
+ *
+ * No depende de `follow_up_enabled`: es una acción explícita del host desde la
+ * pantalla de finalizar. Acepta ajustes del host (mensaje, deck, propuesta,
+ * tareas) y correos adicionales que NO se convierten en invitados con recordatorios.
  */
 export async function sendMeetingSummaryFollowUp(
-  meetingId: string
+  meetingId: string,
+  options: FollowUpEmailOptions = {}
 ): Promise<SummaryFollowUpResult> {
-  const result: SummaryFollowUpResult = { sent: 0, skipped: 0, failed: 0 };
+  const result: SummaryFollowUpResult = { sent: 0, skipped: 0, failed: 0, extras: 0 };
 
   const [meeting] = await db
     .select()
@@ -392,7 +458,9 @@ export async function sendMeetingSummaryFollowUp(
   if (meeting.status !== 'ended') return { ...result, reason: 'NOT_ENDED' };
 
   const summaryText = meeting.aiSummary?.trim() || null;
-  if (!summaryText) return { ...result, reason: 'NO_SUMMARY' };
+  // Sin resumen IA el correo sigue siendo válido: es seguimiento con el material.
+  const kind: 'summary' | 'courtesy' = summaryText ? 'summary' : 'courtesy';
+  result.kind = kind;
 
   const participants = await db
     .select()
@@ -425,6 +493,42 @@ export async function sendMeetingSummaryFollowUp(
   const { deck, meetingTitle, deckUrl, proposalUrl } = meetingPresentationContext(meeting);
   const actions = await actionItemsOf(meeting.id);
 
+  // Recap del deck sembrado en DB (títulos + subtítulos; nunca el guión).
+  // Si el CMS falla, el correo sale sin recap: nunca se bloquea el seguimiento.
+  let recap: string | null = null;
+  if (meeting.presentationId) {
+    try {
+      const deckDocument = await getDeck(meeting.presentationId);
+      recap = buildPresentationRecap(deckDocument);
+    } catch (error) {
+      console.error(`[Sovereign Summary] recap no disponible para ${meeting.presentationId}`, error);
+      recap = null;
+    }
+  }
+
+  const buildHtml = (firstName: string) =>
+    followUpEmailHtml({
+      firstName,
+      meetingTitle,
+      deckTitle: deck?.title ?? null,
+      deckUrl,
+      proposalUrl,
+      summary: summaryText,
+      actionItems: actions,
+      kind,
+      introMessage: options.message ?? null,
+      includeDeck: options.includeDeck !== false,
+      includeProposal: options.includeProposal !== false,
+      includeTasks: options.includeTasks !== false,
+      recap,
+      includeRecap: options.includeRecap !== false,
+    });
+
+  const subject =
+    kind === 'summary'
+      ? `Resumen de la sesión · ${meetingTitle}`
+      : `Seguimiento de la sesión · ${meetingTitle}`;
+
   for (const participant of participants) {
     if (participant.summarySentAt) {
       result.skipped++;
@@ -455,17 +559,8 @@ export async function sendMeetingSummaryFollowUp(
       const emailResult = await sendEmail({
         to: identity,
         from: FROM,
-        subject: `Resumen de la sesión · ${meetingTitle}`,
-        html: followUpEmailHtml({
-          firstName: identity.split('@')[0] ?? '',
-          meetingTitle,
-          deckTitle: deck?.title ?? null,
-          deckUrl,
-          proposalUrl,
-          summary: summaryText,
-          actionItems: actions,
-          kind: 'summary',
-        }),
+        subject,
+        html: buildHtml(identity.split('@')[0] ?? ''),
       });
 
       if (emailResult?.success) {
@@ -483,6 +578,60 @@ export async function sendMeetingSummaryFollowUp(
     } catch (err) {
       result.failed++;
       console.error(`[Sovereign Summary] Email failed for ${identity}`, err);
+    }
+  }
+
+  // Correos adicionales: reciben SOLO este seguimiento. Se registran como
+  // invitados sin token y con recordatorios marcados, para que ni el cron de
+  // cortesía ni el de recordatorios les vuelvan a escribir.
+  const already = new Set(
+    participants
+      .map((p) => (p.identityId ?? '').trim().toLowerCase())
+      .filter((value) => value.length > 0)
+  );
+  const extraEmails = Array.from(
+    new Set(
+      (options.extraEmails ?? [])
+        .map((value) => String(value ?? '').trim().toLowerCase())
+        .filter((value) => EMAIL_PATTERN.test(value))
+    )
+  ).slice(0, 10);
+
+  for (const email of extraEmails) {
+    if (already.has(email)) {
+      result.skipped++;
+      continue;
+    }
+    try {
+      const emailResult = await sendEmail({
+        to: email,
+        from: FROM,
+        subject,
+        html: buildHtml(email.split('@')[0] ?? ''),
+      });
+      if (emailResult?.success) {
+        await db.insert(meetingParticipants).values({
+          meetingId: meeting.id,
+          identityId: email,
+          email,
+          participantType: 'anonymous_guest',
+          role: 'guest',
+          followUpStatus: 'sent',
+          invitedAt: new Date(),
+          summarySentAt: new Date(),
+          reminder24hSentAt: new Date(),
+          reminder1hSentAt: new Date(),
+        });
+        result.extras = (result.extras ?? 0) + 1;
+      } else {
+        result.failed++;
+        console.error(
+          `[Sovereign Summary] Extra email not sent for ${email}: ${emailResult?.error ?? 'unknown'}`
+        );
+      }
+    } catch (err) {
+      result.failed++;
+      console.error(`[Sovereign Summary] Extra email failed for ${email}`, err);
     }
   }
 

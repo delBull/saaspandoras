@@ -78,6 +78,20 @@ export function OperationsClientsTab({ onOpenApprovals }: OperationsClientsTabPr
   const [copied, setCopied] = useState(false);
   const [deckSaving, setDeckSaving] = useState(false);
   const [deckError, setDeckError] = useState<string | null>(null);
+  const [sessions, setSessions] = useState<Array<{
+    id: string;
+    title: string | null;
+    status: string;
+    startsAt: string | null;
+    endsAt: string | null;
+    startedAt: string | null;
+    endedAt: string | null;
+    presentationId: string | null;
+    summary: string | null;
+    notes: string | null;
+    followUpEnabled: boolean;
+  }>>([]);
+  const [sessionsLoading, setSessionsLoading] = useState(false);
   const schedulePanelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -152,6 +166,19 @@ export function OperationsClientsTab({ onOpenApprovals }: OperationsClientsTabPr
 
   const selectDeal = (deal: Deal) => {
     setSelectedDeal(deal);
+    setSessions([]);
+    setSessionsLoading(true);
+    fetch(`/api/nexus/deals/${encodeURIComponent(deal.roomId)}/meetings`, {
+      headers: getNexusClientHeaders(),
+      credentials: 'include',
+      cache: 'no-store',
+    })
+      .then((res) => (res.ok ? res.json() : { meetings: [] }))
+      .then((data) => {
+        setSessions(Array.isArray(data.meetings) ? data.meetings : []);
+      })
+      .catch(() => setSessions([]))
+      .finally(() => setSessionsLoading(false));
     resetScheduleForm();
     setInviteEmails(signerEmailsOf(deal));
   };
@@ -410,6 +437,62 @@ export function OperationsClientsTab({ onOpenApprovals }: OperationsClientsTabPr
                       </Link>
                     )}
                   </div>
+                </div>
+
+                {/* Última sesión: lo que dejó la presentación de este deal */}
+                <div className="p-4 rounded-xl border border-white/5 bg-black/40 space-y-3 md:col-span-2">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-[11px] font-mono text-zinc-500 uppercase">Últimas sesiones</h4>
+                    {sessions[0] && (
+                      <Link
+                        href={`/nexus/agenda?meeting=${encodeURIComponent(sessions[0].id)}`}
+                        className="text-[10px] font-mono text-sky-300 hover:text-sky-200"
+                      >
+                        Abrir en agenda →
+                      </Link>
+                    )}
+                  </div>
+                  {sessionsLoading ? (
+                    <p className="text-[11px] text-zinc-500">Cargando sesiones…</p>
+                  ) : sessions.length === 0 ? (
+                    <p className="text-[11px] text-zinc-500">
+                      Sin sesiones registradas para este deal. Agenda una presentación para empezar.
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {sessions.slice(0, 3).map((session) => {
+                        const start = session.startedAt ?? session.startsAt;
+                        const end = session.endedAt ?? session.endsAt;
+                        const minutes =
+                          start && end
+                            ? Math.max(1, Math.round((new Date(end).getTime() - new Date(start).getTime()) / 60000))
+                            : null;
+                        return (
+                          <div key={session.id} className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-[11px] text-zinc-200">
+                                {start ? new Date(start).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }) : 'Sin fecha'}
+                                {minutes ? ` · ${minutes} min` : ''}
+                              </span>
+                              <span className="text-[9px] font-mono uppercase tracking-widest text-zinc-500">
+                                {session.status}
+                              </span>
+                            </div>
+                            {session.summary && (
+                              <p className="mt-1 line-clamp-3 text-[11px] leading-relaxed text-zinc-400">
+                                {session.summary}
+                              </p>
+                            )}
+                            {session.notes && (
+                              <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-sky-300/80">
+                                Notas: {session.notes}
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
 
                 {/* Quick Actions */}

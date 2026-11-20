@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { ArrowRight, CalendarDays, RotateCcw, ShieldCheck, Video } from "lucide-react";
 import { LobbyGlobe } from "./LobbyGlobe";
 
@@ -12,13 +13,25 @@ interface MeetClosedScreenProps {
   /** Solo tiene sentido si la reunión sigue viva y el usuario salió. */
   canRejoin: boolean;
   onRejoin: () => void;
-  /** Envío manual del resumen + tareas (solo host). */
-  onSendSummary?: () => void | Promise<void>;
+  /** Envío manual del seguimiento (resumen + tareas + material) — solo host. */
+  onSendSummary?: (options: {
+    message: string;
+    includeDeck: boolean;
+    includeProposal: boolean;
+    includeTasks: boolean;
+    includeRecap: boolean;
+    extraEmails: string[];
+  }) => void | Promise<void>;
   sendingSummary?: boolean;
   summaryMessage?: string | null;
-  canSendSummary?: boolean;
+  /** Si ya hay resumen IA: cambia el copy y oculta la subida de audio. */
+  hasSummary?: boolean;
   /** Subir audio DESPUÉS de cerrar la sala (host). */
   onProcessAudio?: (file: File) => void | Promise<void>;
+  /** URL local del audio grabado en esta sesión (para descargarlo). */
+  recordingUrl?: string | null;
+  /** Los enlaces internos (agenda/Nexus) son solo para colaboradores. */
+  showInternalLinks?: boolean;
   processingAudio?: boolean;
   audioMessage?: string | null;
 }
@@ -40,12 +53,50 @@ export function MeetClosedScreen({
   onSendSummary,
   sendingSummary = false,
   summaryMessage = null,
-  canSendSummary = true,
+  hasSummary = false,
   onProcessAudio,
+  recordingUrl = null,
+  showInternalLinks = true,
   processingAudio = false,
   audioMessage = null,
 }: MeetClosedScreenProps) {
   const ended = reason === "ended";
+
+  const [message, setMessage] = useState("");
+  const [includeDeck, setIncludeDeck] = useState(true);
+  const [includeProposal, setIncludeProposal] = useState(true);
+  const [includeTasks, setIncludeTasks] = useState(true);
+  const [includeRecap, setIncludeRecap] = useState(true);
+  const [extraEmailsText, setExtraEmailsText] = useState("");
+  const [extraEmailsError, setExtraEmailsError] = useState<string | null>(null);
+
+  const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  const handleSend = () => {
+    if (!onSendSummary) return;
+    const raw = extraEmailsText
+      .split(/[,;\s]+/)
+      .map((value) => value.trim().toLowerCase())
+      .filter((value) => value.length > 0);
+    const invalid = raw.filter((value) => !EMAIL_PATTERN.test(value));
+    if (invalid.length > 0) {
+      setExtraEmailsError(`Correo inválido: ${invalid[0]}`);
+      return;
+    }
+    if (raw.length > 10) {
+      setExtraEmailsError("Máximo 10 correos adicionales.");
+      return;
+    }
+    setExtraEmailsError(null);
+    void onSendSummary({
+      message: message.trim(),
+      includeDeck,
+      includeProposal,
+      includeTasks,
+      includeRecap,
+      extraEmails: Array.from(new Set(raw)),
+    });
+  };
 
   const when = scheduledFor
     ? new Date(scheduledFor).toLocaleString("es-MX", {
@@ -122,7 +173,7 @@ export function MeetClosedScreen({
         )}
 
         <div className="mt-6 flex flex-col gap-2">
-          {isHost && onProcessAudio && !canSendSummary && (
+          {isHost && ended && onProcessAudio && !hasSummary && (
             <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
               <p className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">
                 Minuta
@@ -149,24 +200,109 @@ export function MeetClosedScreen({
                 MP3/M4A/WAV ≤ 10 MB. Se conservan las tareas manuales. Después podrás enviar el
                 resumen.
               </p>
+              {recordingUrl && (
+                <a
+                  href={recordingUrl}
+                  download
+                  className="mt-2 flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-[10px] font-mono uppercase tracking-wider text-zinc-200 transition-colors hover:bg-white/10"
+                >
+                  Descargar audio de la sesión
+                </a>
+              )}
               {audioMessage && (
                 <p className="mt-1 text-[10px] leading-relaxed text-rose-300">{audioMessage}</p>
               )}
             </div>
           )}
 
-          {isHost && onSendSummary && canSendSummary && (
-            <button
-              type="button"
-              onClick={() => void onSendSummary()}
-              disabled={sendingSummary}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-lime-500/30 bg-lime-500/10 px-4 py-3 text-[11px] font-mono uppercase tracking-widest text-lime-200 transition-colors hover:bg-lime-500/20 disabled:opacity-50"
-            >
-              {sendingSummary ? "Enviando…" : "Enviar resumen a participantes"}
-            </button>
-          )}
-          {summaryMessage && (
-            <p className="text-center text-[10px] leading-relaxed text-zinc-400">{summaryMessage}</p>
+          {isHost && ended && onSendSummary && (
+            <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
+              <p className="text-[10px] font-mono uppercase tracking-widest text-zinc-400">
+                Seguimiento a participantes
+              </p>
+              <p className="mt-1 text-[10px] leading-relaxed text-zinc-500">
+                {hasSummary
+                  ? "Se envía el resumen, las tareas y el material que marques."
+                  : "Se envía el seguimiento y el material que marques. Sin resumen IA, el correo sale como seguimiento de la sesión."}
+              </p>
+
+              <textarea
+                value={message}
+                onChange={(event) => setMessage(event.target.value.slice(0, 2000))}
+                rows={3}
+                placeholder="Mensaje para los participantes (opcional)…"
+                className="mt-3 w-full resize-y rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-[11px] leading-relaxed text-zinc-200 outline-none placeholder:text-zinc-600 focus:border-lime-500/40"
+              />
+              <p className="mt-1 text-right text-[9px] font-mono text-zinc-600">{message.length}/2000</p>
+
+              <div className="mt-2 grid gap-1.5 sm:grid-cols-2">
+                <label className="flex items-center gap-2 rounded-lg border border-white/10 px-2.5 py-2 text-[10px] text-zinc-300">
+                  <input
+                    type="checkbox"
+                    checked={includeDeck}
+                    onChange={(event) => setIncludeDeck(event.target.checked)}
+                    className="h-3.5 w-3.5 accent-lime-500"
+                  />
+                  Presentación
+                </label>
+                <label className="flex items-center gap-2 rounded-lg border border-white/10 px-2.5 py-2 text-[10px] text-zinc-300">
+                  <input
+                    type="checkbox"
+                    checked={includeProposal}
+                    onChange={(event) => setIncludeProposal(event.target.checked)}
+                    className="h-3.5 w-3.5 accent-lime-500"
+                  />
+                  Propuesta
+                </label>
+                <label className="flex items-center gap-2 rounded-lg border border-white/10 px-2.5 py-2 text-[10px] text-zinc-300">
+                  <input
+                    type="checkbox"
+                    checked={includeTasks}
+                    onChange={(event) => setIncludeTasks(event.target.checked)}
+                    className="h-3.5 w-3.5 accent-lime-500"
+                  />
+                  Tareas
+                </label>
+                <label className="flex items-center gap-2 rounded-lg border border-white/10 px-2.5 py-2 text-[10px] text-zinc-300">
+                  <input
+                    type="checkbox"
+                    checked={includeRecap}
+                    onChange={(event) => setIncludeRecap(event.target.checked)}
+                    className="h-3.5 w-3.5 accent-lime-500"
+                  />
+                  Lo que vimos
+                </label>
+              </div>
+
+              <input
+                value={extraEmailsText}
+                onChange={(event) => {
+                  setExtraEmailsText(event.target.value);
+                  setExtraEmailsError(null);
+                }}
+                placeholder="Correos adicionales (separados por coma)"
+                className="mt-2 w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-[11px] text-zinc-200 outline-none placeholder:text-zinc-600 focus:border-lime-500/40"
+              />
+              {extraEmailsError && (
+                <p className="mt-1 text-[10px] leading-relaxed text-rose-300">{extraEmailsError}</p>
+              )}
+              <p className="mt-1 text-[9px] leading-relaxed text-zinc-600">
+                Los correos adicionales reciben solo este seguimiento. No se les envían
+                recordatorios ni invitaciones.
+              </p>
+
+              <button
+                type="button"
+                onClick={handleSend}
+                disabled={sendingSummary}
+                className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-lime-500/30 bg-lime-500/10 px-4 py-3 text-[11px] font-mono uppercase tracking-widest text-lime-200 transition-colors hover:bg-lime-500/20 disabled:opacity-50"
+              >
+                {sendingSummary ? "Enviando…" : "Enviar seguimiento"}
+              </button>
+              {summaryMessage && (
+                <p className="mt-2 text-center text-[10px] leading-relaxed text-zinc-400">{summaryMessage}</p>
+              )}
+            </div>
           )}
 
           {canRejoin && (
@@ -180,6 +316,7 @@ export function MeetClosedScreen({
             </button>
           )}
 
+          {showInternalLinks && (
           <a
             href="/nexus/agenda"
             className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-[11px] font-mono font-bold uppercase tracking-widest text-black transition-colors hover:bg-zinc-200"
@@ -187,13 +324,16 @@ export function MeetClosedScreen({
             Ir a la agenda
             <ArrowRight className="h-4 w-4" />
           </a>
+          )}
 
-          <a
-            href="/nexus"
-            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 px-4 py-2.5 text-[10px] font-mono uppercase tracking-widest text-zinc-400 transition-colors hover:text-white"
-          >
-            Ir a Nexus
-          </a>
+          {showInternalLinks && (
+            <a
+              href="/nexus"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 px-4 py-2.5 text-[10px] font-mono uppercase tracking-widest text-zinc-400 transition-colors hover:text-white"
+            >
+              Ir a Nexus
+            </a>
+          )}
         </div>
 
         <p className="mt-4 text-center text-[10px] font-mono uppercase tracking-widest text-zinc-600">

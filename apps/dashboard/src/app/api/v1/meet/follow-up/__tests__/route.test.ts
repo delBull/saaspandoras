@@ -4,6 +4,7 @@ let meetingRow: any = null;
 let mockSessionAuth: any = { isAuthenticated: false, role: null };
 let mockActorResult: any = null;
 let summaryCalls: string[] = [];
+let summaryOptions: any[] = [];
 
 vi.mock("@saasfly/shared", () => ({
   getNexusAuthContext: vi.fn(async () => mockSessionAuth),
@@ -18,9 +19,10 @@ vi.mock("@/lib/meet/room-credentials", async (importOriginal) => {
 });
 
 vi.mock("@/lib/nexus/agenda-followups", () => ({
-  sendMeetingSummaryFollowUp: vi.fn(async (meetingId: string) => {
+  sendMeetingSummaryFollowUp: vi.fn(async (meetingId: string, options?: any) => {
     summaryCalls.push(meetingId);
-    return { sent: 2, skipped: 0, failed: 0 };
+    summaryOptions.push(options ?? {});
+    return { sent: 2, skipped: 0, failed: 0, extras: 0, kind: "summary" };
   }),
 }));
 
@@ -54,6 +56,7 @@ function request(body: unknown = { meetingId: MEETING_ID, ref: "signed-ref" }) {
 describe("📬 Envío manual del resumen (/api/v1/meet/follow-up)", () => {
   beforeEach(() => {
     summaryCalls = [];
+    summaryOptions = [];
     mockSessionAuth = { isAuthenticated: false, role: null };
     mockActorResult = {
       actor: {
@@ -111,14 +114,35 @@ describe("📬 Envío manual del resumen (/api/v1/meet/follow-up)", () => {
     expect(summaryCalls).toHaveLength(0);
   });
 
-  it("FUP-04: no se puede enviar si aún no hay resumen", async () => {
+  it("FUP-04: sin resumen IA el seguimiento también se envía (deck + mensaje)", async () => {
     meetingRow.aiSummary = null;
 
     const res = await POST(request());
 
-    expect(res.status).toBe(409);
-    expect((await res.json()).code).toBe("NO_SUMMARY");
-    expect(summaryCalls).toHaveLength(0);
+    expect(res.status).toBe(200);
+    expect(summaryCalls).toEqual([MEETING_ID]);
+  });
+
+  it("FUP-06: el mensaje y los correos adicionales llegan al servicio ya validados", async () => {
+    const res = await POST(
+      request({
+        meetingId: MEETING_ID,
+        ref: "signed-ref",
+        message: "  Gracias por la sesión. Te dejo el deck.  ",
+        includeDeck: false,
+        extraEmails: "otro@example.com, no-es-correo, EDUARDO@Example.com",
+      })
+    );
+
+    expect(res.status).toBe(200);
+    expect(summaryOptions).toHaveLength(1);
+    expect(summaryOptions[0]).toMatchObject({
+      message: "Gracias por la sesión. Te dejo el deck.",
+      includeDeck: false,
+      includeProposal: true,
+      includeTasks: true,
+      extraEmails: ["otro@example.com", "eduardo@example.com"],
+    });
   });
 
   it("FUP-05: un admin de operaciones con sesión también puede enviar", async () => {
