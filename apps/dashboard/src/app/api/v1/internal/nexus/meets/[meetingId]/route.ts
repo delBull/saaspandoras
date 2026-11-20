@@ -59,7 +59,15 @@ export async function GET(req: Request, { params }: { params: Promise<{ meetingI
         startedAt: meetRow.startedAt,
         endedAt: meetRow.endedAt,
         presentationId: meetRow.presentationId,
-        followUpEnabled: meetRow.followUpEnabled
+        dealRoomId: meetRow.dealRoomId,
+        followUpEnabled: meetRow.followUpEnabled,
+        followUpStage: meetRow.followUpStage,
+        followUpRespondedAt: meetRow.followUpRespondedAt,
+        followUpReminderAt: meetRow.followUpReminderAt,
+        followUpReminderSentAt: meetRow.followUpReminderSentAt,
+        followUpClosedAt: meetRow.followUpClosedAt,
+        followUpCloseReason: meetRow.followUpCloseReason,
+        followUpCloseNote: meetRow.followUpCloseNote
       }
     });
   } catch (error: any) {

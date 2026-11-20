@@ -13,6 +13,19 @@ interface ActionItem {
   status: "pending" | "in_progress" | "completed" | "cancelled";
 }
 
+const CLOSE_REASONS: Record<"won" | "lost", string[]> = {
+  won: ["Propuesta aceptada", "Acuerdo firmado", "Pago recibido", "Otra razón"],
+  lost: ["Sin respuesta", "Sin presupuesto", "Eligió otro proveedor", "Timing", "Otra razón"],
+};
+
+const STAGE_META: Record<string, { label: string; className: string }> = {
+  SENT: { label: "Enviado", className: "border-white/10 bg-white/5 text-zinc-300" },
+  RESPONDED: { label: "Respondió", className: "border-sky-500/30 bg-sky-500/10 text-sky-300" },
+  REMINDER: { label: "Recordatorio programado", className: "border-amber-500/30 bg-amber-500/10 text-amber-300" },
+  CLOSED_WON: { label: "Cerrado · ganado", className: "border-lime-500/30 bg-lime-500/10 text-lime-300" },
+  CLOSED_LOST: { label: "Cerrado · perdido", className: "border-rose-500/30 bg-rose-500/10 text-rose-300" },
+};
+
 interface MeetingDetailsDrawerProps {
   isOpen: boolean;
   onClose: () => void;
@@ -57,7 +70,13 @@ export function MeetingDetailsDrawer({ isOpen, onClose, meeting }: MeetingDetail
     startedAt?: string | null;
     endedAt?: string | null;
     presentationId?: string | null;
+    dealRoomId?: string | null;
     followUpEnabled?: boolean;
+    followUpStage?: "SENT" | "RESPONDED" | "REMINDER" | "CLOSED_WON" | "CLOSED_LOST" | null;
+    followUpReminderAt?: string | null;
+    followUpCloseReason?: string | null;
+    followUpCloseNote?: string | null;
+    followUpClosedAt?: string | null;
   } | null>(null);
 
   // Formulario de seguimiento (mensaje + material + correos adicionales).
@@ -74,6 +93,17 @@ export function MeetingDetailsDrawer({ isOpen, onClose, meeting }: MeetingDetail
     Array<{ email: string | null; identityId: string | null; sentAt: string | null }>
   >([]);
   const [followUpEditing, setFollowUpEditing] = useState(false);
+
+  // Paso 3 · estado del seguimiento, recordatorio, deal y cierre.
+  const [reminderDays, setReminderDays] = useState(3);
+  const [closeOutcome, setCloseOutcome] = useState<"won" | "lost">("lost");
+  const [closeReason, setCloseReason] = useState("");
+  const [closeNote, setCloseNote] = useState("");
+  const [stageBusy, setStageBusy] = useState<string | null>(null);
+  const [stageError, setStageError] = useState<string | null>(null);
+  const [stageOk, setStageOk] = useState<string | null>(null);
+  const [dealStatus, setDealStatus] = useState<string | null>(null);
+  const [dealBusy, setDealBusy] = useState(false);
 
   const loadMeeting = React.useCallback(async () => {
     if (!meeting?.id) return;
@@ -345,6 +375,76 @@ export function MeetingDetailsDrawer({ isOpen, onClose, meeting }: MeetingDetail
       // Revert optimistic update
       setActionItems(prev => prev.map(t => t.id === item.id ? { ...t, status: item.status } : t));
       console.error('Failed to toggle action item', err);
+    }
+  };
+
+  useEffect(() => {
+    const roomId = meta?.dealRoomId;
+    if (!roomId) return;
+    let cancelled = false;
+    fetch(`/api/nexus/deals/${encodeURIComponent(roomId)}`, { credentials: "include", cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && data?.room?.status) setDealStatus(String(data.room.status));
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [meta?.dealRoomId]);
+
+  const moveStage = async (payload: Record<string, unknown>, key: string, okMessage: string) => {
+    if (!meeting) return;
+    setStageBusy(key);
+    setStageError(null);
+    setStageOk(null);
+    try {
+      const res = await fetch("/api/v1/meet/follow-up/state", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ meetingId: meeting.id, ...payload }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setStageError(data.error ?? "No se pudo actualizar el seguimiento.");
+        return;
+      }
+      setStageOk(okMessage);
+      await loadMeeting();
+      router.refresh();
+    } catch {
+      setStageError("Error de red al actualizar el seguimiento.");
+    } finally {
+      setStageBusy(null);
+    }
+  };
+
+  const updateDealStatus = async (nextStatus: string) => {
+    const roomId = meta?.dealRoomId;
+    if (!roomId) return;
+    setDealBusy(true);
+    setStageError(null);
+    setStageOk(null);
+    try {
+      const res = await fetch(`/api/nexus/deals/${encodeURIComponent(roomId)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ status: nextStatus }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setStageError(data.error ?? "No se pudo actualizar el deal.");
+        return;
+      }
+      setDealStatus(nextStatus);
+      setStageOk("Deal actualizado.");
+      router.refresh();
+    } catch {
+      setStageError("Error de red al actualizar el deal.");
+    } finally {
+      setDealBusy(false);
     }
   };
 
@@ -697,11 +797,203 @@ export function MeetingDetailsDrawer({ isOpen, onClose, meeting }: MeetingDetail
                         Editar mensaje y reenviar
                       </button>
 
-                      <div className="border-t border-white/5 pt-2">
-                        <p className="text-[10px] leading-relaxed text-zinc-600">
-                          Paso 3 · Seguimiento de respuesta y segunda reunión{" "}
-                          <span className="text-zinc-700">— próximamente</span>
-                        </p>
+                      <div className="space-y-3 border-t border-white/5 pt-3">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <p className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">
+                            Paso 3 · Después del seguimiento
+                          </p>
+                          <span
+                            className={`rounded-md border px-2 py-0.5 text-[9px] font-mono uppercase tracking-wider ${
+                              STAGE_META[meta?.followUpStage ?? "SENT"]?.className ??
+                              "border-white/10 bg-white/5 text-zinc-400"
+                            }`}
+                          >
+                            {STAGE_META[meta?.followUpStage ?? "SENT"]?.label ?? "Sin estado"}
+                          </span>
+                        </div>
+
+                        {meta?.followUpStage === "CLOSED_WON" || meta?.followUpStage === "CLOSED_LOST" ? (
+                          <motion.div
+                            initial={{ opacity: 0, y: 6 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="space-y-2 rounded-lg border border-white/10 bg-black/30 p-3"
+                          >
+                            <p className="text-[11px] text-zinc-300">
+                              Ciclo cerrado como{" "}
+                              <strong className="text-white">
+                                {meta.followUpStage === "CLOSED_WON" ? "ganado" : "perdido"}
+                              </strong>
+                              {meta.followUpCloseReason ? ` · ${meta.followUpCloseReason}` : ""}
+                            </p>
+                            {meta.followUpCloseNote && (
+                              <p className="text-[10px] leading-relaxed text-zinc-500">{meta.followUpCloseNote}</p>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => void moveStage({ action: "REOPEN" }, "reopen", "Seguimiento reabierto.")}
+                              disabled={stageBusy !== null}
+                              className="text-[10px] font-mono uppercase tracking-wider text-zinc-400 hover:text-white disabled:opacity-50"
+                            >
+                              Reabrir seguimiento
+                            </button>
+                          </motion.div>
+                        ) : (
+                          <motion.div
+                            key={meta?.followUpStage ?? "none"}
+                            initial={{ opacity: 0, y: 6 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="space-y-3"
+                          >
+                            <div className="flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                onClick={() => void moveStage({ action: "RESPONDED" }, "responded", "Marcado como respondido.")}
+                                disabled={stageBusy !== null || meta?.followUpStage === "RESPONDED"}
+                                className="rounded-lg border border-sky-500/30 bg-sky-500/10 px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider text-sky-200 hover:bg-sky-500/20 disabled:opacity-40"
+                              >
+                                {stageBusy === "responded" ? "Guardando…" : "Marcar respondido"}
+                              </button>
+                              <a
+                                href={`/nexus/agenda?schedule=1${meta?.presentationId ? `&deck=${encodeURIComponent(meta.presentationId)}` : ""}`}
+                                className="rounded-lg border border-lime-500/30 bg-lime-500/10 px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider text-lime-200 hover:bg-lime-500/20"
+                              >
+                                Agendar segunda reunión
+                              </a>
+                            </div>
+
+                            <div className="rounded-lg border border-white/10 bg-black/30 p-3">
+                              <p className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">
+                                Recordatorio
+                              </p>
+                              {meta?.followUpReminderAt ? (
+                                <p className="mt-1 text-[10px] text-zinc-400">
+                                  Programado para{" "}
+                                  {new Date(meta.followUpReminderAt).toLocaleDateString("es-MX", {
+                                    day: "2-digit",
+                                    month: "short",
+                                  })}
+                                </p>
+                              ) : (
+                                <p className="mt-1 text-[10px] text-zinc-600">Sin recordatorio programado.</p>
+                              )}
+                              <div className="mt-2 flex flex-wrap items-center gap-2">
+                                <select
+                                  value={reminderDays}
+                                  onChange={(event) => setReminderDays(Number(event.target.value))}
+                                  className="rounded-md border border-white/10 bg-black/40 px-2 py-1.5 text-[10px] text-zinc-200 outline-none focus:border-amber-500/40"
+                                >
+                                  <option value={3}>En 3 días</option>
+                                  <option value={5}>En 5 días</option>
+                                  <option value={7}>En 7 días</option>
+                                </select>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    void moveStage(
+                                      { action: "REMIND", days: reminderDays },
+                                      "remind",
+                                      "Recordatorio programado."
+                                    )
+                                  }
+                                  disabled={stageBusy !== null}
+                                  className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider text-amber-200 hover:bg-amber-500/20 disabled:opacity-50"
+                                >
+                                  {stageBusy === "remind" ? "Programando…" : "Programar"}
+                                </button>
+                              </div>
+                            </div>
+
+                            {meta?.dealRoomId && (
+                              <div className="rounded-lg border border-white/10 bg-black/30 p-3">
+                                <p className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">
+                                  Deal · {dealStatus ?? "sin estado"}
+                                </p>
+                                <div className="mt-2 flex flex-wrap items-center gap-2">
+                                  <select
+                                    value={dealStatus ?? ""}
+                                    onChange={(event) => void updateDealStatus(event.target.value)}
+                                    disabled={dealBusy}
+                                    className="rounded-md border border-white/10 bg-black/40 px-2 py-1.5 text-[10px] text-zinc-200 outline-none focus:border-purple-500/40 disabled:opacity-50"
+                                  >
+                                    <option value="DRAFT">Borrador</option>
+                                    <option value="PROPOSAL_SENT">Propuesta enviada</option>
+                                    <option value="REVIEW">En revisión</option>
+                                    <option value="ACCEPTED">Aceptada</option>
+                                  </select>
+                                  {dealBusy && <span className="text-[10px] text-zinc-500">Actualizando…</span>}
+                                </div>
+                              </div>
+                            )}
+
+                            <div className="rounded-lg border border-rose-500/20 bg-rose-500/[0.04] p-3">
+                              <p className="text-[10px] font-mono uppercase tracking-widest text-rose-300">
+                                Cerrar ciclo
+                              </p>
+                              <div className="mt-2 flex gap-2">
+                                {(["won", "lost"] as const).map((outcome) => (
+                                  <button
+                                    key={outcome}
+                                    type="button"
+                                    onClick={() => {
+                                      setCloseOutcome(outcome);
+                                      setCloseReason("");
+                                    }}
+                                    className={`rounded-md border px-2.5 py-1 text-[10px] font-mono uppercase tracking-wider transition-colors ${
+                                      closeOutcome === outcome
+                                        ? outcome === "won"
+                                          ? "border-lime-500/40 bg-lime-500/15 text-lime-200"
+                                          : "border-rose-500/40 bg-rose-500/15 text-rose-200"
+                                        : "border-white/10 bg-black/30 text-zinc-500 hover:text-zinc-300"
+                                    }`}
+                                  >
+                                    {outcome === "won" ? "Ganado" : "Perdido"}
+                                  </button>
+                                ))}
+                              </div>
+                              <select
+                                value={closeReason}
+                                onChange={(event) => setCloseReason(event.target.value)}
+                                className="mt-2 w-full rounded-md border border-white/10 bg-black/40 px-2 py-1.5 text-[10px] text-zinc-200 outline-none focus:border-rose-500/40"
+                              >
+                                <option value="">Motivo…</option>
+                                {CLOSE_REASONS[closeOutcome].map((reason) => (
+                                  <option key={reason} value={reason}>
+                                    {reason}
+                                  </option>
+                                ))}
+                              </select>
+                              <textarea
+                                value={closeNote}
+                                onChange={(event) => setCloseNote(event.target.value.slice(0, 500))}
+                                rows={2}
+                                placeholder="Nota del cierre (opcional)"
+                                className="mt-2 w-full resize-y rounded-md border border-white/10 bg-black/30 px-2 py-1.5 text-[10px] text-zinc-200 outline-none placeholder:text-zinc-600 focus:border-rose-500/40"
+                              />
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  void moveStage(
+                                    {
+                                      action: "CLOSE",
+                                      outcome: closeOutcome,
+                                      reason: closeReason,
+                                      note: closeNote,
+                                    },
+                                    "close",
+                                    "Ciclo cerrado."
+                                  )
+                                }
+                                disabled={stageBusy !== null || !closeReason}
+                                className="mt-2 w-full rounded-md border border-rose-500/30 bg-rose-500/10 px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider text-rose-200 hover:bg-rose-500/20 disabled:opacity-40"
+                              >
+                                {stageBusy === "close" ? "Cerrando…" : "Cerrar ciclo"}
+                              </button>
+                            </div>
+                          </motion.div>
+                        )}
+
+                        {stageError && <p className="text-[10px] leading-relaxed text-rose-300">{stageError}</p>}
+                        {stageOk && <p className="text-[10px] leading-relaxed text-lime-300">✓ {stageOk}</p>}
                       </div>
                     </div>
                   ) : (

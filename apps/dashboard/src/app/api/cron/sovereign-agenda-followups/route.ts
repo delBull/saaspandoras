@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { runSovereignFollowUps } from '@/lib/nexus/agenda-followups';
+import { runFollowUpReminders, runSovereignFollowUps } from '@/lib/nexus/agenda-followups';
 import { reapStaleLiveMeetings } from '@/lib/nexus/meeting-reaper';
 
 /**
@@ -34,8 +34,17 @@ export async function GET(req: NextRequest) {
     }
 
     const summary = await runSovereignFollowUps();
-    console.log('[Sovereign Agenda] Follow-up cron:', summary, 'reaped:', reaped);
-    return NextResponse.json({ success: true, reaped, ...summary });
+
+    // Paso 3: recordatorios programados desde el detalle de la reunión.
+    let reminders = { due: 0, sent: 0, failed: 0 };
+    try {
+      reminders = await runFollowUpReminders();
+    } catch (reminderError) {
+      console.error('[Sovereign Agenda] Reminder error:', reminderError);
+    }
+
+    console.log('[Sovereign Agenda] Follow-up cron:', summary, 'reminders:', reminders, 'reaped:', reaped);
+    return NextResponse.json({ success: true, reaped, reminders, ...summary });
   } catch (error) {
     console.error('[Sovereign Agenda] Cron Error:', error);
     return NextResponse.json({ success: false, error: 'Internal Server Error' }, { status: 500 });

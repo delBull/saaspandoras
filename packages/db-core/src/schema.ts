@@ -1644,6 +1644,19 @@ export const meetings = pgTable("meetings", {
   // manual del resumen no depende de este flag.
   followUpEnabled: boolean("follow_up_enabled").default(true).notNull(),
 
+  /**
+   * Paso 3 · estado del seguimiento post-reunión.
+   * SENT → RESPONDED | REMINDER → CLOSED_WON | CLOSED_LOST.
+   * null = todavía no se ha enviado nada.
+   */
+  followUpStage: varchar("follow_up_stage", { length: 24 }),
+  followUpRespondedAt: timestamp("follow_up_responded_at", { withTimezone: true }),
+  followUpReminderAt: timestamp("follow_up_reminder_at", { withTimezone: true }),
+  followUpReminderSentAt: timestamp("follow_up_reminder_sent_at", { withTimezone: true }),
+  followUpClosedAt: timestamp("follow_up_closed_at", { withTimezone: true }),
+  followUpCloseReason: varchar("follow_up_close_reason", { length: 64 }),
+  followUpCloseNote: text("follow_up_close_note"),
+
   
   status: meetingStatusEnum("status").default("scheduled").notNull(),
   

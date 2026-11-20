@@ -6,7 +6,7 @@ import {
   channelIdentityBindings,
   meetingActionItems,
 } from '@saasfly/db/schema';
-import { eq, and } from '@saasfly/db-core';
+import { eq, and, lte, isNull } from '@saasfly/db-core';
 import { WhatsAppAdapter, TelegramAdapter } from '@saasfly/hermes-core';
 import { sendEmail } from '@saasfly/shared';
 import { findPresentation } from '@/lib/nexus/presentations-catalog';
@@ -641,6 +641,100 @@ export async function sendMeetingSummaryFollowUp(
     } catch (err) {
       result.failed++;
       console.error(`[Sovereign Summary] Extra email failed for ${email}`, err);
+    }
+  }
+
+  return result;
+}
+
+
+/**
+ * Recordatorios del paso 3.
+ *
+ * Envía UN recordatorio a quien ya recibió el seguimiento, cuando la reunión está
+ * en etapa `REMINDER` y la fecha ya venció. No toca reuniones respondidas ni
+ * cerradas. Idempotente: marca `follow_up_reminder_sent_at` y vuelve a `SENT`.
+ */
+export async function runFollowUpReminders(): Promise<{ due: number; sent: number; failed: number }> {
+  const result = { due: 0, sent: 0, failed: 0 };
+  const now = new Date();
+
+  let pending: Array<typeof meetings.$inferSelect>;
+  try {
+    pending = await db
+      .select()
+      .from(meetings)
+      .where(
+        and(
+          eq(meetings.status, 'ended'),
+          eq(meetings.followUpStage, 'REMINDER'),
+          lte(meetings.followUpReminderAt, now),
+          isNull(meetings.followUpReminderSentAt)
+        )
+      );
+  } catch (error) {
+    console.error('[FollowUpReminder] query failed', error);
+    return result;
+  }
+
+  result.due = pending.length;
+
+  for (const meeting of pending) {
+    try {
+      const participants = await db
+        .select()
+        .from(meetingParticipants)
+        .where(eq(meetingParticipants.meetingId, meeting.id));
+
+      const recipients = participants.filter((participant) => {
+        const identity = (participant.identityId ?? participant.email ?? '').trim();
+        return Boolean(participant.summarySentAt) && EMAIL_PATTERN.test(identity);
+      });
+
+      if (recipients.length === 0) {
+        await db
+          .update(meetings)
+          .set({ followUpReminderSentAt: now, followUpStage: 'SENT', updatedAt: now })
+          .where(eq(meetings.id, meeting.id));
+        continue;
+      }
+
+      const { deck, meetingTitle, deckUrl, proposalUrl } = meetingPresentationContext(meeting);
+      const actions = await actionItemsOf(meeting.id);
+      const summaryText = meeting.aiSummary?.trim() || null;
+
+      for (const recipient of recipients) {
+        const email = (recipient.identityId ?? recipient.email ?? '').trim();
+        const emailResult = await sendEmail({
+          to: email,
+          from: FROM,
+          subject: `Seguimiento · ${meetingTitle}`,
+          html: followUpEmailHtml({
+            firstName: displayNameFromEmail(email),
+            meetingTitle,
+            deckTitle: deck?.title ?? null,
+            deckUrl,
+            proposalUrl,
+            summary: summaryText,
+            actionItems: actions,
+            kind: 'courtesy',
+            introMessage:
+              'Retomo el hilo de la sesión por si quedó algo pendiente. Te dejo de nuevo el material y los acuerdos; si ya lo revisaste, dime y cerramos el siguiente paso.',
+            includeProposal: false,
+            includeRecap: false,
+          }),
+        });
+        if (emailResult?.success) result.sent++;
+        else result.failed++;
+      }
+
+      await db
+        .update(meetings)
+        .set({ followUpReminderSentAt: now, followUpStage: 'SENT', updatedAt: now })
+        .where(eq(meetings.id, meeting.id));
+    } catch (error) {
+      result.failed++;
+      console.error(`[FollowUpReminder] meeting ${meeting.id} failed`, error);
     }
   }
 
