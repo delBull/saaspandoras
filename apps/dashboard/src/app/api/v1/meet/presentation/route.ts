@@ -191,9 +191,11 @@ export async function POST(req: NextRequest) {
     }
 
     // El servidor también acota: un estado viejo no puede dejar el deck en un
-    // slide que no existe (el cliente envía +1 sin límite).
+    // slide que no existe. Se usa el deck de la DB (fuente de verdad) y el catálogo
+    // solo como respaldo; así no hay drift si el deck crece antes que el catálogo.
+    const dbDeck = await getDeck(meeting.presentationId);
     const catalog = findPresentation(meeting.presentationId);
-    const maxSlide = Math.max((catalog?.script.length ?? 1) - 1, 0);
+    const maxSlide = Math.max((dbDeck?.slides.length ?? catalog?.script.length ?? 1) - 1, 0);
 
     const current = await readDeckState(meeting.id);
     const nextOpen = hasOpen ? (body.open as boolean) : current?.presentationOpen ?? false;
