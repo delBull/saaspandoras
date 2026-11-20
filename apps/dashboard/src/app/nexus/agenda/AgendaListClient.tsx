@@ -2,13 +2,14 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Video, FileText, Radio, KeyRound, Check } from "lucide-react";
+import { Video, FileText, Radio, KeyRound, Check, Pencil } from "lucide-react";
 import { MeetingShareButton } from "@/components/meet/MeetingShareButton";
 import { AddToGoogleCalendarButton } from "@/components/meet/AddToGoogleCalendarButton";
 import { shortMeetingPath } from "@/lib/meet/meeting-links";
 import { CancelMeetingButton } from "./CancelMeetingButton";
 import { ArchiveMeetingButton } from "./ArchiveMeetingButton";
 import { MeetingDetailsDrawer } from "./MeetingDetailsDrawer";
+import { EditMeetingDrawer } from "./EditMeetingDrawer";
 
 interface AgendaListClientProps {
   agendaRows: any[];
@@ -62,6 +63,7 @@ const AgendaSection = ({
 
 export function AgendaListClient({ agendaRows, collaboratorId, now, joinUrls }: AgendaListClientProps) {
   const [selectedMeeting, setSelectedMeeting] = useState<any | null>(null);
+  const [editMeetingId, setEditMeetingId] = useState<string | null>(null);
   const [copiedHostId, setCopiedHostId] = useState<string | null>(null);
 
   const live = agendaRows
@@ -217,6 +219,17 @@ export function AgendaListClient({ agendaRows, collaboratorId, now, joinUrls }: 
                   {isHost ? "Iniciar" : "Unirse"}
                 </Link>
               )}
+              {isHost && isScheduled && (
+                <button
+                  type="button"
+                  onClick={() => setEditMeetingId(row.meeting.id)}
+                  className="flex items-center justify-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2.5 py-2.5 text-[10px] font-mono uppercase tracking-wider text-zinc-300 transition-colors hover:bg-white/10 hover:text-white"
+                  title="Editar horario, deck o participantes"
+                >
+                  <Pencil size={14} />
+                  <span className="hidden sm:inline">Editar</span>
+                </button>
+              )}
               {canCancel && <CancelMeetingButton meetingId={row.meeting.id} />}
               {canArchive && <ArchiveMeetingButton meetingId={row.meeting.id} />}
               <button
@@ -268,6 +281,11 @@ export function AgendaListClient({ agendaRows, collaboratorId, now, joinUrls }: 
         isOpen={!!selectedMeeting}
         onClose={() => setSelectedMeeting(null)}
         meeting={selectedMeeting}
+      />
+
+      <EditMeetingDrawer
+        meetingId={editMeetingId}
+        onClose={() => setEditMeetingId(null)}
       />
     </div>
   );

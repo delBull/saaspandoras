@@ -19,6 +19,28 @@ const meeting = (overrides: Partial<any> = {}) => ({
   ...overrides,
 });
 
+describe("✏️ Edición de reuniones programadas", () => {
+  it("EDT-01: el host puede editar una reunión programada de su org", () => {
+    expect(MeetingPolicy.canEdit(meeting({ status: "scheduled" }), auth())).toBe(true);
+  });
+
+  it("EDT-02: un participante o no-host no puede editar", () => {
+    expect(MeetingPolicy.canEdit(meeting({ status: "scheduled" }), auth({ collaboratorId: 99 }))).toBe(false);
+  });
+
+  it("EDT-03: no se edita una reunión live, ended o cancelada", () => {
+    expect(MeetingPolicy.canEdit(meeting({ status: "live" }), auth())).toBe(false);
+    expect(MeetingPolicy.canEdit(meeting({ status: "ended" }), auth())).toBe(false);
+    expect(MeetingPolicy.canEdit(meeting({ status: "cancelled" }), auth())).toBe(false);
+  });
+
+  it("EDT-04: no se edita cross-tenant ni sin sesión", () => {
+    expect(MeetingPolicy.canEdit(meeting({ status: "scheduled", canonicalOrgId: "otro" }), auth())).toBe(false);
+    expect(MeetingPolicy.canEdit(meeting({ status: "scheduled" }), auth({ isAuthenticated: false }))).toBe(false);
+    expect(MeetingPolicy.canEdit(meeting({ status: "scheduled" }), auth({ canonicalOrgId: null }))).toBe(false);
+  });
+});
+
 describe("🗂️ Archivado de reuniones pasadas (borrado lógico)", () => {
   it("ARC-01: el host puede archivar una reunión terminada de su org", () => {
     expect(MeetingPolicy.canArchive(meeting(), auth())).toBe(true);

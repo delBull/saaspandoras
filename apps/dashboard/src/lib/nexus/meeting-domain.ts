@@ -26,6 +26,15 @@ export class MeetingPolicy {
     return true;
   }
 
+  static canEdit(meeting: any, authCtx: NexusAuthContext): boolean {
+    if (!authCtx.isAuthenticated || !authCtx.collaboratorId || !authCtx.canonicalOrgId) {
+      return false;
+    }
+    if (meeting.canonicalOrgId !== authCtx.canonicalOrgId) return false;
+    if (meeting.hostCollaboratorId !== authCtx.collaboratorId) return false;
+    return meeting.status === 'scheduled';
+  }
+
   static canArchive(meeting: any, authCtx: NexusAuthContext): boolean {
     if (!authCtx.isAuthenticated || !authCtx.collaboratorId || !authCtx.canonicalOrgId) {
       return false;

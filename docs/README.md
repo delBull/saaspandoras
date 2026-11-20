@@ -9,6 +9,8 @@ producto viven en `apps/dashboard/DOCUMENTACIÓN/` (gitignoreados por política)
   estado del flujo deal → agenda → sala → seguimiento.
 - [Agenda Soberana multi-tenant — Hoja de ruta](./AGENDA-SOBERANA-MULTITENANT-ROADMAP.md) —
   veredicto de herencia en Academy/Growth OS, hallazgos MT-01…MT-10 y plan por fases.
+- [Brief Celeste × Pandora's — 20 nov 2026](./CELESTE-BRIEF-2026-11-20.md) —
+  datos duros, precios finales, capacidades, límites y checklist para la reunión con Eduardo.
 
 ## Arquitectura
 

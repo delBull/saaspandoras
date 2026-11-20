@@ -22,6 +22,8 @@ export interface IcsMeetingInput {
   attendeeEmail?: string | null;
   organizerEmail?: string;
   organizerName?: string;
+  /** 0 = invitación nueva; >0 = actualización (mismo UID, el cliente la aplica). */
+  sequence?: number;
 }
 
 function toUtcStamp(date: Date): string {
@@ -60,6 +62,7 @@ export function buildMeetingIcs(input: IcsMeetingInput): string {
     attendeeEmail,
     organizerEmail = "hello@pandoras.finance",
     organizerName = "Pandora's Group",
+    sequence = 0,
   } = input;
 
   const lines = [
@@ -71,6 +74,7 @@ export function buildMeetingIcs(input: IcsMeetingInput): string {
     "BEGIN:VEVENT",
     `UID:${escapeIcsText(uid)}`,
     `DTSTAMP:${toUtcStamp(new Date())}`,
+    `SEQUENCE:${sequence}`,
     `DTSTART:${toUtcStamp(start)}`,
     `DTEND:${toUtcStamp(end)}`,
     `SUMMARY:${escapeIcsText(summary)}`,

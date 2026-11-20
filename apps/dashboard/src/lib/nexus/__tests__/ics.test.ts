@@ -64,6 +64,19 @@ describe("📅 ICS de reunión", () => {
     }
   });
 
+  it("ICS-06: una actualización usa SEQUENCE mayor para que el calendario la aplique", () => {
+    const ics = buildMeetingIcs({
+      uid: "meeting-123@dash.pandoras.finance",
+      start: START,
+      end: END,
+      summary: "Sesión",
+      sequence: 1,
+    });
+
+    expect(ics).toContain("SEQUENCE:1");
+    expect(ics).toContain("METHOD:REQUEST");
+  });
+
   it("ICS-05: el adjunto es base64 del mismo contenido", () => {
     const attachment = icsAttachment({
       uid: "x@y",

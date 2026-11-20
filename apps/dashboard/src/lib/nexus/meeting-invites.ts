@@ -36,8 +36,9 @@ function inviteEmailHtml(input: {
   dealRoomUrl: string | null;
   proposalUrl: string | null;
   counterparty: string;
+  kind: "invite" | "update";
 }): string {
-  const { startsAt, endsAt, deckTitle, joinUrl, dealRoomUrl, proposalUrl, counterparty } = input;
+  const { startsAt, endsAt, deckTitle, joinUrl, dealRoomUrl, proposalUrl, counterparty, kind } = input;
   const fmt = (value: Date) =>
     value.toLocaleString("es-MX", { dateStyle: "full", timeStyle: "short", timeZone: "America/Mexico_City" });
   const when = endsAt ? `${fmt(startsAt)} (hasta ${fmt(new Date(endsAt))})` : fmt(startsAt);
@@ -48,17 +49,18 @@ function inviteEmailHtml(input: {
   ].filter(Boolean).join(" · ");
 
   return `<!DOCTYPE html>
-<html lang="es"><head><meta charset="UTF-8"/><title>Invitación a la presentación</title></head>
+<html lang="es"><head><meta charset="UTF-8"/><title>${kind === "update" ? "Reunión actualizada" : "Invitación a la presentación"}</title></head>
 <body style="margin:0;padding:0;background-color:#08080C;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#08080C;">
     <tr><td align="center" style="padding:40px 16px;">
       <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:540px;margin:0 auto;background:#0F0F18;border:1px solid rgba(255,255,255,0.07);border-radius:16px;overflow:hidden;">
         <tr><td style="background:linear-gradient(135deg,#0a0a1a 0%,#1a0533 100%);padding:28px 32px;text-align:center;">
           <div style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:rgba(251,191,36,0.7);margin-bottom:10px;">PANDORA'S · SOVEREIGN MEET</div>
-          <div style="font-size:22px;font-weight:700;color:#ffffff;">Presentación agendada</div>
+          <div style="font-size:22px;font-weight:700;color:#ffffff;">${kind === "update" ? "Reunión actualizada" : "Presentación agendada"}</div>
           <div style="font-size:13px;color:rgba(255,255,255,0.5);margin-top:6px;">${counterparty}</div>
         </td></tr>
         <tr><td style="padding:30px 32px;">
+          ${kind === "update" ? '<p style="margin:0 0 16px;font-size:13px;line-height:1.6;color:rgba(255,255,255,0.7);">Actualizamos la fecha, la hora o los invitados de esta sesión. El evento de calendario adjunto reemplaza al anterior.</p>' : ''}
           <p style="margin:0 0 6px;font-size:13px;color:rgba(255,255,255,0.5);">Cuándo</p>
           <p style="margin:0 0 20px;font-size:15px;color:#ffffff;font-weight:600;">${when}</p>
           ${deckTitle ? `<p style="margin:0 0 6px;font-size:13px;color:rgba(255,255,255,0.5);">Presentación</p>
@@ -95,8 +97,20 @@ export async function sendMeetingInvites(input: {
   baseUrl: string;
   counterparty: string;
   dealRoomUrl?: string | null;
+  /** `update` reenvía el mismo UID con SEQUENCE 1 y asunto de actualización. */
+  kind?: "invite" | "update";
 }): Promise<InviteResult> {
-  const { meetingId, startsAt, endsAt, deckSlug, recipients, baseUrl, counterparty, dealRoomUrl } = input;
+  const {
+    meetingId,
+    startsAt,
+    endsAt,
+    deckSlug,
+    recipients,
+    baseUrl,
+    counterparty,
+    dealRoomUrl,
+    kind = "invite",
+  } = input;
   const deck = findPresentation(deckSlug);
   const deckTitle = deck?.title ?? null;
   const proposalUrl = deck?.proposalHref ? `${baseUrl}${deck.proposalHref}` : null;
@@ -118,7 +132,7 @@ export async function sendMeetingInvites(input: {
     try {
       const outcome = await sendEmail({
         to: email,
-        subject: `Presentación agendada · ${counterparty}`,
+        subject: `${kind === "update" ? "Reunión actualizada" : "Presentación agendada"} · ${counterparty}`,
         // Evento de calendario, como Zoom/Meet. Uno por destinatario para no
         // repartir la liga personal de los demás.
         attachments: [
@@ -130,6 +144,7 @@ export async function sendMeetingInvites(input: {
             description: `${deckTitle ? `${deckTitle}\n\n` : ""}Entra a la sala: ${joinUrl}`,
             location: joinUrl,
             attendeeEmail: email,
+            sequence: kind === "update" ? 1 : 0,
           }),
         ],
         html: inviteEmailHtml({
@@ -140,6 +155,7 @@ export async function sendMeetingInvites(input: {
           dealRoomUrl: dealRoomUrl ?? null,
           proposalUrl,
           counterparty,
+          kind,
         }),
       });
       if (outcome?.success) {

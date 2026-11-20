@@ -45,6 +45,23 @@ Las dos vías para agendar producen el mismo objeto reunión:
 | Deal Room → Clients & CRM → "Agendar presentación" | `POST /api/nexus/deals/:id/schedule` | hereda deck del deal y deal_room_id |
 | Agenda Soberana → "Agendar presentación" | `POST /api/v1/nexus/agenda/meet/create` | reunión suelta con deck del catálogo |
 
+### Template de decks: tipografía y branding (implementado)
+
+- Tipografía de los bloques aumentada para pantalla grande: `info`, `numbered`,
+  `pillars`, `steps`, `checklist`, `prices`, `note` y `closing` usan `clamp()`
+  basado en `vh` (escala con la altura de la pantalla, sin desbordar).
+- Verificado con Chrome headless a **1920×1080** y **1366×768** en los slides más
+  densos (oportunidad, diagnóstico, entregables): el contenido cabe en los márgenes.
+- Ancho del slide: `max-w-7xl` con padding responsive.
+- Branding permanente en todos los decks de `DeckRenderer`:
+  - monograma + “PANDORA'S / SOVEREIGN PRESENTATION” arriba a la derecha,
+  - firma “Pandora's Group · Confidential” + título del deck abajo a la derecha,
+  - marca de agua del monograma al 3.5% y línea lima superior.
+- Assets: `public/images/logo_green.png` (monograma). No requiere cambios en el
+  JSON de los decks; aplica a Celeste, Aurora y cualquier deck nuevo.
+- Los decks estáticos de respaldo (`/pitch/celeste`, etc.) son legado; el catálogo
+  apunta a `/pitch/deck/<slug>`, que usa este template.
+
 ### Sala: dock del host y controles (implementado)
 
 - Los controles del host viven en un **dock vertical a la izquierda**, colapsable
