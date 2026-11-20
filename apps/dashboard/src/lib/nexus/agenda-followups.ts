@@ -74,6 +74,15 @@ interface SummaryActionItem {
   assigneeName: string | null;
 }
 
+/** "eduardo.garza@x.com" → "Eduardo"; "marco.munoz9@x.com" → "Marco". */
+function displayNameFromEmail(email: string): string {
+  const local = email.split('@')[0] ?? '';
+  const token = local.split(/[._+-]/)[0] ?? '';
+  const cleaned = token.replace(/\d+/g, '');
+  if (!cleaned) return '';
+  return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+}
+
 function escapeHtml(value: string): string {
   return value
     .replace(/&/g, "&amp;")
@@ -349,7 +358,7 @@ export async function runSovereignFollowUps(meetingId?: string): Promise<FollowU
               ? `Resumen de la sesión · ${meetingTitle}`
               : `Seguimiento de la sesión${deck ? ` · ${deck.title}` : ''}`,
             html: followUpEmailHtml({
-              firstName: identity.split('@')[0] ?? '',
+              firstName: displayNameFromEmail(identity),
               meetingTitle,
               deckTitle: deck?.title ?? null,
               deckUrl,
@@ -560,7 +569,7 @@ export async function sendMeetingSummaryFollowUp(
         to: identity,
         from: FROM,
         subject,
-        html: buildHtml(identity.split('@')[0] ?? ''),
+        html: buildHtml(displayNameFromEmail(identity)),
       });
 
       if (emailResult?.success) {
@@ -607,7 +616,7 @@ export async function sendMeetingSummaryFollowUp(
         to: email,
         from: FROM,
         subject,
-        html: buildHtml(email.split('@')[0] ?? ''),
+        html: buildHtml(displayNameFromEmail(email)),
       });
       if (emailResult?.success) {
         await db.insert(meetingParticipants).values({
