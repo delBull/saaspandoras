@@ -17,33 +17,6 @@ export interface ApprovalRequest {
   risk?: 'LOW' | 'MEDIUM' | 'HIGH';
 }
 
-const MOCK_APPROVALS: ApprovalRequest[] = [
-  {
-    id: 'APP-1042',
-    who: { name: 'Hermes Agent', email: 'hermes@pandoras.finance', role: 'AI Orchestrator' },
-    what: 'Distribuir 5,000 USDC a holders de Deal #1042',
-    why: 'Ciclo de dividendos alcanzado para el Q3',
-    resource: 'Project: S\'Narai (snarai)',
-    capability: 'finance.manage',
-    status: 'PENDING',
-    nextAction: 'Ejecutar transferencia on-chain (Polygon)',
-    timestamp: new Date().toISOString(),
-    risk: 'HIGH'
-  },
-  {
-    id: 'APP-1043',
-    who: { name: 'Marco', email: 'admin@pandoras.finance', role: 'SUPER_ADMIN' },
-    what: 'Aprobar KYC y asignar rol "MARKETING" a usuario nuevo',
-    why: 'Nuevo ingreso al equipo operativo Cohort B',
-    resource: 'User: 0x93...a1b2',
-    capability: 'users.manage',
-    status: 'PENDING',
-    nextAction: 'Firmar transacción de metadata',
-    timestamp: new Date(Date.now() - 3600000).toISOString(),
-    risk: 'MEDIUM'
-  }
-];
-
 export function OperationsApprovalsTab() {
   const [approvals, setApprovals] = useState<ApprovalRequest[]>([]);
   const [loading, setLoading] = useState(true);

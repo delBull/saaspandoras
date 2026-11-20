@@ -14,36 +14,6 @@ export interface Incident {
   details: string;
 }
 
-const MOCK_INCIDENTS: Incident[] = [
-  {
-    id: 'INC-9942',
-    title: 'Fallo de Webhook de Stripe en entorno Prod',
-    source: 'WEBHOOK',
-    severity: 'HIGH',
-    status: 'OPEN',
-    timestamp: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
-    details: 'El endpoint /api/webhooks/stripe devolvió 500 para el evento invoice.payment_succeeded. Pago de $500 retenido.'
-  },
-  {
-    id: 'INC-9943',
-    title: 'Desincronización de Contrato S\'Narai',
-    source: 'ONCHAIN',
-    severity: 'CRITICAL',
-    status: 'INVESTIGATING',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-    details: 'Diferencia de 100 USDC entre balance on-chain de Polygon y base de datos local (NeonDB).'
-  },
-  {
-    id: 'INC-9944',
-    title: 'K25 Vault IPFS Pinning Timeout',
-    source: 'IPFS',
-    severity: 'MEDIUM',
-    status: 'RESOLVED',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-    details: 'Fallo temporal al pinear credencial KYC a Pinata. Reintentado automáticamente.'
-  }
-];
-
 export function OperationsIncidentCenter() {
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);

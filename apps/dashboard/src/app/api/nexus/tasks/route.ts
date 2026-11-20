@@ -19,7 +19,7 @@ interface TaskRequestBody {
   priority?: string;
   dueDate?: string;
   assigneeCollaboratorId?: number | string;
-  action?: 'COMPLETE' | 'CLAIM' | 'CANCEL';
+  action?: 'COMPLETE' | 'CLAIM' | 'CANCEL' | 'REOPEN';
 }
 
 export async function GET(request: Request) {
@@ -146,15 +146,19 @@ export async function PATCH(request: Request) {
     const updatePayload: {
       updatedAt: Date;
       status?: string;
-      completedAt?: Date;
+      completedAt?: Date | null;
       claimedAt?: Date;
-      cancelledAt?: Date;
+      cancelledAt?: Date | null;
       assigneeCollaboratorId?: number;
     } = { updatedAt: now };
 
     if (action === 'COMPLETE') {
       updatePayload.status = 'DONE';
       updatePayload.completedAt = now;
+    } else if (action === 'REOPEN') {
+      updatePayload.status = 'OPEN';
+      updatePayload.completedAt = null;
+      updatePayload.cancelledAt = null;
     } else if (action === 'CLAIM') {
       updatePayload.status = 'IN_PROGRESS';
       updatePayload.claimedAt = now;
