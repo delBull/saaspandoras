@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AddToGoogleCalendarButton } from "@/components/meet/AddToGoogleCalendarButton";
-import { X, Mic, FileText, CheckCircle2, CloudLightning, Loader2, UploadCloud } from "lucide-react";
+import { X, Mic, FileText, CheckCircle2, CloudLightning, Loader2, UploadCloud, Pencil, Trash2, Check } from "lucide-react";
 
 interface ActionItem {
   id: string;
@@ -35,6 +35,13 @@ export function MeetingDetailsDrawer({ isOpen, onClose, meeting }: MeetingDetail
   const [sendingSummary, setSendingSummary] = useState(false);
   const [summarySendMessage, setSummarySendMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Edición de tareas (texto y asignado) + borrado
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [editTask, setEditTask] = useState("");
+  const [editAssignee, setEditAssignee] = useState("");
+  const [savingItem, setSavingItem] = useState(false);
+  const [itemError, setItemError] = useState<string | null>(null);
 
   // Notas de la sesión (las mismas de la sala) + metadatos para la agenda.
   const [notes, setNotes] = useState("");
@@ -214,6 +221,73 @@ export function MeetingDetailsDrawer({ isOpen, onClose, meeting }: MeetingDetail
       setSummarySendMessage("Error de red al enviar el seguimiento.");
     } finally {
       setSendingSummary(false);
+    }
+  };
+
+  const startEditing = (item: ActionItem) => {
+    setEditingItemId(item.id);
+    setEditTask(item.task);
+    setEditAssignee(item.assigneeName ?? "");
+    setItemError(null);
+  };
+
+  const saveItem = async (item: ActionItem) => {
+    if (!editTask.trim()) {
+      setItemError("La tarea no puede quedar vacía.");
+      return;
+    }
+    setSavingItem(true);
+    setItemError(null);
+    try {
+      const res = await fetch(`/api/v1/internal/nexus/meets/action-items/${item.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ task: editTask, assigneeName: editAssignee }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setItemError(data.error ?? "No se pudo guardar la tarea.");
+        return;
+      }
+      setActionItems((prev) =>
+        prev.map((row) =>
+          row.id === item.id
+            ? {
+                ...row,
+                task: data.item?.task ?? editTask,
+                assigneeName: data.item?.assigneeName ?? editAssignee,
+              }
+            : row
+        )
+      );
+      setEditingItemId(null);
+    } catch {
+      setItemError("Error de red al guardar la tarea.");
+    } finally {
+      setSavingItem(false);
+    }
+  };
+
+  const removeItem = async (item: ActionItem) => {
+    if (!window.confirm("¿Eliminar esta tarea de la minuta?")) return;
+    setSavingItem(true);
+    setItemError(null);
+    try {
+      const res = await fetch(`/api/v1/internal/nexus/meets/action-items/${item.id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setItemError(data.error ?? "No se pudo eliminar la tarea.");
+        return;
+      }
+      setActionItems((prev) => prev.filter((row) => row.id !== item.id));
+    } catch {
+      setItemError("Error de red al eliminar la tarea.");
+    } finally {
+      setSavingItem(false);
     }
   };
 
@@ -431,25 +505,89 @@ export function MeetingDetailsDrawer({ isOpen, onClose, meeting }: MeetingDetail
                   </div>
                   
                   <div className="space-y-2">
-                    {actionItems.map(item => (
-                      <div key={item.id} className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/5 group hover:border-white/10 transition-colors">
-                        <div className="flex items-center gap-3">
-                          <button 
-                            onClick={() => toggleActionItemStatus(item)}
-                            className={`w-5 h-5 rounded-full border flex items-center justify-center transition-colors ${item.status === 'completed' ? 'bg-lime-500/20 border-lime-500/50 text-lime-500' : 'border-zinc-600 hover:border-zinc-400'}`}>
-                            {item.status === 'completed' && <CheckCircle2 className="w-3 h-3" />}
-                          </button>
-                          <span className={`text-sm ${item.status === 'completed' ? 'text-zinc-500 line-through' : 'text-zinc-200'}`}>
-                            {item.task}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-mono uppercase tracking-widest px-2 py-1 bg-zinc-900 rounded text-zinc-400 border border-zinc-800">
-                            {item.assigneeName || 'Equipo'}
-                          </span>
-                        </div>
+                    {actionItems.map((item) => (
+                      <div key={item.id} className="rounded-lg border border-white/5 bg-white/5 p-3 transition-colors hover:border-white/10">
+                        {editingItemId === item.id ? (
+                          <div className="space-y-2">
+                            <input
+                              value={editTask}
+                              onChange={(event) => setEditTask(event.target.value.slice(0, 500))}
+                              className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-sky-500/40"
+                              placeholder="Descripción de la tarea"
+                            />
+                            <input
+                              value={editAssignee}
+                              onChange={(event) => setEditAssignee(event.target.value.slice(0, 200))}
+                              className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-[11px] text-zinc-200 outline-none focus:border-sky-500/40"
+                              placeholder="Asignado (opcional)"
+                            />
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setEditingItemId(null)}
+                                className="rounded-md border border-white/10 px-2.5 py-1.5 text-[10px] font-mono uppercase tracking-wider text-zinc-400 hover:text-white"
+                              >
+                                Cancelar
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => void saveItem(item)}
+                                disabled={savingItem}
+                                className="flex items-center gap-1 rounded-md border border-lime-500/30 bg-lime-500/15 px-2.5 py-1.5 text-[10px] font-mono uppercase tracking-wider text-lime-200 hover:bg-lime-500/25 disabled:opacity-50"
+                              >
+                                <Check size={12} /> Guardar
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex min-w-0 items-center gap-3">
+                              <button
+                                onClick={() => toggleActionItemStatus(item)}
+                                className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors ${
+                                  item.status === "completed"
+                                    ? "border-lime-500/50 bg-lime-500/20 text-lime-500"
+                                    : "border-zinc-600 hover:border-zinc-400"
+                                }`}
+                              >
+                                {item.status === "completed" && <CheckCircle2 className="h-3 w-3" />}
+                              </button>
+                              <span
+                                className={`text-sm ${
+                                  item.status === "completed" ? "text-zinc-500 line-through" : "text-zinc-200"
+                                }`}
+                              >
+                                {item.task}
+                              </span>
+                            </div>
+                            <div className="flex shrink-0 items-center gap-1.5">
+                              <span className="rounded border border-zinc-800 bg-zinc-900 px-2 py-1 text-[10px] font-mono uppercase tracking-widest text-zinc-400">
+                                {item.assigneeName || "Equipo"}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => startEditing(item)}
+                                title="Editar tarea"
+                                className="rounded-md border border-transparent p-1.5 text-zinc-500 hover:border-white/10 hover:bg-white/5 hover:text-white"
+                              >
+                                <Pencil size={13} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => void removeItem(item)}
+                                title="Eliminar tarea"
+                                className="rounded-md border border-transparent p-1.5 text-zinc-500 hover:border-rose-500/30 hover:bg-rose-500/10 hover:text-rose-300"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ))}
+                    {itemError && (
+                      <p className="text-[10px] leading-relaxed text-rose-300">{itemError}</p>
+                    )}
                   </div>
                 </motion.div>
               )}
