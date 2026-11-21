@@ -23,6 +23,7 @@ import {
   LogOut,
   MonitorPlay,
   CalendarDays,
+  Package,
   type LucideIcon,
 } from "lucide-react";
 import type { NexusAuthContext } from "@saasfly/shared";
@@ -107,6 +108,7 @@ export function NexusSidebar({ auth, onAction }: NexusSidebarProps) {
     {
       label: "ADMIN",
       items: [
+        { name: "Deal Pods", href: "/nexus/ops?tab=pods", icon: Package, show: auth.role === "SUPER_ADMIN" },
         { name: "Collaborators", href: "/nexus/ops?tab=cohorts", icon: Users, show: auth.role === "SUPER_ADMIN" },
         { name: "Settings", href: "/nexus/settings", icon: Settings, show: permissions.settings },
       ]

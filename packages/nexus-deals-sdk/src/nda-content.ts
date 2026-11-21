@@ -192,7 +192,114 @@ export interface NdaConfig {
   isBilateral: boolean;
 }
 
+// ─── 2. VILLAGE NDA (OPORTUNIDAD OFF-MARKET) ────────────────────────────────
+
+export const VILLAGE_NDA_VERSION = "v1.0-village";
+
+export const VILLAGE_NDA_TITLE =
+  "Acuerdo de Confidencialidad, No Uso y No Circunvención — Proyecto Village";
+
+export const VILLAGE_NDA_SUBTITLE =
+  "Project Village — Confidentiality, Non-Use and Non-Circumvention Agreement";
+
+export const VILLAGE_NDA_SUMMARY_BULLETS = [
+  "Mantener en estricta confidencialidad la identidad, ubicación, operación y finanzas del Activo",
+  "Usar la información únicamente para evaluar una posible adquisición",
+  "No contactar al vendedor, operador, acreedores o intermediarios por fuera de AZTECAZ (24 meses)",
+  "No divulgar el memorándum, estados financieros ni documentos de la oportunidad",
+  "No usar la información para competir, replicar la operación o adquirir por cuenta de terceros",
+  "Confidencialidad por 3 años; secretos industriales de forma indefinida",
+  "La circunvención se sanciona con la comisión pactada (3% del precio de cierre)",
+];
+
+export const VILLAGE_NDA_FULL_TEXT = `ACUERDO DE CONFIDENCIALIDAD, NO USO Y NO CIRCUNVENCIÓN
+PROYECTO VILLAGE — CONFIDENTIALITY, NON-USE AND NON-CIRCUMVENTION AGREEMENT
+Versión: 1.0-village
+Fecha de vigencia: la fecha de aceptación electrónica registrada en el Deal Room de Nexus.
+
+1. PARTES
+
+El presente Acuerdo (el "Acuerdo") se celebra entre AZTECAZ HUB S.A.P.I. DE C.V., en lo sucesivo "AZTECAZ" o la "Parte Reveladora", y la persona física o moral que acceda a este documento, lo acepte electrónicamente o reciba Información Confidencial (el "Receptor").
+
+2. ANTECEDENTES
+
+AZTECAZ tiene acceso a información relativa a una oportunidad de adquisición de un activo hotelero en operación identificado bajo el nombre clave "Proyecto Village" (el "Activo"). El Receptor manifiesta interés en evaluar una posible adquisición total o parcial del Activo y reconoce que para ello requiere acceso a información reservada.
+
+3. INFORMACIÓN CONFIDENCIAL
+
+Es Información Confidencial toda información revelada por AZTECAZ, por el vendedor o por sus asesores, en cualquier formato, incluyendo sin limitación: identidad y ubicación del Activo; nombre comercial y marcas; memorándum de inversión (OM) y anexos; estados financieros históricos y proyectados; estructura de propiedad, fideicomisos y gravámenes; contratos de operación, administración y franquicia; plantilla y contratos laborales; licencias, permisos y situación fiscal; pasivos, deuda y litigios; estrategia de venta, precio de referencia y cualquier término comercial; y la simple existencia de la oportunidad.
+
+4. INFORMACIÓN EXCLUIDA
+
+No es Información Confidencial la que: (a) fuera pública antes de su revelación; (b) se volviera pública sin incumplimiento del Receptor; (c) el Receptor ya tuviera documentalmente antes de la revelación; (d) reciba de un tercero sin deber de confidencialidad; o (e) AZTECAZ autorice por escrito su divulgación.
+
+5. OBLIGACIONES DEL RECEPTOR
+
+El Receptor se obliga a: (a) mantener la Información Confidencial en estricta reserva; (b) usarla exclusivamente para el Propósito Autorizado; (c) limitar el acceso a sus directivos, empleados y asesores que lo necesiten, bajo obligaciones equivalentes; (d) no reproducir, fotografiar ni reenviar documentos sin autorización escrita; (e) custodiar el OM y los anexos con medidas razonables de seguridad; y (f) notificar de inmediato cualquier acceso o divulgación no autorizada.
+
+6. PROPÓSITO AUTORIZADO
+
+La Información Confidencial solo podrá utilizarse para evaluar, negociar y, en su caso, ejecutar una adquisición del Activo por el propio Receptor o por una entidad de su grupo, siempre por conducto de AZTECAZ.
+
+7. NO CIRCUNVENCIÓN
+
+Durante 24 meses contados desde la aceptación de este Acuerdo, el Receptor y sus afiliados, socios, fondos, vehículos de inversión y asesores no podrán, directa o indirectamente: (a) contactar al vendedor, operador, acreedores, fiduciario o cualquier contraparte del Activo sin autorización escrita de AZTECAZ; (b) adquirir, financiar, coinvertir o participar en la adquisición del Activo por fuera de AZTECAZ; ni (c) introducir a un tercero en la operación evadiendo a AZTECAZ.
+
+En caso de incumplimiento, el Receptor pagará a AZTECAZ, como pena convencional, el monto equivalente a la comisión pactada del 3% (tres por ciento) sobre el precio de cierre de la operación, sin perjuicio de los daños y perjuicios adicionales que procedan. Las Partes reconocen que la cuantificación anticipada es razonable por la dificultad de valorar el daño.
+
+8. PLAZO
+
+Las obligaciones de confidencialidad subsistirán por 3 (tres) años desde la aceptación. Respecto de secretos industriales y de información que constituya secreto comercial, la obligación será indefinida conforme a la ley aplicable.
+
+9. DEVOLUCIÓN O DESTRUCCIÓN
+
+A solicitud de AZTECAZ, o al concluir las conversaciones, el Receptor devolverá o destruirá la Información Confidencial y confirmará por escrito dicha destrucción, conservando únicamente una copia en sus archivos legales cuando la ley lo exija, sujeta a este Acuerdo.
+
+10. SIN GARANTÍAS Y SIN OBLIGACIÓN DE TRANSAR
+
+La información se entrega "tal cual". AZTECAZ no garantiza su exactitud ni integridad y no asume obligación alguna de negociar, aceptar ofertas o concluir la operación. Ninguna conducta previa crea exclusividad ni mandato.
+
+11. DATOS PERSONALES
+
+Los datos de contacto se tratarán conforme a la Ley Federal de Protección de Datos Personales en Posesión de los Particulares, únicamente para gestionar esta oportunidad.
+
+12. LEY APLICABLE Y JURISDICCIÓN
+
+Este Acuerdo se rige por las leyes de los Estados Unidos Mexicanos. Para cualquier controversia, las Partes se someten a los tribunales competentes de Guadalajara, Jalisco, renunciando a cualquier otro fuero.
+
+13. FIRMA ELECTRÓNICA
+
+Las Partes reconocen la validez de la firma electrónica conforme al Código de Comercio y a la NOM-151-SCFI-2016 en lo conducente. La aceptación registrada en el Deal Room de Nexus (correo, wallet, fecha y hash) constituye prueba de consentimiento.
+
+14. ACEPTACIÓN
+
+Al firmar, el Receptor declara haber leído y comprendido este Acuerdo, contar con facultades suficientes para obligarse y aceptar íntegramente sus términos.
+
+POR AZTECAZ HUB S.A.P.I. DE C.V.
+Nombre: ______________________________
+Cargo: _______________________________
+Firma: _______________________________  Fecha: ____________
+
+POR EL RECEPTOR
+Nombre: ______________________________
+Empresa: _____________________________
+Cargo: _______________________________
+Correo: ______________________________
+Firma: _______________________________  Fecha: ____________`;
+
 export function getNdaConfig(version?: string): NdaConfig {
+  if (version === VILLAGE_NDA_VERSION || version === "village") {
+    return {
+      version: VILLAGE_NDA_VERSION,
+      title: VILLAGE_NDA_TITLE,
+      subtitle: VILLAGE_NDA_SUBTITLE,
+      summaryBullets: VILLAGE_NDA_SUMMARY_BULLETS,
+      fullText: VILLAGE_NDA_FULL_TEXT,
+      requiredSigners: 1,
+      isBilateral: false,
+    };
+  }
+
   if (version === ELD_HYBRID_NDA_VERSION || version === "v0.2-hybrid-eld" || version === "ELD-HYBRID-v0.2") {
     return {
       version: ELD_HYBRID_NDA_VERSION,

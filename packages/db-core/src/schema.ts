@@ -3599,6 +3599,65 @@ export const nexusSignerStatusEnum = pgEnum("nexus_signer_status", [
   "SIGNED",      // Firmó/aceptó
 ]);
 
+/**
+ * Deal Pod — mini-tenant de oportunidad.
+ *
+ * Agrupa una operación completa (landing, radar, deal room, cliente, cierre) sin
+ * tocar el modelo de tenants: sigue viviendo en `canonical_org_id` (por defecto
+ * `pandoras`) y se aísla por `pod_id`.
+ */
+export const nexusDealPods = pgTable('nexus_deal_pods', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  code: varchar('code', { length: 64 }).notNull().unique(),
+  displayName: varchar('display_name', { length: 255 }).notNull(),
+  status: varchar('status', { length: 24 }).notNull().default('ACTIVE'),
+  confidentiality: varchar('confidentiality', { length: 24 }).notNull().default('OFF_MARKET'),
+  feeEntity: varchar('fee_entity', { length: 255 }),
+  feePct: decimal('fee_pct', { precision: 5, scale: 2 }),
+  currency: varchar('currency', { length: 8 }).notNull().default('USD'),
+  canonicalOrgId: varchar('canonical_org_id', { length: 256 }).notNull().default('pandoras'),
+  createdBy: varchar('created_by', { length: 255 }),
+  config: jsonb('config').$type<Record<string, unknown>>().notNull().default({}),
+  archivedAt: timestamp('archived_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => {
+  return {
+    statusIdx: index('idx_deal_pods_status').on(t.status),
+  };
+});
+
+export const nexusOutreachLinks = pgTable('nexus_outreach_links', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  podId: uuid('pod_id').notNull().references(() => nexusDealPods.id, { onDelete: 'cascade' }),
+  code: varchar('code', { length: 64 }).notNull().unique(),
+  door: varchar('door', { length: 32 }),
+  targetLabel: varchar('target_label', { length: 255 }),
+  targetOrg: varchar('target_org', { length: 255 }),
+  targetRole: varchar('target_role', { length: 255 }),
+  disabledAt: timestamp('disabled_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => {
+  return {
+    podIdx: index('idx_outreach_links_pod').on(t.podId),
+  };
+});
+
+export const nexusOutreachEvents = pgTable('nexus_outreach_events', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  linkId: uuid('link_id').notNull().references(() => nexusOutreachLinks.id, { onDelete: 'cascade' }),
+  event: varchar('event', { length: 24 }).notNull().default('OPEN'),
+  ipHash: varchar('ip_hash', { length: 64 }),
+  userAgent: text('user_agent'),
+  referer: text('referer'),
+  metadata: jsonb('metadata').$type<Record<string, unknown>>().notNull().default({}),
+  at: timestamp('at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => {
+  return {
+    linkAtIdx: index('idx_outreach_events_link').on(t.linkId, t.at),
+  };
+});
+
 export const nexusDealRooms = pgTable("nexus_deal_rooms", {
   id: uuid("id").defaultRandom().primaryKey(),
   publicId: varchar("public_id", { length: 64 }).notNull().unique(),
@@ -3622,6 +3681,8 @@ export const nexusDealRooms = pgTable("nexus_deal_rooms", {
   ndaVersion: varchar("nda_version", { length: 32 }).notNull().default("v1.0"),
   // Multi-collaborator isolation & sharing
   createdBy: text("created_by"),
+  /** Deal Pod al que pertenece esta sala (opcional). */
+  podId: uuid("pod_id").references(() => nexusDealPods.id, { onDelete: "set null" }),
   /** Cliente del CRM al que pertenece este Deal Room (opcional). */
   clientId: text("client_id").references(() => clients.id, { onDelete: "set null" }),
   sharedWith: jsonb("shared_with").$type<Array<{ email: string; name?: string; sharedAt: string; sharedBy: string }>>().default([]).notNull(),
