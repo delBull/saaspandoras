@@ -3738,6 +3738,10 @@ export const nexusDealSigners = pgTable("nexus_deal_signers", {
   signatureMessage: text("signature_message"),
   signatureCompany: text("signature_company"),
   signatureRole: text("signature_role"),
+  /** POF: none | declared | verified. El OM solo se entrega con `verified`. */
+  pofStatus: varchar("pof_status", { length: 24 }).default("none"),
+  pofVerifiedAt: timestamp("pof_verified_at", { withTimezone: true }),
+  omSentAt: timestamp("om_sent_at", { withTimezone: true }),
 }, (table) => ({
   roomEmailIdx: uniqueIndex("nexus_signers_room_email_idx").on(table.roomId, table.email),
 }));

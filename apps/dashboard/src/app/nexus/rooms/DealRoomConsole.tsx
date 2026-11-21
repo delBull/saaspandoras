@@ -34,6 +34,7 @@ import {
   UserCheck,
 } from "lucide-react";
 import { CognitiveProfileWidget } from "@/components/hermes/CognitiveProfileWidget";
+import { getNexusClientHeaders } from "@/lib/nexus/client-auth-headers";
 import { ConfigureAgendaButton } from "@/components/scheduler/ConfigureAgendaButton";
 
 interface Section {
@@ -258,6 +259,7 @@ export default function DealRoomConsole() {
   const [nrOpenSign, setNrOpenSign] = useState(false);
 
   const [signersInput, setSignersInput] = useState("");
+  const [omSending, setOmSending] = useState<string | null>(null);
   const [sharing, setSharing] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
@@ -519,6 +521,35 @@ export default function DealRoomConsole() {
       flashMsg(`✗ ${e.message}`);
     } finally {
       setSharing(false);
+    }
+  };
+
+  /** Entrega el OM a un firmante con NDA firmado y POF verificado (confirmación humana). */
+  const sendOm = async (email: string) => {
+    if (!selected) return;
+    if (!window.confirm(`¿Confirmas que ${email} presentó prueba de fondos (POF)?\n\nSe enviará el enlace al OM y quedará registrado.`)) return;
+    setOmSending(email);
+    try {
+      const res = await fetch(`/api/nexus/deals/${selected.id}/om`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...getNexusClientHeaders() },
+        credentials: "include",
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        flashMsg(
+          data.code === "NDA_REQUIRED"
+            ? "Ese correo aún no ha firmado el NDA."
+            : data.error ?? "No se pudo enviar el OM."
+        );
+        return;
+      }
+      flashMsg(`✓ OM enviado a ${email}`);
+    } catch {
+      flashMsg("Error de red al enviar el OM.");
+    } finally {
+      setOmSending(null);
     }
   };
 
@@ -1325,6 +1356,16 @@ export default function DealRoomConsole() {
                               className="flex items-center gap-1 px-2 py-1 rounded-md border border-white/10 text-[9px] text-zinc-400 hover:text-amber-300 hover:border-amber-500/30 transition-colors disabled:opacity-50"
                             >
                               <Mail className="w-3 h-3" /> REENVIAR
+                            </button>
+                          )}
+                          {s.status === "SIGNED" && (
+                            <button
+                              onClick={() => void sendOm(s.email)}
+                              disabled={omSending === s.email}
+                              title="Entregar el OM (NDA firmado + POF confirmado)"
+                              className="flex items-center gap-1 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 text-[9px] text-emerald-200 transition-colors hover:bg-emerald-500/20 disabled:opacity-50"
+                            >
+                              <FileText className="w-3 h-3" /> {omSending === s.email ? "ENVIANDO…" : "OM"}
                             </button>
                           )}
                           {s.status === "MAGIC_SENT" && (

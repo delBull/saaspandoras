@@ -8,6 +8,11 @@ const nextConfig = {
   },
   // Disable source maps in production to save memory
   productionBrowserSourceMaps: false,
+  // El OM vive en `private/` y solo se sirve por la ruta gateada. Sin esto,
+  // el archivo no viaja en el bundle de la función.
+  outputFileTracingIncludes: {
+    '/api/public/deals/**': ['./private/**/*'],
+  },
   poweredByHeader: false,
 
   // Prevent heavy server-only libs from being bundled into every serverless function.

@@ -265,7 +265,7 @@ Los datos de contacto se tratarán conforme a la Ley Federal de Protección de D
 
 12. LEY APLICABLE Y JURISDICCIÓN
 
-Este Acuerdo se rige por las leyes de los Estados Unidos Mexicanos. Para cualquier controversia, las Partes se someten a los tribunales competentes de Guadalajara, Jalisco, renunciando a cualquier otro fuero.
+Este Acuerdo se rige por las leyes de los Estados Unidos Mexicanos. Para cualquier controversia, las Partes se someten a los tribunales competentes del Estado de Nayarit, renunciando a cualquier otro fuero. Lo anterior es sin perjuicio de la jurisdicción que corresponda tratándose de inmuebles ubicados en ese Estado.
 
 13. FIRMA ELECTRÓNICA
 
