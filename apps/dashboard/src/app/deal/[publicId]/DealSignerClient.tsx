@@ -130,6 +130,17 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
   const [ndaModalOpen, setNdaModalOpen] = useState(false);  // open full document modal
   const [ndaSignatureHash, setNdaSignatureHash] = useState<string | null>(null);
 
+  // Prueba de fondos (POF) desde la sala.
+  const [pofStatus, setPofStatus] = useState<"none" | "declared" | "verified" | null>(null);
+  const [pofEntity, setPofEntity] = useState("");
+  const [pofFund, setPofFund] = useState("");
+  const [pofAmount, setPofAmount] = useState("");
+  const [pofNotes, setPofNotes] = useState("");
+  const [pofFile, setPofFile] = useState<File | null>(null);
+  const [pofBusy, setPofBusy] = useState(false);
+  const [pofError, setPofError] = useState<string | null>(null);
+  const [pofMessage, setPofMessage] = useState<string | null>(null);
+
   const account = useActiveAccount();
   const activeWallet = useActiveWallet();
   const { disconnect } = useDisconnect();
@@ -176,6 +187,55 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
   };
 
   // ── NDA CHECK ON MOUNT ───────────────────────────────────────────────────
+  // Estado del POF cuando el NDA ya está firmado.
+  useEffect(() => {
+    if (!rawToken || rawToken === "creator-preview-token") return;
+    if (ndaStep !== "signed" && ndaStep !== "bypassed") return;
+    let cancelled = false;
+    fetch(`/api/public/deals/${publicId}/pof?token=${encodeURIComponent(rawToken)}`, { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && data?.status) setPofStatus(data.status);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [rawToken, ndaStep, publicId]);
+
+  const submitPof = async () => {
+    if (!rawToken) return;
+    if (!pofFile) {
+      setPofError("Adjunta la carta del fondo o tu declaración.");
+      return;
+    }
+    setPofBusy(true);
+    setPofError(null);
+    setPofMessage(null);
+    try {
+      const form = new FormData();
+      form.append("token", rawToken);
+      form.append("entity", pofEntity);
+      form.append("fund", pofFund);
+      form.append("amount", pofAmount);
+      form.append("notes", pofNotes);
+      form.append("file", pofFile);
+      const res = await fetch(`/api/public/deals/${publicId}/pof`, { method: "POST", body: form });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setPofError(data.error ?? "No se pudo enviar el documento.");
+        return;
+      }
+      setPofStatus("declared");
+      setPofMessage("Documento recibido. Lo revisamos y te enviamos el OM al verificarlo.");
+      setPofFile(null);
+    } catch {
+      setPofError("Error de red al enviar el documento.");
+    } finally {
+      setPofBusy(false);
+    }
+  };
+
   // Once we know the wallet/email, check if NDA is needed and if already signed.
   useEffect(() => {
     if (!effectiveNdaEnabled) { setNdaStep("none"); return; }
@@ -636,6 +696,92 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                     <Download className="w-3 h-3" />
                     DESCARGAR NDA (PDF)
                   </button>
+                </div>
+              )}
+
+              {unlocked && rawToken && rawToken !== "creator-preview-token" && (ndaStep === "signed" || ndaStep === "bypassed") && (
+                <div className="mb-4 rounded-xl border border-sky-500/25 bg-sky-500/[0.04] p-4 print:hidden">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-[10px] font-mono uppercase tracking-widest text-sky-300">
+                      Prueba de fondos (POF)
+                    </p>
+                    <span
+                      className={`rounded-md border px-2 py-0.5 text-[9px] font-mono uppercase tracking-wider ${
+                        pofStatus === "verified"
+                          ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                          : pofStatus === "declared"
+                            ? "border-amber-500/30 bg-amber-500/10 text-amber-300"
+                            : "border-white/10 bg-white/5 text-zinc-400"
+                      }`}
+                    >
+                      {pofStatus === "verified" ? "Verificado" : pofStatus === "declared" ? "En revisión" : "Pendiente"}
+                    </span>
+                  </div>
+
+                  {pofStatus === "verified" ? (
+                    <p className="mt-2 text-[11px] leading-relaxed text-zinc-400">
+                      Fondos verificados. El memorándum de inversión se envía a tu correo con un enlace personal.
+                    </p>
+                  ) : pofStatus === "declared" ? (
+                    <p className="mt-2 text-[11px] leading-relaxed text-zinc-400">
+                      Documento recibido y en revisión. Al verificarlo recibirás el OM por correo.
+                    </p>
+                  ) : (
+                    <div className="mt-3 space-y-2">
+                      <p className="text-[11px] leading-relaxed text-zinc-500">
+                        Para acceder al OM necesitamos tu declaración y la carta del fondo (o equivalente).
+                        Puedes subir un PDF o imagen de hasta 5 MB.
+                      </p>
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        <input
+                          value={pofEntity}
+                          onChange={(event) => setPofEntity(event.target.value.slice(0, 200))}
+                          placeholder="Entidad inversora"
+                          className="rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-[11px] text-zinc-200 outline-none placeholder:text-zinc-600 focus:border-sky-500/40"
+                        />
+                        <input
+                          value={pofFund}
+                          onChange={(event) => setPofFund(event.target.value.slice(0, 200))}
+                          placeholder="Fondo o vehículo"
+                          className="rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-[11px] text-zinc-200 outline-none placeholder:text-zinc-600 focus:border-sky-500/40"
+                        />
+                      </div>
+                      <select
+                        value={pofAmount}
+                        onChange={(event) => setPofAmount(event.target.value)}
+                        className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-[11px] text-zinc-200 outline-none focus:border-sky-500/40"
+                      >
+                        <option value="">Rango de inversión</option>
+                        <option value="<50M">Menos de USD 50M</option>
+                        <option value="50-150M">USD 50–150M</option>
+                        <option value="150-300M">USD 150–300M</option>
+                        <option value=">300M">Más de USD 300M</option>
+                      </select>
+                      <textarea
+                        value={pofNotes}
+                        onChange={(event) => setPofNotes(event.target.value.slice(0, 1000))}
+                        rows={2}
+                        placeholder="Notas (opcional)"
+                        className="w-full resize-y rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-[11px] text-zinc-200 outline-none placeholder:text-zinc-600 focus:border-sky-500/40"
+                      />
+                      <input
+                        type="file"
+                        accept="application/pdf,image/jpeg,image/png"
+                        onChange={(event) => setPofFile(event.target.files?.[0] ?? null)}
+                        className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-[11px] text-zinc-400 file:mr-3 file:rounded-md file:border-0 file:bg-sky-500/20 file:px-3 file:py-1 file:text-[10px] file:font-mono file:uppercase file:tracking-wider file:text-sky-200"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => void submitPof()}
+                        disabled={pofBusy}
+                        className="w-full rounded-lg border border-sky-500/30 bg-sky-500/10 px-3 py-2 text-[10px] font-mono uppercase tracking-wider text-sky-200 hover:bg-sky-500/20 disabled:opacity-50"
+                      >
+                        {pofBusy ? "Enviando…" : "Enviar prueba de fondos"}
+                      </button>
+                      {pofError && <p className="text-[10px] text-rose-300">{pofError}</p>}
+                      {pofMessage && <p className="text-[10px] text-emerald-300">{pofMessage}</p>}
+                    </div>
+                  )}
                 </div>
               )}
 

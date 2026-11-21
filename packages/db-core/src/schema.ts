@@ -17,6 +17,12 @@ import {
   primaryKey
 } from "drizzle-orm/pg-core";
 import { relations, sql } from "drizzle-orm";
+import { customType } from "drizzle-orm/pg-core";
+
+/** `bytea` para archivos pequeños (POF). Drizzle no lo trae de fábrica. */
+const bytea = customType<{ data: Buffer; driverData: Buffer }>({
+  dataType: () => "bytea",
+});
 
 export const projectStatusEnum = pgEnum("project_status", [
   "draft",        // Borrador: Proyecto incompleto guardado por el solicitante
@@ -3745,6 +3751,29 @@ export const nexusDealSigners = pgTable("nexus_deal_signers", {
 }, (table) => ({
   roomEmailIdx: uniqueIndex("nexus_signers_room_email_idx").on(table.roomId, table.email),
 }));
+
+/**
+ * POF del firmante: declaración + carta del fondo.
+ * Se guarda en Postgres (límite de 5 MB en la ruta) para no depender de S3.
+ */
+export const nexusDealPofDocuments = pgTable('nexus_deal_pof_documents', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  roomId: uuid('room_id').notNull().references(() => nexusDealRooms.id, { onDelete: 'cascade' }),
+  signerEmail: text('signer_email').notNull(),
+  filename: text('filename').notNull(),
+  mimeType: varchar('mime_type', { length: 64 }).notNull(),
+  sizeBytes: integer('size_bytes').notNull(),
+  content: bytea('content').notNull(),
+  entityName: text('entity_name'),
+  fundName: text('fund_name'),
+  amountRange: varchar('amount_range', { length: 64 }),
+  notes: text('notes'),
+  uploadedAt: timestamp('uploaded_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => {
+  return {
+    roomEmailIdx: index('idx_pof_room_email').on(t.roomId, t.signerEmail),
+  };
+});
 
 export const nexusDealComments = pgTable("nexus_deal_comments", {
   id: uuid("id").defaultRandom().primaryKey(),

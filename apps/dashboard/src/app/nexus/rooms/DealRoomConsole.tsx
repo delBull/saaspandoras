@@ -1359,6 +1359,17 @@ export default function DealRoomConsole() {
                             </button>
                           )}
                           {s.status === "SIGNED" && (
+                            <a
+                              href={`/api/nexus/deals/${selected.id}/pof?email=${encodeURIComponent(s.email)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title="Descargar la prueba de fondos (POF) subida por el firmante"
+                              className="flex items-center gap-1 rounded-md border border-white/10 px-2 py-1 text-[9px] text-zinc-400 transition-colors hover:border-sky-500/30 hover:text-sky-300"
+                            >
+                              <Download className="w-3 h-3" /> POF
+                            </a>
+                          )}
+                          {s.status === "SIGNED" && (
                             <button
                               onClick={() => void sendOm(s.email)}
                               disabled={omSending === s.email}
