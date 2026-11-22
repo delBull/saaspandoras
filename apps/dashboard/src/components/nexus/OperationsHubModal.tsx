@@ -447,7 +447,7 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
     ...(isOpsAdmin
       ? [{ id: 'COHORTS' as Tab, label: 'COHORTS', icon: <Shield className="w-3.5 h-3.5" /> }]
       : []),
-    ...(userRole === 'SUPER_ADMIN'
+    ...(userRole === 'SUPER_ADMIN' || userRole === 'OWNER'
       ? [{ id: 'PODS' as Tab, label: 'DEAL PODS', icon: <Package className="w-3.5 h-3.5" /> }]
       : []),
     { id: 'KNOWLEDGE', label: 'KNOWLEDGE BASE', icon: <BookOpen className="w-3.5 h-3.5" /> },

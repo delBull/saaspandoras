@@ -108,7 +108,7 @@ export function NexusSidebar({ auth, onAction }: NexusSidebarProps) {
     {
       label: "ADMIN",
       items: [
-        { name: "Deal Pods", href: "/nexus/ops?tab=pods", icon: Package, show: auth.role === "SUPER_ADMIN" },
+        { name: "Deal Pods", href: "/nexus/ops?tab=pods", icon: Package, show: String(auth.role) === "SUPER_ADMIN" || String(auth.role) === "OWNER" },
         { name: "Collaborators", href: "/nexus/ops?tab=cohorts", icon: Users, show: auth.role === "SUPER_ADMIN" },
         { name: "Settings", href: "/nexus/settings", icon: Settings, show: permissions.settings },
       ]

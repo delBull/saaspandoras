@@ -19,8 +19,11 @@ export async function GET() {
     if (!auth.isAuthenticated) {
       return NextResponse.json({ error: "Sesión de Nexus requerida." }, { status: 401 });
     }
-    if (auth.role !== "SUPER_ADMIN") {
-      return NextResponse.json({ error: "Solo SUPER_ADMIN." }, { status: 403 });
+    const permissions = (auth.permissions ?? {}) as unknown as Record<string, unknown>;
+    const role = String(auth.role ?? "");
+    const isOwner = role === "SUPER_ADMIN" || role === "OWNER" || permissions.all === true;
+    if (!isOwner) {
+      return NextResponse.json({ error: "Solo el propietario o SUPER_ADMIN." }, { status: 403 });
     }
 
     const pods = await db.select().from(nexusDealPods).orderBy(desc(nexusDealPods.createdAt));
