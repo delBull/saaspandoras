@@ -80,7 +80,7 @@ export default async function VillageLandingPage({
   const t = lang === "es" ? COPY.es : COPY.en;
 
   return (
-    <main className="min-h-screen bg-[#07070B] text-white">
+    <main className="h-full overflow-y-auto overscroll-contain bg-[#07070B] text-white">
       <div className="mx-auto max-w-5xl px-6 py-16 md:py-24">
         <header className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -124,7 +124,7 @@ export default async function VillageLandingPage({
               {t.cta}
             </Link>
             <a
-              href="mailto:marco.munoz9@gmail.com?subject=Proyecto%20Village%20%E2%80%94%20Acceso"
+              href="mailto:aztecaz@pandoras.finance?subject=Proyecto%20Village%20%E2%80%94%20Acceso"
               className="inline-flex items-center gap-2 rounded-xl border border-white/15 px-5 py-3 text-sm text-zinc-300 transition-colors hover:border-white/30 hover:text-white"
             >
               {t.contact}
