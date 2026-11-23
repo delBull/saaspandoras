@@ -32,6 +32,10 @@ Actualizado: 22 nov 2026. Marca: ✅ hecho · 🟡 en curso · ⏳ pendiente · 
 | B5 | Desactivar/editar semilla | ✅ API · ⏳ UI |
 | B6 | API keys por organización (para otros tenants) | ⏳ |
 | B7 | Plantillas de correo por pod en la UI | ⏳ |
+| B8 | **Solicitudes de acceso** por pod (cola propia, no CRM) | ✅ | migración 0114 + smoke: crear/listar/rechazar |
+| B9 | Aviso a operación (Discord + correo) y acuse al lead | ✅ | cableado; envío real se verifica en la primera solicitud tras deploy |
+| B10 | Autorización en el hub → registra firmante + magic link | ✅ | `decideAccessRequest` (auditoría con actor) |
+| B11 | Atribución `?src` landing → sala → solicitud | ✅ | CTA y formulario de la sala |
 
 ## C. Correo y entregabilidad
 
@@ -90,6 +94,7 @@ Actualizado: 22 nov 2026. Marca: ✅ hecho · 🟡 en curso · ⏳ pendiente · 
 
 - `docs/VILLAGE-OUTREACH-PACK.md`
 - `docs/DB-ROTATION-NOTES.md`
+- `docs/DEAL-POD-ACCESS-REQUESTS.md`
 - `docs/PROSPECTING-MODULE.md` (implementación)
 - `docs/PROSPECTING-MODULE-SPEC.md` (diseño)
 - `docs/HERMES-SCRAPING-FEASIBILITY.md`

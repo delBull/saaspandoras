@@ -5907,6 +5907,49 @@ export const nexusProspects = pgTable("nexus_prospects", {
   };
 });
 
+
+/**
+ * Solicitudes de acceso a un Deal Room (categoría **Deal Pod**).
+ *
+ * Deliberadamente separadas del CRM (`clients`) y de `marketing_leads`: un lead
+ * de un pod no debe mezclarse con leads de otros canales. La solicitud es una
+ * *propuesta*: no concede acceso ni crea firmante. El acceso lo autoriza el
+ * propietario del pod, que recién entonces dispara el magic link.
+ */
+export const nexusDealAccessRequests = pgTable("nexus_deal_access_requests", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  podId: uuid("pod_id").notNull().references(() => nexusDealPods.id, { onDelete: "cascade" }),
+  roomId: uuid("room_id").notNull().references(() => nexusDealRooms.id, { onDelete: "cascade" }),
+  canonicalOrgId: varchar("canonical_org_id", { length: 256 }).notNull().default("pandoras"),
+  email: varchar("email", { length: 255 }).notNull(),
+  name: varchar("name", { length: 255 }),
+  company: varchar("company", { length: 255 }),
+  role: varchar("role", { length: 255 }),
+  message: text("message"),
+  consent: boolean("consent").notNull().default(false),
+  /** PENDING | APPROVED | REJECTED */
+  status: varchar("status", { length: 16 }).notNull().default("PENDING"),
+  /** landing | room | manual */
+  source: varchar("source", { length: 32 }).notNull().default("landing"),
+  /** Código de semilla del radar (`/l/<code>`), si vino de una. */
+  srcCode: varchar("src_code", { length: 64 }),
+  referrer: text("referrer"),
+  utm: jsonb("utm").$type<Record<string, string>>().notNull().default({}),
+  ipHash: varchar("ip_hash", { length: 64 }),
+  userAgent: text("user_agent"),
+  decidedBy: varchar("decided_by", { length: 255 }),
+  decidedAt: timestamp("decided_at", { withTimezone: true }),
+  decisionNote: text("decision_note"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => {
+  return {
+    roomEmailUq: uniqueIndex("uq_access_requests_room_email").on(t.roomId, t.email),
+    podStatusIdx: index("idx_access_requests_pod_status").on(t.podId, t.status),
+    orgIdx: index("idx_access_requests_org").on(t.canonicalOrgId),
+  };
+});
+
 export const hermesBriefings = pgTable("hermes_briefings", {
   id: varchar("id", { length: 128 }).primaryKey(),
   organizationId: varchar("organization_id", { length: 256 }).notNull(),

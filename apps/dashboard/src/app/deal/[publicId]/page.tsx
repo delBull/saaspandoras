@@ -13,10 +13,11 @@ export default async function DealPublicPage({
   searchParams,
 }: {
   params: Promise<{ publicId: string }>;
-  searchParams: Promise<{ token?: string; preview?: string }>;
+  searchParams: Promise<{ token?: string; preview?: string; src?: string }>;
 }) {
   const { publicId } = await params;
-  const { token, preview } = await searchParams;
+  const { token, preview, src } = await searchParams;
+  const srcCode = typeof src === "string" ? src.trim().slice(0, 64) : null;
 
   const room = await getRoomByPublicId(publicId);
   if (!room) notFound();
@@ -101,6 +102,7 @@ export default async function DealPublicPage({
       rawToken={rawTokenForClient}
       expectedWallet={expectedWallet}
       ndaSigned={ndaSignedOnServer}
+      srcCode={srcCode}
     />
   );
 }

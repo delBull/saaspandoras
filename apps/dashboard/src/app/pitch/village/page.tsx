@@ -74,10 +74,18 @@ const COPY = {
 export default async function VillageLandingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ lang?: string }>;
+  searchParams: Promise<{ lang?: string; src?: string; utm_source?: string; utm_campaign?: string }>;
 }) {
-  const { lang } = await searchParams;
+  const { lang, src, utm_source: utmSource, utm_campaign: utmCampaign } = await searchParams;
   const t = lang === "es" ? COPY.es : COPY.en;
+
+  // Atribución: la semilla del radar (`/l/<code>` → `?src=`) viaja hasta la sala
+  // para poder decir de dónde vino cada solicitud de acceso.
+  const params = new URLSearchParams();
+  if (typeof src === "string" && src.trim()) params.set("src", src.trim().slice(0, 64));
+  if (typeof utmSource === "string" && utmSource.trim()) params.set("utm_source", utmSource.trim().slice(0, 64));
+  if (typeof utmCampaign === "string" && utmCampaign.trim()) params.set("utm_campaign", utmCampaign.trim().slice(0, 64));
+  const dealHref = params.size > 0 ? `/deal/PDR-VILLAGE?${params.toString()}` : "/deal/PDR-VILLAGE";
 
   return (
     <main className="h-full overflow-y-auto overscroll-contain bg-[#07070B] text-white">
@@ -117,7 +125,7 @@ export default async function VillageLandingPage({
           <p className="mt-5 max-w-2xl text-base leading-relaxed text-zinc-400">{t.lede}</p>
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <Link
-              href="/deal/PDR-VILLAGE"
+              href={dealHref}
               className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-5 py-3 text-sm font-semibold text-black transition-colors hover:bg-emerald-400"
             >
               <Lock className="h-4 w-4" />

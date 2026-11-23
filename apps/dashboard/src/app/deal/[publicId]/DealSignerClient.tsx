@@ -105,9 +105,11 @@ interface Props {
   expectedWallet?: string | null;
   /** Aceptación de NDA registrada en el servidor para este correo. */
   ndaSigned?: boolean;
+  /** Semilla del radar (`?src=`) que trajo al visitante. */
+  srcCode?: string | null;
 }
 
-export default function DealSignerClient({ publicId, room, initialEmail, rawToken, expectedWallet, ndaSigned = false }: Props) {
+export default function DealSignerClient({ publicId, room, initialEmail, rawToken, expectedWallet, ndaSigned = false, srcCode = null }: Props) {
   // El display engine escala con font-size (rems); el deal room usa px, así que
   // aquí aplicamos un zoom real y anulamos el font-size mientras estamos montados.
   const { profile } = useSovereignDisplay();
@@ -156,6 +158,10 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
   const [pofNotes, setPofNotes] = useState("");
   const [pofFile, setPofFile] = useState<File | null>(null);
   const [pofBusy, setPofBusy] = useState(false);
+  // Solicitud de acceso (categoría Deal Pod): nombre/empresa/consentimiento.
+  const [requesterName, setRequesterName] = useState("");
+  const [requesterCompany, setRequesterCompany] = useState("");
+  const [accessConsent, setAccessConsent] = useState(false);
   const [pofError, setPofError] = useState<string | null>(null);
   const [pofMessage, setPofMessage] = useState<string | null>(null);
 
@@ -297,10 +303,18 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
     setSendingMagic(true);
     setMagicError(null);
     try {
-      const res = await fetch(`/api/public/deals/${publicId}/magic`, {
+      const res = await fetch(`/api/public/deals/${publicId}/access`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({
+          email,
+          name: requesterName.trim() || null,
+          company: requesterCompany.trim() || null,
+          consent: accessConsent,
+          source: "room",
+          src: srcCode,
+          referrer: typeof document !== "undefined" ? document.referrer || null : null,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Error");
@@ -1348,15 +1362,18 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
 
               <h2 className="text-lg font-semibold text-white mb-1">Documento confidencial</h2>
               <p className="text-[13px] text-zinc-400 leading-relaxed mb-5">
-                Este documento está restringido a los firmantes autorizados. Ingresa tu correo electrónico:
-                si estás registrado, recibirás un enlace único de acceso para leerlo y firmarlo.
+                Este documento está restringido. Si ya tienes acceso, recibirás tu enlace personal; si es tu
+                primera vez, registramos tu solicitud y la revisamos antes de abrir la sala.
               </p>
 
               {emailSent ? (
                 <div className="p-4 rounded-xl border border-amber-500/20 bg-amber-500/[0.04]">
                   <Check className="w-5 h-5 text-amber-300 mb-2" />
-                  <p className="text-[13px] text-amber-200">Enlace enviado</p>
-                  <p className="text-[11px] text-zinc-500 mt-1">Revisa tu bandeja de entrada. El enlace es de un solo uso y expira en 7 días.</p>
+                  <p className="text-[13px] text-amber-200">Solicitud recibida</p>
+                  <p className="text-[11px] text-zinc-500 mt-1">
+                    Si tu correo ya está autorizado, el enlace va en camino. Si es tu primera solicitud,
+                    la revisamos y te escribimos. El enlace es personal y expira en 7 días.
+                  </p>
                 </div>
               ) : (
                 <form onSubmit={requestMagic} className="space-y-3">
@@ -1367,14 +1384,39 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                     onChange={(e) => setEmail(e.target.value)}
                     className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-[13px] text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/40"
                   />
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <input
+                      placeholder="Nombre y apellidos"
+                      value={requesterName}
+                      onChange={(e) => setRequesterName(e.target.value.slice(0, 120))}
+                      className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-[13px] text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/40"
+                    />
+                    <input
+                      placeholder="Empresa o vehículo"
+                      value={requesterCompany}
+                      onChange={(e) => setRequesterCompany(e.target.value.slice(0, 120))}
+                      className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-[13px] text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/40"
+                    />
+                  </div>
+                  <label className="flex items-start gap-2 text-[11px] leading-relaxed text-zinc-500 select-none cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={accessConsent}
+                      onChange={(e) => setAccessConsent(e.target.checked)}
+                      className="mt-0.5 h-3.5 w-3.5 shrink-0 rounded border-white/20 bg-black/40"
+                    />
+                    <span>
+                      Autorizo a AZTECAZ a registrar esta solicitud y a contactarme por este correo.
+                    </span>
+                  </label>
                   {magicError && <p className="text-[12px] text-rose-400">{magicError}</p>}
                   <button
                     type="submit"
-                    disabled={sendingMagic || !email.includes("@")}
+                    disabled={sendingMagic || !email.includes("@") || !accessConsent}
                     className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-200 text-[13px] font-mono transition-colors disabled:opacity-50"
                   >
                     {sendingMagic ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Mail className="w-3.5 h-3.5" />}
-                    ENVIAR ENLACE DE ACCESO
+                    SOLICITAR ACCESO
                   </button>
                 </form>
               )}

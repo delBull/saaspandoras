@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { ExternalLink, Loader2, Package, ShieldCheck } from "lucide-react";
 import { getNexusClientHeaders } from "@/lib/nexus/client-auth-headers";
+import { PodAccessRequests } from "./PodAccessRequests";
 
 interface PodRoom {
   publicId: string;
@@ -410,6 +411,8 @@ export function OperationsPodsTab() {
                 </div>
               </div>
             )}
+
+            <PodAccessRequests podId={pod.id} />
 
             <p className="flex items-center gap-1.5 text-[9px] font-mono uppercase tracking-wider text-zinc-600">
               <ShieldCheck className="h-3 w-3" /> Información del activo detrás de NDA
