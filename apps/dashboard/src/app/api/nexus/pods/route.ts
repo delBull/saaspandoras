@@ -4,9 +4,12 @@ import { db } from "@saasfly/db";
 import { nexusDealPods, nexusDealRooms, nexusOutreachLinks } from "@saasfly/db/schema";
 import { desc, eq, sql } from "@saasfly/db-core";
 import { nexusOutreachEvents } from "@saasfly/db/schema";
+import { requirePodActor, normalizeCode } from "@/lib/nexus/pod-auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+const CONFIDENTIALITY = new Set(["OFF_MARKET", "CONFIDENTIAL", "PUBLIC"]);
 
 /**
  * `GET /api/nexus/pods` — lista de Deal Pods.
@@ -77,5 +80,67 @@ export async function GET() {
   } catch (error) {
     console.error("[Pods] GET error:", error);
     return NextResponse.json({ error: "No se pudieron cargar los Deal Pods." }, { status: 500 });
+  }
+}
+
+/**
+ * `POST /api/nexus/pods` — crea un Deal Pod.
+ *
+ * Contrato pensado para reutilizarse desde otra UI o una API externa: recibe el
+ * código, nombre, confidencialidad y economía; la organización sale de la sesión.
+ */
+export async function POST(req: Request) {
+  const { actor, error } = await requirePodActor();
+  if (error) return error;
+
+  let body: {
+    code?: unknown;
+    displayName?: unknown;
+    confidentiality?: unknown;
+    feeEntity?: unknown;
+    feePct?: unknown;
+  };
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "JSON inválido" }, { status: 400 });
+  }
+
+  const code = normalizeCode(body.code);
+  const displayName = typeof body.displayName === "string" ? body.displayName.trim().slice(0, 255) : "";
+  if (!code) return NextResponse.json({ error: "El código debe tener 3–48 caracteres (a-z, 0-9, guiones)." }, { status: 400 });
+  if (!displayName) return NextResponse.json({ error: "El nombre es obligatorio." }, { status: 400 });
+
+  const confidentiality = CONFIDENTIALITY.has(String(body.confidentiality))
+    ? String(body.confidentiality)
+    : "OFF_MARKET";
+  const feeEntity = typeof body.feeEntity === "string" ? body.feeEntity.trim().slice(0, 255) : null;
+  const feePctRaw = Number(body.feePct);
+  const feePct = Number.isFinite(feePctRaw) && feePctRaw > 0 && feePctRaw <= 100 ? feePctRaw.toFixed(2) : null;
+
+  try {
+    const [created] = await db
+      .insert(nexusDealPods)
+      .values({
+        code,
+        displayName,
+        status: "ACTIVE",
+        confidentiality,
+        feeEntity,
+        feePct,
+        currency: "USD",
+        canonicalOrgId: actor!.canonicalOrgId,
+        createdBy: actor!.email,
+        config: { landing: `/pitch/${code}` },
+      })
+      .returning();
+
+    return NextResponse.json({ pod: created }, { status: 201 });
+  } catch (e: any) {
+    if (String(e?.code) === "23505") {
+      return NextResponse.json({ error: "Ese código ya existe." }, { status: 409 });
+    }
+    console.error("[Pods] POST error:", e);
+    return NextResponse.json({ error: "No se pudo crear el pod." }, { status: 500 });
   }
 }

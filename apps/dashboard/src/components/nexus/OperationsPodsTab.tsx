@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { ExternalLink, Loader2, Package, ShieldCheck } from "lucide-react";
 import { getNexusClientHeaders } from "@/lib/nexus/client-auth-headers";
@@ -46,34 +46,100 @@ interface Pod {
 export function OperationsPodsTab() {
   const [pods, setPods] = useState<Pod[]>([]);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [showNewPod, setShowNewPod] = useState(false);
+  const [newPod, setNewPod] = useState({ code: "", displayName: "", confidentiality: "OFF_MARKET", feeEntity: "", feePct: "3" });
+  const [creatingPod, setCreatingPod] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [seedPodId, setSeedPodId] = useState<string | null>(null);
+  const [seed, setSeed] = useState({ targetLabel: "", targetOrg: "", targetRole: "", door: "BROKER" });
+  const [creatingSeed, setCreatingSeed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch("/api/nexus/pods", {
-          headers: getNexusClientHeaders(),
-          credentials: "include",
-          cache: "no-store",
-        });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) {
-          setError(data.error ?? "No se pudieron cargar los Deal Pods.");
-          return;
-        }
-        if (!cancelled) setPods(Array.isArray(data.pods) ? data.pods : []);
-      } catch {
-        if (!cancelled) setError("Error de red al cargar los Deal Pods.");
-      } finally {
-        if (!cancelled) setLoading(false);
+  const load = useCallback(async () => {
+    try {
+      const res = await fetch("/api/nexus/pods", {
+        headers: getNexusClientHeaders(),
+        credentials: "include",
+        cache: "no-store",
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error ?? "No se pudieron cargar los Deal Pods.");
+        return;
       }
-    })();
-    return () => {
-      cancelled = true;
-    };
+      setPods(Array.isArray(data.pods) ? data.pods : []);
+      setError(null);
+    } catch {
+      setError("Error de red al cargar los Deal Pods.");
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const createPod = async () => {
+    setCreatingPod(true);
+    setFormError(null);
+    try {
+      const res = await fetch("/api/nexus/pods", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...getNexusClientHeaders() },
+        credentials: "include",
+        body: JSON.stringify(newPod),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setFormError(data.error ?? "No se pudo crear el pod.");
+        return;
+      }
+      setShowNewPod(false);
+      setNewPod({ code: "", displayName: "", confidentiality: "OFF_MARKET", feeEntity: "", feePct: "3" });
+      await load();
+    } catch {
+      setFormError("Error de red al crear el pod.");
+    } finally {
+      setCreatingPod(false);
+    }
+  };
+
+  const updateStatus = async (podId: string, status: string) => {
+    await fetch(`/api/nexus/pods/${podId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", ...getNexusClientHeaders() },
+      credentials: "include",
+      body: JSON.stringify({ status }),
+    });
+    await load();
+  };
+
+  const createSeed = async (podId: string) => {
+    setCreatingSeed(true);
+    setFormError(null);
+    try {
+      const res = await fetch(`/api/nexus/pods/${podId}/links`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...getNexusClientHeaders() },
+        credentials: "include",
+        body: JSON.stringify(seed),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setFormError(data.error ?? "No se pudo crear la semilla.");
+        return;
+      }
+      setSeedPodId(null);
+      setSeed({ targetLabel: "", targetOrg: "", targetRole: "", door: "BROKER" });
+      await load();
+    } catch {
+      setFormError("Error de red al crear la semilla.");
+    } finally {
+      setCreatingSeed(false);
+    }
+  };
 
   return (
     <div className="flex-1 space-y-5 overflow-y-auto p-5">
@@ -90,10 +156,69 @@ export function OperationsPodsTab() {
             </p>
           </div>
         </div>
-        <span className="rounded-md border border-white/10 bg-black/40 px-2 py-1 text-[10px] font-mono text-zinc-400">
-          {loading ? "…" : `${pods.length} pod${pods.length === 1 ? "" : "s"}`}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="rounded-md border border-white/10 bg-black/40 px-2 py-1 text-[10px] font-mono text-zinc-400">
+            {loading ? "…" : `${pods.length} pod${pods.length === 1 ? "" : "s"}`}
+          </span>
+          <button
+            type="button"
+            onClick={() => setShowNewPod((open) => !open)}
+            className="rounded-lg border border-purple-500/30 bg-purple-500/10 px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider text-purple-200 hover:bg-purple-500/20"
+          >
+            {showNewPod ? "Cancelar" : "+ Nuevo pod"}
+          </button>
+        </div>
       </div>
+
+      {showNewPod && (
+        <div className="space-y-2 rounded-xl border border-white/10 bg-[#0C0C10] p-4">
+          <p className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">Nuevo Deal Pod</p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <input
+              value={newPod.code}
+              onChange={(event) => setNewPod({ ...newPod, code: event.target.value })}
+              placeholder="Código (ej. village)"
+              className="rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-[11px] text-zinc-200 outline-none placeholder:text-zinc-600 focus:border-purple-500/40"
+            />
+            <input
+              value={newPod.displayName}
+              onChange={(event) => setNewPod({ ...newPod, displayName: event.target.value })}
+              placeholder="Nombre visible"
+              className="rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-[11px] text-zinc-200 outline-none placeholder:text-zinc-600 focus:border-purple-500/40"
+            />
+            <select
+              value={newPod.confidentiality}
+              onChange={(event) => setNewPod({ ...newPod, confidentiality: event.target.value })}
+              className="rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-[11px] text-zinc-200 outline-none focus:border-purple-500/40"
+            >
+              <option value="OFF_MARKET">Off-market</option>
+              <option value="CONFIDENTIAL">Confidencial</option>
+              <option value="PUBLIC">Público</option>
+            </select>
+            <input
+              value={newPod.feeEntity}
+              onChange={(event) => setNewPod({ ...newPod, feeEntity: event.target.value })}
+              placeholder="Entidad que cobra"
+              className="rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-[11px] text-zinc-200 outline-none placeholder:text-zinc-600 focus:border-purple-500/40"
+            />
+            <input
+              value={newPod.feePct}
+              onChange={(event) => setNewPod({ ...newPod, feePct: event.target.value })}
+              placeholder="Comisión %"
+              inputMode="decimal"
+              className="rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-[11px] text-zinc-200 outline-none placeholder:text-zinc-600 focus:border-purple-500/40"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => void createPod()}
+            disabled={creatingPod || !newPod.code.trim() || !newPod.displayName.trim()}
+            className="w-full rounded-lg border border-purple-500/30 bg-purple-500/10 px-3 py-2 text-[10px] font-mono uppercase tracking-wider text-purple-200 hover:bg-purple-500/20 disabled:opacity-40"
+          >
+            {creatingPod ? "Creando…" : "Crear pod"}
+          </button>
+        </div>
+      )}
 
       {error && (
         <p className="rounded-lg border border-rose-500/30 bg-rose-500/10 p-3 text-[11px] text-rose-300">
@@ -121,9 +246,17 @@ export function OperationsPodsTab() {
                 <p className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">{pod.code}</p>
                 <h3 className="mt-1 truncate text-base font-semibold text-white">{pod.displayName}</h3>
               </div>
-              <span className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[9px] font-mono uppercase tracking-wider text-emerald-300">
-                {pod.status}
-              </span>
+              <select
+                value={pod.status}
+                onChange={(event) => void updateStatus(pod.id, event.target.value)}
+                className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[9px] font-mono uppercase tracking-wider text-emerald-300 outline-none"
+              >
+                <option value="ACTIVE">ACTIVE</option>
+                <option value="PAUSED">PAUSED</option>
+                <option value="CLOSED_WON">CLOSED_WON</option>
+                <option value="CLOSED_LOST">CLOSED_LOST</option>
+                <option value="ARCHIVED">ARCHIVED</option>
+              </select>
             </div>
 
             <dl className="grid grid-cols-2 gap-2 text-[11px]">
@@ -174,6 +307,62 @@ export function OperationsPodsTab() {
                 </Link>
               ))}
             </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setSeedPodId(seedPodId === pod.id ? null : pod.id)}
+                className="rounded-md border border-white/10 bg-white/5 px-2.5 py-1.5 text-[10px] font-mono uppercase tracking-wider text-zinc-300 hover:bg-white/10"
+              >
+                {seedPodId === pod.id ? "Cancelar semilla" : "+ Agregar semilla"}
+              </button>
+            </div>
+
+            {seedPodId === pod.id && (
+              <div className="space-y-2 rounded-lg border border-white/10 bg-black/30 p-3">
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <input
+                    value={seed.targetLabel}
+                    onChange={(event) => setSeed({ ...seed, targetLabel: event.target.value })}
+                    placeholder="Objetivo (ej. Hilton Grand Vacations)"
+                    className="rounded-md border border-white/10 bg-black/40 px-2.5 py-1.5 text-[10px] text-zinc-200 outline-none placeholder:text-zinc-600 focus:border-emerald-500/40"
+                  />
+                  <input
+                    value={seed.targetOrg}
+                    onChange={(event) => setSeed({ ...seed, targetOrg: event.target.value })}
+                    placeholder="Organización"
+                    className="rounded-md border border-white/10 bg-black/40 px-2.5 py-1.5 text-[10px] text-zinc-200 outline-none placeholder:text-zinc-600 focus:border-emerald-500/40"
+                  />
+                  <input
+                    value={seed.targetRole}
+                    onChange={(event) => setSeed({ ...seed, targetRole: event.target.value })}
+                    placeholder="Cargo (ej. MD Capital Markets)"
+                    className="rounded-md border border-white/10 bg-black/40 px-2.5 py-1.5 text-[10px] text-zinc-200 outline-none placeholder:text-zinc-600 focus:border-emerald-500/40"
+                  />
+                  <select
+                    value={seed.door}
+                    onChange={(event) => setSeed({ ...seed, door: event.target.value })}
+                    className="rounded-md border border-white/10 bg-black/40 px-2.5 py-1.5 text-[10px] text-zinc-200 outline-none focus:border-emerald-500/40"
+                  >
+                    <option value="CONSOLIDATOR">Consolidador</option>
+                    <option value="BROKER">Broker</option>
+                    <option value="PATIENT_CAPITAL">Capital paciente</option>
+                    <option value="SOVEREIGN">Soberano</option>
+                    <option value="MX_FAMILY">Family office MX</option>
+                  </select>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void createSeed(pod.id)}
+                  disabled={creatingSeed || !seed.targetLabel.trim()}
+                  className="w-full rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider text-emerald-200 hover:bg-emerald-500/20 disabled:opacity-40"
+                >
+                  {creatingSeed ? "Creando…" : "Crear link de radar"}
+                </button>
+              </div>
+            )}
+
+            {formError && <p className="text-[10px] text-rose-300">{formError}</p>}
 
             {pod.links.length > 0 && (
               <div className="space-y-2 border-t border-white/5 pt-3">
