@@ -3,24 +3,34 @@
 Documento de trabajo (no forma parte del contrato). Fuente: `docs/CONTRATO-CMS-EDITORIAL.md`,
 que es el mismo texto que vive en el Deal Room `PDR-EDITORIAL`.
 
-## 1. Datos que faltan para firmar
+## 1. Datos ya integrados
+
+| Dato | Valor |
+|---|---|
+| Prestador | Marco Arturo Muñoz Del Toro · RFC **MUTM8610091NA** |
+| Domicilio del prestador | Lázaro Cárdenas 74, Col. Dorada, Bucerías, Bahía de Banderas, Nayarit, C.P. 63732 |
+| Correo del prestador | marco.munoz9@gmail.com |
+| Cliente | Keeper Consulting and Management · RFC **KCM241213N63** |
+| Domicilio del cliente | Valle de Aqua No. 6-10, Fracc. Valle Esmeralda, Bahía de Banderas, Nayarit, C.P. 63737 |
+| Régimen del cliente | Simplificado de Confianza (RESICO) · uso de CFDI: Gastos en general |
+| Correo de contacto | luispguardado@gmail.com |
+| Correo de facturación | facturaskeepercm@gmail.com |
+| Jurisdicción | Bahía de Banderas, Nayarit |
+| Total | $77,000 + IVA = **$89,320** |
+
+## 1.1 Datos que faltan (sólo dos)
 
 | # | Dato | Dónde aparece |
 |---|---|---|
-| 1 | Razón social completa del cliente | Encabezado, declaraciones, firma |
-| 2 | RFC del cliente | No obligatorio en el contrato, pero sí para el CFDI |
-| 3 | Domicilio fiscal del cliente | Declaraciones y notificaciones |
-| 4 | Nombre del representante legal y datos del poder | Encabezado y firma |
-| 5 | Correo y domicilio de notificaciones (ambas partes) | Cláusula 23 |
-| 6 | Ciudad y estado para jurisdicción | Cláusula 24 |
-| 7 | RFC, domicilio y correo del prestador | Declaraciones y notificaciones |
+| 1 | Denominación social completa con régimen de capital (S.A. de C.V. / S. de R.L. de C.V.) | Encabezado, declaraciones, firma |
+| 2 | Nombre del representante legal y referencia al poder | Encabezado y firma |
 
 ## 2. Decisión de pago
 
-El contrato quedó con **ejecución secuencial**:
+El contrato quedó con **ejecución secuencial**, que es lo que pediste:
 
-- Fase 0: al firmar.
-- Fase 1: al autorizar su inicio, una vez aceptada la Fase 0.
+- Fase 0: al firmar ($15,000 + IVA).
+- Fase 1: al autorizar su inicio, una vez aceptada la Fase 0 ($62,000 + IVA).
 
 Si el cliente quiere pagar la Fase 1 en dos exhibiciones, sustituir la cláusula **SÉPTIMA**
 por esta:
@@ -69,7 +79,17 @@ naturaleza conviene además:
 2. Guardar el PDF firmado como anexo de la sala.
 3. Registrar en la sala la fecha de inicio de cada fase y la aceptación de entregables.
 
-## 6. Cómo se armó en el sistema
+## 6. Cotejo con la propuesta publicada
+
+Ver `docs/PLATAFORMA-EDITORIAL-ANALISIS.md` §2. Resumen:
+
+- La propuesta publica la Fase 1 en **$52,000–$62,000**; el contrato toma **$62,000**.
+- La propuesta promete **acreditar la Fase 0** al total del Camino A; el contrato no
+  recoge ese crédito (sólo dice que no se descuenta de la Fase 1).
+- La propuesta menciona "infraestructura operada por Pandora's"; el contrato lo firma
+  Marco como persona física. Conviene alinear el lenguaje.
+
+## 7. Cómo se armó en el sistema
 
 - Pod: `editorial` (confidencial), independiente de Village.
 - Sala: `PDR-EDITORIAL`, tipo `CONTRACT`, sin NDA y sin POF (no aplican a un servicio).

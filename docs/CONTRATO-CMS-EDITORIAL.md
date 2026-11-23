@@ -2,7 +2,7 @@
 
 **IMPLEMENTACIÓN DE PLATAFORMA EDITORIAL MULTI-MARCA Y TOMA DE CONTROL OPERATIVO**
 
-**QUE CELEBRAN**, por una parte, **MARCO ARTURO MUÑOZ DEL TORO**, por su propio derecho, a quien en lo sucesivo se le denominará **"EL PRESTADOR"**; y por la otra, **[RAZÓN SOCIAL COMPLETA DEL CLIENTE], S.A. DE C.V.**, representada en este acto por **[NOMBRE DEL REPRESENTANTE LEGAL]**, a quien en lo sucesivo se le denominará **"EL CLIENTE"**; conjuntamente denominados **"LAS PARTES"**, al tenor de las siguientes declaraciones y cláusulas.
+**QUE CELEBRAN**, por una parte, **MARCO ARTURO MUÑOZ DEL TORO**, por su propio derecho, a quien en lo sucesivo se le denominará **"EL PRESTADOR"**; y por la otra, **KEEPER CONSULTING AND MANAGEMENT** (completar denominación social: S.A. de C.V. / S. de R.L. de C.V.), representada en este acto por **[NOMBRE DEL REPRESENTANTE LEGAL]**, a quien en lo sucesivo se le denominará **"EL CLIENTE"**; conjuntamente denominados **"LAS PARTES"**, al tenor de las siguientes declaraciones y cláusulas.
 
 ## 01 · Declaraciones
 
@@ -14,13 +14,13 @@ b) Que se encuentra inscrito ante el Servicio de Administración Tributaria y de
 
 c) Que cuenta con conocimientos, herramientas, recursos técnicos y capacidad operativa para ejecutar los servicios objeto de este contrato.
 
-d) Que señala como domicilio para efectos del presente instrumento: **[DOMICILIO FISCAL DEL PRESTADOR]**.
+d) Que señala como domicilio para efectos del presente instrumento: **Lázaro Cárdenas 74, Col. Dorada, Bucerías, Bahía de Banderas, Nayarit, México, C.P. 63732**.
 
-e) Que sus datos fiscales son: Marco Arturo Muñoz Del Toro · RFC **[RFC]** · régimen **Actividades Empresariales y Profesionales** · correo **[CORREO DEL PRESTADOR]**.
+e) Que sus datos fiscales son: Marco Arturo Muñoz Del Toro · RFC **MUTM8610091NA** · régimen **Actividades Empresariales y Profesionales** · correo **marco.munoz9@gmail.com**.
 
 ### II. Declara EL CLIENTE
 
-a) Que es una sociedad mercantil constituida conforme a las leyes mexicanas, bajo la denominación **[RAZÓN SOCIAL COMPLETA], S.A. DE C.V.**
+a) Que es una sociedad mercantil constituida conforme a las leyes mexicanas, bajo la denominación **Keeper Consulting and Management** (completar denominación social), con RFC **KCM241213N63**.
 
 b) Que su representante cuenta con facultades suficientes para celebrar este contrato, mismas que manifiesta no le han sido revocadas ni limitadas.
 
@@ -28,7 +28,11 @@ c) Que es titular, administrador o cuenta con autorización suficiente para gest
 
 d) Que requiere implementar una plataforma editorial multi-marca que permita centralizar la gestión tecnológica de diversos sitios web, conservar la continuidad operativa y mejorar el control de sus activos digitales.
 
-e) Que reconoce que la ejecución del proyecto requiere la entrega oportuna de accesos, autorizaciones, información y colaboración de su personal o proveedores.
+e) Que señala como domicilio: **Valle de Aqua No. 6-10, Fracc. Valle Esmeralda, Bahía de Banderas, Nayarit, México, C.P. 63737**.
+
+f) Que sus datos fiscales son: Keeper Consulting and Management · RFC **KCM241213N63** · régimen **Simplificado de Confianza (RESICO)** · uso de CFDI **Gastos en general** · correo de facturación **facturaskeepercm@gmail.com** · correo de contacto **luispguardado@gmail.com**.
+
+g) Que reconoce que la ejecución del proyecto requiere la entrega oportuna de accesos, autorizaciones, información y colaboración de su personal o proveedores.
 
 ### III. Declaran LAS PARTES
 
@@ -190,7 +194,7 @@ Cada fase tendrá su propia facturación, de acuerdo con la operación efectivam
 
 El comprobante bancario de transferencia servirá como evidencia de pago, sujeto a la efectiva recepción de los recursos.
 
-**NOVENA. COMPROBANTES FISCALES.** EL PRESTADOR expedirá los comprobantes fiscales digitales por cada fase, conforme a las disposiciones fiscales aplicables, utilizando la información fiscal que proporcione EL CLIENTE. Cuando corresponda por la forma efectiva de pago, se emitirá el CFDI con el método y complemento de pago que establezcan las disposiciones fiscales.
+**NOVENA. COMPROBANTES FISCALES.** EL PRESTADOR expedirá los comprobantes fiscales digitales por cada fase, conforme a las disposiciones fiscales aplicables, utilizando la información fiscal que proporcione EL CLIENTE y remitiéndolos al correo **facturaskeepercm@gmail.com**. Cuando corresponda por la forma efectiva de pago, se emitirá el CFDI con el método y complemento de pago que establezcan las disposiciones fiscales.
 
 **DÉCIMA. IMPUESTOS Y RETENCIONES.** Cada parte cumplirá las obligaciones fiscales que le correspondan conforme a la naturaleza efectiva de las actividades y a las disposiciones aplicables. Ninguna estipulación de este contrato tiene por objeto ni efecto eliminar obligaciones legales de retención que resulten procedentes; si alguna resultara aplicable, se documentará y aplicará en el CFDI correspondiente.
 
@@ -272,15 +276,15 @@ Las fases posteriores y los servicios recurrentes requerirán contratación inde
 
 **VIGÉSIMA TERCERA. NOTIFICACIONES.** LAS PARTES señalan como medios de contacto:
 
-**EL PRESTADOR** — Correo: **[CORREO DEL PRESTADOR]** · Domicilio: **[DOMICILIO DEL PRESTADOR]**
+**EL PRESTADOR** — Correo: **marco.munoz9@gmail.com** · Domicilio: Lázaro Cárdenas 74, Col. Dorada, Bucerías, Bahía de Banderas, Nayarit, C.P. 63732.
 
-**EL CLIENTE** — Correo: **[CORREO DEL CLIENTE]** · Domicilio: **[DOMICILIO DEL CLIENTE]**
+**EL CLIENTE** — Correo: **luispguardado@gmail.com** · Domicilio: Valle de Aqua No. 6-10, Fracc. Valle Esmeralda, Bahía de Banderas, Nayarit, C.P. 63737.
 
 Las notificaciones relacionadas con cambios de alcance, aceptación de entregables, suspensión o terminación deberán realizarse por escrito mediante los correos designados o el medio electrónico que LAS PARTES reconozcan expresamente.
 
-**VIGÉSIMA CUARTA. LEGISLACIÓN Y JURISDICCIÓN.** Para la interpretación y cumplimiento del presente contrato, LAS PARTES se someten a las leyes mexicanas y a la jurisdicción de los tribunales competentes de **[CIUDAD Y ESTADO]**, renunciando a cualquier otro fuero que pudiera corresponderles por razón de sus domicilios presentes o futuros, en la medida legalmente permitida.
+**VIGÉSIMA CUARTA. LEGISLACIÓN Y JURISDICCIÓN.** Para la interpretación y cumplimiento del presente contrato, LAS PARTES se someten a las leyes mexicanas y a la jurisdicción de los tribunales competentes de **Bahía de Banderas, Nayarit**, renunciando a cualquier otro fuero que pudiera corresponderles por razón de sus domicilios presentes o futuros, en la medida legalmente permitida.
 
-Leído que fue el presente contrato y enteradas LAS PARTES de su contenido y alcance legal, lo firman por duplicado en **[CIUDAD]**, a **[FECHA]**.
+Leído que fue el presente contrato y enteradas LAS PARTES de su contenido y alcance legal, lo firman por duplicado en **Bahía de Banderas, Nayarit**, a **[FECHA]**.
 
 **EL PRESTADOR**
 
@@ -290,9 +294,9 @@ Firma: ______________________________
 
 **EL CLIENTE**
 
-[RAZÓN SOCIAL COMPLETA], S.A. DE C.V.
+KEEPER CONSULTING AND MANAGEMENT
 
-Representante: [NOMBRE]
+Representante: [NOMBRE DEL REPRESENTANTE LEGAL]
 
 Firma: ______________________________
 

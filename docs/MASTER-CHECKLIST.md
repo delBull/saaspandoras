@@ -92,9 +92,11 @@ Actualizado: 22 nov 2026. Marca: ✅ hecho · 🟡 en curso · ⏳ pendiente · 
 | G1 | Contrato de servicios Fase 0 + Fase 1 ($77,000 + IVA) | ✅ | `docs/CONTRATO-CMS-EDITORIAL.md` |
 | G2 | Deal Pod `editorial` + sala `PDR-EDITORIAL` (CONTRACT, sin NDA ni POF) | ✅ | pod `99d886f2…` · sala responde 200 |
 | G3 | Secciones 01–07 + Anexo A en la sala (misma fuente que el documento) | ✅ | 8 secciones, 15k caracteres |
-| G4 | Datos del cliente (razón social, RFC, representante, jurisdicción) | ⏳ | `docs/CONTRATO-CMS-EDITORIAL-PENDIENTES.md` |
-| G5 | PDF del contrato desde la sala (sin diálogo de impresión) | ⏳ | hoy el botón usa `window.print()` |
-| G6 | Registrar al cliente como firmante y enviar enlace | ⏳ | depende de G4 |
+| G4 | Datos reales integrados (RFC, domicilios, correos, régimen, jurisdicción) | ✅ | falta sólo denominación social y representante |
+| G5 | PDF del contrato desde la sala, generado en servidor | ✅ | `/api/public/deals/[id]/pdf` · 10 páginas carta verificadas |
+| G6 | Cliente registrado como firmante | ✅ | `luispguardado@gmail.com` en `PENDING` |
+| G7 | Análisis de números y módulos reutilizables | ✅ | `docs/PLATAFORMA-EDITORIAL-ANALISIS.md` |
+| G8 | Enviar el contrato al cliente | ⏳ | falta G4 (2 datos) |
 
 ## Decisiones abiertas
 
@@ -110,6 +112,7 @@ Actualizado: 22 nov 2026. Marca: ✅ hecho · 🟡 en curso · ⏳ pendiente · 
 - `docs/DEAL-POF-INTEGRATION.md`
 - `docs/CONTRATO-CMS-EDITORIAL.md`
 - `docs/CONTRATO-CMS-EDITORIAL-PENDIENTES.md`
+- `docs/PLATAFORMA-EDITORIAL-ANALISIS.md`
 - `docs/PROSPECTING-MODULE.md` (implementación)
 - `docs/PROSPECTING-MODULE-SPEC.md` (diseño)
 - `docs/HERMES-SCRAPING-FEASIBILITY.md`

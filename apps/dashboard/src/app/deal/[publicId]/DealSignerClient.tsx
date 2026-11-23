@@ -735,13 +735,14 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                 </div>
                 
                 {["SIGNED", "EXECUTING", "EXECUTED"].includes(room.status) && (
-                  <button
-                    onClick={() => window.print()}
+                  <a
+                    href={`/api/public/deals/${publicId}/pdf`}
+                    download
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-white/20 bg-white/5 hover:bg-white/10 text-[12px] font-mono text-zinc-300 transition-colors print:hidden"
                   >
                     <Download className="w-3.5 h-3.5" />
                     DESCARGAR PDF
-                  </button>
+                  </a>
                 )}
               </div>
               <h1 className="text-2xl md:text-3xl font-semibold text-white print:text-black print:text-4xl print:mt-4 print:mb-8 tracking-tight">
@@ -1149,13 +1150,14 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                 <p className="text-[12px] text-zinc-400 mt-2 leading-relaxed">
                   Tu aceptación quedó registrada en el audit trail del Deal Room. Gracias por tu confianza.
                 </p>
-                <button
-                  onClick={() => window.print()}
+                <a
+                  href={`/api/public/deals/${publicId}/pdf`}
+                  download
                   className="mt-4 w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-emerald-500/40 bg-emerald-500/20 text-emerald-200 text-[12px] font-mono hover:bg-emerald-500/30 transition-colors"
                 >
                   <Download className="w-3.5 h-3.5" />
                   DESCARGAR ACUERDO (PDF)
-                </button>
+                </a>
               </motion.div>
             ) : (initialEmail && rawToken) || isOpenSign ? (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">

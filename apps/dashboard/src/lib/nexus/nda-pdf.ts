@@ -291,19 +291,32 @@ export async function buildNdaPdf(input: BuildNdaPdfInput): Promise<Uint8Array> 
 
   // ── Cuerpo ────────────────────────────────────────────────────────────────
   for (const rawLine of input.fullText.split(/\r?\n/)) {
+    const raw = rawLine.trim();
     const text = stripMarkdown(rawLine).replace(/\s+$/g, "");
     if (!text) {
       y -= 6;
       continue;
     }
 
-    const bold = isHeading(text);
+    // Título declarado en markdown (`## Sección` o `**Título**`).
+    const markdownHeading = /^#{1,6}\s/.test(raw) || /^\*\*[^*].*\*\*$/.test(raw);
+    const bold = markdownHeading || isHeading(text);
     const size = bold ? 10.5 : BODY_SIZE;
     if (bold) y -= 12;
 
-    for (const fragment of wrap(text, size, bold, CONTENT_WIDTH)) {
-      ensure(LEADING);
-      page.text({ x: MARGIN, y, size, bold, color: INK, text: fragment });
+    const lines = wrap(text, size, bold, CONTENT_WIDTH);
+    for (let index = 0; index < lines.length; index += 1) {
+      const remaining = lines.length - index;
+      const spaceLeft = Math.max(0, Math.floor((y - MARGIN) / LEADING));
+
+      // Control de viudas/huérfanas: no dejar una sola línea al final de una
+      // página ni las dos últimas líneas separadas entre páginas.
+      if (remaining === 2 && spaceLeft < 2) newPage();
+      if (remaining > 2 && spaceLeft < 2 && index === 0) newPage();
+
+      // Un título no debe quedar solo al pie de página.
+      ensure(bold ? LEADING * 2 : LEADING);
+      page.text({ x: MARGIN, y, size, bold, color: INK, text: lines[index]! });
       y -= LEADING;
     }
     y -= bold ? 4 : 2;

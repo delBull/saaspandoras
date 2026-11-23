@@ -143,7 +143,7 @@ No se cobra por acceder a la información. La remuneración de AZTECAZ correspon
       publicId: "PDR-EDITORIAL",
       title: "Contrato de servicios tecnológicos · Plataforma editorial multi-marca",
       kind: "CONTRACT",
-      counterparty: "Cliente editorial (razón social por definir)",
+      counterparty: "Keeper Consulting and Management",
       company: "Marco Arturo Muñoz Del Toro",
       summary:
         "Toma de control y continuidad operativa (Fase 0) e implementación inicial de la plataforma editorial multi-marca con dos sitios piloto (Fase 1). Servicios independientes, con entregables y aceptación propios.",
