@@ -184,9 +184,12 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
 
   // Dynamic party resolution for B2B vs B2C deals
   const isB2B = dealScope === "B2B";
+  // Si el firmante no escribe su empresa, la parte es la contraparte de la sala.
+  // Usar `room.company` aquí devolvía el nombre del PRESTADOR como si fuera el
+  // cliente (p. ej. "Pandoras International" aparecía como firmante).
   const fullCompanyName = signCompany.trim()
     ? (signCompanyType && signCompanyType !== "Otra" ? `${signCompany.trim()} ${signCompanyType}` : signCompany.trim())
-    : (room.company || room.counterparty);
+    : room.counterparty;
 
   const dynamicPartyName = isB2B
     ? fullCompanyName
@@ -194,27 +197,14 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
 
   const resolveDynamicText = (text: string) => {
     if (!text) return "";
-    let result = text
+    // Sólo tokens explícitos: reemplazar la mención literal de la contraparte
+    // reescribía nombres de personas o del activo cuando el firmante escribía
+    // su empresa (p. ej. una propuesta a "Óscar Trueba" firmada por una sociedad).
+    return text
       .replace(/{{COUNTERPARTY_COMPANY}}/gi, dynamicPartyName)
       .replace(/{{COUNTERPARTY}}/gi, dynamicPartyName)
       .replace(/{{REPRESENTATIVE}}/gi, signName.trim() || "por el cliente al firmar")
       .replace(/Pandora's LLC/gi, "marca Pandora's y sus servicios bajo la umbrela de MXHUB ECOSISTEMA BLOCKCHAIN S.A. DE C.V.");
-
-    if (room.counterparty && dynamicPartyName !== room.counterparty) {
-      const originalName = room.counterparty.trim();
-      const firstName = originalName.split(' ')[0] || '';
-      
-      const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      
-      const fullRegex = new RegExp(escapeRegExp(originalName), 'g');
-      result = result.replace(fullRegex, dynamicPartyName);
-      
-      if (firstName.length > 3) {
-        const firstRegex = new RegExp(escapeRegExp(firstName), 'g');
-        result = result.replace(firstRegex, dynamicPartyName);
-      }
-    }
-    return result;
   };
 
   // ── NDA CHECK ON MOUNT ───────────────────────────────────────────────────

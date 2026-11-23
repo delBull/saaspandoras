@@ -26,28 +26,24 @@ export async function buildRoomPdf(input: {
   subtitle: string;
   dealId: string;
   counterparty: string;
+  /** Parte que presta/emite (AZTECAZ, Marco, Pandora's…). Nunca se asume. */
+  provider: string;
   sections: Array<{ title: string; content: string }>;
   signature?: RoomPdfSignature | null;
 }): Promise<Uint8Array> {
   const signature = input.signature ?? null;
+  const provider = input.provider?.trim() || "Pandora's";
   const counterparty = signature?.company?.trim() || input.counterparty;
   const representative = signature?.name?.trim() || "por el cliente al firmar";
 
   const substitute = (text: string): string => {
-    let result = text
+    // Sólo se sustituyen tokens explícitos. Reemplazar la mención literal de la
+    // contraparte corrompía salas donde la contraparte es una persona o el
+    // activo (p. ej. una propuesta donde el firmante es el propio destinatario).
+    return text
       .replace(/{{COUNTERPARTY_COMPANY}}/gi, counterparty)
       .replace(/{{COUNTERPARTY}}/gi, counterparty)
       .replace(/{{REPRESENTATIVE}}/gi, representative);
-
-    // Si el firmante escribió una denominación distinta a la de la sala, se
-    // reemplaza también la mención literal para que el documento no contradiga
-    // la firma.
-    const original = input.counterparty?.trim();
-    if (original && counterparty !== original && counterparty.length > 3) {
-      const escape = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      result = result.replace(new RegExp(escape(original), "gi"), counterparty);
-    }
-    return result;
   };
 
   const parts = input.sections.map((section) => {
@@ -71,9 +67,8 @@ export async function buildRoomPdf(input: {
       }`,
       `Firma (hash): ${signature.signature ? signature.signature.slice(0, 42) + "…" : "—"}`,
       ``,
-      `**EL PRESTADOR**`,
+      `**${provider.toUpperCase()}**`,
       ``,
-      `MARCO ARTURO MUÑOZ DEL TORO`,
       `Firma autógrafa en el ejemplar físico: ______________________________`,
     ];
     parts.push(`## Registro de firma electrónica\n\n${lines.join("\n")}`);

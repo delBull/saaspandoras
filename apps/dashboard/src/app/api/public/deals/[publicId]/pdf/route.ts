@@ -40,9 +40,10 @@ export async function GET(_req: Request, { params }: { params: Promise<{ publicI
 
     const bytes = await buildRoomPdf({
       title: room.title,
-      subtitle: `${room.kind} · ${room.company}`,
+      subtitle: `${room.kind} · ${room.company || "Pandora's"}`,
       dealId: room.publicId,
       counterparty: room.counterparty,
+      provider: room.company || "Pandora's",
       sections: room.sections.map((section) => ({ title: section.title, content: section.content })),
       signature,
     });
