@@ -1483,7 +1483,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                       className="mt-0.5 h-3.5 w-3.5 shrink-0 rounded border-white/20 bg-black/40"
                     />
                     <span>
-                      Autorizo a AZTECAZ a registrar esta solicitud y a contactarme por este correo.
+                      Autorizo a Pandora's Nexus a registrar esta solicitud y a contactarme por este correo.
                     </span>
                   </label>
                   {magicError && <p className="text-[12px] text-rose-400">{magicError}</p>}

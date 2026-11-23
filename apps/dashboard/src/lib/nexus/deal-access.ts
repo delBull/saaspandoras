@@ -192,7 +192,7 @@ export async function notifyAccessRequest(params: {
                 { name: "Puerta", value: context.door ?? "—", inline: true },
                 { name: "Sala", value: `\`${context.dealId}\``, inline: true },
               ],
-              footer: { text: "AZTECAZ · Deal Pod · pendiente de autorizar" },
+              footer: { text: "Pandora's Nexus · Deal Pod · pendiente de autorizar" },
               timestamp: new Date().toISOString(),
             },
           ],
@@ -267,7 +267,7 @@ export async function acknowledgeAccessRequest(params: {
       html: `
         <div style="font-family:Helvetica,Arial,sans-serif;background:#08080C;color:#e5e5ea;padding:32px">
           <p style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#34d399;margin:0 0 12px">
-            AZTECAZ · Acceso institucional
+            Pandora's Nexus · Acceso institucional
           </p>
           <h2 style="margin:0 0 12px;font-size:20px;color:#fff">Solicitud recibida</h2>
           <p style="margin:0 0 14px;color:#d4d4d8;line-height:1.7">

@@ -63,7 +63,7 @@ export default async function DealNdaPrintPage({
 
       <article className="nda-sheet mx-auto my-4 max-w-[21cm] bg-white px-5 py-8 shadow-lg sm:my-8 sm:px-[2cm] sm:py-[2cm] print:my-0 print:max-w-none print:px-0 print:py-0">
         <header className="mb-8 border-b border-zinc-300 pb-4">
-          <p className="text-[10px] font-mono uppercase tracking-[0.3em] text-zinc-500">Pandora&apos;s · AZTECAZ</p>
+          <p className="text-[10px] font-mono uppercase tracking-[0.3em] text-zinc-500">Pandora&apos;s Nexus</p>
           <h1 className="mt-2 text-[20px] font-bold leading-snug text-black">{cfg.title}</h1>
           <p className="mt-1 text-[12px] text-zinc-600">{cfg.subtitle}</p>
           <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-[11px] text-zinc-600">
