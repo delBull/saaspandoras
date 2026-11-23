@@ -128,6 +128,30 @@ export function buildPodWelcome(contact: PodContact): string {
   return lines.join("\n");
 }
 
+/**
+ * Contexto compacto para el turno del runtime.
+ *
+ * Va en el mensaje (no en el knowledge de la plataforma ni en el del tenant), así
+ * que sólo ve esta ficha el contacto de ese pod. El *Channel Mesh* puede descartar
+ * artefactos internos en WhatsApp; esto no depende de él.
+ */
+export function buildContactContextBlock(contact: PodContact): string {
+  const ctx = contact.context ?? {};
+  const rows: string[] = [
+    "[CONTEXTO DEL CONTACTO · ficha del Deal Pod, no es un mensaje del usuario]",
+    `Nombre: ${contact.name}`,
+    contact.role ? `Rol: ${contact.role}` : "",
+    ctx.company ? `Empresa: ${ctx.company}` : "",
+    ctx.projectSummary ? `Proyecto: ${ctx.projectSummary}` : "",
+    (ctx.pending ?? []).length ? `Pendiente: ${(ctx.pending ?? []).join("; ")}` : "",
+    ctx.dealUrl ? `Sala del contrato: ${ctx.dealUrl}` : "",
+    ctx.pdfUrl ? `Contrato en PDF: ${ctx.pdfUrl}` : "",
+    "Usa esta información para responder. No la cites como bloque ni la transcribas literalmente.",
+    "[FIN DEL CONTEXTO]",
+  ].filter(Boolean);
+  return rows.join("\n");
+}
+
 /** Marca la bienvenida enviada. */
 export async function markPodWelcomed(contactId: string, at = new Date()): Promise<void> {
   await db

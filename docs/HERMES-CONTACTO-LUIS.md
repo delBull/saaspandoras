@@ -114,7 +114,28 @@ pendiente), no en el knowledge de la plataforma ni en el de los tenants.
 bienvenida `true` en el primer contacto, `false` tras marcarla, `true` al limpiar la marca
 (queda lista para el primer mensaje real). `tsc` sin errores.
 
+**Contexto en el turno (no en knowledge):** cuando el contacto es de un pod, el dispatcher
+antepone un bloque `[CONTEXTO DEL CONTACTO]` con proyecto, pendiente y enlaces. Así Hermes
+puede responder "¿qué incluye?" aunque el Channel Mesh descarte artefactos en WhatsApp. Es
+por contacto y por turno; no se guarda en el knowledge de la plataforma ni en el del tenant.
+
 **Lo que no se toca:** el branch de tenants del dispatcher, el knowledge por tenant,
 `InterlocutorResolver`, el runtime y las identidades de marketing quedan intactos. La
 búsqueda de contacto de pod sólo corre en el número maestro de Pandora's.
+
+## 7. Diagnóstico del fallback en WhatsApp (23 nov)
+
+La bienvenida salió bien; el segundo mensaje cayó al texto de "latencia temporal", que es
+el **fallback-safe** de `OllamaReasoningProvider`, no una respuesta de Hermes.
+
+- `HERMES_REASONING_PROVIDER` está configurado (si estuviera vacío el runtime lanzaría
+  FATAL y el texto sería otro).
+- `OLLAMA_BASE_URL` y `OLLAMA_MODEL` **existen** en producción.
+- **No hay `OLLAMA_API_KEY`**: Ollama Cloud exige `Authorization: Bearer`; sin la clave
+  responde 401 y el provider cae al fallback. `OLLAMA_SNARAI_API_KEY` sólo está en Preview.
+- Los artefactos internos se descartan en WhatsApp por *Channel Mesh* (clearance), lo que
+  refuerza la necesidad del bloque de contexto del pod.
+
+**Pendiente de configuración:** `OLLAMA_API_KEY` en Production y confirmar que el modelo
+existe en Ollama Cloud.
 MD
