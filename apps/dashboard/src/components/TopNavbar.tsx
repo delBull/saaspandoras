@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { getProfile } from '@/lib/profile-client';
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -175,18 +176,11 @@ export function TopNavbar({
     const fetchProfile = async () => {
       if (effectiveAddress) {
         try {
-          const response = await fetch('/api/profile', {
-            headers: {
-              'Content-Type': 'application/json',
-              'x-thirdweb-address': effectiveAddress,
-              'x-wallet-address': effectiveAddress,
-              'x-user-address': effectiveAddress,
-            }
-          });
-          if (response.ok) {
-            const userData = await response.json() as { image?: string; role?: string; projectCount?: number };
-            setUserProfile(userData);
-          }
+          // Caché compartida con el sidebar.
+          const userData = (await getProfile(effectiveAddress)) as
+            | { image?: string; role?: string; projectCount?: number }
+            | null;
+          if (userData) setUserProfile(userData);
         } catch (error) {
           console.error('Error fetching user profile:', error);
         }

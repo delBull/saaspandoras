@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { getProfile, invalidateProfile } from '@/lib/profile-client';
 import Link from "next/link";
 import { useState, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -223,24 +224,9 @@ interface SidebarUserProfile {
     // Fetch user profile data using the regular profile API
     const fetchProfile = async () => {
       if (account?.address) {
-        try {
-          const response = await fetch('/api/profile', {
-            headers: {
-              'Content-Type': 'application/json',
-              'x-thirdweb-address': account.address,
-              'x-wallet-address': account.address,
-              'x-user-address': account.address,
-            }
-          });
-          if (response.ok) {
-            const userData = (await response.json()) as SidebarUserProfile;
-            setUserProfile(userData);
-          }
-        } catch (error) {
-          if (process.env.NODE_ENV === 'development') {
-            console.error('Error fetching user profile:', error);
-          }
-        }
+        // Caché compartida con el topbar: una lectura por wallet cada 5 min.
+        const userData = (await getProfile(account.address)) as SidebarUserProfile | null;
+        if (userData) setUserProfile(userData);
       }
     };
 
@@ -1398,14 +1384,11 @@ interface SidebarUserProfile {
             setShowAvatarModal(false);
             // Refresh userProfile state
             if (account?.address) {
-              fetch('/api/profile', {
-                headers: {
-                  'x-wallet-address': account.address,
-                  'x-thirdweb-address': account.address,
-                }
-              })
-                .then(r => r.json() as Promise<SidebarUserProfile>)
-                .then(data => { if (data?.image) setUserProfile(data); })
+              invalidateProfile(account.address);
+              getProfile(account.address, { force: true })
+                .then((data) => {
+                  if (data?.image) setUserProfile(data as SidebarUserProfile);
+                })
                 .catch(() => undefined);
             }
           }} 

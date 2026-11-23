@@ -20,7 +20,6 @@ export async function GET(request: Request) {
 
   // In production, you might want to use Redis or similar for proper rate limiting
   // For now, we'll just log excessive requests
-  console.log(`Profile API request from ${clientIP} at ${new Date().toISOString()}`);
   let authMethod: 'header' | 'body' | 'session' | 'none' = 'none';
   let verifiedSession = false;
 
