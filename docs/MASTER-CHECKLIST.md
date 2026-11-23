@@ -37,6 +37,8 @@ Actualizado: 22 nov 2026. Marca: ✅ hecho · 🟡 en curso · ⏳ pendiente · 
 | B9 | Aviso a operación (Discord + correo) y acuse al lead | ✅ | cableado; envío real se verifica en la primera solicitud tras deploy |
 | B10 | Autorización en el hub → registra firmante + magic link | ✅ | `decideAccessRequest` (auditoría con actor) |
 | B11 | Atribución `?src` landing → sala → solicitud | ✅ | CTA y formulario de la sala |
+| B12 | Vista de operador (solo lectura, 10 min) desde el pod | ✅ | `docs/FIRMA-Y-PREVIEW.md` |
+| B13 | Firma alineada cliente↔servidor (mensaje idéntico) | ✅ | verificado con cuenta de prueba |
 
 ## C. Correo y entregabilidad
 

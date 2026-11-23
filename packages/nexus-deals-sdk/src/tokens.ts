@@ -38,6 +38,38 @@ export function verifyDealToken(token: string): DealTokenPayload | null {
   }
 }
 
+export interface DealPreviewPayload {
+  sub: string; // publicId
+  type: "deal_preview";
+  roomId: string;
+  actor: string;
+  iat: number;
+  exp: number;
+}
+
+/**
+ * Enlace de **solo lectura** para que el operador revise una sala sin quedar
+ * registrado como firmante. Vive 10 minutos y no sirve para firmar.
+ */
+export function generateDealPreviewToken(roomId: string, publicId: string, actor: string): string | null {
+  if (!DEAL_TOKEN_SECRET) return null;
+  return jwt.sign(
+    { sub: publicId, type: "deal_preview", roomId, actor } satisfies Omit<DealPreviewPayload, "iat" | "exp">,
+    DEAL_TOKEN_SECRET,
+    { expiresIn: "10m" },
+  );
+}
+
+export function verifyDealPreviewToken(token: string): DealPreviewPayload | null {
+  if (!DEAL_TOKEN_SECRET) return null;
+  try {
+    const payload = jwt.verify(token, DEAL_TOKEN_SECRET) as DealPreviewPayload;
+    return payload && payload.type === "deal_preview" ? payload : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * HMAC token de desbloqueo del Deal Room admin (patrón BooksAccessGate).
  * Se envía al canal privado de Discord como embed con link único (2h).

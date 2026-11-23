@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 import { getRoomByPublicId, getRoom, publicRoomView, hasEmailSignedNda } from "@saasfly/nexus-deals-sdk";
-import { verifyDealToken } from "@saasfly/nexus-deals-sdk";
+import { verifyDealPreviewToken, verifyDealToken } from "@saasfly/nexus-deals-sdk";
 import { KIND_LABEL } from "@saasfly/nexus-deals-sdk";
 import { getNexusAuthContext } from "@saasfly/shared";
 import DealSignerClient from "./DealSignerClient";
@@ -13,10 +13,10 @@ export default async function DealPublicPage({
   searchParams,
 }: {
   params: Promise<{ publicId: string }>;
-  searchParams: Promise<{ token?: string; preview?: string; src?: string }>;
+  searchParams: Promise<{ token?: string; preview?: string; src?: string; pv?: string }>;
 }) {
   const { publicId } = await params;
-  const { token, preview, src } = await searchParams;
+  const { token, preview, src, pv } = await searchParams;
   const srcCode = typeof src === "string" ? src.trim().slice(0, 64) : null;
 
   const room = await getRoomByPublicId(publicId);
@@ -37,6 +37,17 @@ export default async function DealPublicPage({
     if (auth.isAuthenticated && (isAuthorizedRole || isCreator)) {
       signerEmail = auth.email || "creator@pandoras.finance";
       rawTokenForClient = "creator-preview-token";
+    }
+  }
+
+  // Revisión del operador: enlace corto de sólo lectura, sin firmante ni firma.
+  let operatorPreview = false;
+  if (!signerEmail && typeof pv === "string" && pv) {
+    const previewPayload = verifyDealPreviewToken(pv);
+    if (previewPayload && previewPayload.sub === publicId) {
+      signerEmail = previewPayload.actor || "operador";
+      rawTokenForClient = "creator-preview-token";
+      operatorPreview = true;
     }
   }
 
@@ -103,6 +114,7 @@ export default async function DealPublicPage({
       expectedWallet={expectedWallet}
       ndaSigned={ndaSignedOnServer}
       srcCode={srcCode}
+      operatorPreview={operatorPreview}
     />
   );
 }

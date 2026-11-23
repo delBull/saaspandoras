@@ -110,9 +110,11 @@ interface Props {
   ndaSigned?: boolean;
   /** Semilla del radar (`?src=`) que trajo al visitante. */
   srcCode?: string | null;
+  /** Enlace de operador: ver la sala sin firmar ni quedar como firmante. */
+  operatorPreview?: boolean;
 }
 
-export default function DealSignerClient({ publicId, room, initialEmail, rawToken, expectedWallet, ndaSigned = false, srcCode = null }: Props) {
+export default function DealSignerClient({ publicId, room, initialEmail, rawToken, expectedWallet, ndaSigned = false, srcCode = null, operatorPreview = false }: Props) {
   // El display engine escala con font-size (rems); el deal room usa px, así que
   // aquí aplicamos un zoom real y anulamos el font-size mientras estamos montados.
   const { profile } = useSovereignDisplay();
@@ -419,10 +421,12 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
 
       // Combined when: NDA required+checked (first time), or NDA already signed/bypassed
       const usesCombined = effectiveNdaEnabled && (needsNda || ndaStep === "signed" || ndaStep === "bypassed");
+      // La empresa del firmante NUNCA es `room.company` (eso es el emisor del
+      // documento). Si no la escribe, se usa la contraparte de la sala.
       const companyVal = isB2B
         ? (signCompany.trim()
             ? (signCompanyType && signCompanyType !== "Otra" ? `${signCompany.trim()} ${signCompanyType}` : signCompany.trim())
-            : (room.company || room.counterparty || undefined))
+            : (room.counterparty || undefined))
         : undefined;
       const roleVal = isB2B ? (signRole.trim() || "Representante Legal") : (signRole.trim() || "Titular / Individual");
       const message = usesCombined
@@ -434,14 +438,16 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
             wallet: account.address.toLowerCase(),
             publicId,
             dealKind: room.kind,
-            dealCounterparty: companyVal || dynamicPartyName,
+            // El servidor reconstruye el mensaje con `room.counterparty`; si aquí
+            // se usa otro texto (la empresa del firmante), la firma no valida.
+            dealCounterparty: room.counterparty,
             ndaVersion,
             timestamp: ts,
           })
         : buildSignMessage({
             publicId,
             kind: room.kind,
-            counterparty: companyVal || dynamicPartyName,
+            counterparty: room.counterparty,
             email: emailId,
             name,
             company: companyVal,
@@ -497,6 +503,11 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
             <p className="text-[11px] text-zinc-500 truncate">{room.publicId}</p>
           </div>
         </div>
+        {operatorPreview && (
+          <span className="mr-3 hidden items-center gap-1.5 rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-1 text-[10px] font-mono uppercase tracking-wider text-amber-300 sm:flex">
+            Vista de operador · solo lectura
+          </span>
+        )}
         <div className="flex items-center gap-3 relative">
           <button
             onClick={() => {
@@ -1030,7 +1041,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                             );
                           });
                         })()}
-                        {unlocked && collaborative && (
+                        {unlocked && collaborative && !operatorPreview && (
                           <div className="print:hidden">
                             <DealComments publicId={publicId} sectionCode={sec.code} rawToken={rawToken} />
                           </div>
@@ -1133,7 +1144,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
           )}
 
           {/* Sidebar / Sign Box */}
-          <div className="w-full md:w-[320px] shrink-0 border-t md:border-t-0 md:border-l border-white/10 p-4 md:p-6 bg-[#08080A] print:hidden flex flex-col md:overflow-y-auto">
+          <div className={`w-full md:w-[320px] shrink-0 border-t md:border-t-0 md:border-l border-white/10 p-4 md:p-6 bg-[#08080A] print:hidden flex flex-col md:overflow-y-auto ${operatorPreview ? "hidden" : ""}`}>
           <div className="max-w-sm mx-auto md:mx-0">
             {signed ? (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="p-5 rounded-2xl border border-emerald-500/30 bg-emerald-500/[0.06] text-center">
@@ -1407,7 +1418,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                 )}
                 
                 {/* ── ATTACHMENTS (solo instrumentos colaborativos) ──────── */}
-                {collaborative && <DealAttachments publicId={publicId} rawToken={rawToken} />}
+                {collaborative && !operatorPreview && <DealAttachments publicId={publicId} rawToken={rawToken} />}
               </motion.div>
             ) : null}
           </div>

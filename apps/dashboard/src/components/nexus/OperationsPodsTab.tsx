@@ -47,6 +47,7 @@ interface Pod {
 export function OperationsPodsTab() {
   const [pods, setPods] = useState<Pod[]>([]);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [previewBusy, setPreviewBusy] = useState<string | null>(null);
   const [showNewPod, setShowNewPod] = useState(false);
   const [newPod, setNewPod] = useState({ code: "", displayName: "", confidentiality: "OFF_MARKET", feeEntity: "", feePct: "3" });
   const [creatingPod, setCreatingPod] = useState(false);
@@ -56,6 +57,29 @@ export function OperationsPodsTab() {
   const [creatingSeed, setCreatingSeed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  /**
+   * Abre la sala en modo operador: enlace firmado de 10 minutos, sólo lectura.
+   * No registra firmante ni envía correos; sirve para revisar sin firmar.
+   */
+  const openPreview = async (podId: string, publicId: string) => {
+    setPreviewBusy(publicId);
+    setError(null);
+    try {
+      const res = await fetch(`/api/nexus/pods/${podId}/preview`, {
+        method: "POST",
+        headers: { ...getNexusClientHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({ publicId }),
+      });
+      const payload = (await res.json()) as { url?: string; error?: string };
+      if (!res.ok || !payload.url) throw new Error(payload.error ?? "No se pudo abrir la sala.");
+      window.open(payload.url, "_blank", "noopener,noreferrer");
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setPreviewBusy(null);
+    }
+  };
 
   const load = useCallback(async () => {
     try {
@@ -297,15 +321,17 @@ export function OperationsPodsTab() {
                 Landing <ExternalLink className="h-3 w-3" />
               </Link>
               {pod.rooms.map((room) => (
-                <Link
+                <button
                   key={room.publicId}
-                  href={`/deal/${room.publicId}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-purple-500/30 bg-purple-500/10 px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider text-purple-200 hover:bg-purple-500/20"
+                  type="button"
+                  onClick={() => void openPreview(pod.id, room.publicId)}
+                  disabled={previewBusy === room.publicId}
+                  title="Abrir en solo lectura durante 10 minutos (no te registra como firmante)"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-purple-500/30 bg-purple-500/10 px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider text-purple-200 hover:bg-purple-500/20 disabled:opacity-50"
                 >
-                  Deal Room {room.publicId} · {room.status} <ExternalLink className="h-3 w-3" />
-                </Link>
+                  {previewBusy === room.publicId ? "Abriendo…" : `Ver ${room.publicId} · ${room.status}`}
+                  <ExternalLink className="h-3 w-3" />
+                </button>
               ))}
             </div>
 
