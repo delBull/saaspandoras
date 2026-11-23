@@ -209,6 +209,8 @@ export interface BuildNdaPdfInput {
   dealId: string;
   counterparty: string;
   fullText: string;
+  /** Cabecera del documento. Por defecto, la marca del grupo. */
+  brand?: string;
 }
 
 function serialize(pages: Page[]): Uint8Array {
@@ -264,7 +266,8 @@ export async function buildNdaPdf(input: BuildNdaPdfInput): Promise<Uint8Array> 
   };
 
   // ── Encabezado ────────────────────────────────────────────────────────────
-  page.text({ x: MARGIN, y, size: 8, bold: true, color: MUTED, text: "PANDORA'S · AZTECAZ" });
+  const brand = (input.brand ?? "PANDORA'S · AZTECAZ").slice(0, 64).toUpperCase();
+  page.text({ x: MARGIN, y, size: 8, bold: true, color: MUTED, text: brand });
   y -= 20;
 
   for (const line of wrap(input.title, 15, true, CONTENT_WIDTH)) {

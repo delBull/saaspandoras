@@ -81,5 +81,8 @@ export async function buildRoomPdf(input: {
     dealId: input.dealId,
     counterparty,
     fullText: parts.join("\n\n"),
+    // La cabecera es quien emite: AZTECAZ en Village, Marco en el contrato de
+    // medios. Evita presentar como Pandora's un contrato de otra parte.
+    brand: provider,
   });
 }
