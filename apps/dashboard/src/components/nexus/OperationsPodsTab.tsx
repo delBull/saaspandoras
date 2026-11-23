@@ -10,6 +10,17 @@ interface PodRoom {
   status: string;
 }
 
+interface PodLink {
+  id: string;
+  code: string;
+  door: string | null;
+  targetLabel: string | null;
+  targetOrg: string | null;
+  targetRole: string | null;
+  opens: number;
+  lastOpen: string | null;
+}
+
 interface Pod {
   id: string;
   code: string;
@@ -21,7 +32,8 @@ interface Pod {
   currency: string;
   createdBy: string | null;
   createdAt: string;
-  links: number;
+  linkCount: number;
+  links: PodLink[];
   rooms: PodRoom[];
 }
 
@@ -33,6 +45,7 @@ interface Pod {
  */
 export function OperationsPodsTab() {
   const [pods, setPods] = useState<Pod[]>([]);
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -130,7 +143,7 @@ export function OperationsPodsTab() {
               </div>
               <div>
                 <dt className="text-zinc-500">Radar</dt>
-                <dd className="text-zinc-300">{pod.links} links</dd>
+                <dd className="text-zinc-300">{pod.linkCount} links</dd>
               </div>
               <div>
                 <dt className="text-zinc-500">Creado</dt>
@@ -161,6 +174,53 @@ export function OperationsPodsTab() {
                 </Link>
               ))}
             </div>
+
+            {pod.links.length > 0 && (
+              <div className="space-y-2 border-t border-white/5 pt-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">Semillas · radar</p>
+                  <span className="text-[9px] font-mono text-zinc-600">
+                    {pod.links.reduce((total, link) => total + link.opens, 0)} aperturas
+                  </span>
+                </div>
+                <div className="space-y-1">
+                  {pod.links.map((link) => (
+                    <div
+                      key={link.id}
+                      className="flex items-center justify-between gap-2 rounded-lg border border-white/5 bg-black/30 px-2.5 py-1.5"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-[11px] text-zinc-200">
+                          {link.targetLabel ?? link.code}
+                          {link.door && <span className="ml-1.5 text-[9px] text-zinc-600">{link.door}</span>}
+                        </p>
+                        <p className="truncate text-[9px] font-mono text-zinc-600">
+                          /l/{link.code} · {link.opens} {link.opens === 1 ? "apertura" : "aperturas"}
+                          {link.lastOpen
+                            ? ` · ${new Date(link.lastOpen).toLocaleDateString("es-MX", { day: "2-digit", month: "short" })}`
+                            : ""}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            await navigator.clipboard.writeText(`${window.location.origin}/l/${link.code}`);
+                            setCopiedCode(link.code);
+                            setTimeout(() => setCopiedCode(null), 1800);
+                          } catch {
+                            /* portapapeles no disponible */
+                          }
+                        }}
+                        className="shrink-0 rounded-md border border-white/10 px-2 py-1 text-[9px] font-mono uppercase tracking-wider text-zinc-400 hover:text-white"
+                      >
+                        {copiedCode === link.code ? "Copiado" : "Copiar link"}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <p className="flex items-center gap-1.5 text-[9px] font-mono uppercase tracking-wider text-zinc-600">
               <ShieldCheck className="h-3 w-3" /> Información del activo detrás de NDA

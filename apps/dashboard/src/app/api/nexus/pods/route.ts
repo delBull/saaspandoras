@@ -3,6 +3,7 @@ import { getNexusAuthContext } from "@saasfly/shared";
 import { db } from "@saasfly/db";
 import { nexusDealPods, nexusDealRooms, nexusOutreachLinks } from "@saasfly/db/schema";
 import { desc, eq, sql } from "@saasfly/db-core";
+import { nexusOutreachEvents } from "@saasfly/db/schema";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -29,10 +30,30 @@ export async function GET() {
     const pods = await db.select().from(nexusDealPods).orderBy(desc(nexusDealPods.createdAt));
 
     const links = await db
-      .select({ podId: nexusOutreachLinks.podId, total: sql<number>`count(*)::int` })
+      .select({
+        id: nexusOutreachLinks.id,
+        podId: nexusOutreachLinks.podId,
+        code: nexusOutreachLinks.code,
+        door: nexusOutreachLinks.door,
+        targetLabel: nexusOutreachLinks.targetLabel,
+        targetOrg: nexusOutreachLinks.targetOrg,
+        targetRole: nexusOutreachLinks.targetRole,
+        createdAt: nexusOutreachLinks.createdAt,
+      })
       .from(nexusOutreachLinks)
-      .groupBy(nexusOutreachLinks.podId);
-    const linksByPod = new Map(links.map((row) => [row.podId, Number(row.total ?? 0)]));
+      .orderBy(desc(nexusOutreachLinks.createdAt));
+
+    const events = await db
+      .select({
+        linkId: nexusOutreachEvents.linkId,
+        opens: sql<number>`count(*)::int`,
+        lastOpen: sql<string | null>`max(${nexusOutreachEvents.at})`,
+      })
+      .from(nexusOutreachEvents)
+      .where(eq(nexusOutreachEvents.event, "OPEN"))
+      .groupBy(nexusOutreachEvents.linkId);
+
+    const eventsByLink = new Map(events.map((row) => [row.linkId, row]));
 
     const rooms = await db
       .select({ podId: nexusDealRooms.podId, publicId: nexusDealRooms.publicId, status: nexusDealRooms.status })
@@ -42,7 +63,14 @@ export async function GET() {
     return NextResponse.json({
       pods: pods.map((pod) => ({
         ...pod,
-        links: linksByPod.get(pod.id) ?? 0,
+        linkCount: links.filter((link) => link.podId === pod.id).length,
+        links: links
+          .filter((link) => link.podId === pod.id)
+          .map((link) => ({
+            ...link,
+            opens: Number(eventsByLink.get(link.id)?.opens ?? 0),
+            lastOpen: eventsByLink.get(link.id)?.lastOpen ?? null,
+          })),
         rooms: rooms.filter((room) => room.podId === pod.id),
       })),
     });
