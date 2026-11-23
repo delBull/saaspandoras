@@ -406,7 +406,9 @@ export class OllamaStreamingProvider implements StreamingReasoningProvider {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
 
-    const cleanBaseUrl = baseUrl.replace(/\/$/, '').replace(/\/api$/, '');
+    // Normaliza igual que el provider síncrono: acepta base terminada en /api o /v1
+    // (Ollama Cloud documenta https://ollama.com, /api y /v1).
+    const cleanBaseUrl = baseUrl.replace(/\/+$/, '').replace(/\/api$/, '').replace(/\/v1$/, '');
     const finalUrl = `${cleanBaseUrl}/api/chat`;
 
     // Connect to Ollama streaming with 15s connection timeout + caller signal
