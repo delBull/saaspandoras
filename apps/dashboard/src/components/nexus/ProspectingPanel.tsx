@@ -40,6 +40,7 @@ interface JobRow {
       extracted: number;
       inserted: number;
       skipped: number;
+      skipReasons?: Record<string, number>;
       llm: boolean;
       perSource: Array<{ source: string; found: number; warning?: string; ms: number }>;
     };
@@ -716,7 +717,15 @@ export function ProspectingPanel() {
                     {last && (
                       <p className="mt-2 text-[10px] text-zinc-500">
                         Última {dateLabel(last.at)}: {last.candidates} candidatos · {last.inserted} nuevos ·{" "}
-                        {last.skipped} descartados · extractor {last.llm ? "modelo" : "reglas"}
+                        {last.skipped} descartados
+                        {last.skipReasons && Object.keys(last.skipReasons).length > 0
+                          ? ` (${Object.entries(last.skipReasons)
+                              .sort((a, b) => b[1] - a[1])
+                              .slice(0, 3)
+                              .map(([reason, count]) => `${count} ${reason}`)
+                              .join(" · ")})`
+                          : ""}{" "}
+                        · extractor {last.llm ? "modelo" : "reglas"}
                         {last.perSource.some((entry) => entry.warning)
                           ? ` · avisos: ${last.perSource
                               .filter((entry) => entry.warning)

@@ -114,6 +114,8 @@ export interface RunSummary {
   extracted: number;
   inserted: number;
   skipped: number;
+  /** Conteo por motivo: edad, dominio/palabra excluida, sin correo, confianza, duplicado, error. */
+  skipReasons: Record<string, number>;
   warnings: string[];
   perSource: Array<{ source: SourceType; found: number; warning?: string; ms: number }>;
   ms: number;

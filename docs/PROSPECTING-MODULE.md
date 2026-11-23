@@ -107,7 +107,9 @@ Reglas del job:
 | `minConfidence` | Descarta por debajo del umbral |
 | `requireEmail` | Sólo entran candidatos con correo **literal** en la fuente |
 | `excludeDomains` | Nunca recolecta esos dominios (por defecto LinkedIn, redes) |
-| `excludeKeywords` | Descarta si el titular/texto contiene la palabra |
+| `excludeKeywords` | Descarta si el titular/texto contiene esa **palabra completa** (no subcadena: `intern` no descarta `international`) |
+
+Cada corrida guarda `stats.lastRun.skipReasons` con el conteo por motivo (edad, dominio/palabra excluida, sin correo, confianza, duplicado, error) y la UI lo muestra. Un descarte nunca es silencioso.
 
 Confianza (determinista, calculada en `extract.ts`):
 
@@ -201,6 +203,11 @@ End-to-end contra la base operativa (org `smoke-test`, luego borrado)
   filas: 31 feed / 35 regex / 35 regex — sin nombre ni correo (correcto: prensa sin cuerpo)
   limpieza: prospects y job eliminados
 ```
+
+**Primera corrida real (23 nov 2026, job del pod Village):** 9 candidatos → 3 prospectos
+(SEC) con 1 correo literal (`investorrelations@comstock.com`), 5 descartados por confianza y
+1 duplicado. Origen del ajuste: la primera corrida descartó 4 filings por la palabra `intern`
+dentro de `international`; ahora las exclusiones son por palabra completa.
 
 **NO verificado:** la ruta LLM (no hay `OPENAI_API_KEY` en este entorno local). En producción la clave existe; se verificará en la primera corrida real y quedará en `stats.lastRun.llm`.
 

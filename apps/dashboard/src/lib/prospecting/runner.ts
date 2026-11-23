@@ -2,7 +2,7 @@ import { db } from "@saasfly/db";
 import { nexusProspectJobs, nexusProspects } from "@saasfly/db/schema";
 import { and, eq, sql } from "@saasfly/db-core";
 import { collectFromSource, sourcesInOrder } from "./sources";
-import { dedupeKey, extractCandidate, llmAvailable } from "./extract";
+import { dedupeKey, extractCandidate, llmAvailable, normalizeForMatch } from "./extract";
 import { getJob, jobSpec, nextRunFor } from "./repo";
 import type { JobSpec, RawCandidate, RunSummary, SourceResult } from "./types";
 import { asSchedule } from "./spec";
@@ -20,10 +20,18 @@ import { asSchedule } from "./spec";
 
 const DEFAULT_BUDGET_MS = 45_000;
 
+function matchesWord(haystack: string, keyword: string): boolean {
+  const word = normalizeForMatch(keyword);
+  if (!word) return false;
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(^|[^a-z0-9])${escaped}([^a-z0-9]|$)`, "i").test(haystack);
+}
+
 function excludedByRules(candidate: RawCandidate, spec: JobSpec): string | null {
-  const haystack = `${candidate.sourceTitle ?? ""}\n${candidate.text ?? ""}`.toLowerCase();
+  // Palabra completa, no subcadena: "intern" no debe descartar "international".
+  const haystack = normalizeForMatch(`${candidate.sourceTitle ?? ""} ${candidate.text ?? ""}`);
   for (const keyword of spec.rules.excludeKeywords) {
-    if (keyword && haystack.includes(keyword.toLowerCase())) return `palabra excluida: ${keyword}`;
+    if (keyword && matchesWord(haystack, keyword)) return `palabra excluida: ${keyword}`;
   }
   for (const domain of spec.rules.excludeDomains) {
     if (!domain) continue;
@@ -65,6 +73,7 @@ export async function runProspectJob(args: RunJobArgs): Promise<RunSummary> {
       extracted: 0,
       inserted: 0,
       skipped: 0,
+      skipReasons: {},
       warnings: ["job no encontrado para esta organización"],
       perSource: [],
       ms: 0,
@@ -79,6 +88,7 @@ export async function runProspectJob(args: RunJobArgs): Promise<RunSummary> {
       extracted: 0,
       inserted: 0,
       skipped: 0,
+      skipReasons: {},
       warnings: ["job pausado: no se ejecuta hasta reactivarlo"],
       perSource: [],
       ms: 0,
@@ -106,6 +116,11 @@ export async function runProspectJob(args: RunJobArgs): Promise<RunSummary> {
   let extractedCount = 0;
   let inserted = 0;
   let skipped = 0;
+  const skipReasons: Record<string, number> = {};
+  const skip = (reason: string) => {
+    skipped += 1;
+    skipReasons[reason] = (skipReasons[reason] ?? 0) + 1;
+  };
   let sourcesSucceeded = 0;
   const now = new Date();
 
@@ -146,16 +161,16 @@ export async function runProspectJob(args: RunJobArgs): Promise<RunSummary> {
         break;
       }
       if (!candidate.sourceUrl) {
-        skipped += 1;
+        skip("sin URL de origen");
         continue;
       }
       if (tooOld(candidate, spec, now)) {
-        skipped += 1;
+        skip("fuera de la edad máxima");
         continue;
       }
       const excluded = excludedByRules(candidate, spec);
       if (excluded) {
-        skipped += 1;
+        skip(excluded);
         continue;
       }
 
@@ -163,11 +178,11 @@ export async function runProspectJob(args: RunJobArgs): Promise<RunSummary> {
       extractedCount += 1;
 
       if (spec.rules.requireEmail && !extracted.email) {
-        skipped += 1;
+        skip("sin correo (regla: sólo con correo)");
         continue;
       }
       if (extracted.confidence < spec.rules.minConfidence) {
-        skipped += 1;
+        skip(`confianza < ${spec.rules.minConfidence}`);
         continue;
       }
 
@@ -179,7 +194,7 @@ export async function runProspectJob(args: RunJobArgs): Promise<RunSummary> {
         sourceUrl: candidate.sourceUrl,
       });
       if (seen.has(key)) {
-        skipped += 1;
+        skip("duplicado en la corrida");
         continue;
       }
       seen.add(key);
@@ -216,10 +231,10 @@ export async function runProspectJob(args: RunJobArgs): Promise<RunSummary> {
           .returning({ id: nexusProspects.id });
 
         if (rows.length > 0) inserted += 1;
-        else skipped += 1;
+        else skip("ya existía en la bandeja");
       } catch (error) {
         warnings.push(`no se pudo guardar ${candidate.sourceUrl}: ${(error as Error).message ?? "error"}`);
-        skipped += 1;
+        skip("error al guardar");
       }
     }
   }
@@ -243,6 +258,7 @@ export async function runProspectJob(args: RunJobArgs): Promise<RunSummary> {
           extracted: extractedCount,
           inserted,
           skipped,
+          skipReasons,
           llm: llmAvailable(),
           perSource,
         },
@@ -258,6 +274,7 @@ export async function runProspectJob(args: RunJobArgs): Promise<RunSummary> {
     extracted: extractedCount,
     inserted,
     skipped,
+    skipReasons,
     warnings,
     perSource,
     ms: Date.now() - started,
