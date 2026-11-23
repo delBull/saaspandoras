@@ -178,6 +178,12 @@ export class OllamaReasoningProvider implements ReasoningProvider {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
 
+    // Diagnóstico: sin esto, un fallback no dice si fue 401, 404, timeout o vacío.
+    let nativeStatus: number | null = null;
+    let v1Status: number | null = null;
+    let nativeError: string | null = null;
+    let v1Error: string | null = null;
+
     // 1. Try Native Ollama /api/chat (15s timeout)
     try {
       const ctrl1 = new AbortController();
@@ -195,6 +201,7 @@ export class OllamaReasoningProvider implements ReasoningProvider {
           }),
         });
 
+        nativeStatus = nativeRes.status;
         if (nativeRes.ok) {
           const data = await nativeRes.json();
           const content = data.message?.content || data.response || '';
@@ -215,6 +222,7 @@ export class OllamaReasoningProvider implements ReasoningProvider {
         clearTimeout(t1);
       }
     } catch (nativeErr) {
+      nativeError = (nativeErr as Error)?.message ?? String(nativeErr);
       console.warn('[OllamaReasoningProvider] Native /api/chat attempt failed, trying /v1...', nativeErr);
     }
 
@@ -235,6 +243,7 @@ export class OllamaReasoningProvider implements ReasoningProvider {
           }),
         });
 
+        v1Status = v1Res.status;
         if (v1Res.ok) {
           const data = await v1Res.json();
           const content = data.choices?.[0]?.message?.content || '';
@@ -255,8 +264,14 @@ export class OllamaReasoningProvider implements ReasoningProvider {
         clearTimeout(t2);
       }
     } catch (v1Err) {
+      v1Error = (v1Err as Error)?.message ?? String(v1Err);
       console.warn('[OllamaReasoningProvider] /v1/chat/completions attempt failed...', v1Err);
     }
+
+    // Diagnóstico del fallback: base, modelo, si hay key y el estado de cada intento.
+    console.warn(
+      `[OllamaReasoningProvider] FALLBACK · base=${cleanBase} · model=${model} · key=${apiKey ? "sí" : "NO"} · native=${nativeStatus ?? nativeError ?? "sin respuesta"} · v1=${v1Status ?? v1Error ?? "sin respuesta"}`,
+    );
 
     // 3. (OpenAI Fallback Removed as per request)
 
