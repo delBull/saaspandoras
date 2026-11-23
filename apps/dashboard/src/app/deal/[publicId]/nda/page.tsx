@@ -49,7 +49,16 @@ export default async function DealNdaPrintPage({
           <p className="text-[11px] font-mono uppercase tracking-widest text-zinc-500">Documento</p>
           <p className="text-sm font-semibold text-zinc-900">{cfg.title}</p>
         </div>
-        <PrintTrigger />
+        <div className="flex items-center gap-2">
+          <a
+            href={`/api/public/deals/${publicId}/nda/pdf`}
+            download
+            className="inline-flex items-center gap-2 rounded-lg border border-zinc-300 px-4 py-2 text-[11px] font-mono uppercase tracking-wider text-zinc-700 hover:bg-zinc-100"
+          >
+            Descargar PDF
+          </a>
+          <PrintTrigger />
+        </div>
       </div>
 
       <article className="nda-sheet mx-auto my-4 max-w-[21cm] bg-white px-5 py-8 shadow-lg sm:my-8 sm:px-[2cm] sm:py-[2cm] print:my-0 print:max-w-none print:px-0 print:py-0">

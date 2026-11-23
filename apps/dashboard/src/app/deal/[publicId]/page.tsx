@@ -58,6 +58,13 @@ export default async function DealPublicPage({
     }
   }
 
+  // Verdad del servidor sobre la firma: la UI no debe ofrecer la prueba de fondos
+  // si no existe una aceptación registrada para este correo. El bypass del
+  // creador (que sí usa /api/public/deals/[id]/nda) NO cuenta como firma.
+  const ndaSignedOnServer = signerEmail
+    ? Boolean(await hasEmailSignedNda(signerEmail, room.ndaVersion || "v1.0"))
+    : false;
+
   const view = publicRoomView(room);
 
   // Filter out the creator from the signers list so it appears as a true B2B agreement
@@ -93,6 +100,7 @@ export default async function DealPublicPage({
       initialEmail={signerEmail}
       rawToken={rawTokenForClient}
       expectedWallet={expectedWallet}
+      ndaSigned={ndaSignedOnServer}
     />
   );
 }

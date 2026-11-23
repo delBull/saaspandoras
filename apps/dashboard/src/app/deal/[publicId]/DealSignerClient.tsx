@@ -103,9 +103,11 @@ interface Props {
   initialEmail: string | null;
   rawToken: string | null;
   expectedWallet?: string | null;
+  /** Aceptación de NDA registrada en el servidor para este correo. */
+  ndaSigned?: boolean;
 }
 
-export default function DealSignerClient({ publicId, room, initialEmail, rawToken, expectedWallet }: Props) {
+export default function DealSignerClient({ publicId, room, initialEmail, rawToken, expectedWallet, ndaSigned = false }: Props) {
   // El display engine escala con font-size (rems); el deal room usa px, así que
   // aquí aplicamos un zoom real y anulamos el font-size mientras estamos montados.
   const { profile } = useSovereignDisplay();
@@ -711,18 +713,18 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                       <p className="text-[11px] text-zinc-400">Protección legal y evidencia criptográfica verificada on-chain.</p>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setNdaModalOpen(true)}
+                  <a
+                    href={`/api/public/deals/${publicId}/nda/pdf`}
+                    download
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-200 text-[11px] font-mono hover:bg-emerald-500/20 transition-colors shrink-0"
                   >
                     <Download className="w-3 h-3" />
                     DESCARGAR NDA (PDF)
-                  </button>
+                  </a>
                 </div>
               )}
 
-              {unlocked && rawToken && rawToken !== "creator-preview-token" && (ndaStep === "signed" || ndaStep === "bypassed") && (
+              {unlocked && (ndaSigned || ndaStep === "signed") && rawToken && rawToken !== "creator-preview-token" && (
                 <div className="mb-4 rounded-xl border border-sky-500/25 bg-sky-500/[0.04] p-4 print:hidden">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <p className="text-[11px] font-mono uppercase tracking-widest text-sky-300">

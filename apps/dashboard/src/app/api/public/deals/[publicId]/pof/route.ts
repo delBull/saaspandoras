@@ -59,7 +59,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ publicI
   if (!room) return NextResponse.json({ error: "Deal no encontrado" }, { status: 404 });
 
   const signed = await hasEmailSignedNda(payload.email, room.ndaVersion || "v1.0");
-  if (!signed) {
+  // Mismo criterio que /api/public/deals/[id]/nda: el creador de la sala puede
+  // operar sin aceptación registrada. Si aquí no se aplicara, la UI diría
+  // "bypassed" y este endpoint devolvería 409 (inconsistencia que confunde).
+  const creatorEmail = room.createdBy?.toLowerCase();
+  const isCreator = Boolean(creatorEmail) && payload.email.toLowerCase() === creatorEmail;
+  if (!signed && !isCreator) {
     return NextResponse.json({ error: "Primero firma el acuerdo de confidencialidad." }, { status: 409 });
   }
 

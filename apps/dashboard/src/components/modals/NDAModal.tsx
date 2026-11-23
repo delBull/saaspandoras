@@ -97,7 +97,9 @@ export function NDAModal({ isOpen, onClose, version = NDA_VERSION, publicId }: N
               <Button
                 onClick={() => {
                   if (publicId) {
-                    window.open(`/deal/${publicId}/nda`, "_blank", "noopener,noreferrer");
+                    // PDF real generado en el servidor (carta, márgenes de 2 cm):
+                    // no depende del diálogo de impresión ni del zoom del navegador.
+                    window.location.assign(`/api/public/deals/${publicId}/nda/pdf`);
                     return;
                   }
                   window.print();
