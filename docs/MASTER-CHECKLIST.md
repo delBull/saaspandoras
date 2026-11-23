@@ -85,6 +85,17 @@ Actualizado: 22 nov 2026. Marca: ✅ hecho · 🟡 en curso · ⏳ pendiente · 
 | F3 | Links individuales por miembro | ⏳ (radar listo) |
 | F4 | Calendario de contenido y AMA | ⏳ |
 
+## G. Cliente editorial (servicios de Marco, no de Pandora's)
+
+| # | Acción | Estado | Evidencia |
+|---|---|---|---|
+| G1 | Contrato de servicios Fase 0 + Fase 1 ($77,000 + IVA) | ✅ | `docs/CONTRATO-CMS-EDITORIAL.md` |
+| G2 | Deal Pod `editorial` + sala `PDR-EDITORIAL` (CONTRACT, sin NDA ni POF) | ✅ | pod `99d886f2…` · sala responde 200 |
+| G3 | Secciones 01–07 + Anexo A en la sala (misma fuente que el documento) | ✅ | 8 secciones, 15k caracteres |
+| G4 | Datos del cliente (razón social, RFC, representante, jurisdicción) | ⏳ | `docs/CONTRATO-CMS-EDITORIAL-PENDIENTES.md` |
+| G5 | PDF del contrato desde la sala (sin diálogo de impresión) | ⏳ | hoy el botón usa `window.print()` |
+| G6 | Registrar al cliente como firmante y enviar enlace | ⏳ | depende de G4 |
+
 ## Decisiones abiertas
 
 1. ¿Se despliega el módulo de prospección (D2–D7) para la primera corrida real?
@@ -97,6 +108,8 @@ Actualizado: 22 nov 2026. Marca: ✅ hecho · 🟡 en curso · ⏳ pendiente · 
 - `docs/DB-ROTATION-NOTES.md`
 - `docs/DEAL-POD-ACCESS-REQUESTS.md`
 - `docs/DEAL-POF-INTEGRATION.md`
+- `docs/CONTRATO-CMS-EDITORIAL.md`
+- `docs/CONTRATO-CMS-EDITORIAL-PENDIENTES.md`
 - `docs/PROSPECTING-MODULE.md` (implementación)
 - `docs/PROSPECTING-MODULE-SPEC.md` (diseño)
 - `docs/HERMES-SCRAPING-FEASIBILITY.md`

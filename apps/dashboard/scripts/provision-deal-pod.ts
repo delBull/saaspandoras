@@ -12,14 +12,22 @@
  */
 
 import { Client } from "pg";
+import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 type PodConfig = {
   code: string;
   displayName: string;
   confidentiality: "OFF_MARKET" | "CONFIDENTIAL" | "PUBLIC";
-  feeEntity: string;
-  feePct: number;
+  /** null para pod de servicios (no hay comisión de mandato). */
+  feeEntity: string | null;
+  feePct: number | null;
   createdBy: string;
+  /** Relación comercial de la sala (texto que se muestra junto al título). */
+  relation: string;
+  /** Landing pública del pod (null si el pod no tiene landing). */
+  landing: string | null;
   room: {
     publicId: string;
     title: string;
@@ -27,8 +35,12 @@ type PodConfig = {
     counterparty: string;
     company: string;
     summary: string;
-    ndaVersion: string;
-    sections: Array<{ code: string; title: string; subtitle: string; content: string }>;
+    ndaEnabled: boolean;
+    ndaVersion: string | null;
+    pofEnabled: boolean;
+    /** Secciones explícitas o, si se omite, se leen del documento markdown. */
+    sections?: Array<{ code: string; title: string; subtitle: string; content: string }>;
+    sectionsFile?: string;
   };
 };
 
@@ -40,6 +52,8 @@ const PODS: Record<string, PodConfig> = {
     feeEntity: "AZTECAZ HUB S.A.P.I. de C.V.",
     feePct: 3,
     createdBy: "marco.munoz9@gmail.com",
+    relation: "Off-market acquisition",
+    landing: "/pitch/village",
     room: {
       publicId: "PDR-VILLAGE",
       title: "Proyecto Village — Oportunidad de adquisición",
@@ -48,7 +62,9 @@ const PODS: Record<string, PodConfig> = {
       company: "AZTECAZ HUB S.A.P.I. de C.V.",
       summary:
         "Oportunidad off-market para adquirir un activo hotelero en operación en el Pacífico mexicano. Información sujeta a confidencialidad y a la firma del Acuerdo correspondiente.",
+      ndaEnabled: true,
       ndaVersion: "v1.0-village",
+      pofEnabled: true,
       sections: [
         {
           code: "01",
@@ -108,7 +124,100 @@ No se cobra por acceder a la información. La remuneración de AZTECAZ correspon
       ],
     },
   },
+
+  /**
+   * Servicios de Marco (persona física) a un cliente editorial. Independiente
+   * de Village: no hay activo en venta, no hay comisión, no hay NDA (el propio
+   * contrato contiene confidencialidad) y no aplica POF.
+   */
+  editorial: {
+    code: "editorial",
+    displayName: "Plataforma Editorial Multi-Marca",
+    confidentiality: "CONFIDENTIAL",
+    feeEntity: null,
+    feePct: null,
+    createdBy: "marco.munoz9@gmail.com",
+    relation: "Prestación de servicios tecnológicos",
+    landing: null,
+    room: {
+      publicId: "PDR-EDITORIAL",
+      title: "Contrato de servicios tecnológicos · Plataforma editorial multi-marca",
+      kind: "CONTRACT",
+      counterparty: "Cliente editorial (razón social por definir)",
+      company: "Marco Arturo Muñoz Del Toro",
+      summary:
+        "Toma de control y continuidad operativa (Fase 0) e implementación inicial de la plataforma editorial multi-marca con dos sitios piloto (Fase 1). Servicios independientes, con entregables y aceptación propios.",
+      ndaEnabled: false,
+      // La columna es NOT NULL: se conserva la versión por defecto aunque el NDA
+      // esté desactivado (no se usa mientras `nda_enabled` sea false).
+      ndaVersion: "v1.0",
+      pofEnabled: false,
+      sectionsFile: "../../../docs/CONTRATO-CMS-EDITORIAL.md",
+    },
+  },
 };
+
+/** Convierte tablas markdown a líneas legibles y limpia énfasis simple. */
+function transformForRoom(content: string): string {
+  const lines = content.split("\n");
+  const out: string[] = [];
+  let table: string[] = [];
+
+  const flushTable = () => {
+    if (table.length === 0) return;
+    for (const row of table) {
+      const cells = row.split("|").map((c) => c.trim()).filter(Boolean);
+      if (cells.length === 0) continue;
+      if (cells.every((c) => /^:?-{2,}:?$/.test(c))) continue;
+      out.push(cells.join(" · "));
+    }
+    out.push("");
+    table = [];
+  };
+
+  for (const line of lines) {
+    if (line.trim().startsWith("|")) {
+      table.push(line.trim());
+      continue;
+    }
+    flushTable();
+    // El render de la sala entiende `**negritas**`, `##` y `###`, pero no `#`.
+    if (/^#\s+/.test(line.trim())) {
+      out.push(`**${line.trim().replace(/^#\s+/, "")}**`);
+      continue;
+    }
+    out.push(line.replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, "$1$2"));
+  }
+  flushTable();
+  return out.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+}
+
+/** Lee el contrato markdown y lo divide en secciones 01..07 + anexo. */
+function sectionsFromMarkdown(filePath: string) {
+  const raw = readFileSync(filePath, "utf8");
+  const chunks = raw.split(/^## /m);
+  const preamble = (chunks.shift() ?? "").trim();
+  const sections: Array<{ code: string; title: string; subtitle: string; content: string }> = [];
+
+  for (const chunk of chunks) {
+    const [headingLine, ...rest] = chunk.split("\n");
+    const heading = (headingLine ?? "").trim();
+    if (!heading) continue;
+
+    const numbered = /^(\d{2})\s*·\s*(.+)$/.exec(heading);
+    const isAnnex = /^anexo/i.test(heading);
+    const annexCount = sections.filter((section) => section.code.startsWith("A")).length;
+    const code = numbered?.[1] ?? (isAnnex ? `A${annexCount + 1}` : String(sections.length + 1).padStart(2, "0"));
+    const title = (numbered?.[2] ?? heading).trim();
+
+    let content = rest.join("\n").trim();
+    if (sections.length === 0 && preamble) content = `${preamble}\n\n${content}`;
+
+    sections.push({ code, title, subtitle: "", content: transformForRoom(content) });
+  }
+
+  return sections;
+}
 
 function arg(name: string): string | null {
   const index = process.argv.indexOf(name);
@@ -140,7 +249,21 @@ async function main() {
   try {
     const existing = await client.query("select id from nexus_deal_pods where code = $1", [code]);
     console.log(existing.rowCount ? `Pod existente: ${existing.rows[0].id}` : "Pod nuevo");
-    console.log(JSON.stringify({ ...config, room: { ...config.room, sections: config.room.sections.length } }, null, 2));
+    console.log(
+      JSON.stringify(
+        {
+          ...config,
+          room: {
+            ...config.room,
+            sections: config.room.sectionsFile
+              ? sectionsFromMarkdown(resolve(dirname(fileURLToPath(import.meta.url)), config.room.sectionsFile)).length
+              : config.room.sections?.length ?? 0,
+          },
+        },
+        null,
+        2,
+      ),
+    );
 
     if (!apply) {
       console.log("\nDRY RUN: no se escribió nada. Añade --apply.");
@@ -167,20 +290,32 @@ async function main() {
         config.feeEntity,
         config.feePct,
         config.createdBy,
-        JSON.stringify({ landing: `/pitch/${config.code}`, doors: ["consolidators", "brokers", "patient_capital", "sovereign", "mx_family"] }),
+        JSON.stringify({
+          landing: config.landing,
+          doors: config.landing
+            ? ["consolidators", "brokers", "patient_capital", "sovereign", "mx_family"]
+            : [],
+          kind: config.room.kind,
+        }),
       ]
     );
     const podId = pod.rows[0].id as string;
 
     const room = await client.query(
-      `insert into nexus_deal_rooms (public_id, title, kind, counterparty, relation, company, status, summary, pod_id, created_by, nda_enabled, nda_phase, nda_version, open_sign, auto_share)
-       values ($1,$2,$3,$4,'Off-market acquisition',$5,'DRAFT',$6,$7,$8,true,'before_proposal',$9,false,false)
+      `insert into nexus_deal_rooms (public_id, title, kind, counterparty, relation, company, status, summary, pod_id, created_by, nda_enabled, nda_phase, nda_version, open_sign, auto_share, pof_enabled)
+       values ($1,$2,$3,$4,$5,$6,'DRAFT',$7,$8,$9,$10,'before_proposal',$11,false,false,$12)
        on conflict (public_id) do update set
          title = excluded.title,
+         kind = excluded.kind,
+         counterparty = excluded.counterparty,
+         relation = excluded.relation,
+         company = excluded.company,
+         summary = excluded.summary,
          pod_id = excluded.pod_id,
          nda_enabled = excluded.nda_enabled,
          nda_phase = excluded.nda_phase,
          nda_version = excluded.nda_version,
+         pof_enabled = excluded.pof_enabled,
          updated_at = now()
        returning id`,
       [
@@ -188,16 +323,23 @@ async function main() {
         config.room.title,
         config.room.kind,
         config.room.counterparty,
+        config.relation,
         config.room.company,
         config.room.summary,
         podId,
         config.createdBy,
-        config.room.ndaVersion,
+        config.room.ndaEnabled,
+        config.room.ndaVersion ?? "v1.0",
+        config.room.pofEnabled,
       ]
     );
     const roomId = room.rows[0].id as string;
 
-    for (const section of config.room.sections) {
+    const sections = config.room.sectionsFile
+      ? sectionsFromMarkdown(resolve(dirname(fileURLToPath(import.meta.url)), config.room.sectionsFile))
+      : config.room.sections ?? [];
+
+    for (const section of sections) {
       const found = await client.query(
         "select id from nexus_deal_sections where room_id = $1 and code = $2",
         [roomId, section.code]
@@ -218,7 +360,13 @@ async function main() {
     await client.query(
       `insert into nexus_deal_audit_events (room_id, actor, action, detail)
        values ($1, $2, 'Deal Pod aprovisionado', $3)`,
-      [roomId, config.createdBy, `Pod ${config.code} · NDA ${config.room.ndaVersion}`]
+      [
+        roomId,
+        config.createdBy,
+        `Pod ${config.code} · ${config.room.ndaEnabled ? `NDA ${config.room.ndaVersion}` : "sin NDA"}${
+          config.room.pofEnabled ? " · POF" : ""
+        }`,
+      ]
     );
 
     await client.query("commit");
