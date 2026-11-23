@@ -19,6 +19,8 @@ import { generateDealToken } from "./tokens";
 import { KIND_LABEL } from "./types";
 
 export interface CreateRoomInput {
+  /** Activa la prueba de fondos para este deal (se decide al crearlo). */
+  pofEnabled?: boolean;
   title?: string;
   kind: DealKind;
   counterparty: string;
@@ -154,6 +156,7 @@ export async function createRoom(input: CreateRoomInput) {
       summary: input.summary ?? null,
       autoShare: true,
       openSign: input.openSign ?? false,
+      pofEnabled: input.pofEnabled ?? false,
       taskRef: input.taskRef ?? null,
       createdBy: actor,
       sharedWith: [],
@@ -574,6 +577,7 @@ export function publicRoomView(room: NonNullable<Awaited<ReturnType<typeof getRo
     ndaEnabled: room.ndaEnabled,
     ndaPhase: room.ndaPhase,
     ndaVersion: room.ndaVersion,
+    pofEnabled: room.pofEnabled,
     sections: room.sections,
     // Room chaining
     nextRoomPublicId: null as string | null,

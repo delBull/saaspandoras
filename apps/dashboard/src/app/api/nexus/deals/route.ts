@@ -91,6 +91,8 @@ export async function POST(request: Request) {
       summary: String(body.summary ?? "").trim() || undefined,
       note: String(body.note ?? "").trim() || undefined,
       taskRef: String(body.taskRef ?? "").trim() || undefined,
+      // POF es por deal: sólo se activa cuando el tratO lo requiere.
+      pofEnabled: body.pofEnabled === true,
       signers: Array.isArray(body.signers)
         ? body.signers.map((s: any) => ({ email: String(s.email ?? "") }))
         : undefined,

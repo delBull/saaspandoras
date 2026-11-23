@@ -11,12 +11,13 @@ Actualizado: 22 nov 2026. Marca: ✅ hecho · 🟡 en curso · ⏳ pendiente · 
 | A1 | Landing `/pitch/village` EN/ES, sin nombre/ubicación/precio, con scroll | ✅ | 200 en prod; `overflow-y-auto` |
 | A2 | Deal Room `PDR-VILLAGE` + NDA `v1.0-village` (Nayarit, no circunvención 3%) | ✅ | secciones 01–04 |
 | A3 | POF desde la sala (declaración + carta ≤5 MB) | ✅ | `nexus_deal_pof_documents` |
-| A4 | OM gateado (NDA + POF) por enlace de 7 días | ✅ | `/api/public/deals/.../om` |
+| A4 | OM gateado (NDA + POF **sólo si el deal activa POF**) | ✅ | migración 0115 · `pof_enabled` por sala |
 | A5 | Radar `/l/<code>` con aperturas + aviso Discord | ✅ | 302 + eventos verificados |
 | A6 | 10 semillas creadas (Onda 1) | ✅ | `nexus_outreach_links` |
 | A7 | Tablero de semillas en Deal Pods | ✅ | aperturas + copiar link |
 | A8 | Pack de correos EN/ES + segundo toque | ✅ | `docs/VILLAGE-OUTREACH-PACK.md` |
-| A9 | Confirmar recepción del correo de prueba | 🟡 | enviado a marco; falta confirmar |
+| A9 | Confirmar recepción del correo de prueba | ✅ | magic link confirmado (MAGIC_SENT) |
+| A9b | POF integrada en la firma, activable por deal | ✅ | `docs/DEAL-POF-INTEGRATION.md` · pendiente de deploy |
 | A10 | Buzón `aztecaz@pandoras.finance` | ⏳ | crear alias de reenvío en Namecheap |
 | A11 | Enviar Onda 1 desde el buzón | ⏳ | depende A9/A10 |
 | A12 | Segundo toque día 5 | ⏳ | plantilla lista |
@@ -95,6 +96,7 @@ Actualizado: 22 nov 2026. Marca: ✅ hecho · 🟡 en curso · ⏳ pendiente · 
 - `docs/VILLAGE-OUTREACH-PACK.md`
 - `docs/DB-ROTATION-NOTES.md`
 - `docs/DEAL-POD-ACCESS-REQUESTS.md`
+- `docs/DEAL-POF-INTEGRATION.md`
 - `docs/PROSPECTING-MODULE.md` (implementación)
 - `docs/PROSPECTING-MODULE-SPEC.md` (diseño)
 - `docs/HERMES-SCRAPING-FEASIBILITY.md`

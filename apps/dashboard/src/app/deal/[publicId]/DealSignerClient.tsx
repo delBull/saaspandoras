@@ -37,6 +37,8 @@ interface PublicRoom {
   ndaEnabled?: boolean;
   ndaPhase?: string;
   ndaVersion?: string;
+  /** El deal activó prueba de fondos (se decide al crear la sala). */
+  pofEnabled?: boolean;
   sections: PublicSection[];
   // Room chaining
   nextRoomPublicId?: string | null;
@@ -230,16 +232,9 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
     };
   }, [rawToken, ndaStep, publicId]);
 
-  const submitPof = async () => {
-    if (!rawToken) return;
-    if (!(ndaStep === "signed" || ndaStep === "bypassed")) {
-      setPofError("Primero firma el acuerdo de confidencialidad: la prueba de fondos se habilita al firmar.");
-      return;
-    }
-    if (!pofFile) {
-      setPofError("Adjunta la carta del fondo o tu declaración.");
-      return;
-    }
+  /** Envío del POF. Sin compuerta: la usa tanto el formulario como la firma. */
+  const sendPof = async (): Promise<boolean> => {
+    if (!rawToken || !pofFile) return false;
     setPofBusy(true);
     setPofError(null);
     setPofMessage(null);
@@ -255,16 +250,31 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setPofError(data.error ?? "No se pudo enviar el documento.");
-        return;
+        return false;
       }
       setPofStatus("declared");
       setPofMessage("Documento recibido. Lo revisamos y te enviamos el OM al verificarlo.");
       setPofFile(null);
+      return true;
     } catch {
       setPofError("Error de red al enviar el documento.");
+      return false;
     } finally {
       setPofBusy(false);
     }
+  };
+
+  const submitPof = async () => {
+    if (!rawToken) return;
+    if (!(ndaStep === "signed" || ndaStep === "bypassed")) {
+      setPofError("Primero firma el acuerdo de confidencialidad: la prueba de fondos se habilita al firmar.");
+      return;
+    }
+    if (!pofFile) {
+      setPofError("Adjunta la carta del fondo o tu declaración.");
+      return;
+    }
+    await sendPof();
   };
 
   // Once we know the wallet/email, check if NDA is needed and if already signed.
@@ -380,6 +390,15 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
 
       setNdaSignatureHash(signature);
       setNdaStep("signed");
+
+      // POF integrada en la firma: si el deal la pide y el firmante adjuntó su
+      // carta, se envía en el mismo gesto. Nunca bloquea la firma.
+      if (room.pofEnabled && pofFile) {
+        const sent = await sendPof();
+        if (!sent) {
+          setPofError("El NDA quedó firmado. La prueba de fondos no se pudo enviar: puedes reintentarla abajo.");
+        }
+      }
     } catch (err: any) {
       setSignError(err.message ?? "Error al firmar el NDA. Intenta de nuevo.");
     } finally {
@@ -547,6 +566,70 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                 LEER ACUERDO COMPLETO (PDF)
               </button>
             </div>
+
+            {/* POF integrada en la firma (sólo si el deal la activó) */}
+            {room.pofEnabled && (
+              <div className="mt-3 rounded-xl border border-sky-500/25 bg-sky-500/[0.04] p-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-[11px] font-mono uppercase tracking-widest text-sky-300">
+                    Prueba de fondos (POF)
+                  </p>
+                  <span className="rounded-md border border-white/10 bg-white/5 px-2 py-0.5 text-[9px] font-mono uppercase tracking-wider text-zinc-400">
+                    Opcional ahora
+                  </span>
+                </div>
+                <p className="mt-1.5 text-[12px] leading-relaxed text-zinc-500">
+                  La necesitamos para entregarte el OM. Puedes adjuntarla ahora y se envía junto con tu
+                  firma, o dejarla para después.
+                </p>
+                <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                  <input
+                    value={pofEntity}
+                    onChange={(event) => setPofEntity(event.target.value.slice(0, 200))}
+                    placeholder="Ej. Inversiones del Pacífico, S.A.P.I."
+                    className="rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-[12px] text-zinc-200 outline-none placeholder:text-zinc-600 focus:border-sky-500/40"
+                  />
+                  <input
+                    value={pofFund}
+                    onChange={(event) => setPofFund(event.target.value.slice(0, 200))}
+                    placeholder="Ej. Pacífico Capital Fund II"
+                    className="rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-[12px] text-zinc-200 outline-none placeholder:text-zinc-600 focus:border-sky-500/40"
+                  />
+                </div>
+                <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                  <select
+                    value={pofAmount}
+                    onChange={(event) => setPofAmount(event.target.value)}
+                    className="rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-[12px] text-zinc-200 outline-none focus:border-sky-500/40"
+                  >
+                    <option value="">Rango de inversión</option>
+                    <option value="<50M">Menos de USD 50M</option>
+                    <option value="50-150M">USD 50–150M</option>
+                    <option value="150-300M">USD 150–300M</option>
+                    <option value=">300M">Más de USD 300M</option>
+                  </select>
+                  <input
+                    type="file"
+                    accept="application/pdf,image/jpeg,image/png"
+                    onChange={(event) => setPofFile(event.target.files?.[0] ?? null)}
+                    className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-[11px] text-zinc-400 file:mr-3 file:rounded-md file:border-0 file:bg-sky-500/20 file:px-3 file:py-1 file:text-[10px] file:font-mono file:uppercase file:tracking-wider file:text-sky-200"
+                  />
+                </div>
+                <textarea
+                  value={pofNotes}
+                  onChange={(event) => setPofNotes(event.target.value.slice(0, 1000))}
+                  rows={2}
+                  placeholder="Ej. Carta del fondo emitida el 18 nov; fondos disponibles en 10 días hábiles."
+                  className="mt-2 w-full resize-y rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-[12px] text-zinc-200 outline-none placeholder:text-zinc-600 focus:border-sky-500/40"
+                />
+                {pofFile && (
+                  <p className="mt-1.5 text-[11px] text-sky-200">
+                    Adjunto: {pofFile.name} · se enviará al firmar
+                  </p>
+                )}
+                {pofError && <p className="mt-1.5 text-[11px] text-rose-300">{pofError}</p>}
+              </div>
+            )}
 
             {/* Checkbox and Sign Button Row */}
             <div className="pt-3 border-t border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -738,7 +821,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                 </div>
               )}
 
-              {unlocked && (ndaSigned || ndaStep === "signed") && rawToken && rawToken !== "creator-preview-token" && (
+              {unlocked && room.pofEnabled && (ndaSigned || ndaStep === "signed") && rawToken && rawToken !== "creator-preview-token" && (
                 <div className="mb-4 rounded-xl border border-sky-500/25 bg-sky-500/[0.04] p-4 print:hidden">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <p className="text-[11px] font-mono uppercase tracking-widest text-sky-300">

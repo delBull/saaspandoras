@@ -3685,6 +3685,12 @@ export const nexusDealRooms = pgTable("nexus_deal_rooms", {
   ndaEnabled: boolean("nda_enabled").notNull().default(false),
   ndaPhase: varchar("nda_phase", { length: 32 }).notNull().default("after_proposal"), // 'before_proposal' | 'after_proposal'
   ndaVersion: varchar("nda_version", { length: 32 }).notNull().default("v1.0"),
+  /**
+   * Prueba de fondos (POF) para este deal. Se decide al crear la sala:
+   * sólo los tratos que la requieren (p. ej. compra de activo) la activan.
+   * Si está en false, la sala no pide POF y el OM se libera con NDA firmado.
+   */
+  pofEnabled: boolean("pof_enabled").notNull().default(false),
   // Multi-collaborator isolation & sharing
   createdBy: text("created_by"),
   /** Deal Pod al que pertenece esta sala (opcional). */

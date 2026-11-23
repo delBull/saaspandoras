@@ -40,14 +40,17 @@ export async function GET(
     return new NextResponse("Primero debes firmar el acuerdo de confidencialidad.", { status: 403 });
   }
 
-  const [signer] = await db
-    .select({ pofStatus: nexusDealSigners.pofStatus })
-    .from(nexusDealSigners)
-    .where(and(eq(nexusDealSigners.roomId, room.id), eq(nexusDealSigners.email, payload.email)))
-    .limit(1);
+  // El POF es por deal: si la sala no lo activó, el OM se libera con el NDA.
+  if (room.pofEnabled) {
+    const [signer] = await db
+      .select({ pofStatus: nexusDealSigners.pofStatus })
+      .from(nexusDealSigners)
+      .where(and(eq(nexusDealSigners.roomId, room.id), eq(nexusDealSigners.email, payload.email)))
+      .limit(1);
 
-  if (!signer || signer.pofStatus !== "verified") {
-    return new NextResponse("Falta la verificación de fondos (POF).", { status: 403 });
+    if (!signer || signer.pofStatus !== "verified") {
+      return new NextResponse("Falta la verificación de fondos (POF).", { status: 403 });
+    }
   }
 
   if (!room.podId) {

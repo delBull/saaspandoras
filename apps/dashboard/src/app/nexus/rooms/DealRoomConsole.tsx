@@ -257,6 +257,7 @@ export default function DealRoomConsole() {
   const [nrTaskRef, setNrTaskRef] = useState("");
   const [linkedTasks, setLinkedTasks] = useState<Array<{ id: string; title: string }>>([]);
   const [nrOpenSign, setNrOpenSign] = useState(false);
+  const [nrPofEnabled, setNrPofEnabled] = useState(false);
 
   const [signersInput, setSignersInput] = useState("");
   const [omSending, setOmSending] = useState<string | null>(null);
@@ -473,6 +474,7 @@ export default function DealRoomConsole() {
           note: nrNote,
           taskRef: nrTaskRef,
           openSign: nrOpenSign,
+          pofEnabled: nrPofEnabled,
           signers: signers.map((email) => ({ email })),
         }),
       });
@@ -493,6 +495,7 @@ export default function DealRoomConsole() {
       setNrSigners("");
       setNrTaskRef("");
       setNrOpenSign(false);
+      setNrPofEnabled(false);
       flashMsg(`✓ Deal Room ${data.room.publicId} creado · link público auto-generado`);
     } catch (e: any) {
       flashMsg(`✗ ${e.message}`);
@@ -904,6 +907,15 @@ export default function DealRoomConsole() {
                   type="checkbox"
                   checked={nrOpenSign}
                   onChange={(e) => setNrOpenSign(e.target.checked)}
+                  className="accent-amber-500"
+                />
+              </label>
+              <label className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg border border-white/10 bg-black/40 cursor-pointer">
+                <span className="text-[10px] text-zinc-400">Pedir prueba de fondos (POF)</span>
+                <input
+                  type="checkbox"
+                  checked={nrPofEnabled}
+                  onChange={(e) => setNrPofEnabled(e.target.checked)}
                   className="accent-amber-500"
                 />
               </label>
