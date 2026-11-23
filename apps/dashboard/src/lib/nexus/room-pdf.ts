@@ -64,7 +64,11 @@ export async function buildRoomPdf(input: {
       `Denominación: ${signature.company ?? counterparty}`,
       `Cargo: ${signature.role ?? "—"}`,
       `Fecha: ${signature.signedAt ? new Date(signature.signedAt).toLocaleString("es-MX") : "—"}`,
-      `Wallet: ${signature.wallet ?? "—"}`,
+      `Wallet: ${
+        signature.wallet
+          ? `${signature.wallet.slice(0, 6)}…${signature.wallet.slice(-4)}`
+          : "—"
+      }`,
       `Firma (hash): ${signature.signature ? signature.signature.slice(0, 42) + "…" : "—"}`,
       ``,
       `**EL PRESTADOR**`,
