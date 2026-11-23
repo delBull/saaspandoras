@@ -5823,6 +5823,90 @@ export const hermesBriefingPreferences = pgTable("hermes_briefing_preferences", 
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+/**
+ * Prospección — jobs de recolección.
+ *
+ * Módulo reutilizable (Nexus hoy, Hermes Portal / Growth OS después): el job
+ * describe QUÉ buscar, DÓNDE y con qué REGLAS. No tiene autoridad propia: se
+ * aísla por `canonical_org_id` y opcionalmente se agrupa en un Deal Pod.
+ */
+export const nexusProspectJobs = pgTable("nexus_prospect_jobs", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  podId: uuid("pod_id").references(() => nexusDealPods.id, { onDelete: "set null" }),
+  canonicalOrgId: varchar("canonical_org_id", { length: 256 }).notNull().default("pandoras"),
+  label: varchar("label", { length: 255 }).notNull(),
+  /** SEARCH (formulario) | TEXT (text-to-scrap) */
+  mode: varchar("mode", { length: 16 }).notNull().default("SEARCH"),
+  /** Texto original del operador (text-to-scrap) o consulta principal. */
+  query: text("query").notNull(),
+  /** JobSpec normalizado: doors, sources, targetUrls, keywords, rules. */
+  spec: jsonb("spec").$type<Record<string, unknown>>().notNull().default({}),
+  status: varchar("status", { length: 16 }).notNull().default("QUEUED"),
+  schedule: varchar("schedule", { length: 16 }).notNull().default("MANUAL"),
+  maxAgeDays: integer("max_age_days").notNull().default(30),
+  minConfidence: integer("min_confidence").notNull().default(50),
+  runs: integer("runs").notNull().default(0),
+  lastRunAt: timestamp("last_run_at", { withTimezone: true }),
+  nextRunAt: timestamp("next_run_at", { withTimezone: true }),
+  stats: jsonb("stats").$type<Record<string, unknown>>().notNull().default({}),
+  lastError: text("last_error"),
+  createdBy: varchar("created_by", { length: 255 }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => {
+  return {
+    statusIdx: index("idx_prospect_jobs_status").on(t.status),
+    orgIdx: index("idx_prospect_jobs_org").on(t.canonicalOrgId),
+    podIdx: index("idx_prospect_jobs_pod").on(t.podId),
+    nextRunIdx: index("idx_prospect_jobs_next_run").on(t.nextRunAt),
+  };
+});
+
+/**
+ * Prospección — prospectos recolectados.
+ *
+ * Regla dura: sin `source_url` verificable el prospecto no existe. Un correo
+ * sólo se almacena si apareció literalmente en la fuente (no se infiere).
+ */
+export const nexusProspects = pgTable("nexus_prospects", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  jobId: uuid("job_id").references(() => nexusProspectJobs.id, { onDelete: "set null" }),
+  podId: uuid("pod_id").references(() => nexusDealPods.id, { onDelete: "set null" }),
+  canonicalOrgId: varchar("canonical_org_id", { length: 256 }).notNull().default("pandoras"),
+  company: varchar("company", { length: 255 }),
+  personName: varchar("person_name", { length: 255 }),
+  role: varchar("role", { length: 255 }),
+  email: varchar("email", { length: 320 }),
+  /** unverified | verified | bounced */
+  emailStatus: varchar("email_status", { length: 16 }).notNull().default("unverified"),
+  door: varchar("door", { length: 32 }),
+  /** press | corporate | sec | search | manual */
+  sourceType: varchar("source_type", { length: 16 }).notNull(),
+  sourceUrl: text("source_url").notNull(),
+  sourceTitle: text("source_title"),
+  publisher: varchar("publisher", { length: 255 }),
+  publishedAt: timestamp("published_at", { withTimezone: true }),
+  fetchedAt: timestamp("fetched_at", { withTimezone: true }).defaultNow().notNull(),
+  confidence: integer("confidence").notNull().default(0),
+  /** llm | regex | feed */
+  extraction: varchar("extraction", { length: 16 }).notNull().default("regex"),
+  /** NEW | APPROVED | REJECTED | CONTACTED */
+  status: varchar("status", { length: 16 }).notNull().default("NEW"),
+  dedupeKey: varchar("dedupe_key", { length: 64 }).notNull(),
+  raw: jsonb("raw").$type<Record<string, unknown>>().notNull().default({}),
+  rejectReason: text("reject_reason"),
+  linkId: uuid("link_id").references(() => nexusOutreachLinks.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => {
+  return {
+    orgDedupeUq: uniqueIndex("uq_prospects_org_dedupe").on(t.canonicalOrgId, t.dedupeKey),
+    statusIdx: index("idx_prospects_status").on(t.status),
+    jobIdx: index("idx_prospects_job").on(t.jobId),
+    doorIdx: index("idx_prospects_door").on(t.door),
+  };
+});
+
 export const hermesBriefings = pgTable("hermes_briefings", {
   id: varchar("id", { length: 128 }).primaryKey(),
   organizationId: varchar("organization_id", { length: 256 }).notNull(),

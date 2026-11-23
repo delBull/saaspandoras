@@ -44,14 +44,18 @@ Actualizado: 22 nov 2026. Marca: ✅ hecho · 🟡 en curso · ⏳ pendiente · 
 
 ## D. Prospección (módulo reutilizable)
 
-| # | Acción | Estado |
-|---|---|---|
-| D1 | Especificación (`docs/PROSPECTING-MODULE-SPEC.md`) | ✅ |
-| D2 | Tabla `nexus_prospects` + jobs | ⏳ |
-| D3 | Worker: 3 fuentes (prensa, webs, SEC) con `robots.txt` | ⏳ |
-| D4 | UI en Deal Pod: reglas, targets, horarios, edades, puertas | ⏳ |
-| D5 | **Text-to-scrap**: descripción libre → job estructurado | ⏳ |
-| D6 | Bandeja de aprobación → link `/l/<code>` + borrador | ⏳ |
+| # | Acción | Estado | Evidencia |
+|---|---|---|---|
+| D1 | Especificación (`docs/PROSPECTING-MODULE-SPEC.md`) | ✅ | [PREEXISTENTE] |
+| D2 | Tablas `nexus_prospect_jobs` + `nexus_prospects` (0113) | ✅ | aplicada en la base operativa: 2 tablas, 44 columnas, `uq_prospects_org_dedupe` |
+| D3 | Worker con 3 fuentes + `robots.txt` + 1 req/s | ✅ | prensa real (3), SEC real (3 filings), corporate (1) probados hoy |
+| D4 | UI: reglas, targets, horarios, edades, puertas | ✅ | pestaña PROSPECCIÓN en OPS HUB (no desplegada) |
+| D5 | **Text-to-scrap**: texto libre → job estructurado | ✅ | parser determinista verificado; ruta LLM **no verificada** (sin clave local) |
+| D6 | Bandeja de aprobación → link `/l/<code>` | ✅ | `approve` crea la semilla con el helper compartido; idempotente |
+| D7 | Cron cada 30 min → `/api/cron/prospects` | ✅ | `.github/workflows/prospects-cron.yml` (requiere `CRON_SECRET` en GitHub) |
+| D8 | Desplegar módulo y primera corrida real | ⏳ | pendiente de autorización de deploy |
+| D9 | Verificación de correo (SMTP/MX) | ⏳ | hoy todo entra como `unverified` |
+| D10 | Documentación de implementación | ✅ | `docs/PROSPECTING-MODULE.md` |
 
 ## E. S'Narai (tenant whitelabel RWA)
 
@@ -78,7 +82,7 @@ Actualizado: 22 nov 2026. Marca: ✅ hecho · 🟡 en curso · ⏳ pendiente · 
 
 ## Decisiones abiertas
 
-1. ¿Se aprueba el MVP de prospección (D2–D6) como siguiente bloque?
+1. ¿Se despliega el módulo de prospección (D2–D7) para la primera corrida real?
 2. ¿S'Narai se baja a `draft` hasta cerrar E2–E8?
 3. ¿El alias `aztecaz@` se crea por reenvío en Namecheap?
 
@@ -86,7 +90,8 @@ Actualizado: 22 nov 2026. Marca: ✅ hecho · 🟡 en curso · ⏳ pendiente · 
 
 - `docs/VILLAGE-OUTREACH-PACK.md`
 - `docs/DB-ROTATION-NOTES.md`
-- `docs/PROSPECTING-MODULE-SPEC.md`
+- `docs/PROSPECTING-MODULE.md` (implementación)
+- `docs/PROSPECTING-MODULE-SPEC.md` (diseño)
 - `docs/HERMES-SCRAPING-FEASIBILITY.md`
 - `docs/SNARAI-LAUNCH-REVIEW.md`
 - `docs/DISCORD-COMMUNITY-STRATEGY.md`

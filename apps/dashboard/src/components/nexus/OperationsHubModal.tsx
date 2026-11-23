@@ -23,6 +23,7 @@ import {
   BrainCircuit,
   GraduationCap,
   Map,
+  Radar,
 } from 'lucide-react';
 import TaskTerminal, { TerminalTask } from './TaskTerminal';
 import { TaskItem } from './taskTypes';
@@ -35,11 +36,12 @@ import { OperationsClientsTab } from './OperationsClientsTab';
 import { OperationsKnowledgeTab } from './OperationsKnowledgeTab';
 import { OperationsCollaboratorsTab } from './OperationsCollaboratorsTab';
 import { OperationsPodsTab } from './OperationsPodsTab';
+import { ProspectingPanel } from './ProspectingPanel';
 import TasksPanel from './TasksPanel';
 import { AlertTriangle, CheckCircle, Building2, LayoutDashboard, Package } from 'lucide-react';
 import { getNexusClientHeaders } from '@/lib/nexus/client-auth-headers';
 
-export type Tab = 'REGISTER' | 'CLIENTS' | 'WORK_ENGINE' | 'ACTIVITY' | 'KNOWLEDGE' | 'COHORTS' | 'APPROVALS' | 'PODS';
+export type Tab = 'REGISTER' | 'CLIENTS' | 'WORK_ENGINE' | 'ACTIVITY' | 'KNOWLEDGE' | 'COHORTS' | 'APPROVALS' | 'PODS' | 'PROSPECTS';
 
 interface IPAsset {
   id: string;
@@ -66,6 +68,7 @@ export const OPS_TAB_SLUGS: Record<Tab, string> = {
   ACTIVITY: "activity",
   APPROVALS: "approvals",
   PODS: "pods",
+  PROSPECTS: "prospecting",
   COHORTS: "cohorts",
   REGISTER: "register",
 };
@@ -448,7 +451,10 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
       ? [{ id: 'COHORTS' as Tab, label: 'COHORTS', icon: <Shield className="w-3.5 h-3.5" /> }]
       : []),
     ...(userRole === 'SUPER_ADMIN' || userRole === 'OWNER'
-      ? [{ id: 'PODS' as Tab, label: 'DEAL PODS', icon: <Package className="w-3.5 h-3.5" /> }]
+      ? [
+          { id: 'PODS' as Tab, label: 'DEAL PODS', icon: <Package className="w-3.5 h-3.5" /> },
+          { id: 'PROSPECTS' as Tab, label: 'PROSPECCIÓN', icon: <Radar className="w-3.5 h-3.5" /> },
+        ]
       : []),
     { id: 'KNOWLEDGE', label: 'KNOWLEDGE BASE', icon: <BookOpen className="w-3.5 h-3.5" /> },
     { id: 'ACTIVITY', label: 'ACTIVITY & INCIDENTS', icon: <Activity className="w-3.5 h-3.5" /> },
@@ -879,6 +885,7 @@ export function OperationsHubModal({ isOpen, onClose, tasks, setTasks, userName,
           )}
 
           {tab === 'PODS' && <OperationsPodsTab />}
+          {tab === 'PROSPECTS' && <ProspectingPanel />}
 
           {tab === 'APPROVALS' && (
             <OperationsApprovalsTab />
