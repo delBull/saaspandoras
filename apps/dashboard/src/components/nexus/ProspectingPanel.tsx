@@ -376,7 +376,10 @@ export function ProspectingPanel() {
   };
 
   return (
-    <div className="space-y-5">
+    // `flex-1 min-h-0 overflow-y-auto`: el hub es full-screen con `overflow-hidden`;
+    // sin este contenedor, en móvil (y con muchas tarjetas) el final del panel
+    // quedaba cortado y sin scroll.
+    <div className="flex-1 min-h-0 space-y-5 overflow-y-auto p-4 md:p-5">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-start gap-3">
           <span className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-300">

@@ -44,7 +44,7 @@ export default async function DealNdaPrintPage({
         }}
       />
 
-      <div className="no-print flex items-center justify-between gap-3 bg-white px-6 py-3 shadow-sm">
+      <div className="no-print flex flex-wrap items-center justify-between gap-3 bg-white px-4 py-3 shadow-sm sm:px-6">
         <div>
           <p className="text-[11px] font-mono uppercase tracking-widest text-zinc-500">Documento</p>
           <p className="text-sm font-semibold text-zinc-900">{cfg.title}</p>
@@ -52,7 +52,7 @@ export default async function DealNdaPrintPage({
         <PrintTrigger />
       </div>
 
-      <article className="nda-sheet mx-auto my-8 max-w-[21cm] bg-white px-[2cm] py-[2cm] shadow-lg print:my-0 print:max-w-none print:px-0 print:py-0">
+      <article className="nda-sheet mx-auto my-4 max-w-[21cm] bg-white px-5 py-8 shadow-lg sm:my-8 sm:px-[2cm] sm:py-[2cm] print:my-0 print:max-w-none print:px-0 print:py-0">
         <header className="mb-8 border-b border-zinc-300 pb-4">
           <p className="text-[10px] font-mono uppercase tracking-[0.3em] text-zinc-500">Pandora&apos;s · AZTECAZ</p>
           <h1 className="mt-2 text-[20px] font-bold leading-snug text-black">{cfg.title}</h1>
