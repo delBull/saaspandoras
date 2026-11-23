@@ -90,6 +90,7 @@ const SIGN_BUTTON_STYLE =
   "hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-40 disabled:pointer-events-none";
 
 const COMPANY_TYPES = [
+  { value: "", label: "Sin sufijo (denominación completa tal cual)" },
   { value: "LLC", label: "LLC (Limited Liability Company)" },
   { value: "S.A. de C.V.", label: "S.A. de C.V." },
   { value: "S.A.P.I. de C.V.", label: "S.A.P.I. de C.V." },
@@ -137,7 +138,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
   const [dealScope, setDealScope] = useState<"B2B" | "B2C">("B2B");
   const [signName, setSignName] = useState("");
   const [signCompany, setSignCompany] = useState("");
-  const [signCompanyType, setSignCompanyType] = useState<string>("LLC");
+  const [signCompanyType, setSignCompanyType] = useState<string>("");
   const [signRole, setSignRole] = useState("Representante Legal");
   const [signing, setSigning] = useState(false);
   const [signingNda, setSigningNda] = useState(false);
@@ -196,6 +197,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
     let result = text
       .replace(/{{COUNTERPARTY_COMPANY}}/gi, dynamicPartyName)
       .replace(/{{COUNTERPARTY}}/gi, dynamicPartyName)
+      .replace(/{{REPRESENTATIVE}}/gi, signName.trim() || "por el cliente al firmar")
       .replace(/Pandora's LLC/gi, "marca Pandora's y sus servicios bajo la umbrela de MXHUB ECOSISTEMA BLOCKCHAIN S.A. DE C.V.");
 
     if (room.counterparty && dynamicPartyName !== room.counterparty) {
@@ -1398,7 +1400,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                         disabled={
                           signing ||
                           !signName.trim() ||
-                          (isB2B && (!signCompany.trim() || !signCompanyType)) ||
+                          (isB2B && !signCompany.trim()) ||
                           !account?.address ||
                           (!!expectedWallet && account.address.toLowerCase() !== expectedWallet.toLowerCase())
                         }

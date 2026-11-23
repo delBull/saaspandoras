@@ -18,12 +18,24 @@ que es el mismo texto que vive en el Deal Room `PDR-EDITORIAL`.
 | Jurisdicción | Bahía de Banderas, Nayarit |
 | Total | $77,000 + IVA = **$89,320** |
 
-## 1.1 Datos que faltan (sólo dos)
+## 1.1 Datos que completa el cliente al firmar
 
-| # | Dato | Dónde aparece |
+El contrato usa dos variables que se resuelven con lo que el firmante escriba en el panel
+de firma:
+
+| Variable | Lo que escribe el cliente | Si no firma todavía |
 |---|---|---|
-| 1 | Denominación social completa con régimen de capital (S.A. de C.V. / S. de R.L. de C.V.) | Encabezado, declaraciones, firma |
-| 2 | Nombre del representante legal y referencia al poder | Encabezado y firma |
+| `{{COUNTERPARTY}}` | Denominación completa (puede dejar el sufijo vacío o elegir S.A. de C.V., S.A.P.I., S. de R.L., LLC…) | Contraparte de la sala: "Keeper Consulting and Management" |
+| `{{REPRESENTATIVE}}` | Su nombre y apellidos | "por el cliente al firmar" |
+
+Se resuelven **en la sala y en el PDF**. Si la denominación escrita difiere de la de la
+sala, el PDF reemplaza también la mención literal para que el documento no se contradiga.
+
+Al firmar, el PDF agrega al final el bloque **"Registro de firma electrónica"** con nombre,
+denominación, cargo, fecha, wallet y hash de la firma. Así el archivo descargado ya es el
+ejemplo ejecutado, no un borrador.
+
+No queda ningún dato pendiente de captura manual para emitir el contrato.
 
 ## 2. Decisión de pago
 

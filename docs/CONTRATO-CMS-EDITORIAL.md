@@ -2,7 +2,7 @@
 
 **IMPLEMENTACIÓN DE PLATAFORMA EDITORIAL MULTI-MARCA Y TOMA DE CONTROL OPERATIVO**
 
-**QUE CELEBRAN**, por una parte, **MARCO ARTURO MUÑOZ DEL TORO**, por su propio derecho, a quien en lo sucesivo se le denominará **"EL PRESTADOR"**; y por la otra, **KEEPER CONSULTING AND MANAGEMENT** (completar denominación social: S.A. de C.V. / S. de R.L. de C.V.), representada en este acto por **[NOMBRE DEL REPRESENTANTE LEGAL]**, a quien en lo sucesivo se le denominará **"EL CLIENTE"**; conjuntamente denominados **"LAS PARTES"**, al tenor de las siguientes declaraciones y cláusulas.
+**QUE CELEBRAN**, por una parte, **MARCO ARTURO MUÑOZ DEL TORO**, por su propio derecho, a quien en lo sucesivo se le denominará **"EL PRESTADOR"**; y por la otra, **{{COUNTERPARTY}}**, representada en este acto por **{{REPRESENTATIVE}}**, a quien en lo sucesivo se le denominará **"EL CLIENTE"**; conjuntamente denominados **"LAS PARTES"**, al tenor de las siguientes declaraciones y cláusulas.
 
 ## 01 · Declaraciones
 
@@ -20,7 +20,7 @@ e) Que sus datos fiscales son: Marco Arturo Muñoz Del Toro · RFC **MUTM8610091
 
 ### II. Declara EL CLIENTE
 
-a) Que es una sociedad mercantil constituida conforme a las leyes mexicanas, bajo la denominación **Keeper Consulting and Management** (completar denominación social), con RFC **KCM241213N63**.
+a) Que es una sociedad mercantil constituida conforme a las leyes mexicanas, bajo la denominación **{{COUNTERPARTY}}**, con RFC **KCM241213N63**.
 
 b) Que su representante cuenta con facultades suficientes para celebrar este contrato, mismas que manifiesta no le han sido revocadas ni limitadas.
 
@@ -30,7 +30,7 @@ d) Que requiere implementar una plataforma editorial multi-marca que permita cen
 
 e) Que señala como domicilio: **Valle de Aqua No. 6-10, Fracc. Valle Esmeralda, Bahía de Banderas, Nayarit, México, C.P. 63737**.
 
-f) Que sus datos fiscales son: Keeper Consulting and Management · RFC **KCM241213N63** · régimen **Simplificado de Confianza (RESICO)** · uso de CFDI **Gastos en general** · correo de facturación **facturaskeepercm@gmail.com** · correo de contacto **luispguardado@gmail.com**.
+f) Que sus datos fiscales son: {{COUNTERPARTY}} · RFC **KCM241213N63** · régimen **Simplificado de Confianza (RESICO)** · uso de CFDI **Gastos en general** · correo de facturación **facturaskeepercm@gmail.com** · correo de contacto **luispguardado@gmail.com**.
 
 g) Que reconoce que la ejecución del proyecto requiere la entrega oportuna de accesos, autorizaciones, información y colaboración de su personal o proveedores.
 
@@ -294,9 +294,9 @@ Firma: ______________________________
 
 **EL CLIENTE**
 
-KEEPER CONSULTING AND MANAGEMENT
+{{COUNTERPARTY}}
 
-Representante: [NOMBRE DEL REPRESENTANTE LEGAL]
+Representante: {{REPRESENTATIVE}}
 
 Firma: ______________________________
 

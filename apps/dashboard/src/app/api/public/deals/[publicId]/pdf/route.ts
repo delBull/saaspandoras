@@ -20,12 +20,31 @@ export async function GET(_req: Request, { params }: { params: Promise<{ publicI
   }
 
   try {
+    // Si el cliente ya firmó, el documento se emite con sus datos de firma
+    // (denominación, representante, fecha y hash). Si no, con la contraparte de
+    // la sala y la leyenda de que se completa al firmar.
+    const signed = room.signers?.find(
+      (signer) => signer.status === "SIGNED" && Boolean(signer.signatureName || signer.signature),
+    );
+
+    const signature = signed
+      ? {
+          name: signed.signatureName ?? null,
+          company: signed.signatureCompany ?? null,
+          role: signed.signatureRole ?? null,
+          signedAt: signed.signedAt ? new Date(signed.signedAt).toISOString() : null,
+          wallet: signed.wallet ?? null,
+          signature: signed.signature ?? null,
+        }
+      : null;
+
     const bytes = await buildRoomPdf({
       title: room.title,
       subtitle: `${room.kind} · ${room.company}`,
       dealId: room.publicId,
       counterparty: room.counterparty,
       sections: room.sections.map((section) => ({ title: section.title, content: section.content })),
+      signature,
     });
 
     const filename = `${room.kind}-${room.publicId}`.replace(/[^A-Za-z0-9._-]/g, "-");
