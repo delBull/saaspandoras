@@ -1,76 +1,82 @@
-# S'Narai — revisión de lanzamiento
+# S'Narai — revisión de lanzamiento (corregida)
 
-Fecha: 22 nov 2026 · Estado: **inspección, sin ejecutar** (tarea pendiente).
+Fecha: 22 nov 2026 · Modelo: **tenant whitelabel sobre la vertical RWA de Pandora's**
+(`/portal/snarai`, `/materials/snarai/*`, `dash.pandoras.finance` como plataforma).
 
-## 1. Qué existe hoy
+> Corrección: la revisión anterior se basó en las columnas legacy de `projects`
+> (tokens/precio), que **no son la fuente de verdad** de este modelo. La operación
+> real vive en `projects.w2e_config`, `extra_config` y `tenant_runtime_config`.
 
-| Campo | Valor |
-|---|---|
-| Proyecto | `snarai` · S'Narai · **status `live`** |
-| Categoría | `residential_real_estate` |
-| Descripción | 474 caracteres |
-| Branding | logo, cover e imagen: sí |
-| Web | `https://snarai.aztecaz.xyz` |
-| Whitepaper | `https://snarai.aztecaz.xyz/white-paper` |
-| Contrato | `0xd2d5EcF7e2617ff900c22D70E24F7ca2cd2111dF` |
-| Tesorería | `0x555a14Fe71270882a5EA038D61F5Eb90b2092c1a` |
-| Legal | `sapi_mexico` · **fiduciary_entity vacío** |
-| Simulación | `false` |
-| Cliente CRM | `admin@snarai.aztecaz.xyz` · `closed_won` |
+## 1. Qué está configurado (sí existe)
 
-## 2. Lo que falta para poder vender accesos
+**Oferta y fases (`w2e_config`)**
 
-**Datos comerciales (bloqueante)**
+| Fase | Precio CP | Asignación | Estado |
+|---|---|---|---|
+| Fundador | $50 USD | 30,000 CPs (límite 1.5M USD) | **Activa** |
+| Estratégica | $75 USD | 13,334 CPs | bloqueada |
+| Pública | $100 USD | 25,000 CPs | bloqueada |
 
-- `total_tokens`, `tokens_offered`, `token_price_usd`, `total_valuation_usd`: **vacíos**.
-- `target_amount`: **0.00** · `raised_amount`: **0.00**.
-- `tiered_access_details`: **vacío** — y es justamente el producto (“accesos”).
-- `fiduciary_entity`: **vacío** — quién custodia el activo y bajo qué figura.
-- Sin `socials`, sin canales de adquisición.
+**Tiers**: Explorer $500 (10 CPs) · Resident $2,500 (50) · Ambassador $10,000 (200)
+· Riviera Owner $50,000 (1,000), con beneficios por nivel.
 
-**Superficies**
+**Activos on-chain declarados**: contrato de acceso `0xd2d5EcF7…`, licencia
+`VHORA` (máx. 1,000), utilidad `PHI` (80,400), red **Base**, treasury
+`0x555a14Fe…`, creador `0x121a897f…`.
 
-- **No hay deck** en `nexus_presentations` (`snarai` no existe).
-- **No hay Deal Room** (`nexus_deal_rooms` sin sala de S'Narai).
-- No hay landing comercial con captura de leads ni tracking.
-- No hay campañas, contenido ni secuencia de correo.
+**Materiales (`extra_config`)**: deck EN/ES, dossier EN/ES, one-pager EN/ES,
+resource hub (portal + Telegram), progress log.
 
-## 3. Riesgo principal
+**Portal y marca (`tenant_runtime_config`)**: brand config, `vertical: RWA`,
+capacidades `rwa.portal/payments/governance/ipfs_evidence/nft.certificates`,
+`legalProfile` con plantilla `SNARAI_AGREEMENT_TEMPLATE`.
 
-El proyecto está marcado **`live` con precio, suministro y meta en cero**. Un
-visitante puede interpretar que la venta está abierta cuando en realidad no hay
-oferta configurada. **Recomendación: bajarlo a `draft`/`inactive` hasta completar la
-configuración comercial**, o completarla antes de cualquier campaña.
+## 2. Bloqueos reales encontrados (verificados hoy)
 
-## 4. Checklist de lanzamiento (propuesto)
+| # | Hallazgo | Evidencia |
+|---|---|---|
+| 1 | **Términos y privacidad dan 404** | `dash.pandoras.finance/legal/terms/snarai` → 404 · `/legal/privacy/snarai` → 404 |
+| 2 | **Logo roto** | `https://snarai.com/logo.png` → 404 |
+| 3 | **Colección NFT de prueba** | `tenant_nft_collections` = "Test Collection", contract `0x123`, status `DEPLOYED` |
+| 4 | **11 emisiones atascadas** | `tenant_nft_issuances` → 11 en `pending_mint` |
+| 5 | **Treasury con un solo firmante** | `treasurySigners` = 1 dirección |
+| 6 | **No verificado en cadena** | falta comprobar bytecode/owner/supply en Base de `0xd2d5…` |
+
+Sí responden: `/legal/risk-disclosure/snarai`, `/legal/agreement/snarai`,
+`/legal/phase-dynamics/snarai`, y `snarai.aztecaz.xyz`.
+
+## 3. Checklist para lanzar
 
 **Fase 0 · Integridad (bloqueante)**
+1. Publicar términos y privacidad (o apuntar a los correctos).
+2. Corregir el logo (asset propio o el del portal).
+3. Verificar en Base: contrato de acceso, licencia y utilidad (owner, supply, paused).
+4. Resolver las 11 emisiones `pending_mint` (reintentar o cancelar con motivo).
+5. Eliminar o archivar la "Test Collection" (`0x123`).
+6. Añadir segundo firmante al treasury.
+7. Confirmar la ruta de pago (Stripe/crypto) y que el checkout del tier Explorer funcione.
 
-1. Verificar en cadena contrato y tesorería (red, bytecode, owner, verificación).
-2. Definir figura legal y `fiduciary_entity` (quién custodia, quién factura).
-3. Configurar suministro, oferta, precio, valuación y meta.
-4. Definir niveles de acceso (qué incluye cada tier, precio, beneficios, vigencia).
-5. Cambiar `status` a `draft` mientras no esté completo.
-
-**Fase 1 · Superficies comerciales**
-
-6. Deck de S'Narai en el CMS (`nexus_presentations`) con slides y guardrails.
-7. Deal Room con NDA y secciones (tesis, activo, accesos, proceso).
-8. Landing con captura de leads, aviso de privacidad y tracking.
-9. CRM: cliente, oportunidad y etapa; atribución por canal.
+**Fase 1 · Portal del comprador**
+8. Onboarding: solicitud → verificación founder → asignación → checkout.
+9. Dashboard del miembro con su CP, tier y noches.
+10. Emisión automática del certificado al confirmar pago.
 
 **Fase 2 · Marketing**
+11. Landing pública con captura y aviso de privacidad.
+12. Atribución (`/l/<code>`) y CRM (cliente + oportunidad).
+13. Contenido y campañas; reporte semanal.
 
-10. Campañas (Meta/Google) con pauta definida por S'Narai.
-11. Contenido: 4 piezas/mes, guiones de atención y calificación.
-12. Reporte semanal: CPL, leads, calificados, solicitudes, visitas y cierres.
+## 4. Lo que reutiliza del ecosistema
 
-## 5. Decisiones que necesito para ejecutar
+- **Deal Pods** para gestionar la oportunidad y sus semillas.
+- **Módulo de prospección** (cuando exista) para compradores de accesos: family
+  offices, clubes, operadores boutique (puerta `MX_FAMILY` / `PATIENT_CAPITAL`).
+- **Radar `/l/<code>`** para medir cada canal y inversor.
+- **Deal Room + NDA** para el dossier privado cuando el material lo requiera.
 
-1. ¿El producto es **acceso por tiers** (membresía) o **fracciones** del activo?
-2. ¿Quién es la **fiduciaria** y qué figura legal cobra?
-3. ¿Precio y suministro ya están definidos, o hay que modelarlos?
-4. ¿S'Narai ya tiene material aprobado (fotos, planos, precios) o se produce?
+## 5. Conclusión
 
-Sin respuestas a 1–3 no hay campaña posible: se estaría vendiendo algo sin precio ni
-estructura.
+El proyecto **no está vacío**: está configurado en `w2e_config` y con materiales
+completos. Lo que impide lanzar es integridad operativa (legal 404, logo, colección
+de prueba, mints atascados, treasury de un firmante) y la verificación on-chain.
+Son correcciones concretas, no un rediseño.
