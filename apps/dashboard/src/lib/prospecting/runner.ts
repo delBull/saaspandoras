@@ -87,7 +87,7 @@ export async function runProspectJob(args: RunJobArgs): Promise<RunSummary> {
 
   await db
     .update(nexusProspectJobs)
-    .set({ status: "RUNNING", updatedAt: new Date() })
+    .set({ status: "RUNNING", lastRunAt: new Date(), updatedAt: new Date() })
     .where(eq(nexusProspectJobs.id, job.id));
 
   const baseSpec = jobSpec(job);

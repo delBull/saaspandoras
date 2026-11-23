@@ -120,12 +120,17 @@ export async function prospectCounts(orgId: string): Promise<Record<string, numb
 /** Jobs que ya cumplieron su próxima corrida (cron). */
 export async function dueJobs(limit = 3) {
   const now = new Date();
+  const staleBefore = new Date(now.getTime() - 15 * 60 * 1000);
   return db
     .select()
     .from(nexusProspectJobs)
     .where(
       and(
-        inArray(nexusProspectJobs.status, ["QUEUED", "DONE"]),
+        or(
+          inArray(nexusProspectJobs.status, ["QUEUED", "DONE"]),
+          // Una corrida que quedó en RUNNING (timeout del servidor) se reintenta.
+          sql`(${nexusProspectJobs.status} = 'RUNNING' AND ${nexusProspectJobs.lastRunAt} <= ${staleBefore})`,
+        ),
         sql`${nexusProspectJobs.schedule} <> 'MANUAL'`,
         or(isNull(nexusProspectJobs.nextRunAt), lte(nexusProspectJobs.nextRunAt, now)),
       ),
