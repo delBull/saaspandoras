@@ -10,6 +10,7 @@ import { client } from "@saasfly/shared/thirdweb-client";
 import { buildSignMessage } from "@saasfly/nexus-deals-sdk";
 import { buildCombinedSignMessage, buildNdaSignMessage } from "@saasfly/nexus-deals-sdk";
 import { NDAModal } from "@/components/modals/NDAModal";
+import { useSovereignDisplay } from "@pandoras/display-engine";
 import { DealAttachments } from "./DealAttachments";
 import { DealComments } from "./DealComments";
 import { DisplayControlsWidget } from "@pandoras/display-engine";
@@ -81,7 +82,7 @@ const signerWallets = [
 
 // Botón de firma con identidad Pandoras: gradiente ámbar→esmeralda, sombra y márgenes consistentes.
 const SIGN_BUTTON_STYLE =
-  "w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-mono text-[12px] tracking-wider " +
+  "w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-mono text-[13px] tracking-wider " +
   "bg-gradient-to-r from-amber-500/90 to-emerald-500/80 text-black font-semibold " +
   "shadow-[0_4px_24px_rgba(245,158,11,0.25)] hover:shadow-[0_6px_32px_rgba(245,158,11,0.4)] " +
   "hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-40 disabled:pointer-events-none";
@@ -105,6 +106,21 @@ interface Props {
 }
 
 export default function DealSignerClient({ publicId, room, initialEmail, rawToken, expectedWallet }: Props) {
+  // El display engine escala con font-size (rems); el deal room usa px, así que
+  // aquí aplicamos un zoom real y anulamos el font-size mientras estamos montados.
+  const { profile } = useSovereignDisplay();
+  useEffect(() => {
+    const root = document.documentElement;
+    const previousFontSize = root.style.fontSize;
+    const previousZoom = (root.style as any).zoom ?? "";
+    const factor = profile.scale === "130" ? 1.3 : profile.scale === "115" ? 1.15 : 1;
+    root.style.fontSize = "100%";
+    (root.style as any).zoom = String(factor);
+    return () => {
+      root.style.fontSize = previousFontSize;
+      (root.style as any).zoom = previousZoom;
+    };
+  }, [profile.scale]);
   const [email, setEmail] = useState("");
   const [emailSent, setEmailSent] = useState(false);
   const [sendingMagic, setSendingMagic] = useState(false);
@@ -148,6 +164,9 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
   const isProposal = room.kind === "PROPOSAL";
   const isOpenSign = Boolean(room.openSign);
   const unlocked = Boolean(initialEmail && rawToken) || isOpenSign;
+  // Comentarios y anexos solo en instrumentos que lo ameritan (contratos/acuerdos).
+  // Un NDA unilateral (PROPOSAL/NDA) no admite discusión ni anexos.
+  const collaborative = ["AGREEMENT", "CONTRACT", "AMENDMENT", "CHARTER"].includes(room.kind);
   const signerId = isOpenSign ? (account?.address?.toLowerCase() ?? "") : (initialEmail ?? "");
   const ndaVersion = room.ndaVersion ?? "v2.2";
   const effectiveNdaEnabled = Boolean(room.ndaEnabled);
@@ -205,6 +224,10 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
 
   const submitPof = async () => {
     if (!rawToken) return;
+    if (!(ndaStep === "signed" || ndaStep === "bypassed")) {
+      setPofError("Primero firma el acuerdo de confidencialidad: la prueba de fondos se habilita al firmar.");
+      return;
+    }
     if (!pofFile) {
       setPofError("Adjunta la carta del fondo o tu declaración.");
       return;
@@ -443,8 +466,8 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
             <Handshake className="w-4 h-4" />
           </span>
           <div className="min-w-0">
-            <span className="text-sm font-semibold text-zinc-100 tracking-tight truncate">PANDORA'S NEXUS · TRANSACTION ROOM</span>
-            <p className="text-[10px] text-zinc-500 truncate">{room.publicId}</p>
+            <span className="text-[15px] font-semibold text-zinc-100 tracking-tight truncate">PANDORA'S NEXUS · TRANSACTION ROOM</span>
+            <p className="text-[11px] text-zinc-500 truncate">{room.publicId}</p>
           </div>
         </div>
         <div className="flex items-center gap-3 relative">
@@ -463,7 +486,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
             <DisplayControlsWidget />
           </div>
 
-          <span className="hidden sm:flex items-center gap-1.5 text-[10px] text-zinc-500">
+          <span className="hidden sm:flex items-center gap-1.5 text-[11px] text-zinc-500">
             <span className="relative flex h-1.5 w-1.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-60" />
               <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500" />
@@ -484,15 +507,15 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase tracking-widest bg-amber-500/20 border border-amber-500/40 text-amber-300 font-bold">
+                    <span className="px-2 py-0.5 rounded text-[11px] font-mono uppercase tracking-widest bg-amber-500/20 border border-amber-500/40 text-amber-300 font-bold">
                       PASO 1 REQUERIDO: FIRMA DE CONFIDENCIALIDAD (NDA)
                     </span>
-                    <span className="text-[10px] font-mono text-zinc-400">Versión {ndaVersion}</span>
+                    <span className="text-[11px] font-mono text-zinc-400">Versión {ndaVersion}</span>
                   </div>
-                  <h2 className="text-base font-bold text-white mt-1">
+                  <h2 className="text-[17px] font-bold text-white mt-1">
                     Acuerdo de Confidencialidad y No Divulgación Pandora's
                   </h2>
-                  <p className="text-xs text-zinc-400 mt-0.5 leading-relaxed">
+                  <p className="text-[13px] text-zinc-400 mt-0.5 leading-relaxed">
                     Para desbloquear el contenido y firmar el acuerdo de <strong className="text-zinc-200">{signCompany || room.company || room.counterparty}</strong>, la contraparte debe aceptar y firmar primero el Master NDA on-chain.
                   </p>
                 </div>
@@ -502,7 +525,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
               <button
                 type="button"
                 onClick={() => setNdaModalOpen(true)}
-                className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl border border-white/20 bg-white/5 hover:bg-white/10 text-xs font-mono text-zinc-200 transition-colors shrink-0"
+                className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl border border-white/20 bg-white/5 hover:bg-white/10 text-[13px] font-mono text-zinc-200 transition-colors shrink-0"
               >
                 <FileSignature className="w-4 h-4 text-amber-300" />
                 LEER ACUERDO COMPLETO (PDF)
@@ -513,7 +536,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
             <div className="pt-3 border-t border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
               <label 
                 onClick={() => setNdaChecked(!ndaChecked)}
-                className="flex items-center gap-3 cursor-pointer text-xs text-zinc-300 select-none"
+                className="flex items-center gap-3 cursor-pointer text-[13px] text-zinc-300 select-none"
               >
                 <div
                   className={`w-4 h-4 shrink-0 rounded border flex items-center justify-center transition-colors cursor-pointer
@@ -539,7 +562,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                   <button
                     onClick={handleSignNdaOnly}
                     disabled={!ndaChecked || signingNda}
-                    className="flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-amber-500 text-black font-semibold text-xs hover:bg-amber-400 transition-colors disabled:opacity-40 font-mono tracking-wider uppercase shadow-lg shadow-amber-500/10"
+                    className="flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-amber-500 text-black font-semibold text-[13px] hover:bg-amber-400 transition-colors disabled:opacity-40 font-mono tracking-wider uppercase shadow-lg shadow-amber-500/10"
                   >
                     {signingNda ? (
                       <>
@@ -571,7 +594,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                   <Handshake className="w-8 h-8 text-amber-400" />
                 </div>
                 
-                <h4 className="text-[11px] font-mono text-amber-500/80 tracking-widest uppercase mb-3">
+                <h4 className="text-[12px] font-mono text-amber-500/80 tracking-widest uppercase mb-3">
                   {KIND_LABEL[room.kind]} · {room.relation}
                 </h4>
                 
@@ -579,13 +602,13 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                   {room.summary || KIND_LABEL[room.kind]}
                 </h1>
                 
-                <p className="text-sm text-zinc-400 mb-10 max-w-md">
+                <p className="text-[15px] text-zinc-400 mb-10 max-w-md">
                   Preparado exclusivamente para <span className="text-zinc-200 font-medium">{dynamicPartyName}</span>. Este documento se encuentra asegurado criptográficamente bajo la jurisdicción soberana de Pandora's.
                 </p>
                 
                 <button
                   onClick={() => setShowCover(false)}
-                  className="group flex items-center gap-3 px-8 py-4 rounded-full bg-amber-500 text-black font-semibold text-sm hover:bg-amber-400 transition-all shadow-[0_0_30px_-5px_rgba(245,158,11,0.4)] hover:shadow-[0_0_40px_0px_rgba(245,158,11,0.6)] hover:-translate-y-0.5"
+                  className="group flex items-center gap-3 px-8 py-4 rounded-full bg-amber-500 text-black font-semibold text-[15px] hover:bg-amber-400 transition-all shadow-[0_0_30px_-5px_rgba(245,158,11,0.4)] hover:shadow-[0_0_40px_0px_rgba(245,158,11,0.6)] hover:-translate-y-0.5"
                 >
                   INICIAR LECTURA
                   <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -593,7 +616,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
               </div>
               
               <div className="absolute bottom-8 left-0 right-0 text-center">
-                <p className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest flex items-center justify-center gap-2">
+                <p className="text-[11px] font-mono text-zinc-600 uppercase tracking-widest flex items-center justify-center gap-2">
                   <ShieldCheck className="w-3 h-3 text-zinc-500" /> Sovereign Deal Room Protocol
                 </p>
               </div>
@@ -615,7 +638,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                 {["SIGNED", "EXECUTING", "EXECUTED"].includes(room.status) && (
                   <button
                     onClick={() => window.print()}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-white/20 bg-white/5 hover:bg-white/10 text-[11px] font-mono text-zinc-300 transition-colors print:hidden"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-white/20 bg-white/5 hover:bg-white/10 text-[12px] font-mono text-zinc-300 transition-colors print:hidden"
                   >
                     <Download className="w-3.5 h-3.5" />
                     DESCARGAR PDF
@@ -634,18 +657,18 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                       <Activity className="w-4 h-4 text-indigo-300" />
                     </div>
                     <div>
-                      <h3 className="text-xs font-semibold text-indigo-300 font-mono tracking-widest uppercase mb-1 flex items-center gap-2">
+                      <h3 className="text-[13px] font-semibold text-indigo-300 font-mono tracking-widest uppercase mb-1 flex items-center gap-2">
                         Hermes Cognitive Summary
                         <span className="px-1.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-200 text-[8px] leading-none">AI GENERATED</span>
                       </h3>
-                      <p className="text-[13px] text-zinc-300 leading-relaxed mb-3">
+                      <p className="text-[14px] text-zinc-300 leading-relaxed mb-3">
                         He analizado este acuerdo. Los puntos críticos para <strong className="text-zinc-100">{dynamicPartyName}</strong> son:
                       </p>
                       <ul className="space-y-2">
                         {room.cognitiveSummary.map((point, idx) => {
                           const parts = point.split(/(\*\*.*?\*\*)/g);
                           return (
-                            <li key={idx} className="flex items-start gap-2 text-[12px] text-zinc-400">
+                            <li key={idx} className="flex items-start gap-2 text-[13px] text-zinc-400">
                               <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 mt-1.5 shrink-0"></div>
                               <span>
                                 {parts.map((p, j) => {
@@ -666,13 +689,13 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
 
               <div className="mt-4 mb-4 p-3.5 rounded-xl border border-white/10 bg-white/[0.02]">
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-mono uppercase tracking-widest text-amber-400">
+                  <span className="text-[11px] font-mono uppercase tracking-widest text-amber-400">
                     {isB2B ? "Contraparte B2B:" : "Contraparte Individual (B2C):"}
                   </span>
-                  <p className="text-[14px] font-bold text-white print:text-black">{dynamicPartyName}</p>
+                  <p className="text-[15px] font-bold text-white print:text-black">{dynamicPartyName}</p>
                 </div>
                 {isB2B && signName.trim() && (
-                  <p className="text-[10px] font-mono text-zinc-500 mt-1 print:text-black">
+                  <p className="text-[11px] font-mono text-zinc-500 mt-1 print:text-black">
                     Representante Legal (registro interno / firma): <span className="text-zinc-300">{signName}</span> {signRole ? `(${signRole})` : ""}
                   </p>
                 )}
@@ -684,14 +707,14 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                   <div className="flex items-center gap-2.5">
                     <ShieldCheck className="w-4 h-4 text-emerald-300 shrink-0" />
                     <div>
-                      <p className="text-[11px] font-mono text-emerald-300 font-semibold">Acuerdo de Confidencialidad (NDA {ndaVersion}) Activo</p>
-                      <p className="text-[10px] text-zinc-400">Protección legal y evidencia criptográfica verificada on-chain.</p>
+                      <p className="text-[12px] font-mono text-emerald-300 font-semibold">Acuerdo de Confidencialidad (NDA {ndaVersion}) Activo</p>
+                      <p className="text-[11px] text-zinc-400">Protección legal y evidencia criptográfica verificada on-chain.</p>
                     </div>
                   </div>
                   <button
                     type="button"
                     onClick={() => setNdaModalOpen(true)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-200 text-[10px] font-mono hover:bg-emerald-500/20 transition-colors shrink-0"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-200 text-[11px] font-mono hover:bg-emerald-500/20 transition-colors shrink-0"
                   >
                     <Download className="w-3 h-3" />
                     DESCARGAR NDA (PDF)
@@ -702,7 +725,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
               {unlocked && rawToken && rawToken !== "creator-preview-token" && (ndaStep === "signed" || ndaStep === "bypassed") && (
                 <div className="mb-4 rounded-xl border border-sky-500/25 bg-sky-500/[0.04] p-4 print:hidden">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="text-[10px] font-mono uppercase tracking-widest text-sky-300">
+                    <p className="text-[11px] font-mono uppercase tracking-widest text-sky-300">
                       Prueba de fondos (POF)
                     </p>
                     <span
@@ -719,16 +742,16 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                   </div>
 
                   {pofStatus === "verified" ? (
-                    <p className="mt-2 text-[11px] leading-relaxed text-zinc-400">
+                    <p className="mt-2 text-[12px] leading-relaxed text-zinc-400">
                       Fondos verificados. El memorándum de inversión se envía a tu correo con un enlace personal.
                     </p>
                   ) : pofStatus === "declared" ? (
-                    <p className="mt-2 text-[11px] leading-relaxed text-zinc-400">
+                    <p className="mt-2 text-[12px] leading-relaxed text-zinc-400">
                       Documento recibido y en revisión. Al verificarlo recibirás el OM por correo.
                     </p>
                   ) : (
                     <div className="mt-3 space-y-2">
-                      <p className="text-[11px] leading-relaxed text-zinc-500">
+                      <p className="text-[12px] leading-relaxed text-zinc-500">
                         Para acceder al OM necesitamos tu declaración y la carta del fondo (o equivalente).
                         Puedes subir un PDF o imagen de hasta 5 MB.
                       </p>
@@ -736,20 +759,20 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                         <input
                           value={pofEntity}
                           onChange={(event) => setPofEntity(event.target.value.slice(0, 200))}
-                          placeholder="Entidad inversora"
-                          className="rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-[11px] text-zinc-200 outline-none placeholder:text-zinc-600 focus:border-sky-500/40"
+                          placeholder="Ej. Inversiones del Pacífico, S.A.P.I."
+                          className="rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-[12px] text-zinc-200 outline-none placeholder:text-zinc-600 focus:border-sky-500/40"
                         />
                         <input
                           value={pofFund}
                           onChange={(event) => setPofFund(event.target.value.slice(0, 200))}
-                          placeholder="Fondo o vehículo"
-                          className="rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-[11px] text-zinc-200 outline-none placeholder:text-zinc-600 focus:border-sky-500/40"
+                          placeholder="Ej. Pacífico Capital Fund II"
+                          className="rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-[12px] text-zinc-200 outline-none placeholder:text-zinc-600 focus:border-sky-500/40"
                         />
                       </div>
                       <select
                         value={pofAmount}
                         onChange={(event) => setPofAmount(event.target.value)}
-                        className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-[11px] text-zinc-200 outline-none focus:border-sky-500/40"
+                        className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-[12px] text-zinc-200 outline-none focus:border-sky-500/40"
                       >
                         <option value="">Rango de inversión</option>
                         <option value="<50M">Menos de USD 50M</option>
@@ -761,25 +784,25 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                         value={pofNotes}
                         onChange={(event) => setPofNotes(event.target.value.slice(0, 1000))}
                         rows={2}
-                        placeholder="Notas (opcional)"
-                        className="w-full resize-y rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-[11px] text-zinc-200 outline-none placeholder:text-zinc-600 focus:border-sky-500/40"
+                        placeholder="Ej. Carta del fondo emitida el 18 nov; fondos disponibles en 10 días hábiles."
+                        className="w-full resize-y rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-[12px] text-zinc-200 outline-none placeholder:text-zinc-600 focus:border-sky-500/40"
                       />
                       <input
                         type="file"
                         accept="application/pdf,image/jpeg,image/png"
                         onChange={(event) => setPofFile(event.target.files?.[0] ?? null)}
-                        className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-[11px] text-zinc-400 file:mr-3 file:rounded-md file:border-0 file:bg-sky-500/20 file:px-3 file:py-1 file:text-[10px] file:font-mono file:uppercase file:tracking-wider file:text-sky-200"
+                        className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-[12px] text-zinc-400 file:mr-3 file:rounded-md file:border-0 file:bg-sky-500/20 file:px-3 file:py-1 file:text-[11px] file:font-mono file:uppercase file:tracking-wider file:text-sky-200"
                       />
                       <button
                         type="button"
                         onClick={() => void submitPof()}
-                        disabled={pofBusy}
-                        className="w-full rounded-lg border border-sky-500/30 bg-sky-500/10 px-3 py-2 text-[10px] font-mono uppercase tracking-wider text-sky-200 hover:bg-sky-500/20 disabled:opacity-50"
+                        disabled={pofBusy || !(ndaStep === "signed" || ndaStep === "bypassed")}
+                        className="w-full rounded-lg border border-sky-500/30 bg-sky-500/10 px-3 py-2 text-[11px] font-mono uppercase tracking-wider text-sky-200 hover:bg-sky-500/20 disabled:opacity-50"
                       >
                         {pofBusy ? "Enviando…" : "Enviar prueba de fondos"}
                       </button>
-                      {pofError && <p className="text-[10px] text-rose-300">{pofError}</p>}
-                      {pofMessage && <p className="text-[10px] text-emerald-300">{pofMessage}</p>}
+                      {pofError && <p className="text-[11px] text-rose-300">{pofError}</p>}
+                      {pofMessage && <p className="text-[11px] text-emerald-300">{pofMessage}</p>}
                     </div>
                   )}
                 </div>
@@ -787,8 +810,8 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
 
               {isProposal && (
                 <div className="mt-4 p-4 rounded-xl border border-blue-500/20 bg-blue-500/[0.06]">
-                  <p className="text-[10px] font-mono uppercase tracking-widest text-blue-300 mb-1">Documento de trabajo · No vinculante</p>
-                  <p className="text-[11px] text-zinc-400 leading-relaxed">
+                  <p className="text-[11px] font-mono uppercase tracking-widest text-blue-300 mb-1">Documento de trabajo · No vinculante</p>
+                  <p className="text-[12px] text-zinc-400 leading-relaxed">
                     Este documento representa una propuesta inicial de colaboración y sirve como base para conversación,
                     retroalimentación y construcción conjunta del modelo definitivo. No constituye un acuerdo formal.
                   </p>
@@ -797,10 +820,10 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
 
               {room.enteredIntoForceAt && (
                 <div className="mt-4 p-4 rounded-xl border border-emerald-500/25 bg-emerald-500/[0.07]">
-                  <p className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-emerald-300 mb-1">
+                  <p className="flex items-center gap-2 text-[11px] font-mono uppercase tracking-widest text-emerald-300 mb-1">
                     <Check className="w-3.5 h-3.5" /> Acuerdo legítimo en vigor
                   </p>
-                  <p className="text-[11px] text-zinc-400 leading-relaxed">
+                  <p className="text-[12px] text-zinc-400 leading-relaxed">
                     Este documento fue firmado por todas las partes y entró en vigor el{' '}
                     <span className="text-emerald-200 font-mono">
                       {new Date(room.enteredIntoForceAt).toLocaleString("es-MX", {
@@ -816,16 +839,16 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
 
               {room.status === "SIGNED" && room.nextRoomPublicId && (
                 <div className="mt-4 p-4 rounded-xl border border-violet-500/25 bg-violet-500/[0.07]">
-                  <p className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-violet-300 mb-1">
+                  <p className="flex items-center gap-2 text-[11px] font-mono uppercase tracking-widest text-violet-300 mb-1">
                     <FileSignature className="w-3.5 h-3.5" /> Siguiente Documento Disponible
                   </p>
-                  <p className="text-[11px] text-zinc-400 leading-relaxed mb-3">
+                  <p className="text-[12px] text-zinc-400 leading-relaxed mb-3">
                     El <span className="text-violet-200 font-semibold">{room.nextRoomKindLabel}</span> ha sido desbloqueado como seguimiento de este acuerdo.
                     Está listo para revisión y firma.
                   </p>
                   <a
                     href={`/deal/${room.nextRoomPublicId}`}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-500/20 border border-violet-500/30 text-violet-200 text-[12px] font-semibold hover:bg-violet-500/30 transition-colors"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-500/20 border border-violet-500/30 text-violet-200 text-[13px] font-semibold hover:bg-violet-500/30 transition-colors"
                   >
                     <FileSignature className="w-3.5 h-3.5" />
                     Abrir {room.nextRoomKindLabel}
@@ -834,7 +857,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
               )}
 
               {room.summary && (
-                <p className="mt-4 text-[12px] text-zinc-400 print:text-black leading-relaxed">{room.summary}</p>
+                <p className="mt-4 text-[13px] text-zinc-400 print:text-black leading-relaxed">{room.summary}</p>
               )}
             </div>
 
@@ -845,10 +868,10 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                   <Lock className="w-6 h-6" />
                 </div>
                 <h2 className="text-xl font-bold text-white mb-2">Documento Confidencial Protegido por NDA</h2>
-                <p className="text-sm text-zinc-400 max-w-lg mx-auto leading-relaxed mb-6">
+                <p className="text-[15px] text-zinc-400 max-w-lg mx-auto leading-relaxed mb-6">
                   Para acceder y revisar las cláusulas de este acuerdo B2B ({room.summary || KIND_LABEL[room.kind]}), es obligatorio firmar previamente el Acuerdo de Confidencialidad y No Uso (NDA) de Pandora's Ecosystem.
                 </p>
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-500/20 text-amber-200 border border-amber-500/30 text-xs font-mono">
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-500/20 text-amber-200 border border-amber-500/30 text-[13px] font-mono">
                   <ShieldCheck className="w-4 h-4" /> Firma el NDA en el panel lateral para desbloquear este documento
                 </div>
               </div>
@@ -861,8 +884,8 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                       className="w-full flex items-center justify-between gap-2 px-4 py-3 text-left hover:bg-white/[0.02] transition-colors"
                     >
                       <span className="flex items-center gap-3 print:mb-4">
-                        <span className="text-[10px] font-mono text-amber-300/80 print:text-black print:text-lg print:font-bold">{sec.code}.</span>
-                        <span className="text-[13px] text-zinc-100 print:text-black print:text-lg print:font-bold">
+                        <span className="text-[11px] font-mono text-amber-300/80 print:text-black print:text-lg print:font-bold">{sec.code}.</span>
+                        <span className="text-[14px] text-zinc-100 print:text-black print:text-lg print:font-bold">
                           {resolveDynamicText(sec.title)}
                         </span>
                       </span>
@@ -878,7 +901,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                             if (renderedLine.trim().startsWith("```")) {
                               inCodeBlock = !inCodeBlock;
                               return (
-                                <p key={i} className="text-[12px] text-zinc-500 font-mono leading-relaxed mb-1">
+                                <p key={i} className="text-[13px] text-zinc-500 font-mono leading-relaxed mb-1">
                                   <span className="text-zinc-600 print:hidden font-mono mr-2">{String(i + 1).padStart(2, "0")}</span>
                                   {renderedLine}
                                 </p>
@@ -887,7 +910,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
 
                             if (inCodeBlock) {
                               return (
-                                <p key={i} className="text-[12px] text-zinc-400 font-mono whitespace-pre print:text-black leading-relaxed mb-1 overflow-x-auto">
+                                <p key={i} className="text-[13px] text-zinc-400 font-mono whitespace-pre print:text-black leading-relaxed mb-1 overflow-x-auto">
                                   <span className="text-zinc-600 print:text-black font-mono mr-2">{String(i + 1).padStart(2, "0")}</span>
                                   {renderedLine}
                                 </p>
@@ -895,15 +918,15 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                             }
 
                             if (renderedLine.startsWith("## ")) {
-                              return <h2 key={i} className="text-[15px] font-bold text-white print:text-black mt-4 mb-2">{renderedLine.slice(3)}</h2>;
+                              return <h2 key={i} className="text-[16px] font-bold text-white print:text-black mt-4 mb-2">{renderedLine.slice(3)}</h2>;
                             }
                             if (renderedLine.startsWith("### ")) {
-                              return <h3 key={i} className="text-[13px] font-semibold text-amber-200 print:text-black mt-3 mb-1">{renderedLine.slice(4)}</h3>;
+                              return <h3 key={i} className="text-[14px] font-semibold text-amber-200 print:text-black mt-3 mb-1">{renderedLine.slice(4)}</h3>;
                             }
 
                             const parts = renderedLine.split(/(\*\*.*?\*\*)/g);
                             return (
-                              <p key={i} className="text-[12px] text-zinc-300 print:text-black leading-relaxed mb-2">
+                              <p key={i} className="text-[13px] text-zinc-300 print:text-black leading-relaxed mb-2">
                                 <span className="text-zinc-600 print:hidden font-mono mr-2">{String(i + 1).padStart(2, "0")}</span>
                                 {parts.map((p, j) => {
                                   if (p.startsWith("**") && p.endsWith("**")) {
@@ -915,7 +938,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                             );
                           });
                         })()}
-                        {unlocked && (
+                        {unlocked && collaborative && (
                           <div className="print:hidden">
                             <DealComments publicId={publicId} sectionCode={sec.code} rawToken={rawToken} />
                           </div>
@@ -930,7 +953,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                               onClick={() => {
                                 setOpenSection(nextSec.code);
                               }}
-                              className="w-full mt-4 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[11px] font-mono hover:bg-amber-500/20 transition-colors shadow-sm print:hidden"
+                              className="w-full mt-4 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[12px] font-mono hover:bg-amber-500/20 transition-colors shadow-sm print:hidden"
                             >
                               SIGUIENTE: {nextSec.title} <ChevronDown className="w-4 h-4" />
                             </button>
@@ -950,8 +973,8 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                 <div className="flex items-start gap-3">
                   <FileSignature className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
                   <div>
-                    <h3 className="text-sm font-semibold text-emerald-200">Aceptación Criptográfica B2B Verificada</h3>
-                    <p className="text-[12px] text-zinc-400 mt-1 leading-relaxed">
+                    <h3 className="text-[15px] font-semibold text-emerald-200">Aceptación Criptográfica B2B Verificada</h3>
+                    <p className="text-[13px] text-zinc-400 mt-1 leading-relaxed">
                       El presente documento ha sido aceptado electrónicamente y firmado on-chain en representación de <strong>{signCompany || room.company || room.counterparty}</strong> por <strong>{signName || account?.address}</strong> ({signRole || "Representante Legal"}).
                     </p>
                   </div>
@@ -961,7 +984,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
 
             {room.signers && room.signers.length > 0 && (
               <div className="mt-8 pt-8 border-t border-white/10 print:border-black/20">
-                <h3 className="text-sm font-semibold text-white print:text-black mb-4 flex items-center gap-2">
+                <h3 className="text-[15px] font-semibold text-white print:text-black mb-4 flex items-center gap-2">
                   <FileSignature className="w-4 h-4 text-amber-500" />
                   Estado de Firmas
                 </h3>
@@ -969,26 +992,26 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                   {room.signers.map((s, i) => (
                     <div key={i} className="p-4 rounded-xl border border-white/5 bg-white/[0.02] print:border-black/10 print:bg-transparent">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-[12px] font-medium text-white print:text-black">
+                        <span className="text-[13px] font-medium text-white print:text-black">
                           {s.signatureName || s.wallet || "Pendiente"}
                         </span>
                         {s.status === "SIGNED" ? (
-                          <span className="flex items-center gap-1 text-[10px] font-mono text-emerald-400 print:text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded">
+                          <span className="flex items-center gap-1 text-[11px] font-mono text-emerald-400 print:text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded">
                             <Check className="w-3 h-3" /> Firmado
                           </span>
                         ) : (
-                          <span className="text-[10px] font-mono text-amber-400/70 bg-amber-500/10 px-2 py-0.5 rounded">
+                          <span className="text-[11px] font-mono text-amber-400/70 bg-amber-500/10 px-2 py-0.5 rounded">
                             Pendiente
                           </span>
                         )}
                       </div>
                       {s.signatureRole && s.signatureCompany && (
-                        <p className="text-[10px] text-zinc-400 print:text-black mt-1">
+                        <p className="text-[11px] text-zinc-400 print:text-black mt-1">
                           {s.signatureRole} en {s.signatureCompany}
                         </p>
                       )}
                       {s.wallet && (
-                        <p className="text-[10px] font-mono text-zinc-500 print:text-zinc-600 mt-2 break-all [overflow-wrap:anywhere]">
+                        <p className="text-[11px] font-mono text-zinc-500 print:text-zinc-600 mt-2 break-all [overflow-wrap:anywhere]">
                           Wallet: {s.wallet}
                         </p>
                       )}
@@ -1008,10 +1031,11 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
               </div>
             )}
           </div>
-          <NDAModal 
-            isOpen={ndaModalOpen} 
-            onClose={() => setNdaModalOpen(false)} 
-            version={ndaVersion} 
+          <NDAModal
+            isOpen={ndaModalOpen}
+            onClose={() => setNdaModalOpen(false)}
+            version={ndaVersion}
+            publicId={publicId}
           />
           </div>
           )}
@@ -1022,13 +1046,13 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
             {signed ? (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="p-5 rounded-2xl border border-emerald-500/30 bg-emerald-500/[0.06] text-center">
                 <Check className="w-8 h-8 text-emerald-300 mx-auto mb-3" />
-                <h3 className="text-sm font-semibold text-emerald-200">¡Acuerdo B2B Firmado!</h3>
-                <p className="text-[11px] text-zinc-400 mt-2 leading-relaxed">
+                <h3 className="text-[15px] font-semibold text-emerald-200">¡Acuerdo B2B Firmado!</h3>
+                <p className="text-[12px] text-zinc-400 mt-2 leading-relaxed">
                   Tu aceptación quedó registrada en el audit trail del Deal Room. Gracias por tu confianza.
                 </p>
                 <button
                   onClick={() => window.print()}
-                  className="mt-4 w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-emerald-500/40 bg-emerald-500/20 text-emerald-200 text-[11px] font-mono hover:bg-emerald-500/30 transition-colors"
+                  className="mt-4 w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-emerald-500/40 bg-emerald-500/20 text-emerald-200 text-[12px] font-mono hover:bg-emerald-500/30 transition-colors"
                 >
                   <Download className="w-3.5 h-3.5" />
                   DESCARGAR ACUERDO (PDF)
@@ -1043,8 +1067,8 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                       <Mail className="w-4 h-4" />
                     </span>
                     <div>
-                      <p className="text-[10px] font-mono uppercase tracking-widest text-emerald-300">Identidad verificada</p>
-                      <p className="text-[10px] text-zinc-400 truncate">{initialEmail}</p>
+                      <p className="text-[11px] font-mono uppercase tracking-widest text-emerald-300">Identidad verificada</p>
+                      <p className="text-[11px] text-zinc-400 truncate">{initialEmail}</p>
                     </div>
                   </div>
                 ) : (
@@ -1053,8 +1077,8 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                       <FileSignature className="w-4 h-4" />
                     </span>
                     <div>
-                      <p className="text-[10px] font-mono uppercase tracking-widest text-amber-300">Firma online habilitada</p>
-                      <p className="text-[10px] text-zinc-400">No se requiere correo · firma on-chain verificada</p>
+                      <p className="text-[11px] font-mono uppercase tracking-widest text-amber-300">Firma online habilitada</p>
+                      <p className="text-[11px] text-zinc-400">No se requiere correo · firma on-chain verificada</p>
                     </div>
                   </div>
                 )}
@@ -1063,7 +1087,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                 {effectiveNdaEnabled && ndaStep === "loading" && (
                   <div className="flex items-center gap-2 p-3 rounded-lg border border-white/10 bg-black/30">
                     <Loader2 className="w-3.5 h-3.5 text-zinc-500 animate-spin shrink-0" />
-                    <p className="text-[11px] text-zinc-500">Verificando estado del NDA…</p>
+                    <p className="text-[12px] text-zinc-500">Verificando estado del NDA…</p>
                   </div>
                 )}
 
@@ -1073,19 +1097,19 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                     <div className="flex items-center gap-2">
                       <ShieldCheck className="w-4 h-4 text-amber-300 shrink-0" />
                       <div>
-                        <p className="text-[11px] font-mono uppercase tracking-widest text-amber-300 font-bold">Paso 1: NDA Requerido</p>
-                        <p className="text-[10px] text-zinc-400">Firma en el panel superior</p>
+                        <p className="text-[12px] font-mono uppercase tracking-widest text-amber-300 font-bold">Paso 1: NDA Requerido</p>
+                        <p className="text-[11px] text-zinc-400">Firma en el panel superior</p>
                       </div>
                     </div>
 
-                    <p className="text-[11px] text-zinc-400 leading-relaxed">
+                    <p className="text-[12px] text-zinc-400 leading-relaxed">
                       El <strong className="text-zinc-200">Acuerdo de Confidencialidad ({ndaVersion})</strong> debe ser firmado en el panel superior para desbloquear la firma de este acuerdo.
                     </p>
 
                     <button
                       type="button"
                       onClick={() => setNdaModalOpen(true)}
-                      className="w-full flex items-center justify-center gap-1.5 py-2 px-3 border border-white/10 rounded-lg text-[10px] text-zinc-300 hover:bg-white/5 transition-colors uppercase tracking-widest font-mono"
+                      className="w-full flex items-center justify-center gap-1.5 py-2 px-3 border border-white/10 rounded-lg text-[11px] text-zinc-300 hover:bg-white/5 transition-colors uppercase tracking-widest font-mono"
                     >
                       <FileSignature className="w-3.5 h-3.5 text-amber-400" />
                       Ver Master NDA Completo
@@ -1097,7 +1121,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                 {(!effectiveNdaEnabled || ndaStep === "signed" || ndaStep === "bypassed" || ndaStep === "none") && (
                   <>
                     <div className="flex items-center justify-between gap-2 mb-2">
-                      <h3 className="text-sm font-semibold text-white">
+                      <h3 className="text-[15px] font-semibold text-white">
                         {isProposal
                           ? isB2B ? "Aceptar propuesta B2B" : "Aceptar propuesta Individual"
                           : isB2B ? "Firmar acuerdo B2B" : "Firmar acuerdo Individual"}
@@ -1109,7 +1133,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                       <button
                         type="button"
                         onClick={() => setDealScope("B2B")}
-                        className={`flex-1 py-1.5 px-3 rounded-md text-[11px] font-mono transition-all ${
+                        className={`flex-1 py-1.5 px-3 rounded-md text-[12px] font-mono transition-all ${
                           dealScope === "B2B"
                             ? "bg-amber-500/20 text-amber-300 border border-amber-500/30 font-semibold"
                             : "text-zinc-400 hover:text-zinc-200"
@@ -1120,7 +1144,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                       <button
                         type="button"
                         onClick={() => setDealScope("B2C")}
-                        className={`flex-1 py-1.5 px-3 rounded-md text-[11px] font-mono transition-all ${
+                        className={`flex-1 py-1.5 px-3 rounded-md text-[12px] font-mono transition-all ${
                           dealScope === "B2C"
                             ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold"
                             : "text-zinc-400 hover:text-zinc-200"
@@ -1130,7 +1154,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                       </button>
                     </div>
 
-                    <p className="text-[11px] text-zinc-500 leading-relaxed mb-3">
+                    <p className="text-[12px] text-zinc-500 leading-relaxed mb-3">
                       {isB2B
                         ? "Ingresa los datos de tu empresa y representación legal para firmar on-chain."
                         : "Ingresa tus datos personales para firmar on-chain como persona física."}
@@ -1139,7 +1163,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                     <form onSubmit={(e) => e.preventDefault()} className="space-y-3">
                       {isB2B && (
                         <div>
-                          <label className="block text-[10px] font-mono text-zinc-400 mb-1">
+                          <label className="block text-[11px] font-mono text-zinc-400 mb-1">
                             Empresa / Razón Social *
                           </label>
                           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -1149,14 +1173,14 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                                 placeholder="Nombre de la empresa"
                                 value={signCompany}
                                 onChange={(e) => setSignCompany(e.target.value)}
-                                className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-[12px] text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/40"
+                                className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-[13px] text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/40"
                               />
                             </div>
                             <div>
                               <select
                                 value={signCompanyType}
                                 onChange={(e) => setSignCompanyType(e.target.value)}
-                                className="w-full bg-[#0C0C10] border border-white/10 rounded-lg px-3 py-2.5 text-[12px] text-zinc-200 focus:outline-none focus:border-amber-500/40 cursor-pointer"
+                                className="w-full bg-[#0C0C10] border border-white/10 rounded-lg px-3 py-2.5 text-[13px] text-zinc-200 focus:outline-none focus:border-amber-500/40 cursor-pointer"
                               >
                                 {COMPANY_TYPES.map((t) => (
                                   <option key={t.value} value={t.value} className="bg-[#0C0C10] text-zinc-200">
@@ -1173,7 +1197,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                       )}
 
                       <div>
-                        <label className="block text-[10px] font-mono text-zinc-400 mb-1">
+                        <label className="block text-[11px] font-mono text-zinc-400 mb-1">
                           {isB2B ? "Nombre del Representante Legal *" : "Nombre Completo (Persona Física) *"}
                         </label>
                         <input
@@ -1181,7 +1205,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                           placeholder="Tu nombre y apellidos"
                           value={signName}
                           onChange={(e) => setSignName(e.target.value)}
-                          className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-[12px] text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/40"
+                          className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-[13px] text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/40"
                         />
                         <p className="text-[9px] text-zinc-500 mt-1">
                           {isB2B
@@ -1191,7 +1215,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                       </div>
 
                       <div>
-                        <label className="block text-[10px] font-mono text-zinc-400 mb-1">
+                        <label className="block text-[11px] font-mono text-zinc-400 mb-1">
                           {isB2B ? "Cargo o Poder Legal *" : "Rol o Calidad (Opcional)"}
                         </label>
                         <input
@@ -1199,12 +1223,12 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                           placeholder={isB2B ? "Ej: Representante Legal / Director General" : "Ej: Inversionista / Colaborador / Titular"}
                           value={signRole}
                           onChange={(e) => setSignRole(e.target.value)}
-                          className="w-full bg-black/40 border border-amber-500/30 rounded-lg px-3 py-2.5 text-[12px] text-white placeholder:text-zinc-500 focus:outline-none focus:border-amber-500/60 transition-colors"
+                          className="w-full bg-black/40 border border-amber-500/30 rounded-lg px-3 py-2.5 text-[13px] text-white placeholder:text-zinc-500 focus:outline-none focus:border-amber-500/60 transition-colors"
                         />
                       </div>
                       
                       {signName.trim() && (
-                        <div className="p-3 rounded-lg border border-amber-500/20 bg-amber-500/[0.04] text-[11px] text-amber-200/80 leading-relaxed">
+                        <div className="p-3 rounded-lg border border-amber-500/20 bg-amber-500/[0.04] text-[12px] text-amber-200/80 leading-relaxed">
                           {isB2B ? (
                             <>Firmarás como: <strong className="text-amber-300 not-italic">{signName}</strong> ({signRole || "Representante"}) en representación formal de <strong className="text-amber-300 not-italic">{fullCompanyName}</strong></>
                           ) : (
@@ -1220,16 +1244,16 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                               <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
                               <div className="min-w-0">
                                 <p className="text-[9px] font-mono uppercase tracking-widest text-rose-400">Cuenta incorrecta</p>
-                                <p className="text-[10px] font-mono text-zinc-300 truncate">{account.address}</p>
+                                <p className="text-[11px] font-mono text-zinc-300 truncate">{account.address}</p>
                               </div>
                             </div>
-                            <p className="text-[10px] text-rose-300/80 leading-relaxed">
+                            <p className="text-[11px] text-rose-300/80 leading-relaxed">
                               Esta sesión está vinculada a otra cuenta (<span className="font-mono text-rose-200">{expectedWallet.slice(0,6)}...{expectedWallet.slice(-4)}</span>). No puedes proceder con una cuenta diferente.
                             </p>
                             <button
                               type="button"
                               onClick={() => { if (activeWallet) disconnect(activeWallet); }}
-                              className="w-full mt-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-200 text-[11px] font-mono transition-colors"
+                              className="w-full mt-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-200 text-[12px] font-mono transition-colors"
                             >
                               <XCircle className="w-3.5 h-3.5" />
                               DESCONECTAR
@@ -1241,13 +1265,13 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                               <Wallet className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
                               <div className="min-w-0">
                                 <p className="text-[9px] font-mono uppercase tracking-widest text-emerald-300">Cuenta conectada</p>
-                                <p className="text-[10px] font-mono text-zinc-300 truncate">{account.address}</p>
+                                <p className="text-[11px] font-mono text-zinc-300 truncate">{account.address}</p>
                               </div>
                             </div>
                             <button
                               type="button"
                               onClick={() => { if (activeWallet) disconnect(activeWallet); }}
-                              className="text-[10px] font-mono text-emerald-400/70 hover:text-emerald-300 transition-colors underline decoration-emerald-400/30 underline-offset-2 shrink-0"
+                              className="text-[11px] font-mono text-emerald-400/70 hover:text-emerald-300 transition-colors underline decoration-emerald-400/30 underline-offset-2 shrink-0"
                             >
                               Salir
                             </button>
@@ -1255,7 +1279,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                         )
                       ) : (
                         <div className="rounded-lg border border-white/10 bg-black/40 p-3">
-                          <p className="text-[10px] text-zinc-500 mb-2">Conecta tu wallet para firmar el acuerdo (gratis · sin gas):</p>
+                          <p className="text-[11px] text-zinc-500 mb-2">Conecta tu wallet para firmar el acuerdo (gratis · sin gas):</p>
                           <ConnectButton
                             client={client}
                             wallets={signerWallets}
@@ -1266,7 +1290,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                         </div>
                       )}
 
-                      {signError && <p className="text-[11px] text-rose-400">{signError}</p>}
+                      {signError && <p className="text-[12px] text-rose-400">{signError}</p>}
                       <button
                         type="button"
                         onClick={handleSign}
@@ -1289,8 +1313,8 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                   </>
                 )}
                 
-                {/* ── ATTACHMENTS ────────────────────────────────────────── */}
-                <DealAttachments publicId={publicId} rawToken={rawToken} />
+                {/* ── ATTACHMENTS (solo instrumentos colaborativos) ──────── */}
+                {collaborative && <DealAttachments publicId={publicId} rawToken={rawToken} />}
               </motion.div>
             ) : null}
           </div>
@@ -1309,8 +1333,8 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                   <Lock className="w-4 h-4" />
                 </span>
                 <div className="min-w-0">
-                  <p className="text-[10px] font-mono uppercase tracking-widest text-amber-300">Acceso protegido</p>
-                  <p className="text-[10px] text-zinc-500 truncate">{room.publicId}</p>
+                  <p className="text-[11px] font-mono uppercase tracking-widest text-amber-300">Acceso protegido</p>
+                  <p className="text-[11px] text-zinc-500 truncate">{room.publicId}</p>
                 </div>
               </div>
 
@@ -1321,7 +1345,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
               </div>
 
               <h2 className="text-lg font-semibold text-white mb-1">Documento confidencial</h2>
-              <p className="text-[12px] text-zinc-400 leading-relaxed mb-5">
+              <p className="text-[13px] text-zinc-400 leading-relaxed mb-5">
                 Este documento está restringido a los firmantes autorizados. Ingresa tu correo electrónico:
                 si estás registrado, recibirás un enlace único de acceso para leerlo y firmarlo.
               </p>
@@ -1329,8 +1353,8 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
               {emailSent ? (
                 <div className="p-4 rounded-xl border border-amber-500/20 bg-amber-500/[0.04]">
                   <Check className="w-5 h-5 text-amber-300 mb-2" />
-                  <p className="text-[12px] text-amber-200">Enlace enviado</p>
-                  <p className="text-[10px] text-zinc-500 mt-1">Revisa tu bandeja de entrada. El enlace es de un solo uso y expira en 7 días.</p>
+                  <p className="text-[13px] text-amber-200">Enlace enviado</p>
+                  <p className="text-[11px] text-zinc-500 mt-1">Revisa tu bandeja de entrada. El enlace es de un solo uso y expira en 7 días.</p>
                 </div>
               ) : (
                 <form onSubmit={requestMagic} className="space-y-3">
@@ -1339,13 +1363,13 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                     placeholder="tu@email.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-[12px] text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/40"
+                    className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-[13px] text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/40"
                   />
-                  {magicError && <p className="text-[11px] text-rose-400">{magicError}</p>}
+                  {magicError && <p className="text-[12px] text-rose-400">{magicError}</p>}
                   <button
                     type="submit"
                     disabled={sendingMagic || !email.includes("@")}
-                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-200 text-[12px] font-mono transition-colors disabled:opacity-50"
+                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-200 text-[13px] font-mono transition-colors disabled:opacity-50"
                   >
                     {sendingMagic ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Mail className="w-3.5 h-3.5" />}
                     ENVIAR ENLACE DE ACCESO
@@ -1357,7 +1381,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
         </div>
       )}
 
-      <footer className="h-9 shrink-0 flex items-center justify-center px-4 bg-[#0C0C10] border-t border-white/10 font-mono text-[10px] text-zinc-600">
+      <footer className="h-9 shrink-0 flex items-center justify-center px-4 bg-[#0C0C10] border-t border-white/10 font-mono text-[11px] text-zinc-600">
         Pandoras Group · Confidential · Transaction Room {room.publicId}
       </footer>
     </main>

@@ -9,9 +9,11 @@ interface NDAModalProps {
   isOpen: boolean;
   onClose: () => void;
   version?: string;
+  /** Si se pasa, el PDF se abre en la vista imprimible (márgenes correctos). */
+  publicId?: string;
 }
 
-export function NDAModal({ isOpen, onClose, version = NDA_VERSION }: NDAModalProps) {
+export function NDAModal({ isOpen, onClose, version = NDA_VERSION, publicId }: NDAModalProps) {
   const [mounted, setMounted] = useState(false);
   const cfg = getNdaConfig(version);
 
@@ -93,7 +95,13 @@ export function NDAModal({ isOpen, onClose, version = NDA_VERSION }: NDAModalPro
             {/* Footer */}
             <div className="px-6 py-4 border-t border-zinc-800/60 bg-zinc-900/40 flex items-center justify-between">
               <Button
-                onClick={() => window.print()}
+                onClick={() => {
+                  if (publicId) {
+                    window.open(`/deal/${publicId}/nda`, "_blank", "noopener,noreferrer");
+                    return;
+                  }
+                  window.print();
+                }}
                 variant="outline"
                 className="gap-2 border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/10 text-xs font-mono"
               >
