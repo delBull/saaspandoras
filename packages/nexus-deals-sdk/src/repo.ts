@@ -489,10 +489,13 @@ export async function signRoom(
 export async function signRoomOnline(
   roomId: string,
   name: string,
-  opts: { wallet: string; signature: string; signatureMessage: string; company?: string; role?: string }
+  opts: { wallet: string; signature: string; signatureMessage: string; company?: string; role?: string; email?: string }
 ) {
   const now = new Date();
-  const email = opts.wallet.toLowerCase();
+  // El firmante se identifica por correo cuando existe (magic link). Usar la
+  // wallet como clave creaba una fila nueva y dejaba al firmante real PENDING:
+  // la sala nunca pasaba a SIGNED.
+  const email = (opts.email ?? opts.wallet).toLowerCase();
 
   const existing = await db
     .select({ id: nexusDealSigners.id })

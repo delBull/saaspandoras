@@ -42,7 +42,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
     // If this room requires NDA and the user is NOT signing the combined message,
     // check that they've already signed the NDA independently first.
     const effectiveNdaEnabled = Boolean(room.ndaEnabled);
-    if (effectiveNdaEnabled && !isCombined) {
+    const hasToken = typeof token === "string" && token.length > 0;
+    if (effectiveNdaEnabled && !isCombined && !hasToken) {
       const identifier = cleanWallet;
       const ndaSigned = await hasEmailSignedNda(identifier, room.ndaVersion);
       if (!ndaSigned) {
@@ -156,19 +157,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
         role: cleanRole,
       });
 
-      await sendSignatureAlert({
-        roomLabel: `${room.publicId} · ${room.counterparty}`,
-        signerName: cleanName,
-        email: cleanWallet,
-        kind: room.kind,
-        online: true,
-        enteredIntoForce: updated?.status === "SIGNED",
-      });
-
       // Send follow-up email to signer (skip if wallet-only, no email)
       if (cleanWallet.includes("@")) {
         const nextRoom = room.nextRoomId ? await getRoom(room.nextRoomId) : null;
-        Promise.allSettled([
+        await Promise.allSettled([
           sendDealSignedEmail({
             to: cleanWallet,
             firstName: cleanName.split(" ")[0],
@@ -202,6 +194,22 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
     const signer = room.signers.find((s) => s.email.toLowerCase() === payload.email.toLowerCase());
     if (!signer) {
       return NextResponse.json({ error: "Tu correo no está autorizado para este documento." }, { status: 403 });
+    }
+
+    if (effectiveNdaEnabled && !isCombined) {
+      const ndaSigned =
+        (await hasEmailSignedNda(payload.email, room.ndaVersion)) ??
+        (await hasEmailSignedNda(cleanWallet, room.ndaVersion));
+      if (!ndaSigned) {
+        return NextResponse.json(
+          {
+            error: "Debes firmar el Acuerdo de Confidencialidad (NDA) antes de firmar este documento.",
+            requiresNda: true,
+            ndaVersion: room.ndaVersion,
+          },
+          { status: 403 },
+        );
+      }
     }
 
     const ts = String(ndaTimestamp ?? new Date().toISOString());
@@ -297,18 +305,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
       role: cleanRole,
     });
 
-    await sendSignatureAlert({
-      roomLabel: `${room.publicId} · ${room.counterparty}`,
-      signerName: cleanName,
-      email: payload.email,
-      kind: room.kind,
-      enteredIntoForce: updated?.status === "SIGNED",
-    });
+    // `signRoom` ya dispara la alerta de firma; no duplicar.
 
     // Send follow-up email to signer
     if (payload.email && payload.email.includes("@")) {
       const nextRoom = room.nextRoomId ? await getRoom(room.nextRoomId) : null;
-      Promise.allSettled([
+      await Promise.allSettled([
         sendDealSignedEmail({
           to: payload.email,
           firstName: cleanName.split(" ")[0],

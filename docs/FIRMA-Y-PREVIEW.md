@@ -42,6 +42,35 @@ Firmante: luispguardado@gmail.com
 Nombre: Luis P. Guardado, en representación de Keeper Consulting and Management, S.A. de C.V. (Representante Legal)
 ```
 
+## 1.1 Segundo bug: la firma se guardaba contra la wallet
+
+La rama con magic link usaba `signRoom(roomId, email, …)` (correcto), pero el flujo
+`openSign` usaba `signRoomOnline`, que tomaba **la wallet como si fuera el correo** del
+firmante. En una sala con firmante registrado por correo eso creaba una fila nueva
+(`email = 0x…`) y dejaba al firmante real en `PENDING`: `syncRoomSignStatus` nunca veía
+"todos firmaron" y **la sala no pasaba a `SIGNED`**.
+
+Corregido: `signRoomOnline` acepta `email` y lo usa como clave cuando existe.
+
+## 1.2 Disparadores post-firma
+
+| Disparador | Antes | Ahora |
+|---|---|---|
+| Alerta de firma (Discord) | Se enviaba **dos veces** en la rama con token | Una sola (`signRoom` la envía) |
+| Correo "documento firmado" | `Promise.allSettled` sin `await` → en serverless podía no ejecutarse | Se espera antes de responder |
+| Guard del NDA al firmar el documento | Comparaba la **wallet** contra aceptaciones registradas por **correo** | Con token compara correo **o** wallet |
+| Registro del firmante | Por wallet en openSign, por correo en magic link | Por correo cuando existe; wallet sólo en openSign |
+
+**Simulación contra la base operativa** (sala temporal, eliminada después):
+
+```
+antes:   DRAFT · firmante PENDING
+después: SIGNED · en vigor: true
+firmante: { status: SIGNED, name: "Prueba Firma", company: "Test S.A. de C.V." }
+auditoría: AutoSigned | Signed | Room created
+limpieza: sala y firmantes eliminados
+```
+
 ## 2. Riesgos que quedan (verificar en producción)
 
 | Punto | Estado |
