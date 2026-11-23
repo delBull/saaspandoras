@@ -31,19 +31,39 @@ resource hub (portal + Telegram), progress log.
 capacidades `rwa.portal/payments/governance/ipfs_evidence/nft.certificates`,
 `legalProfile` con plantilla `SNARAI_AGREEMENT_TEMPLATE`.
 
-## 2. Bloqueos reales encontrados (verificados hoy)
+## 2. Corrección: los legales SÍ existen (estaban mal enlazados)
 
-| # | Hallazgo | Evidencia |
+Revisado el proyecto real en `Aztecas/Proyectos/Narai/apps/web`: las páginas legales
+viven en la app de Narai, no en dash.
+
+| Página | URL real | Estado |
 |---|---|---|
-| 1 | **Términos y privacidad dan 404** | `dash.pandoras.finance/legal/terms/snarai` → 404 · `/legal/privacy/snarai` → 404 |
-| 2 | **Logo roto** | `https://snarai.com/logo.png` → 404 |
-| 3 | **Colección NFT de prueba** | `tenant_nft_collections` = "Test Collection", contract `0x123`, status `DEPLOYED` |
-| 4 | **11 emisiones atascadas** | `tenant_nft_issuances` → 11 en `pending_mint` |
-| 5 | **Treasury con un solo firmante** | `treasurySigners` = 1 dirección |
-| 6 | **No verificado en cadena** | falta comprobar bytecode/owner/supply en Base de `0xd2d5…` |
+| Risk disclosure | `snarai.aztecaz.xyz/en/institutional/legal/investor-risk-disclosure` | 200 |
+| Participation agreement | `…/investor-participation-agreement` | 200 |
+| Strategic agreement | `…/pandoras-snarai-strategic-agreement` | 200 |
+| Institutional disclosure | `…/institutional-disclosure-statement` | 200 |
+| White paper | `snarai.aztecaz.xyz/white-paper` | 200 |
+| Logo | `snarai.aztecaz.xyz/logo-white.png` | 200 |
 
-Sí responden: `/legal/risk-disclosure/snarai`, `/legal/agreement/snarai`,
-`/legal/phase-dynamics/snarai`, y `snarai.aztecaz.xyz`.
+**Causa del 404:** `tenant_runtime_config.brandConfig` apuntaba a
+`dash.pandoras.finance/legal/...` y a `snarai.com/logo.png`.
+
+**Corregido en la base operativa:** `logoUrl`, `riskUrl`, `agreementUrl` y
+`termsUrl` ahora apuntan a Narai; se retiró `privacyUrl` porque **no existe aviso de
+privacidad** todavía (mejor sin link que con link roto).
+
+## 2.1 Pendientes reales
+
+| # | Punto | Acción |
+|---|---|---|
+| 1 | **Aviso de privacidad** | crear la página y recién entonces volver a enlazarla |
+| 2 | **Términos** | hoy apunta a institutional-disclosure; si quieren términos propios, crearlos |
+| 3 | **Colección "Test Collection" (`0x123`)** en `tenant_nft_collections` | confirmar si es data de demo y retirarla |
+| 4 | **11 emisiones `pending_mint`** | reintentar o cancelar con motivo |
+| 5 | **Blockchain / treasury** | **cubierto por Pandora's**; no se evalúa aquí. Solo confirmar con el equipo de contratos que el despliegue en Base corresponde al entorno de producción |
+
+> Retiro el hallazgo anterior de "treasury con un solo firmante": la capa on-chain la
+> opera Pandora's, no este repositorio.
 
 ## 3. Checklist para lanzar
 
@@ -76,7 +96,8 @@ Sí responden: `/legal/risk-disclosure/snarai`, `/legal/agreement/snarai`,
 
 ## 5. Conclusión
 
-El proyecto **no está vacío**: está configurado en `w2e_config` y con materiales
-completos. Lo que impide lanzar es integridad operativa (legal 404, logo, colección
-de prueba, mints atascados, treasury de un firmante) y la verificación on-chain.
-Son correcciones concretas, no un rediseño.
+El proyecto está **completo en su parte comercial y legal**: fases, tiers, materiales
+EN/ES, portal, páginas legales y white paper. El único bloqueo era de **enlaces**
+(config apuntando a dash y a un logo inexistente), ya corregido. Quedan tres tareas
+de higiene (aviso de privacidad, colección de prueba y mints pendientes) y la
+confirmación on-chain con el equipo de Pandora's.
