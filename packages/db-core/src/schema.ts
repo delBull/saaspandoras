@@ -5956,6 +5956,37 @@ export const nexusDealAccessRequests = pgTable("nexus_deal_access_requests", {
   };
 });
 
+
+/**
+ * Contacto dentro de un Deal Pod (canal WhatsApp).
+ *
+ * NO es una identidad de marketing ni de tenant: es la ficha de la persona en su
+ * pod. Sirve para que Hermes la reconozca en el canal maestro y la salude con su
+ * contexto, sin mezclarla con otros casos ni con el knowledge de cada tenant.
+ */
+export const nexusPodContacts = pgTable("nexus_pod_contacts", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  podId: uuid("pod_id").notNull().references(() => nexusDealPods.id, { onDelete: "cascade" }),
+  canonicalOrgId: varchar("canonical_org_id", { length: 256 }).notNull().default("pandoras"),
+  phone: varchar("phone", { length: 50 }),
+  email: varchar("email", { length: 255 }),
+  name: varchar("name", { length: 255 }).notNull(),
+  role: varchar("role", { length: 32 }).notNull().default("CLIENT"),
+  relationship: varchar("relationship", { length: 160 }),
+  context: jsonb("context").$type<Record<string, unknown>>().notNull().default({}),
+  welcomeEnabled: boolean("welcome_enabled").notNull().default(false),
+  welcomeCooldownHours: integer("welcome_cooldown_hours").notNull().default(168),
+  lastWelcomedAt: timestamp("last_welcomed_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => {
+  return {
+    podPhoneUq: uniqueIndex("uq_pod_contacts_pod_phone").on(t.podId, t.phone),
+    phoneIdx: index("idx_pod_contacts_phone").on(t.phone),
+    orgIdx: index("idx_pod_contacts_org").on(t.canonicalOrgId),
+  };
+});
+
 export const hermesBriefings = pgTable("hermes_briefings", {
   id: varchar("id", { length: 128 }).primaryKey(),
   organizationId: varchar("organization_id", { length: 256 }).notNull(),

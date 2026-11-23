@@ -59,7 +59,7 @@ costos de proveedores ni producción de contenido.
 
 ## 5. Mensaje que Marco le manda a Luis
 
-> Luis, ¿cómo estás? Te paso el contacto de Hermes, mi asistente, para que no se te pierda
+> Luis, ¿cómo estás? Te paso el contacto de Hermes, de Pandora's, para que no se te pierda
 > nada del proyecto. Solo abre el enlace y dale enviar: ya va con el mensaje puesto y él te
 > reconoce. Ahí mismo te deja la sala del contrato por si quieres firmar desde el celular.
 >
@@ -72,11 +72,13 @@ texto), así que no queda rígido.
 
 ## 6. Qué quedó implementado
 
-**Identidad canónica (mecanismo existente, no una tabla nueva):**
+**Aislamiento: vive en su Deal Pod, no en la plataforma.**
 
-- `marketing_identities`: Luis con email, teléfono `5213222149409` y
-  `metadata.whatsapp` (welcome, estado, deal, enlaces, pendientes).
-- `channel_identity_bindings`: WhatsApp y email ligados a esa identidad.
+- Tabla nueva `nexus_pod_contacts`: Luis ligado al pod `editorial`, con rol `CLIENT`,
+  relación, contexto (proyecto, enlaces, pendiente), `welcome_enabled` y cooldown.
+- Verificado que **no** existe en `marketing_identities`, `channel_identity_bindings`,
+  `marketing_leads`, `nexus_collaborators` ni en `hermes_knowledge`. Tampoco quedó en
+  `whatsapp_users` (registro legado del canal).
 
 **Bienvenida determinista (`lib/whatsapp/contact-welcome.ts`):**
 
@@ -86,27 +88,33 @@ texto), así que no queda rígido.
 - No depende del LLM ni de que el conocimiento esté cargado; se repite como máximo cada 12 h.
 - El jefe (Marco) queda excluido.
 
-Mensaje verificado:
+Mensaje verificado (Hermes habla con su propia identidad, sin "asistente de"):
 
 ```
-Hola Luis, soy Hermes, el asistente de Marco.
-Te tengo registrado como Keeper Consulting and Management.
+Hola Luis, soy Hermes, de Pandora's. Qué gusto tenerte por aquí.
 
-Esto es lo que tengo pendiente:
-• Firma del contrato (Fase 0 + Fase 1)
-• Accesos al VPS y base de datos del programador anterior
+Marco me puso al tanto de tu proyecto: la plataforma editorial multi-marca para tus
+cuatro medios, arrancando con El Pregonero PV y Noticias de Jalisco.
 
-Sala del contrato: https://nexus.pandoras.finance/deal/PDR-EDITORIAL
-Contrato en PDF: https://nexus.pandoras.finance/api/public/deals/PDR-EDITORIAL/pdf
-Propuesta: https://propuesta-medios.vercel.app
+Cuando quieras, la sala con el contrato está aquí:
+https://nexus.pandoras.finance/deal/PDR-EDITORIAL
+Y si prefieres revisarlo en PDF: https://nexus.pandoras.finance/api/public/deals/PDR-EDITORIAL/pdf
 
-Si quieres, te guío para firmar en dos minutos. Y cuando tengas los accesos del VPS y la base de datos, me los dices y arrancamos la Fase 0.
+Por ahora seguimos con un pendiente: los accesos al VPS y a la base de datos de tu
+programador anterior.
+
+¿Te gustaría que empecemos por la firma o prefieres que te explique primero qué incluye
+la Fase 0?
 ```
 
-**Conocimiento de la propuesta:** fila `ACTIVE`/`PUBLIC` en `hermes_knowledge`
-(`propuesta_medios_plataforma_editorial`, 1,917 caracteres) para que el runtime pueda
-responder preguntas del proyecto después de la bienvenida.
+**Contexto del proyecto:** vive en `nexus_pod_contacts.context` (resumen, enlaces y
+pendiente), no en el knowledge de la plataforma ni en el de los tenants.
 
-**Prueba:** bienvenida `true` en el primer contacto, `false` tras marcarla, y `true` de nuevo
-al limpiar la marca (queda lista para el primer mensaje real). `tsc` sin errores.
+**Prueba:** contacto encontrado por `+52 1 322 214 9409`; otro número devuelve `null`;
+bienvenida `true` en el primer contacto, `false` tras marcarla, `true` al limpiar la marca
+(queda lista para el primer mensaje real). `tsc` sin errores.
+
+**Lo que no se toca:** el branch de tenants del dispatcher, el knowledge por tenant,
+`InterlocutorResolver`, el runtime y las identidades de marketing quedan intactos. La
+búsqueda de contacto de pod sólo corre en el número maestro de Pandora's.
 MD

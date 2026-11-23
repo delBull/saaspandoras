@@ -18,7 +18,7 @@ import { sendWhatsAppMessage } from '@saasfly/shared';
 import { resolveMasterPhoneNumberId, buildCanonicalWhatsAppConversationId, maskPhoneNumber } from '@saasfly/shared';
 import { getDefaultRuntime, CommercialCloserService, ActorIdentityBindingService, getActiveNonceStore } from '@saasfly/hermes-core';
 import { formatWhatsAppText } from './utils/formatter';
-import { buildContactWelcome, markWelcomed, shouldWelcome, whatsappProfileOf } from './contact-welcome';
+import { buildPodWelcome, findPodContactByPhone, markPodWelcomed, shouldWelcome } from './contact-welcome';
 
 export interface WhatsAppIncomingMessage {
   from: string;
@@ -560,20 +560,17 @@ export class WhatsAppDispatcher {
       const isBoss = !!resolvedInterlocutor?.isBoss;
       const isCollaborator = !!resolvedInterlocutor?.isCollaborator;
 
-      // ── 2.1 Bienvenida determinista para contactos conocidos ──────────────
-      // Si la identidad canónica trae perfil de WhatsApp, Hermes saluda por su
-      // nombre y da los enlaces/pendientes sin depender del LLM.
-      const contactIdentity = resolvedInterlocutor?.canonicalIdentity ?? null;
-      const waProfile = whatsappProfileOf(contactIdentity);
-      if (!isBoss && contactIdentity && shouldWelcome(waProfile)) {
-        const welcome = buildContactWelcome({
-          name: resolvedName,
-          company: (contactIdentity.metadata as any)?.company ?? null,
-          profile: waProfile!,
-        });
+      // ── 2.1 Bienvenida determinista para contactos de un Deal Pod ─────────
+      // Sólo aplica al número maestro y a fichas de pod (`nexus_pod_contacts`).
+      // No toca identidades de marketing, tenants ni su knowledge.
+      const podContact = await findPodContactByPhone(cleanPhone, 'pandoras');
+      if (podContact) resolvedName = podContact.name;
+
+      if (!isBoss && podContact && shouldWelcome(podContact)) {
+        const welcome = buildPodWelcome(podContact);
         await sendWhatsAppMessage(phone, formatWhatsAppText(welcome), messageId);
-        await markWelcomed(contactIdentity as any);
-        console.log(`👋 [WhatsAppDispatcher] Bienvenida de contacto enviada a ${maskPhoneNumber(phone)}`);
+        await markPodWelcomed(podContact.id);
+        console.log(`👋 [WhatsAppDispatcher] Bienvenida de pod enviada a ${maskPhoneNumber(phone)} (${podContact.name})`);
         return {
           status: 'success',
           handled: true,
