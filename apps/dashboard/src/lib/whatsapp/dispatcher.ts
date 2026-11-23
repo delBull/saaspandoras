@@ -18,6 +18,7 @@ import { sendWhatsAppMessage } from '@saasfly/shared';
 import { resolveMasterPhoneNumberId, buildCanonicalWhatsAppConversationId, maskPhoneNumber } from '@saasfly/shared';
 import { getDefaultRuntime, CommercialCloserService, ActorIdentityBindingService, getActiveNonceStore } from '@saasfly/hermes-core';
 import { formatWhatsAppText } from './utils/formatter';
+import { buildContactWelcome, markWelcomed, shouldWelcome, whatsappProfileOf } from './contact-welcome';
 
 export interface WhatsAppIncomingMessage {
   from: string;
@@ -558,6 +559,28 @@ export class WhatsAppDispatcher {
 
       const isBoss = !!resolvedInterlocutor?.isBoss;
       const isCollaborator = !!resolvedInterlocutor?.isCollaborator;
+
+      // ── 2.1 Bienvenida determinista para contactos conocidos ──────────────
+      // Si la identidad canónica trae perfil de WhatsApp, Hermes saluda por su
+      // nombre y da los enlaces/pendientes sin depender del LLM.
+      const contactIdentity = resolvedInterlocutor?.canonicalIdentity ?? null;
+      const waProfile = whatsappProfileOf(contactIdentity);
+      if (!isBoss && contactIdentity && shouldWelcome(waProfile)) {
+        const welcome = buildContactWelcome({
+          name: resolvedName,
+          company: (contactIdentity.metadata as any)?.company ?? null,
+          profile: waProfile!,
+        });
+        await sendWhatsAppMessage(phone, formatWhatsAppText(welcome), messageId);
+        await markWelcomed(contactIdentity as any);
+        console.log(`👋 [WhatsAppDispatcher] Bienvenida de contacto enviada a ${maskPhoneNumber(phone)}`);
+        return {
+          status: 'success',
+          handled: true,
+          target: 'hermes_cognitive_runtime',
+          response: welcome,
+        };
+      }
 
       console.log(`🌐 [WhatsAppDispatcher] Routing to Hermes Cognitive Runtime for ${resolvedName} (Boss: ${isBoss}, Collaborator: ${isCollaborator}, Role: ${resolvedRole})`);
 

@@ -70,25 +70,43 @@ costos de proveedores ni producción de contenido.
 El texto precargado es editable por Luis antes de enviarlo (WhatsApp lo deja en la caja de
 texto), así que no queda rígido.
 
-## 6. Qué hace Hermes hoy y qué falta
+## 6. Qué quedó implementado
 
-**Hoy, con el código desplegado:**
+**Identidad canónica (mecanismo existente, no una tabla nueva):**
 
-- El webhook de WhatsApp Cloud API recibe el mensaje en el número maestro.
-- `WhatsAppDispatcher` resuelve identidad por teléfono, registra el mensaje y enruta al
-  **Hermes Cognitive Runtime** con `organizationId: 'pandoras'`.
-- Responde por WhatsApp con el contexto de la conversación (el mensaje precargado ya lleva
-  quién es, el proyecto, el pendiente y la petición).
-- Queda bitácora en `whatsapp_messages` y el contacto en `whatsapp_users`.
+- `marketing_identities`: Luis con email, teléfono `5213222149409` y
+  `metadata.whatsapp` (welcome, estado, deal, enlaces, pendientes).
+- `channel_identity_bindings`: WhatsApp y email ligados a esa identidad.
 
-**Lo que falta para que Hermes "sepa" la propuesta sin depender del mensaje:**
+**Bienvenida determinista (`lib/whatsapp/contact-welcome.ts`):**
 
-- El runtime consume conocimiento gobernado `ACTIVE` del contexto cognitivo, pero **no hay
-  hoy un perfil por contacto** (empresa, rol, estado, enlaces). La tabla `hermes_knowledge`
-  existe, aunque su `content` quedó marcado como purgado a IPFS, así que insertar texto ahí
-  no garantiza que se use.
-- Propuesta: agregar un **perfil de contacto** (teléfono → contexto + enlaces + estado) y
-  que el dispatcher lo inyecte en el turno, con una **bienvenida determinista** la primera
-  vez del día. Así Hermes saluda por su nombre, da la sala y retoma el pendiente sin
-  depender de que el mensaje lo diga.
+- El dispatcher, al recibir un mensaje en el número maestro, resuelve la identidad por
+  teléfono. Si trae `metadata.whatsapp.welcome = true`, envía **una** bienvenida con su
+  nombre, la empresa, los pendientes y los enlaces, y marca `lastWelcomedAt`.
+- No depende del LLM ni de que el conocimiento esté cargado; se repite como máximo cada 12 h.
+- El jefe (Marco) queda excluido.
+
+Mensaje verificado:
+
+```
+Hola Luis, soy Hermes, el asistente de Marco.
+Te tengo registrado como Keeper Consulting and Management.
+
+Esto es lo que tengo pendiente:
+• Firma del contrato (Fase 0 + Fase 1)
+• Accesos al VPS y base de datos del programador anterior
+
+Sala del contrato: https://nexus.pandoras.finance/deal/PDR-EDITORIAL
+Contrato en PDF: https://nexus.pandoras.finance/api/public/deals/PDR-EDITORIAL/pdf
+Propuesta: https://propuesta-medios.vercel.app
+
+Si quieres, te guío para firmar en dos minutos. Y cuando tengas los accesos del VPS y la base de datos, me los dices y arrancamos la Fase 0.
+```
+
+**Conocimiento de la propuesta:** fila `ACTIVE`/`PUBLIC` en `hermes_knowledge`
+(`propuesta_medios_plataforma_editorial`, 1,917 caracteres) para que el runtime pueda
+responder preguntas del proyecto después de la bienvenida.
+
+**Prueba:** bienvenida `true` en el primer contacto, `false` tras marcarla, y `true` de nuevo
+al limpiar la marca (queda lista para el primer mensaje real). `tsc` sin errores.
 MD
