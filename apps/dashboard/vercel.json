@@ -7,10 +7,6 @@
     {
       "path": "/api/v1/internal/cron/reconcile",
       "schedule": "0 8 * * *"
-    },
-    {
-      "path": "/api/cron/ipfs-repin",
-      "schedule": "*/30 * * * *"
     }
   ]
 }

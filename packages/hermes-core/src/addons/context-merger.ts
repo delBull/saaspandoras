@@ -183,6 +183,24 @@ export class CognitiveContextBuilder {
           r.ciphertextHash,
         );
 
+        // Guarda: un "plaintext" que en realidad es otro sobre cifrado es contenido
+        // corrupto (doble cifrado de una migración). Nunca debe llegar al prompt.
+        const looksLikeEnvelope =
+          verified.plaintext.trimStart().startsWith('{"artifactId"') && verified.plaintext.includes('"ciphertext"');
+        if (looksLikeEnvelope) {
+          console.warn(`[ContextMerger] ${r.artifactId}: contenido corrupto (sobre anidado). Se omite.`);
+          SecurityAuditLogger.logEvent({
+            organizationId: r.tenantId,
+            eventType: 'RESOURCE_MISMATCH_BLOCKED',
+            severity: 'WARN',
+            policyDecision: 'DENY',
+            correlationId: `nested_envelope_${Date.now()}`,
+            artifactId: r.artifactId,
+            metadata: { reason: 'NESTED_ENVELOPE_CONTENT', cid: r.ipfsCid },
+          }).catch(() => {});
+          continue;
+        }
+
         decryptedContent = verified.plaintext;
         hydratedArtifactIds.add(r.artifactId);
       } catch (err: any) {

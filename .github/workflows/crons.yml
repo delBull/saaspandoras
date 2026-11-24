@@ -164,3 +164,23 @@ jobs:
           curl -s -o /dev/null -w "%{http_code}" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             "https://dash.pandoras.finance/api/cron/subscription-lifecycle"
+
+  ipfs-repin:
+    if: github.event.schedule == '*/30 * * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Re-fijar artefactos del vault (seguro IPFS)
+        run: |
+          # El seguro del vault: si el nodo Kubo perdió bloques (reinicio sin
+          # volumen, GC), los re-fija desde el sobre cifrado guardado en Postgres.
+          URL="https://dash.pandoras.finance/api/cron/ipfs-repin?limit=40"
+          BODY=$(curl -sS --max-time 90 -w '\n%{http_code}' -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "$URL")
+          CODE=$(echo "$BODY" | tail -n1)
+          PAYLOAD=$(echo "$BODY" | sed '$d')
+          echo "$PAYLOAD" | head -c 2000
+          echo
+          if [ "$CODE" != "200" ]; then
+            echo "::error::El repin respondió $CODE"
+            exit 1
+          fi
+          echo "$PAYLOAD" | grep -q '"failed":0' || { echo "::error::Hubo fallos en el repin"; exit 1; }

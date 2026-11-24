@@ -10,6 +10,8 @@ import { getDiscordBotConfig, isDiscordBotConfigured } from '@/lib/discord/confi
 import { resolveMembershipForWallet } from '@/lib/discord/membership-db';
 import { syncMemberRoles } from '@/lib/discord/roles';
 import { rolesForMembership, allManagedRoles } from '@/lib/discord/membership';
+import { resolveDiscordTenant } from '@/lib/discord/tenants';
+import { upsertDiscordLead } from '@/lib/growth/discord-lead';
 import { SecurityAuditLogger } from '@saasfly/hermes-core';
 
 export const runtime = 'nodejs';
@@ -29,7 +31,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: false, error: 'DISCORD_NOT_CONFIGURED' }, { status: 503 });
   }
 
-  let body: { token?: string; walletAddress?: string; signature?: string; message?: string; tenant?: string };
+  let body: {
+    token?: string;
+    walletAddress?: string;
+    signature?: string;
+    message?: string;
+    tenant?: string;
+    discordUsername?: string;
+  };
   try {
     body = await req.json();
   } catch {
@@ -107,6 +116,31 @@ export async function POST(req: Request) {
     managedRoles,
   });
 
+  // Growth OS: la verificación se convierte en lead (o actualiza el existente).
+  // Sin esto, el canal captaba gente que nunca aparecía en el embudo.
+  let leadResult: { leadId: string | null; created: boolean } = { leadId: null, created: false };
+  try {
+    const tenant = resolveDiscordTenant(body.tenant);
+    const projectId = tenant.projectId;
+    if (projectId) {
+      leadResult = await upsertDiscordLead({
+        projectId,
+        tenantId: tenant.slug,
+        discordUserId: link.discordUserId,
+        discordUsername: body.discordUsername ?? null,
+        wallet: walletAddress,
+        phone: null,
+        membership: {
+          isParticipant: membership.isParticipant,
+          tier: membership.tier,
+          certificates: membership.certificates,
+        },
+      });
+    }
+  } catch (err: any) {
+    console.warn('[Discord link] lead upsert failed:', err?.message || err);
+  }
+
   await SecurityAuditLogger.logEvent({
     organizationId: 'snarai',
     actorId: `discord:${link.discordUserId}`,
@@ -144,5 +178,6 @@ export async function POST(req: Request) {
       removed: sync.removed,
       errors: sync.errors,
     },
+    lead: { id: leadResult.leadId, created: leadResult.created },
   });
 }

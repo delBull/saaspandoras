@@ -70,6 +70,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ code: s
         door: nexusOutreachLinks.door,
         targetLabel: nexusOutreachLinks.targetLabel,
         targetOrg: nexusOutreachLinks.targetOrg,
+        destinationUrl: nexusOutreachLinks.destinationUrl,
       })
       .from(nexusOutreachLinks)
       .where(and(eq(nexusOutreachLinks.code, code), isNull(nexusOutreachLinks.disabledAt)))
@@ -79,11 +80,13 @@ export async function GET(_req: Request, { params }: { params: Promise<{ code: s
       return NextResponse.redirect(new URL("/pitch/village", _req.url), 302);
     }
 
-    const [pod] = await db
-      .select({ code: nexusDealPods.code, displayName: nexusDealPods.displayName })
-      .from(nexusDealPods)
-      .where(eq(nexusDealPods.id, link.podId))
-      .limit(1);
+    const pod = link.podId
+      ? (await db
+          .select({ code: nexusDealPods.code, displayName: nexusDealPods.displayName })
+          .from(nexusDealPods)
+          .where(eq(nexusDealPods.id, link.podId))
+          .limit(1))[0]
+      : undefined;
 
     const forwarded = _req.headers.get("x-forwarded-for") ?? "";
     const ip = forwarded.split(",")[0]?.trim() || "unknown";
@@ -112,6 +115,21 @@ export async function GET(_req: Request, { params }: { params: Promise<{ code: s
         door: link.door,
         code,
       });
+    }
+
+    // Destino propio (tenant sin Deal Pod): se respeta y se le añade atribución.
+    if (link.destinationUrl) {
+      try {
+        const custom = new URL(link.destinationUrl);
+        custom.searchParams.set("src", code);
+        for (const key of ["utm_source", "utm_medium", "utm_campaign"] as const) {
+          const value = _req.headers.get(key) ?? new URL(_req.url).searchParams.get(key);
+          if (value) custom.searchParams.set(key, value.slice(0, 64));
+        }
+        return NextResponse.redirect(custom, 302);
+      } catch {
+        console.warn("[Outreach] destination_url inválida:", link.destinationUrl);
+      }
     }
 
     const destination = new URL(`/pitch/${pod?.code ?? "village"}`, _req.url);

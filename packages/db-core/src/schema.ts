@@ -3635,7 +3635,10 @@ export const nexusDealPods = pgTable('nexus_deal_pods', {
 
 export const nexusOutreachLinks = pgTable('nexus_outreach_links', {
   id: uuid('id').defaultRandom().primaryKey(),
-  podId: uuid('pod_id').notNull().references(() => nexusDealPods.id, { onDelete: 'cascade' }),
+  /** Opcional: un link puede apuntar a un tenant (S'Narai) sin Deal Pod. */
+  podId: uuid('pod_id').references(() => nexusDealPods.id, { onDelete: 'cascade' }),
+  /** Destino propio cuando no hay pod (portal del tenant, campaña, etc.). */
+  destinationUrl: varchar('destination_url', { length: 600 }),
   code: varchar('code', { length: 64 }).notNull().unique(),
   door: varchar('door', { length: 32 }),
   targetLabel: varchar('target_label', { length: 255 }),

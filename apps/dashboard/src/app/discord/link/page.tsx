@@ -45,7 +45,13 @@ function DiscordLinkContent() {
       const res = await fetch("/api/v1/discord/link", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, walletAddress: account.address, signature, message }),
+        body: JSON.stringify({
+          token,
+          walletAddress: account.address,
+          signature,
+          message,
+          discordUsername: username || undefined,
+        }),
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
