@@ -224,9 +224,34 @@ S'Narai · Riviera            1574889586453258281
 S'Narai · Acceso verificado  1574889587677995101
 ```
 
-**Canales: bloqueado por permisos.** `POST /guilds/{guild}/channels` → `403 Missing Permissions`.
-El bot necesita **Gestionar canales** (Manage Channels) y ver la categoría. Mientras tanto la
-estructura queda definida y el script la crea tal cual en cuanto se conceda.
+**Canales creados** (24 nov 2026), tras resolver dos bloqueos:
+
+```
+S'NARAI                    1574893365483536425
+  #s-narai-anuncios        1574893369044238336
+  #s-narai-la-oportunidad  1574893370273439988
+  #s-narai-avance          1574893372525649973
+  #s-narai-preguntas       1574893375033708605
+  #s-narai-amas            1574893377315414096
+S'NARAI · MIEMBROS         1574893366964133919   (@everyone sin ver; rol verificado sí)
+  #miembros-documentos     1574893379777724569
+  #miembros-visitas        1574893381233021029
+  #miembros-due-diligence  1574893382310961233
+```
+
+Dos incidentes que quedaron documentados como aprendizaje:
+
+1. **Cuarentena automática.** Tras crear los roles, el bot pasó a `Quarantine` (probablemente por
+   Wick/Captcha.bot al ver la ráfaga) y perdió todos los permisos. Se resolvió quitándole el rol y
+   subiendo `Hermes` a la cima de la jerarquía.
+2. **El bot se quedó fuera de su propia categoría privada.** Al denegar `VIEW_CHANNEL` a `@everyone`
+   sin permitírselo al bot, éste perdió acceso y ya no podía editar. Se corrigió dándole temporalmente
+   el rol verificado, parcheando la categoría **y** los tres canales (los hijos copian los overwrites
+   y no se sincronizan solos), y retirándole el rol. El script ya declara los overwrites del bot en
+   categoría y canales para no repetirlo con otros tenants.
+
+**Prueba de asignación de roles:** `PUT` y `DELETE` de `S'Narai · Acceso verificado` al propio bot →
+`204` en ambos. El bot puede asignar.
 
 **Invitación del servidor:** `https://discord.gg/YzC4EugdPT` (permanente).
 

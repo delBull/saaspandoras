@@ -80,6 +80,10 @@ async function main() {
   }
 
   const g = guild();
+  const me = await api('/users/@me');
+  const botUserId: string = me.id;
+  console.log(`bot: ${me.username} (${botUserId})`);
+
   const existingRoles: any[] = await api(`/guilds/${g}/roles`);
   const roleIds: Record<string, string> = {};
 
@@ -107,10 +111,13 @@ async function main() {
       console.log(`= categoría existente: ${name} (${found.id})`);
       return found.id;
     }
+    // OJO: si se deniega VIEW_CHANNEL a @everyone sin permitírselo al bot, el
+    // bot pierde acceso a la categoría que acaba de crear y ya no puede editarla.
     const overwrites = isPrivate
       ? [
           { id: g, type: 0, deny: String(1 << 10) }, // @everyone sin VIEW_CHANNEL
           { id: roleIds.DISCORD_ROLE_VERIFIED, type: 0, allow: String(1 << 10) },
+          { id: botUserId, type: 1, allow: String(1 << 10) }, // el bot debe seguir viendo
         ]
       : [];
     const created = await api(`/guilds/${g}/channels`, {
@@ -129,6 +136,16 @@ async function main() {
       console.log(`= canal existente: ${c.name}`);
       continue;
     }
+    // Los canales hijos copian los overwrites de la categoría al crearse y NO se
+    // sincronizan solos: hay que declararlos también aquí o el bot pierde acceso.
+    const overwrites = c.private
+      ? [
+          { id: g, type: 0, deny: String(1 << 10), allow: '0' },
+          { id: roleIds.DISCORD_ROLE_VERIFIED, type: 0, deny: '0', allow: String(1 << 10) },
+          { id: botUserId, type: 1, allow: String(1 << 10) },
+        ]
+      : undefined;
+
     const created = await api(`/guilds/${g}/channels`, {
       method: 'POST',
       body: JSON.stringify({
@@ -136,6 +153,7 @@ async function main() {
         type: 0,
         parent_id: c.private ? privateCat : publicCat,
         topic: c.topic,
+        ...(overwrites ? { permission_overwrites: overwrites } : {}),
       }),
     });
     console.log(`+ canal creado: ${c.name} (${created.id})`);
