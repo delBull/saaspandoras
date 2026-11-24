@@ -26,6 +26,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Lock,
+  ShieldCheck,
 } from 'lucide-react';
 
 interface GrowthOsSidebarProps {
@@ -79,6 +80,7 @@ export function GrowthOsSidebar({ slugId, orgName, hasHermes: _hasHermes, enable
     { label: 'Growth Campaigns', href: '/growth/marketing', icon: BarChart2, section: 'ops', capability: 'growth.email' },
     { label: 'Mission Control', href: '/missions', icon: Target, section: 'ops' },
     { label: 'Pipeline & CRM', href: '/pipeline', icon: Users, section: 'ops', capability: 'growth.crm' },
+    { label: 'Aprobaciones', href: '/approvals', icon: ShieldCheck, section: 'gov' },
     { label: 'Email Marketing', href: '/email', icon: Mail, section: 'ops', capability: 'growth.email' },
     { label: 'NFT Lab & Passes', href: '/nft-lab', icon: Sparkles, section: 'ops', capability: 'growth.nft' },
     { label: 'Pay & Finanzas', href: '/finance', icon: Wallet, section: 'ops', capability: 'growth.finance' },

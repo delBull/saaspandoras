@@ -17,6 +17,7 @@ import { SessionTokenService } from '@saasfly/hermes-core';
 import { isWalletAuthorizedForTenant } from '@saasfly/hermes-core';
 import { capabilityRegistry } from '@/lib/growth/capability-registry.service';
 import { requestCampaignApproval } from '@/lib/growth/campaign-approval';
+import { requireGrowthPermission } from '@/lib/growth/require-growth-permission';
 import type { 
   GetEmailMarketingResponseDTO, 
   EmailTemplateDTO, 
@@ -240,6 +241,9 @@ interface CreateCampaignRequestBody {
 
 export async function POST(req: NextRequest) {
   try {
+    const denied = await requireGrowthPermission(req, { permission: 'marketing.manage' });
+    if (denied) return denied;
+
     const ip = clientIpFromHeaders(req.headers);
     const rl = checkRateLimit(`growth-email-post:${ip}`, 15, 60_000);
     if (!rl.allowed) {

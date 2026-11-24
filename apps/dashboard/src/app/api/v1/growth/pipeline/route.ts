@@ -14,6 +14,7 @@ import { OrganizationSDK } from '@saasfly/shared';
 import { SessionTokenService } from '@saasfly/hermes-core';
 import { isWalletAuthorizedForTenant } from '@saasfly/hermes-core';
 import { capabilityRegistry } from '@/lib/growth/capability-registry.service';
+import { requireGrowthPermission } from '@/lib/growth/require-growth-permission';
 import type { GetPipelineResponseDTO, TenantLeadDTO, LeadStage } from '@saasfly/shared';
 
 export const dynamic = 'force-dynamic';
@@ -82,6 +83,9 @@ async function resolveTenant(req: NextRequest, requestedOrg?: string | null): Pr
 
 export async function GET(req: NextRequest) {
   try {
+  const denied = await requireGrowthPermission(req, { permission: 'growth.manage' });
+  if (denied) return denied;
+
     const ip = clientIpFromHeaders(req.headers);
     const rl = checkRateLimit(`growth-pipeline-get:${ip}`, 60, 60_000);
     if (!rl.allowed) {

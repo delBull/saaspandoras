@@ -39,6 +39,7 @@ export type NexusRole =
   | 'ADMIN_MARKETING' 
   | 'ADMIN_COMPLIANCE' 
   | 'TENANT_ADMIN' 
+  | 'COMMUNITY_MANAGER'
   | 'OPERATOR' 
   | 'MARKETING' 
   | 'VIEWER';
@@ -161,6 +162,25 @@ export function resolveEffectivePermissions(
       'calendar.manage': false,
       ecosystem: true,
       institutionalBooks: false,
+    },
+    /**
+     * Community & Discord Manager: dueño del embudo y de la comunidad.
+     * Puede operar leads, campañas y ver conversaciones; NO toca dinero,
+     * usuarios, tenants, compliance ni emisión.
+     */
+    COMMUNITY_MANAGER: {
+      'users.manage': false,
+      'tenants.manage': false,
+      'finance.manage': false,
+      'growth.manage': true,
+      'marketing.manage': true,
+      'nexus.manage': false,
+      'compliance.manage': false,
+      'calendar.manage': true,
+      ecosystem: true,
+      institutionalBooks: false,
+      dealRoom: true,
+      hermesQa: true,
     },
     TENANT_ADMIN: {
       'users.manage': false,

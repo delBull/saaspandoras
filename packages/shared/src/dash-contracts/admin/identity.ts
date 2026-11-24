@@ -13,6 +13,7 @@ export type PlatformRole =
   | 'ADMIN_MARKETING' 
   | 'ADMIN_COMPLIANCE' 
   | 'TENANT_ADMIN'
+  | 'COMMUNITY_MANAGER'
   | 'OPERATOR' 
   | 'MARKETING' 
   | 'VIEWER';

@@ -32,8 +32,20 @@ interface CollaboratorsAdminProps {
   rows: CollaboratorRow[];
 }
 
+const ASSIGNABLE_ROLES = [
+  'COMMUNITY_MANAGER',
+  'MARKETING',
+  'OPERATOR',
+  'ADMIN_MARKETING',
+  'ADMIN_OPERATIONS',
+  'ADMIN_COMPLIANCE',
+  'TENANT_ADMIN',
+  'VIEWER',
+] as const;
+
 export function CollaboratorsAdmin({ rows }: CollaboratorsAdminProps) {
   const [actingId, setActingId] = useState<number | null>(null);
+  const [pendingRoles, setPendingRoles] = useState<Record<number, string>>({});
   const [isPending, startTransition] = useTransition();
   const [notice, setNotice] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
@@ -109,9 +121,19 @@ export function CollaboratorsAdmin({ rows }: CollaboratorsAdminProps) {
                         <div className="text-[10px] text-zinc-500">{r.whatsappPhone || "—"}</div>
                       </td>
                       <td className="p-3">
-                        <span className="px-2 py-1 rounded-md bg-white/5 border border-white/10 text-zinc-300 font-mono text-[10px]">
-                          {r.role}
-                        </span>
+                        <select
+                          value={pendingRoles[r.id] ?? r.role}
+                          onChange={(e) => setPendingRoles((prev) => ({ ...prev, [r.id]: e.target.value }))}
+                          className="rounded-md bg-white/5 border border-white/10 px-2 py-1 text-zinc-200 font-mono text-[10px] outline-none focus:border-emerald-500/40"
+                          title="Rol que tendrá al aprobar"
+                        >
+                          {!ASSIGNABLE_ROLES.includes((pendingRoles[r.id] ?? r.role) as any) && (
+                            <option value={r.role}>{r.role}</option>
+                          )}
+                          {ASSIGNABLE_ROLES.map((role) => (
+                            <option key={role} value={role}>{role}</option>
+                          ))}
+                        </select>
                       </td>
                       <td className="p-3 text-zinc-400">{new Date(r.createdAt).toLocaleString()}</td>
                       <td className="p-3">
@@ -122,7 +144,7 @@ export function CollaboratorsAdmin({ rows }: CollaboratorsAdminProps) {
                       <td className="p-3">
                         <div className="flex items-center justify-end gap-2">
                           <button
-                            onClick={() => run(r.id, () => approveCollaboratorAction(r.id))}
+                            onClick={() => run(r.id, () => approveCollaboratorAction(r.id, pendingRoles[r.id] ?? r.role))}
                             disabled={busy}
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black font-semibold text-[11px] disabled:opacity-40 transition-colors"
                           >
