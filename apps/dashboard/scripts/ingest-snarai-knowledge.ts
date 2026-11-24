@@ -1,4 +1,13 @@
 /**
+ * ⚠️ DEPRECADO (24 nov 2026) — Este script apunta a
+ * `../src/lib/hermes/packs/snarai_knowledge_v1.1`, una ruta que ya no existe, y
+ * escribía plaintext en `hermes_knowledge` (revirtiendo el purgado de K25).
+ *
+ * Usar en su lugar: `scripts/seed-snarai-from-pack.ts`
+ * (cifra + fija en IPFS + verifica + registra, sin plaintext en Postgres).
+ * Se conserva sólo como referencia histórica.
+ */
+/**
  * 📥 S'Narai Knowledge Ingestion Script (Hermes OS Knowledge Governance)
  *
  * Ingests all markdown knowledge packs from `src/lib/hermes/packs/snarai_knowledge_v1.1/`

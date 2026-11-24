@@ -156,16 +156,64 @@ Material adicional disponible para poblar los `MISSING` (local, fuera de Git):
 
 ### Lo que falta para ejecutarlo
 
+**Actualización 24 nov 2026 — contenido listo, publicación bloqueada por infraestructura.**
+
+Los 4 artefactos que decían `MISSING` (`snarai-brand`, `snarai-market`, `snarai-projects`,
+`snarai-operations`) **ya están escritos y versionados** en el pack, extraídos del proyecto real
+(`/Users/Marco/Documents/Company/Aztecas/Proyectos/Narai/apps/web`): `src/knowledge/snarai.ts`,
+`public/llms.txt` / `llms-full.txt`, `snarai-materials-v2.ts` y `messages/es.json`. Sin inventar: cada
+archivo declara su fuente y lo que **no** puede afirmarse.
+
+Script nuevo: `apps/dashboard/scripts/seed-snarai-from-pack.ts` (el `ingest-snarai-knowledge.ts`
+anterior apuntaba a una ruta muerta y escribía plaintext; queda marcado como deprecado).
+
+Verificación hecha (dry-run, cifra + roundtrip):
+
+```
+✓ snarai-brand       [PUBLIC]            2 172 chars
+✓ snarai-projects    [PUBLIC]            2 814 chars
+✓ snarai-market      [PUBLIC]            2 455 chars
+✓ snarai-operations  [TENANT_RESTRICTED] 2 408 chars
+Resumen: 4 procesados · 0 fallidos (dry-run, nada escrito)
+```
+
+**Bloqueo para publicar (no es código ni contenido):**
+
+| Vía | Estado |
+|---|---|
+| Pinata (pin) | **403 `Account blocked due to plan usage limit`** — verificado con curl directo |
+| Kubo (pin) | RPC responde **401**; la `PANDORAS_KUBO_API_KEY` sólo existe en Vercel como *sensitive* (ilegible con `vercel env pull`) |
+| Otras | sin credenciales (Filebase / web3.storage / Storacha) |
+
+Lectura sí funciona (los bloques viejos están en el gateway de Pinata); **escritura no**.
+
+Para desbloquear: (a) reactivar el plan de Pinata, (b) entregar la
+`PANDORAS_KUBO_API_KEY` real para fijar en Kubo, o (c) dar credenciales de otro proveedor. Con
+cualquiera de las tres, `bun run scripts/seed-snarai-from-pack.ts --apply` publica los 4 en un minuto.
+
+Mientras tanto, los 4 artefactos viejos siguen `ACTIVE` con el texto `MISSING` (ruido inofensivo en
+el prompt). Se pueden apagar con
+`bun run scripts/promote-knowledge-registry.ts --tenant=snarai --artifacts=snarai-brand,snarai-market,snarai-projects,snarai-operations --actor=<actor> --apply --demote`.
+
+### Decisiones que siguen pendientes
+
 1. **Decisión de política**: los 5 `CONFIDENTIAL` de S'Narai (`banned_topics`, `escalation_rules`,
    `tone_of_voice`, `snarai_founder_actions`, `snarai_audit_report`) siguen fuera del prompt. Tres de
    ellos son *reglas de comportamiento* del agente, no datos sensibles. Propuesta: permitir
    `CONFIDENTIAL` sólo en dimensiones `policy`/`identity` del tenant, nunca en legal/patrimonial.
-2. **Autoría de los 5 `MISSING`**: no se puede "reponer de la fuente" porque la fuente dice
-   literalmente `MISSING`. O el Fundador aporta el texto, o se destila de los documentos de
-   lanzamiento (requiere su aprobación, porque define verdad institucional).
-3. **Re-pin**: escribir artefactos nuevos exige un nodo de pin. En producción el primario es Kubo
-   (401); para un script local basta con no definir `PANDORAS_KUBO_RPC_URL`, de modo que el primario
-   sea Pinata (verificado: sirve y verifica).
+2. **Publicación (bloqueada)**: falta un proveedor de pin operativo (Pinata 403, Kubo 401). El
+   contenido ya no es el problema; la infraestructura sí.
+3. **`safety_level` no es conocimiento**: su valor real es `STRICT` (un flag de control, 6 chars). No
+   debe "repoblarse" como documento; se deja tal cual.
+
+### Errores de la fuente que NO deben propagarse
+
+- `messages/es.json → Gestores.evolutionDesc` dice **"Riviera Maya"**: el proyecto está en Riviera
+  Nayarit. Corregir en el sitio.
+- Proyecciones de **12–15% anual** y **"hasta 40% más por entrar primero"**: son copy comercial. En
+  conocimiento entran sólo como escenario, nunca como hecho ni promesa.
+- **Dos juegos de coordenadas** publicados (`20.7505,-105.3306` y `20.7532569,-105.3354554`): usar la
+  dirección postal como dato canónico.
 
 
 ## 5. Mapeo verificado key → archivo (Pandora's, 22/22)
