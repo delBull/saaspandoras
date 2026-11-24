@@ -211,6 +211,43 @@ commercial_orders (org snarai):     0
 Traducción: **todavía no hay participantes confirmados**. El sistema está listo y no asignará nada
 hasta que exista un mint confirmado o una orden pagada; el primer miembro se verificará solo.
 
+## Estado ejecutado (24 nov 2026)
+
+**Roles creados** en el servidor *Pandora's Finance* (`914994498914906142`), idempotente:
+
+```
+S'Narai · Miembro            1574889581625483496
+S'Narai · Explorer           1574889583261515877
+S'Narai · Residente          1574889584373014800
+S'Narai · Institucional      1574889585320665178
+S'Narai · Riviera            1574889586453258281
+S'Narai · Acceso verificado  1574889587677995101
+```
+
+**Canales: bloqueado por permisos.** `POST /guilds/{guild}/channels` → `403 Missing Permissions`.
+El bot necesita **Gestionar canales** (Manage Channels) y ver la categoría. Mientras tanto la
+estructura queda definida y el script la crea tal cual en cuanto se conceda.
+
+**Invitación del servidor:** `https://discord.gg/YzC4EugdPT` (permanente).
+
+**Sin client secret.** El `.env` del gateway sólo trae `DISCORD_BOT_TOKEN`, así que el vínculo usa el
+camino que no necesita OAuth:
+
+```
+usuario escribe /vincular al bot
+  → gateway pide un token a POST /api/v1/internal/discord/link-token (x-internal-secret)
+  → bot le manda por DM https://dash.pandoras.finance/discord/link?t=…
+  → el usuario firma con su wallet → roles asignados
+```
+
+La identidad la prueba el bot (es el autor del mensaje); la posesión de la wallet, la firma. El flujo
+OAuth queda implementado y dormido: si algún día agregas `DISCORD_CLIENT_ID` + `DISCORD_CLIENT_SECRET`,
+funciona sin cambios de código.
+
+**Herencia a otros tenants:** la integración ya no está atada a S'Narai. `lib/discord/tenants.ts` es un
+registro (`slug`, `projectId`, `organizationId`); para habilitar otro tenant basta agregar su entrada.
+El `projectId` puede omitirse: se resuelve por `projects.slug` y se cachea.
+
 ## Para activarlo (5 variables en Vercel)
 
 ```

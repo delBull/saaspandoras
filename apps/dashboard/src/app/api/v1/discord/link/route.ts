@@ -28,7 +28,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: false, error: 'DISCORD_NOT_CONFIGURED' }, { status: 503 });
   }
 
-  let body: { token?: string; walletAddress?: string; signature?: string; message?: string };
+  let body: { token?: string; walletAddress?: string; signature?: string; message?: string; tenant?: string };
   try {
     body = await req.json();
   } catch {
@@ -67,7 +67,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: false, error: 'SIGNATURE_WALLET_MISMATCH' }, { status: 403 });
   }
 
-  const membership = await resolveMembershipForWallet(walletAddress);
+  const membership = await resolveMembershipForWallet(walletAddress, body.tenant);
   const cfg = getDiscordConfig();
   const desiredRoles = rolesForMembership(membership, cfg.roles);
   const managedRoles = allManagedRoles(cfg.roles);

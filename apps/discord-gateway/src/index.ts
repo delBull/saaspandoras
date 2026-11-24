@@ -38,6 +38,35 @@ client.on('messageCreate', async (message: Message) => {
       await message.reply("Te he enviado un mensaje privado con el enlace de vinculación.");
     }
     return;
+
+  // Vínculo de participante (S'Narai y futuros tenants).
+  // La identidad la prueba el bot (es el autor del mensaje); la posesión de la
+  // wallet la prueba la firma en /discord/link. No requiere OAuth ni client secret.
+  if (['/vincular', '!vincular', '/verificar'].includes(message.content.trim().toLowerCase())) {
+    try {
+      const dashboardBase = new URL(HERMES_API_URL).origin;
+      const res = await axios.post(
+        `${dashboardBase}/api/v1/internal/discord/link-token`,
+        { discordUserId: message.author.id },
+        { headers: { 'x-internal-secret': INTERNAL_SECRET, 'Content-Type': 'application/json' } }
+      );
+      const url = res.data?.url;
+      if (!url) throw new Error('respuesta sin enlace');
+      await message.author.send(
+        `Para verificar tu acceso, abre este enlace y firma con la wallet que registraste:\n\n${url}\n\n` +
+        `El enlace caduca en ${res.data?.expiresInMinutes ?? 10} minutos.`
+      );
+      if (!isDirectMessage) {
+        await message.reply("Te envié un mensaje privado con el enlace de verificación.");
+      }
+    } catch (err: any) {
+      console.error('[Hermes Discord Gateway] link-token failed:', err?.message || err);
+      await message
+        .reply("No pude generar el enlace de verificación en este momento. Intenta de nuevo en unos minutos.")
+        .catch(() => {});
+    }
+    return;
+  }
   }
 
   // HITL Operator Reply Flow

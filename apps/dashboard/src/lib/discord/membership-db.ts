@@ -10,12 +10,21 @@
  * emitidos. Así nadie obtiene un rol alto por una cifra supuesta.
  */
 import { db } from '@saasfly/db';
-import { users, marketingLeads, commercialOrders, tenantNftIssuances } from '@saasfly/db/schema';
+import { users, marketingLeads, commercialOrders, tenantNftIssuances, projects } from '@saasfly/db/schema';
 import { and, eq, inArray, sql } from '@saasfly/db-core';
 import { resolveMembership, type MembershipResult } from './membership';
+import { resolveDiscordTenant } from './tenants';
 
-const SNARAI_SLUG = 'snarai';
-const SNARAI_PROJECT_ID = 17;
+/** Cache de `projects.slug → id` para tenants sin id declarado. */
+const projectIdCache = new Map<string, number | null>();
+
+async function lookupProjectId(slug: string): Promise<number | null> {
+  if (projectIdCache.has(slug)) return projectIdCache.get(slug) ?? null;
+  const [row] = await db.select({ id: projects.id }).from(projects).where(eq(projects.slug, slug)).limit(1);
+  const id = row?.id ?? null;
+  projectIdCache.set(slug, id);
+  return id;
+}
 
 export interface WalletMembership extends MembershipResult {
   wallet: string;
@@ -24,7 +33,11 @@ export interface WalletMembership extends MembershipResult {
   mintedCertificates: number;
 }
 
-export async function resolveMembershipForWallet(walletAddress: string): Promise<WalletMembership> {
+export async function resolveMembershipForWallet(
+  walletAddress: string,
+  tenantSlug?: string,
+): Promise<WalletMembership> {
+  const tenant = resolveDiscordTenant(tenantSlug);
   const wallet = String(walletAddress || '').toLowerCase();
   if (!/^0x[a-f0-9]{40}$/.test(wallet)) {
     return {
@@ -61,23 +74,26 @@ export async function resolveMembershipForWallet(walletAddress: string): Promise
         .from(commercialOrders)
         .where(and(
           inArray(commercialOrders.leadId, leadIds),
-          eq(commercialOrders.requestedOrgSlug, SNARAI_SLUG),
+          eq(commercialOrders.requestedOrgSlug, tenant.slug),
         ))
         .limit(50);
     }
   }
 
-  // 2. Certificados emitidos a la wallet (proyecto S'Narai).
-  const [minted] = await db
-    .select({ total: sql<number>`count(*)::int` })
-    .from(tenantNftIssuances)
-    .where(and(
-      eq(tenantNftIssuances.projectId, SNARAI_PROJECT_ID),
-      eq(tenantNftIssuances.recipientWallet, wallet),
-      eq(tenantNftIssuances.status, 'minted'),
-    ));
+  // 2. Certificados emitidos a la wallet (proyecto del tenant).
+  const projectId = tenant.projectId ?? (await lookupProjectId(tenant.slug));
+  const mintedRows = projectId
+    ? await db
+        .select({ total: sql<number>`count(*)::int` })
+        .from(tenantNftIssuances)
+        .where(and(
+          eq(tenantNftIssuances.projectId, projectId),
+          eq(tenantNftIssuances.recipientWallet, wallet),
+          eq(tenantNftIssuances.status, 'minted'),
+        ))
+    : [{ total: 0 }];
 
-  const mintedCertificates = Number(minted?.total ?? 0);
+  const mintedCertificates = Number(mintedRows[0]?.total ?? 0);
   const result = resolveMembership({
     paidOrders: paidOrders.map((o) => ({ status: o.status })),
     mintedCertificates,
