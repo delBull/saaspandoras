@@ -132,7 +132,7 @@ export class A2ASecurityValidator {
     let expectedHmac: string;
     let hmacRequired = false;
     try {
-      if (message.from === 'sofia' || message.from === 'hermes') {
+      if (message.from === 'sofia' || message.from === 'hermes' || message.from === 'community') {
         // Legacy hardcoded agents: shared A2A_HMAC_SECRET env var
         expectedHmac = this.computeHmac(canonicalHash);
         hmacRequired = true;

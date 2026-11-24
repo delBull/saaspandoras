@@ -495,3 +495,5 @@ export * from './provisioning/ProvisioningEngine';
 export * from './identity/tenant-signer';
 export * from './knowledge/vault-recovery';
 export * from './knowledge/governance-service';
+export * from './community/community-capabilities';
+export * from './community/community-gateway';

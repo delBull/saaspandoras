@@ -18,6 +18,8 @@ import { AgentRegistry } from './agent-registry';
 import { ClaimContractEngine } from '../knowledge/claim-contract-engine';
 import { TenantAuthorityService } from '../tenants/tenant-authority';
 import { SecurityAuditLogger } from '../runtime/security-audit-logger';
+import { COMMUNITY_CAPABILITIES } from '../community/community-capabilities';
+import { buildCommunityDigest, createCommunityProposal } from '../community/community-gateway';
 import { db } from "@saasfly/db-core";
 import { hermesAgentSkills } from "@saasfly/db-core";
 import { eq } from "@saasfly/db-core";
@@ -764,21 +766,85 @@ export class A2AMessageHandler {
     };
   }
 
+  /**
+   * Despacho real de capacidades (ADR-019).
+   *
+   * Antes esta función respondía "ACCEPTED" sin ejecutar nada. Ahora:
+   *  - `community.report` lee el embudo (solo lectura).
+   *  - `community.publish_post` valida contra la política del tenant y crea una
+   *    aprobación; NO publica.
+   *  - Cualquier otra capacidad falla cerrada (`CAPABILITY_NOT_IMPLEMENTED`).
+   */
   private static async handleCapabilityRequest(message: A2AMessage<any>): Promise<A2AProcessingResult> {
     const payload = message.payload || {};
-    const capability = payload.capability;
+    const capability = String(payload.capability || '');
+    const canonicalOrgId = String(payload.canonicalOrgId || payload.tenantId || 'snarai');
+    const projectId = Number(payload.projectId ?? 17);
+
+    if (capability === COMMUNITY_CAPABILITIES.REPORT) {
+      const digest = await buildCommunityDigest({
+        projectId,
+        canonicalOrgId,
+        windowDays: Number(payload.windowDays) || undefined,
+      });
+      await SecurityAuditLogger.logEvent({
+        organizationId: canonicalOrgId,
+        actorId: `a2a:${message.from}`,
+        eventType: 'A2A_MESSAGE_RECEIVED',
+        severity: 'INFO',
+        policyDecision: 'ALLOW',
+        correlationId: message.messageId,
+        metadata: { capability, scope: 'community.report', stages: digest.funnel.length, links: digest.links.length },
+      }).catch(() => {});
+      return {
+        success: true,
+        messageId: `resp_${crypto.randomUUID()}`,
+        correlationId: message.messageId,
+        type: 'capability.completed',
+        payload: { status: 'REPORT_READY', capability, digest },
+      };
+    }
+
+    if (capability === COMMUNITY_CAPABILITIES.PROPOSE_PUBLISH) {
+      const result = await createCommunityProposal({
+        canonicalOrgId,
+        projectId,
+        posts: Array.isArray(payload.posts) ? payload.posts : [],
+        requestedBy: `a2a:${message.from}`,
+        intent: typeof payload.intent === 'string' ? payload.intent : undefined,
+      });
+      await SecurityAuditLogger.logEvent({
+        organizationId: canonicalOrgId,
+        actorId: `a2a:${message.from}`,
+        eventType: 'A2A_MESSAGE_RECEIVED',
+        severity: result.status === 'REJECTED_BY_POLICY' ? 'WARN' : 'INFO',
+        policyDecision: result.status === 'REJECTED_BY_POLICY' ? 'DENY' : 'ESCALATE',
+        correlationId: message.messageId,
+        metadata: {
+          capability,
+          status: result.status,
+          posts: Array.isArray(payload.posts) ? payload.posts.length : 0,
+          approvalId: result.status === 'PENDING_APPROVAL' ? result.approvalId : undefined,
+          violations: result.status === 'REJECTED_BY_POLICY' ? result.violations.slice(0, 5) : undefined,
+        },
+      }).catch(() => {});
+      return {
+        success: true,
+        messageId: `resp_${crypto.randomUUID()}`,
+        correlationId: message.messageId,
+        type: 'capability.completed',
+        payload: { capability, ...result },
+      };
+    }
 
     return {
-      success: true,
+      success: false,
       messageId: `resp_${crypto.randomUUID()}`,
       correlationId: message.messageId,
-      type: 'capability.completed',
-      payload: {
-        status: 'CAPABILITY_EXECUTION_ACCEPTED',
-        capability,
-        tenantId: payload.tenantId,
-        executionRef: `exec_${Date.now()}`,
-        timestamp: new Date().toISOString(),
+      type: 'error',
+      error: {
+        code: 'CAPABILITY_NOT_IMPLEMENTED',
+        message: `La capacidad '${capability}' no está implementada en el Action Gateway.`,
       },
     };
   }

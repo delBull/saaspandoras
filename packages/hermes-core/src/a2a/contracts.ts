@@ -7,7 +7,7 @@
  * @reference DOCUMENTACIÓN/ESPECIFICACIÓN CANÓNICA SOFÍA ↔ HERMES A2A BRIDGE v1.0.md
  */
 
-export type AgentId = 'sofia' | 'hermes' | 'external_agent';
+export type AgentId = 'sofia' | 'hermes' | 'community' | 'external_agent';
 export type SignatureScheme = 'EIP191' | 'EIP712';
 
 import type { KnowledgeClassificationTier } from '../runtime/contracts';

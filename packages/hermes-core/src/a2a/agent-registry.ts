@@ -68,6 +68,27 @@ export class AgentRegistry {
       ],
     });
 
+    // 🗣️ COMMUNITY — S'Narai Manager (Orca Bot)
+    //
+    // Propone, no ejecuta: sus capacidades crean aprobaciones. La publicación la
+    // hace el bot de Discord tras la aprobación humana (ADR-019).
+    const communityWallet = (process.env.COMMUNITY_AGENT_WALLET || '').toLowerCase();
+    this.registry.set('community', {
+      agentId: 'community',
+      displayName: "S'Narai Manager (Community)",
+      organizationId: 'snarai',
+      role: 'EXTERNAL_DELEGATE',
+      walletAddress: communityWallet,
+      endpoint: process.env.COMMUNITY_BOT_WEBHOOK_URL || '',
+      protocolVersion: '1.1',
+      // Fail-closed: sin wallet registrada el agente no puede autenticarse.
+      status: communityWallet ? 'ACTIVE' : 'MAINTENANCE',
+      allowedCapabilities: [
+        'community.report',
+        'community.publish_post',
+      ],
+    });
+
     // 🧠 HERMES — Cognitive Operating System
     this.registry.set('hermes', {
       agentId: 'hermes',
