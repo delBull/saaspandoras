@@ -24,14 +24,14 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { db } from '@saasfly/db-core';
-import { hermesKnowledgeRegistry, hermesKnowledge } from '@saasfly/db-core/schema';
 import { and, eq } from '@saasfly/db-core';
 import {
   TenantIpfsVaultService,
   KnowledgeEnvelopeVault,
-  HermesIdentitySigner,
   SecurityAuditLogger,
+  getSignerForTenant,
 } from '@saasfly/hermes-core';
+import { hermesKnowledgeRegistry, hermesKnowledge, knowledgeVaultBlobs } from '@saasfly/db-core/schema';
 
 const TENANT = 'snarai';
 const ACTOR = 'pack:snarai_knowledge_v1.1';
@@ -135,7 +135,10 @@ async function main() {
 
   const vault = new TenantIpfsVaultService({ primaryProvider });
   const envelopeVault = new KnowledgeEnvelopeVault();
-  const signer = new HermesIdentitySigner();
+  // Identidad DEL TENANT (gap 1). Si aún no tiene llave propia, cae a la de
+  // plataforma y se reporta en el encabezado.
+  const signerInfo = await getSignerForTenant(TENANT);
+  const signer = signerInfo.signer;
 
   console.log(
     `\nS'Narai · siembra desde pack\norigen: ${dir}\nprimario: ${primaryProvider} · firmante: ${signer.getPublicAddress()}\n` +
@@ -216,6 +219,33 @@ async function main() {
         await db.update(hermesKnowledgeRegistry).set(values).where(eq(hermesKnowledgeRegistry.id, existing.id));
       } else {
         await db.insert(hermesKnowledgeRegistry).values({ id: crypto.randomUUID(), ...values });
+      }
+
+      // Seguro del vault: el sobre cifrado queda en BD para re-fijar sin red.
+      const [blobRow] = await db
+        .select({ id: knowledgeVaultBlobs.id })
+        .from(knowledgeVaultBlobs)
+        .where(and(
+          eq(knowledgeVaultBlobs.tenantId, TENANT),
+          eq(knowledgeVaultBlobs.artifactId, sourceId),
+        ))
+        .limit(1);
+
+      const blobValues = {
+        tenantId: TENANT,
+        artifactId: sourceId,
+        version,
+        cid,
+        contentHash,
+        ciphertextHash,
+        envelopeJson: JSON.stringify(pinned.encryptedMetadata),
+        updatedAt: new Date(),
+      };
+
+      if (blobRow) {
+        await db.update(knowledgeVaultBlobs).set(blobValues).where(eq(knowledgeVaultBlobs.id, blobRow.id));
+      } else {
+        await db.insert(knowledgeVaultBlobs).values({ id: crypto.randomUUID(), ...blobValues });
       }
 
       // La fila de conocimiento queda sin plaintext: el runtime hidrata del vault.

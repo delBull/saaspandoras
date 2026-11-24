@@ -4359,6 +4359,49 @@ export const hermesKnowledgeRegistry = pgTable("hermes_knowledge_registry", {
   cidIdx: index("hermes_kr_cid_idx").on(t.ipfsCid),
 }));
 
+/**
+ * Identidad criptográfica POR TENANT (gap 1).
+ *
+ * Antes todas las filas del registro firmaban con una sola
+ * `HERMES_IDENTITY_PRIVATE_KEY`, así que el sello probaba quién operó, no de
+ * quién era el conocimiento. Cada tenant tiene ahora su propio par de llaves;
+ * la privada se guarda cifrada con la KEK (AES-256-GCM) y nunca se expone.
+ */
+export const tenantSigningKeys = pgTable("tenant_signing_keys", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  tenantId: varchar("tenant_id", { length: 255 }).notNull().unique(),
+  address: varchar("address", { length: 42 }).notNull(),
+  encryptedPrivateKey: text("encrypted_private_key").notNull(),
+  keyVersion: integer("key_version").notNull().default(1),
+  status: varchar("status", { length: 24 }).notNull().default('ACTIVE'),
+  createdBy: varchar("created_by", { length: 255 }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  rotatedAt: timestamp("rotated_at", { withTimezone: true }),
+});
+
+/**
+ * Seguro contra pérdida de bloques (gap 4).
+ *
+ * Guarda el SOBRE CIFRADO (no el plaintext) de cada artefacto del vault. Si el
+ * nodo Kubo pierde el bloque —reinicio sin volumen, GC, desastre— se puede
+ * re-fijar desde aquí con los mismos bytes, y por tanto con el MISMO CID, sin
+ * depender de Pinata ni de la red.
+ */
+export const knowledgeVaultBlobs = pgTable("knowledge_vault_blobs", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  tenantId: varchar("tenant_id", { length: 255 }).notNull(),
+  artifactId: varchar("artifact_id", { length: 255 }).notNull(),
+  version: integer("version").notNull().default(1),
+  cid: varchar("cid", { length: 255 }).notNull(),
+  contentHash: varchar("content_hash", { length: 64 }).notNull(),
+  ciphertextHash: varchar("ciphertext_hash", { length: 64 }).notNull(),
+  envelopeJson: text("envelope_json").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  tenantArtifactUq: uniqueIndex("knowledge_vault_blobs_tenant_artifact_uq").on(t.tenantId, t.artifactId),
+  cidIdx: index("knowledge_vault_blobs_cid_idx").on(t.cid),
+}));
+
 export const hermesClaimContracts = pgTable("hermes_claim_contracts", {
   id: varchar("id", { length: 255 }).primaryKey(),
   tenantId: varchar("tenant_id", { length: 255 }).notNull(),

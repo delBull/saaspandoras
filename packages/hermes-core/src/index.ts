@@ -490,3 +490,8 @@ export { ShadowVerificationEngine } from './knowledge/shadow-verifier';
 export * from './payments/PaymentCoreService';
 export * from './payments/HermesX402Client';
 export * from './provisioning/ProvisioningEngine';
+
+// Gaps 1-4: identidad por tenant, gobierno del conocimiento y seguro del vault
+export * from './identity/tenant-signer';
+export * from './knowledge/vault-recovery';
+export * from './knowledge/governance-service';
