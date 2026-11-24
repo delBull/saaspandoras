@@ -24,6 +24,34 @@ import { MockIpfsProvider } from './mock-provider';
 import { SovereignStoragePolicyEngine } from './storage-policy';
 import { SovereignIpfsAlerting } from './ipfs-alerting';
 
+/**
+ * ¿El fallo del primario exige alerta operativa?
+ *
+ * Sólo cuando el nodo está caído, sin credenciales o inalcanzable. Un bloque que
+ * el nodo no tiene NO es una caída: se resuelve con fail-over y, si el contenido
+ * falta, con una alerta de contenido, no de nodo. Antes cualquier `cat` fallido
+ * gritaba "Kubo Primary Node Offline" en cada mensaje.
+ */
+export function isKuboFailureCritical(errorMessage: string): boolean {
+  const msg = String(errorMessage || '');
+  // Un bloque que el nodo no tiene no es una caída: es contenido, no servicio.
+  if (/not found|no link named|could not find|block was not found/i.test(msg)) return false;
+  // Autenticación / proxy / red: el nodo o su credencial están mal.
+  if (/rpc=(401|403|5\d\d)/.test(msg)) return true;
+  if (/rpc=network/.test(msg)) return true;
+  if (/ECONNREFUSED|ENOTFOUND|ETIMEDOUT|EAI_AGAIN|abort|timeout/i.test(msg)) return true;
+  return false;
+}
+
+/** Evita repetir la misma alarma cada mensaje (una por proceso cada 10 min). */
+const KUBO_ALERT_COOLDOWN_MS = 10 * 60 * 1000;
+let lastKuboDownAlertAt = 0;
+export function shouldEmitKuboDownAlert(now = Date.now()): boolean {
+  if (now - lastKuboDownAlertAt < KUBO_ALERT_COOLDOWN_MS) return false;
+  lastKuboDownAlertAt = now;
+  return true;
+}
+
 export class SovereignIpfsOrchestrator {
   private static readonly globalCidAliasMap = new Map<string, string>();
   /** K27.x: settled replication outcome per primary CID (REPLICATING is never terminal). */
@@ -259,13 +287,19 @@ export class SovereignIpfsOrchestrator {
         const targetCid = this.getCidAlias(cid) || cid;
         console.warn(`[SovereignIpfsOrchestrator] Primary (${this.primary.providerType}) fetch failed for CID '${cid}'. Initiating fail-over to backup (${this.backup.providerType}) using CID '${targetCid}'...`);
         
-        // Dispatch alert only when Kubo primary node is down
-        if (this.primary.providerType === 'KUBO') {
+        // Sólo se alerta si el nodo está caído o sin credenciales. Un bloque
+        // ausente se resuelve con el espejo y no debe sonar como caída de nodo.
+        const primaryMessage = primaryErr?.message || 'Primary Kubo daemon unreachable';
+        if (this.primary.providerType === 'KUBO' && isKuboFailureCritical(primaryMessage) && shouldEmitKuboDownAlert()) {
           SovereignIpfsAlerting.notifyKuboPrimaryDown({
-            error: primaryErr?.message || 'Primary Kubo daemon unreachable',
+            error: primaryMessage,
             cidRequested: cid,
             fallbackProvider: this.backup.providerType,
           }).catch(() => {});
+        } else if (this.primary.providerType === 'KUBO' && !isKuboFailureCritical(primaryMessage)) {
+          console.warn(
+            `[SovereignIpfsOrchestrator] Kubo no tiene el bloque '${cid}' (no es caída de nodo). Fail-over a ${this.backup.providerType}.`,
+          );
         }
 
         try {

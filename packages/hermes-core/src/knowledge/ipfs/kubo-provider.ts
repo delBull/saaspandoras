@@ -90,6 +90,13 @@ export class KuboRpcIpfsProvider implements IpfsProvider {
    * Fetches JSON content from Kubo via /api/v0/cat or Gateway
    */
   public async fetchJson<T = unknown>(cid: string): Promise<T> {
+    // El error debe distinguir "nodo caído / sin credenciales" de "este bloque
+    // no está en el nodo": lo primero exige alerta, lo segundo sólo fail-over.
+    let rpcStatus = 'network';
+    let gwStatus = 'not-attempted';
+    let rpcBody = '';
+    let gwBody = '';
+
     // 1. Try Kubo RPC /api/v0/cat first
     try {
       const catUrl = `${this.rpcUrl}/api/v0/cat?arg=${encodeURIComponent(cid)}`;
@@ -99,12 +106,16 @@ export class KuboRpcIpfsProvider implements IpfsProvider {
         timeoutMs: this.timeoutMs,
         ...this.getEgressOptions(),
       });
+      rpcStatus = String(catRes.status);
 
       if (catRes.ok) {
         return await catRes.json() as T;
       }
+      if (rpcStatus.startsWith('4') || rpcStatus.startsWith('5')) {
+        rpcBody = (await catRes.text().catch(() => '')).slice(0, 120).replace(/\s+/g, ' ');
+      }
     } catch {
-      // Fall through to Gateway attempt
+      rpcStatus = 'network';
     }
 
     // 2. Try Kubo HTTP Gateway
@@ -119,15 +130,21 @@ export class KuboRpcIpfsProvider implements IpfsProvider {
         timeoutMs: this.timeoutMs,
         ...this.getEgressOptions(),
       });
+      gwStatus = String(gwRes.status);
 
       if (gwRes.ok) {
         return await gwRes.json() as T;
       }
+      if (gwStatus.startsWith('4') || gwStatus.startsWith('5')) {
+        gwBody = (await gwRes.text().catch(() => '')).slice(0, 120).replace(/\s+/g, ' ');
+      }
     } catch {
-      // Throw unified error
+      gwStatus = 'network';
     }
 
-    throw new Error(`[KuboRpcIpfsProvider] Failed to retrieve content from Kubo for CID: ${cid}`);
+    throw new Error(
+      `[KuboRpcIpfsProvider] Failed to retrieve content from Kubo for CID: ${cid} (rpc=${rpcStatus}, gateway=${gwStatus}, rpcBody=${rpcBody || '-'}, gwBody=${gwBody || '-'})`,
+    );
   }
 
   /**
