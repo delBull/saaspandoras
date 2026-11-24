@@ -163,6 +163,21 @@ export const claimRateLimiter = new RedisRateLimiter(10, 60000); // 10 claims pe
 export const registerRateLimiter = new RedisRateLimiter(5, 60000); // 5 registrations per minute
 
 /**
+ * WhatsApp inbound messages per phone number, per minute.
+ *
+ * Mirrors `CHANNEL_CONFIGS.WHATSAPP.rateLimitPerMinute` (30) from hermes-core so
+ * the channel contract and the enforcement cannot drift. Overridable for ops.
+ *
+ * Backing store: Redis when `REDIS_URL` is configured, otherwise the in-memory
+ * fallback (per serverless instance). Without Redis the limit still protects a
+ * single instance from a flood; enabling Redis makes it global.
+ */
+export const whatsappInboundRateLimiter = new RedisRateLimiter(
+  Number(process.env.WHATSAPP_RATE_LIMIT_PER_MINUTE) || 30,
+  60000
+);
+
+/**
  * 🛡️ Resolves trusted client IP in production proxy topology.
  *
  * Regla: sólo se confía en un header de IP cuando el proxy que está DELANTE de la

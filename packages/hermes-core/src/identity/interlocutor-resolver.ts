@@ -101,40 +101,66 @@ function cleanDigits(phone?: string | null): string {
 }
 
 /**
- * Produce all comparable forms of a phone number so identity matching absorbs
- * every ingestion format: +52XXXX, 52XXXX, 521XXXX (MX mobile trunk), +52 1 XXX,
- * raw local 10-digit, and short 9-digit suffixes. Two phone numbers are
- * considered the same identity if they share any candidate form.
+ * Canonical phone identity.
+ *
+ * `prefix` is the country/trunk part the carrier/Meta includes (52, 1, 57…) and
+ * `national` is the subscriber number. Mexico's mobile trunk ("1") is folded into
+ * +52 so `521XXXXXXXXXX` and `52XXXXXXXXXX` are the same person.
+ *
+ * Two numbers are the same identity when:
+ *  - both are identical in normalized E.164 form, or
+ *  - at least one side is stored without a country prefix (a human typing the
+ *    local 10 digits) and the national numbers agree.
+ *
+ * When BOTH sides carry a prefix, the prefixes must agree. That is the fix for
+ * the old "last 10 digits" rule, where `+1 322 214 9409` resolved as the Mexican
+ * `+52 322 214 9409`.
  */
-function phoneCandidates(digits: string): string[] {
-  if (!digits) return [];
-  const candidates = new Set<string>([digits]);
-  const len = digits.length;
-  if (len >= 10) candidates.add(digits.slice(-10));
-  if (len >= 9) candidates.add(digits.slice(-9));
-
-  // Mexican mobile trunk: +52 1 XXX (13 digits: country 52 + trunk 1 + 10 local)
-  if (len === 13 && digits.startsWith('521')) {
-    const withoutMobileTrunk = `${digits.slice(0, 2)}${digits.slice(3)}`;
-    candidates.add(withoutMobileTrunk);
-    if (withoutMobileTrunk.length >= 10) candidates.add(withoutMobileTrunk.slice(-10));
-  }
-
-  // Colombian / regional variants with leading 1 mobile trunk (11 digits)
-  if (len === 11 && digits.startsWith('1')) {
-    const withoutMobileTrunk = digits.slice(1);
-    candidates.add(withoutMobileTrunk);
-  }
-
-  return [...candidates];
+export interface CanonicalPhone {
+  /** Normalized E.164 digits without '+'. */
+  e164: string;
+  /** Country/trunk prefix as dialed; MX mobile trunk folded into '52'. */
+  prefix: string;
+  /** Subscriber number (last 10 digits). */
+  national: string;
 }
 
-function phonesShareIdentity(a: string, b: string): boolean {
-  if (!a || !b) return false;
-  if (a === b) return true;
-  const aCandidates = phoneCandidates(a);
-  const bCandidates = phoneCandidates(b);
-  return aCandidates.some(c => bCandidates.includes(c));
+/**
+ * Country assumed for numbers stored without a prefix. The platform's identity
+ * base is Mexican and legacy records (collaborators, leads, pod contacts) are
+ * stored as local 10-digit numbers; without an assumption they could never be
+ * matched against Meta's international format. Configurable for other regions.
+ */
+const DEFAULT_PHONE_COUNTRY = cleanDigits(process.env.HERMES_DEFAULT_COUNTRY_CODE) || '52';
+
+export function canonicalPhone(phone?: string | null): CanonicalPhone | null {
+  let digits = cleanDigits(phone);
+  if (!digits) return null;
+  if (digits.startsWith('00')) digits = digits.slice(2);
+  if (digits.length < 8) return null;
+
+  // Mexico: fold the mobile trunk — 52 1 XXX XXX XXXX → 52 XXX XXX XXXX.
+  if (digits.length === 13 && digits.startsWith('521')) {
+    digits = `52${digits.slice(3)}`;
+  }
+
+  // Local subscriber number without a country prefix.
+  if (digits.length <= 10) {
+    const national = digits.slice(-10);
+    return { e164: `${DEFAULT_PHONE_COUNTRY}${national}`, prefix: DEFAULT_PHONE_COUNTRY, national };
+  }
+
+  const national = digits.slice(-10);
+  const prefix = digits.slice(0, digits.length - 10);
+  return { e164: digits, prefix, national };
+}
+
+export function phonesShareIdentity(a?: string | null, b?: string | null): boolean {
+  const ca = canonicalPhone(a);
+  const cb = canonicalPhone(b);
+  if (!ca || !cb) return false;
+  if (ca.e164 === cb.e164) return true;
+  return ca.prefix === cb.prefix && ca.national === cb.national;
 }
 
 /**
@@ -186,31 +212,23 @@ export class InterlocutorResolver {
       if (superWallet && lowerWallet === superWallet) return true;
     }
 
-    // 2. Phone check (E.164 digits, normalized by last 10 digits for Mexico and regional mobile variants)
+    // 2. Phone check (E.164, country-aware). A number from another country that
+    //    happens to share the last 10 digits must NOT resolve as the Boss.
     if (phone) {
-      const digits = cleanDigits(phone);
-      const phoneSuffix10 = digits.length >= 10 ? digits.slice(-10) : digits;
       const bossPhones = [
         process.env.MARCO_PHONE,
         process.env.FOUNDER_PHONE,
         process.env.BOSS_PHONE,
         ...(process.env.ADMIN_PHONES ? process.env.ADMIN_PHONES.split(',') : []),
+        // Documented fallback for the Founder's MX line (keep env override first).
         '523222741987',
         '5213222741987',
         '3222741987',
       ]
         .filter(Boolean)
-        .map(p => cleanDigits(p));
+        .map(p => cleanDigits(p as string));
 
-      if (bossPhones.some(bp => {
-        if (!bp) return false;
-        const bpSuffix10 = bp.length >= 10 ? bp.slice(-10) : bp;
-        if ((phoneSuffix10 && bpSuffix10 && phoneSuffix10 === bpSuffix10) || digits.endsWith(bp) || bp.endsWith(digits)) {
-          return true;
-        }
-        // All-format candidate matching (absorbs +52/521/+52 1/regional trunks)
-        return phonesShareIdentity(digits, bp);
-      })) {
+      if (bossPhones.some(bp => bp && phonesShareIdentity(phone, bp))) {
         return true;
       }
     }
@@ -394,9 +412,10 @@ export class InterlocutorResolver {
     }
 
     // ── STEP 2: Check Nexus Collaborators (Email OR WhatsApp phone) ──────────
-    // Phone matching is SUFFIX-based (last 10 digits) to absorb regional variants:
-    // Meta Cloud API delivers MX numbers as '521XXXXXXXXXX' while collaborators
-    // may be stored as '+52XXXXXXXXXX' — exact equality would break resolution.
+    // The SQL prefilter compares the last 10 digits (cheap, index-less but small
+    // table); the authoritative decision is `phonesShareIdentity`, which also
+    // requires the country prefix to agree. Without that second pass a foreign
+    // number sharing the last 10 digits would resolve as a collaborator.
     const phoneDigits = cleanDigits(rawPhone);
     const phoneSuffix10 = phoneDigits.slice(-10);
     if (rawEmail || phoneSuffix10) {
@@ -406,17 +425,27 @@ export class InterlocutorResolver {
         if (phoneSuffix10) {
           collabConditions.push(sql`right(regexp_replace(coalesce(${nexusCollaborators.whatsappPhone}, ''), '[^0-9]', '', 'g'), 10) = ${phoneSuffix10}`);
         }
-        const [collab] = await db
+        const collabCandidates = await db
           .select({
             id: nexusCollaborators.id,
             name: nexusCollaborators.name,
             email: nexusCollaborators.email,
             role: nexusCollaborators.role,
             permissions: nexusCollaborators.permissions,
+            whatsappPhone: nexusCollaborators.whatsappPhone,
           })
           .from(nexusCollaborators)
           .where(or(...collabConditions))
-          .limit(1);
+          .limit(5);
+
+        const collab = collabCandidates.find(c => rawEmail && c.email === rawEmail)
+          ?? collabCandidates.find(c => c.whatsappPhone && phonesShareIdentity(c.whatsappPhone, phoneDigits));
+
+        if (collabCandidates.length > 0 && !collab) {
+          console.warn(
+            `[InterlocutorResolver] Phone suffix matched ${collabCandidates.length} collaborator(s) but none is the same identity (country mismatch). Rejecting loose match.`,
+          );
+        }
 
         let collabWelcomeDirective: string | undefined;
         try {
@@ -426,12 +455,15 @@ export class InterlocutorResolver {
             welcomeLeadConditions.push(sql`right(regexp_replace(coalesce(${marketingLeads.phoneNumber}, ''), '[^0-9]', '', 'g'), 10) = ${phoneSuffix10}`);
           }
           if (welcomeLeadConditions.length > 0) {
-            const [welcomeLead] = await db
-              .select({ metadata: marketingLeads.metadata })
+            const welcomeLeads = await db
+              .select({ phoneNumber: marketingLeads.phoneNumber, metadata: marketingLeads.metadata })
               .from(marketingLeads)
               .where(or(...welcomeLeadConditions))
               .orderBy(desc(marketingLeads.lastEngagementAt))
-              .limit(1);
+              .limit(5);
+            const welcomeLead = collab?.email
+              ? welcomeLeads[0]
+              : welcomeLeads.find(l => l.phoneNumber && phonesShareIdentity(l.phoneNumber, phoneDigits));
             collabWelcomeDirective = (welcomeLead?.metadata as any)?.customWelcome || undefined;
           }
         } catch {
@@ -543,19 +575,26 @@ export class InterlocutorResolver {
     // ── STEP 4: Check Marketing Leads / Identidades Registradas ────────────────
     if (rawPhone || rawEmail || rawTgId) {
       try {
-        const lead = await db.query.marketingLeads.findFirst({
-          where: (l, { or, eq }) => {
-            const conditions = [];
-            if (rawPhone) {
-              // Suffix-based phone matching (last 10 digits) — absorbs +52/521/523/+34 regional variants
-              const suffix = cleanDigits(rawPhone).slice(-10);
-              conditions.push(sql`right(regexp_replace(coalesce(${marketingLeads.phoneNumber}, ''), '[^0-9]', '', 'g'), 10) = ${suffix}`);
-            }
-            if (rawEmail) conditions.push(eq(l.email, rawEmail));
-            return or(...conditions);
-          },
-          orderBy: [desc(marketingLeads.lastEngagementAt)]
-        });
+        const leadConditions = [];
+        if (rawPhone) {
+          // SQL prefilter by last 10 digits; canonical verification below so a
+          // foreign number sharing those digits does not inherit a lead's role.
+          const suffix = cleanDigits(rawPhone).slice(-10);
+          leadConditions.push(sql`right(regexp_replace(coalesce(${marketingLeads.phoneNumber}, ''), '[^0-9]', '', 'g'), 10) = ${suffix}`);
+        }
+        if (rawEmail) leadConditions.push(eq(marketingLeads.email, rawEmail));
+
+        const leadCandidates = leadConditions.length > 0
+          ? await db
+              .select()
+              .from(marketingLeads)
+              .where(or(...leadConditions))
+              .orderBy(desc(marketingLeads.lastEngagementAt))
+              .limit(5)
+          : [];
+
+        const lead = leadCandidates.find(l => rawEmail && l.email === rawEmail)
+          ?? leadCandidates.find(l => l.phoneNumber && phonesShareIdentity(l.phoneNumber, phoneDigits));
 
         if (lead && lead.name) {
           let role = 'LEAD';

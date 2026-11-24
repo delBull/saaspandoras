@@ -290,16 +290,14 @@ export class HermesRuntime implements HermesCognitiveRuntime {
             // Resolve required clearance from item metadata, defaulting to PUBLIC if unset.
             const itemClearance = (k as any).classification || (k as any).governance?.visibility || (k as any).visibility || 'PUBLIC';
             
-            if (hasExecutivePrivilege) {
-               filteredKnowledge.push(k);
-               continue;
-            }
-            
+            // Incluso el jefe pasa por el mesh: en canales que salen del
+            // perímetro su techo es ejecutivo, no ilimitado.
             const validation = await ChannelMeshService.validateDisclosureClearance({
               channelType: activeChannel as any, // HermesChannelType
               requiredClearance: itemClearance,
               tenantId: canonicalTenantId,
               artifactId: k.id,
+              isExecutive: hasExecutivePrivilege,
             });
             
             if (validation.allowed) {

@@ -1,140 +1,166 @@
 # Auditoría de Hermes · identidades, seguridad, tenants y conocimiento
 
-Fecha: 24 nov 2026. Alcance: revisión de código, base de datos y comportamiento en producción.
-**No se cambió código en este paso.** Evidencia: lecturas de código, consultas SQL y pruebas HTTP.
+Fecha: 24 nov 2026. Alcance: revisión de código, base de datos, red (IPFS) y comportamiento en producción.
+Este documento se actualizó **después** de ejecutar las correcciones; cada afirmación lleva evidencia.
 
-## 1. Veredicto rápido
+## 1. Veredicto
 
 | Área | Estado | Nota |
 |---|---|---|
-| Identidades | 🟡 sólido con dos grietas | jefe/colaborador/contacto de pod funcionan; el match por últimos 10 dígitos puede colisionar |
-| Idempotencia | ✅ bien | índice único por `wamid`, claim atómico, dedupe en memoria + nonce |
-| Seguridad del canal | ✅ bien | HMAC fail-closed verificado (401 sin firma / 401 firma falsa / 200 verificación) |
-| Aislamiento por tenant | ✅ bien | `organizationId: tenant.slug`, token propio, knowledge filtrado, conversación por tenant |
-| Super admin | 🟡 potente y con un overclaim | el jefe recibe todo el knowledge en WhatsApp y el prompt le hace afirmar una capacidad que la tool niega |
-| Knowledge graph | 🔴 **no funcional en su mayoría** | 48 de 55 hechos ACTIVE **sin contenido**; IPFS responde 401 |
-| Personalidad / alma | 🟡 sólo S'Narai | Pandora's no tiene soul ni política de claims registrada |
-| "Saber decir no" | 🟡 reglas sí, claims policy no | las reglas ADR-011 existen; falta la lista de afirmaciones prohibidas para HQ |
-| Observabilidad | ✅ bien | cadena de hash de seguridad, journal, logs con correlación |
+| Identidad del jefe / colaboradores / contactos de pod | ✅ | canonicalización por país (E.164); el sufijo de 10 dígitos ya no resuelve identidad por sí solo |
+| Idempotencia | ✅ | índice único por `wamid`, claim atómico, dedupe en memoria + nonce |
+| Seguridad del canal | ✅ | HMAC fail-closed verificado (401 sin firma / 401 firma falsa / 200 verificación) |
+| Aislamiento por tenant | ✅ | `organizationId: tenant.slug`, token propio, knowledge filtrado, conversación por tenant |
+| Super admin | ✅ | techo propio por canal (ya no bypass): operativo en WhatsApp/Telegram, SECRET en la consola interna |
+| Knowledge graph | 🔴 **no recuperable desde IPFS** | 48/55 hechos ACTIVE sin `content`; el bloque no existe en el nodo (offline) y no hay backup |
+| Personalidad / alma | ✅ | `PANDORAS_SOUL` existe y está registrado; claims y límites ampliados |
+| "Saber decir no" | ✅ | reglas ADR-011 + claims prohibidos + honestidad operativa en la directiva del jefe |
+| Rate limit del canal | ✅ | aplicado en el dispatcher (30/min por teléfono) con prueba de cableado |
 
-## 2. Hallazgos por severidad
+## 2. Correcciones ejecutadas (antes → después)
 
-### P0 — funcional o integridad
+### Punto 2 · La directiva del jefe afirmaba una capacidad que la tool niega — ✅ corregido
 
-**P0-1 · El knowledge graph está registrado pero casi todo ilegible.**
-- `hermes_knowledge`: **55 ACTIVE, 48 con `content = NULL`**.
-- El contenido se purgó a IPFS (K25 Phase C) y la recuperación falla:
-  `KuboRpcIpfsProvider … 401 Unauthorized Sovereign RPC Access` en cada mensaje.
-- Consecuencia: Hermes razona sin su conocimiento; lo que responde viene del mensaje,
-  del historial y de los pocos hechos con contenido. Es la causa raíz de respuestas
-  genéricas o inventadas.
-- Acción: restaurar credenciales del Kubo RPC **o** repoblar `content` de los hechos
-  críticos (decisión de gobernanza). Sin esto, "Hermes al cien" no es alcanzable.
+- **Antes:** `prompt-builder.ts` ordenaba *"confírmale de inmediato con total seguridad que SÍ puedes
+  enviar y redactar mensajes por WhatsApp"*, mientras `executive_send_whatsapp` lanza
+  `ACTION_GATEWAY_REQUIRED: Hermes must only propose`.
+- **Ahora:** la directiva dice que Hermes **redacta y propone**; el envío lo ejecuta el Action Gateway
+  con aprobación explícita, y **nunca** debe afirmar que un mensaje fue enviado o una acción ejecutada
+  sin confirmación de la herramienta.
+- **Autoridad por prompt eliminada:** se retiró el filtro que suprimía
+  `ROLE LIMITS: You cannot directly assign human operators` para el jefe. Las reglas de sistema
+  aplican igual a todos; lo que cambia para el jefe son sus capabilities y tools (ADR-011 /
+  K11-ARCH-06). Si el jefe debe poder asignar operadores, se hace con una tool con capability y
+  auditoría, no con una excepción de texto.
 
-**P0-2 · El prompt del jefe le hace afirmar una capacidad que la tool niega.**
-- `prompt-builder.ts` (bloque SUPREME EXECUTIVE DIRECTIVE): *"confírmale de inmediato
-  con total seguridad que SÍ puedes enviar y redactar mensajes por WhatsApp"*.
-- `executive-tool-registry.ts`: `executive_send_whatsapp` **lanza**
-  `ACTION_GATEWAY_REQUIRED: Direct WhatsApp dispatch from Hermes is deprecated. Hermes must only propose.`
-- Resultado: Hermes dice "sí puedo" y al intentarlo falla. Rompe la confianza y
-  contradice la regla "no fabricar capacidad".
-- Acción: cambiar la directiva a *"puedo proponer el mensaje; el envío se ejecuta por el
-  Action Gateway con tu aprobación"*, o cablear el envío real con aprobación.
+### Punto 3 · Alma y claims de Pandora's — ✅ reforzado
 
-**P0-3 · El mismo prompt elimina una regla de sistema para el jefe.**
-- `prompt-builder.ts`: `ctx.systemRules.filter(r => !r.includes('ROLE LIMITS: You cannot directly assign human operators'))`.
-- Eso es autoridad concedida **por prompt**, no por gate determinista, y choca con
-  ADR-011 / K11-ARCH-06 ("authority is not prompted").
-- Acción: quitar el filtro; si el jefe debe poder asignar operadores, que exista una tool
-  con capability y auditoría, no una excepción de texto.
+- `PANDORAS_SOUL` **sí existía y sí está registrado** (`SOUL_REGISTRY: pandoras`); la auditoría
+  anterior lo dio por ausente y era incorrecto.
+- Se añadió lo que faltaba para una identidad propia y verificable:
+  - persona: *"Hermes, el sistema operativo del ecosistema… nunca como asistente personal de una
+    persona"*;
+  - prohibición explícita de presentarse como asistente personal / secretario de alguien;
+  - claims prohibidos: afirmar envíos o acciones sin herramienta y aprobación, afirmar capacidades
+    técnicas no verificadas en el contexto, y presentarse como representante de una persona.
 
-### P1 — seguridad y privacidad
+### Punto 4 · Techos por canal para el jefe — ✅ corregido
 
-**P1-1 · El jefe recibe TODO el knowledge en WhatsApp, incluido SECRET.**
-- En el runtime, `hasExecutivePrivilege` empuja todos los artefactos sin pasar por el
-  Channel Mesh. Hay **3 hechos SECRET y 15 CONFIDENTIAL ACTIVE**.
-- WhatsApp es un canal público: el contenido pasa por Meta y queda en el teléfono.
-- Acción recomendada: mantener el bypass ejecutivo en canales internos, pero en WhatsApp
-  limitar a `TENANT_RESTRICTED` como máximo, o exigir confirmación explícita por mensaje.
+- **Antes:** `hermes-runtime.ts` hacía `if (hasExecutivePrivilege) { filteredKnowledge.push(k); continue; }`.
+  Es decir, el jefe recibía **todo** el knowledge, incluidos 3 hechos `SECRET` y 15 `CONFIDENTIAL`
+  ACTIVE, por WhatsApp (canal que pasa y queda en servidores de Meta).
+- **Ahora:** el jefe pasa por el mesh con `isExecutive: true`, y cada canal declara su techo ejecutivo:
 
-**P1-2 · Pandora's no tiene soul ni claims policy.**
-- `HermesSoulRegistry` sólo registra `snarai`. Para `pandoras`, `registeredSoul` es
-  `undefined`, así que **no se aplican** `claimsPolicy.prohibited` ni las URLs canónicas.
-- La personalidad cae al `identityPack` del proyecto o a un tono por defecto.
-- Acción: registrar un soul de Pandora's (misión, tono, claims prohibidos, escalamiento).
+  | Canal | Techo normal | Techo del jefe |
+  |---|---|---|
+  | WhatsApp | PUBLIC | **INTERNAL_OPERATIONAL** |
+  | Telegram | PUBLIC | **INTERNAL_OPERATIONAL** |
+  | Web widget | PUBLIC | PUBLIC |
+  | Portal del tenant | TENANT_RESTRICTED | TENANT_RESTRICTED |
+  | Consola interna | CONFIDENTIAL | **SECRET** |
+  | REST API | TENANT_RESTRICTED | TENANT_RESTRICTED |
 
-**P1-3 · Rate limit definido pero no aplicado.**
-- `CHANNEL_CONFIGS.WHATSAPP.rateLimitPerMinute = 30`, pero el dispatcher no lo consume
-  (sólo deduplica mensajes). Un número puede inundar y consumir tokens sin freno.
-- Acción: contador por teléfono/minuto en el dispatcher (memoria + respaldo en DB).
+- Un bloqueo por techo ejecutivo se registra como `INFO` (es la política funcionando), no como
+  `CRITICAL`; así dejan de generarse alertas rutinarias.
 
-**P1-4 · Identidad por "últimos 10 dígitos" puede colisionar.**
-- Colaboradores y jefe se resuelven comparando los últimos 10 dígitos. Un número de otro
-  país que termine en esos 10 dígitos resolvería como el colaborador (o como el jefe).
-- Acción: exigir `+52` (o E.164 exacto) para MX; dejar el sufijo sólo como último recurso
-  con log de seguridad.
+### Punto 5 · Rate limit e identidad por país — ✅ corregido
 
-**P1-5 · Teléfono del jefe hardcodeado.**
-- `interlocutor-resolver.ts` incluye `523222741987` y variantes en el código.
-- Acción: mover a `MARCO_PHONE` / `ADMIN_PHONES` (dejando el valor actual como respaldo
-  documentado) para que el cambio sea operativo y no un deploy.
+- **Rate limit:** `whatsappInboundRateLimiter` en `packages/shared/src/security-utils.ts`
+  (30/min por teléfono, alineado con `CHANNEL_CONFIGS.WHATSAPP.rateLimitPerMinute`, ajustable con
+  `WHATSAPP_RATE_LIMIT_PER_MINUTE`). El dispatcher lo consume **después** del dedupe (los reintentos
+  de Meta no gastan presupuesto) y **antes** del claim atómico. Si el limitador falla, continúa
+  (fail-open) porque el dedupe + claim siguen garantizando un solo procesamiento.
+- **Identidad canónica:** `canonicalPhone()` normaliza a E.164, pliega el trunk móvil mexicano
+  (`52 1 …` → `52 …`) y separa `prefix` + `national`. `phonesShareIdentity()` exige que el país
+  coincida cuando ambos lados lo traen. Consecuencia: `+1 322 214 9409` **ya no** resuelve como el
+  jefe mexicano `+52 322 214 9409`, y un extranjero con los mismos 10 dígitos no hereda el rol de un
+  colaborador ni de un lead.
+- Se aplicó en los cuatro puntos donde se resolvía identidad por sufijo: jefe, colaboradores, leads
+  de marketing y contactos de pod. Todos hacen prefiltro SQL por últimos 10 dígitos (barato) y luego
+  verificación canónica de hasta 5 filas.
 
-### P2 — hardening y deuda
+### Punto 1 · Conocimiento — ❌ bloqueado, con evidencia nueva
 
-| # | Hallazgo | Acción |
+No es solo la credencial: **el contenido no está en el nodo**.
+
+```
+POST https://rpc.ipfs.pandoras.finance/api/v0/version   → 401  "Unauthorized Sovereign RPC Access"
+GET  https://ipfs.pandoras.finance/ipfs/bafkreiaq2tif…  → 500  "block was not found locally (offline)"
+hermes_knowledge_registry (tenant pandoras): 22 artefactos, 0 ACTIVE, 0 con backup_ipfs_cid
+hermes_knowledge: 55 ACTIVE → 48 con content = NULL
+```
+
+- `PANDORAS_KUBO_API_KEY` **sí existe** en Vercel (aparece cifrada; `vercel env pull` la muestra
+  vacía porque es *sensitive*). No es un problema de variable ausente.
+- El gateway responde, pero el nodo no tiene los bloques: el contenido fue purgado y no hay réplica
+  (`backup_ipfs_cid` vacío en todos los artefactos).
+- Por tanto no se puede "restaurar IPFS" desde el repositorio. Sólo queda **re-minear** el
+  contenido curado (decisión de gobernanza: es verdad institucional) o restaurar el nodo desde un
+  backup operativo externo.
+- Mientras tanto Hermes razona con: mensaje actual + historial + **7 hechos ACTIVE que sí tienen
+  contenido** (`hermes_canales_y_herramientas`, `hermes_system_limits`, `agenda_soberana_ecosistema`,
+  `pandoras_contexto_operativo`, `pandoras_productos_y_proyectos`, `pricing_transparency`,
+  `prospect_pablo_coffree`). Eso cubre lo operativo; no cubre constitución, legal ni políticas.
+
+## 3. Evidencia de ejecución (24 nov 2026)
+
+| Comando | Alcance | Resultado |
 |---|---|---|
-| P2-1 | No hay detector de inyección de prompt en la entrada (sólo reglas de sistema y el gate de tools) | Heurísticas + telemetría; el gate ya impide escalar autoridad |
-| P2-2 | Dos rutas de webhook: `whatsapp/simple` (Meta) y `v1/external/whatsapp/webhook` (bridge) | Documentado; no borrar la de bridge sin confirmar consumidor |
-| P2-3 | 4,346 eventos CRITICAL `DISCLOSURE_BLOCKED` históricos | El cambio de severidad (Fase 3) detiene los nuevos; definir retención |
-| P2-4 | `whatsapp_users` y flujos legacy coexisten con la identidad canónica | No los usa Hermes; documentar como legacy |
-| P2-5 | 679 `TOOL_UNAUTHORIZED` y 604 `CROSS_TENANT_BLOCKED` históricos | Revisar si son de pruebas; el gate está funcionando |
-| P2-6 | El "sello soberano" (IPFS) falla en cada mensaje | Mismo arreglo que P0-1 o desactivarlo mientras no esté configurado |
+| `npx vitest run src/lib/whatsapp/__tests__` (dashboard) | suite WhatsApp | **20 passed / 3 failed** — los 3 fallos (`PATH-01/02/04`) existen igual en `HEAD` (mock de `db` sin `select/insert`) |
+| `npx vitest run` (packages/hermes-core) | suite completa | **545 passed / 4 failed / 347 skipped** |
+| `npx vitest run` en `HEAD` (misma suite, baseline) | suite completa | **527 passed / 5 failed** — mismos fallos preexistentes + 1 aserción obsoleta que esta entrega corrige |
+| `npx vitest run phone-identity + channel-mesh + boss-omnichannel` | foco | **41 passed / 1 skipped** |
+| `npx tsc --noEmit` (apps/dashboard) | app | **2 errores**, ambos en `CustomSwap.tsx` y `swap/TokenRoutes.tsx` (tipos de swap, preexistentes; ningún archivo tocado aparece) |
+| `bun run build` (packages/shared) | paquete | OK; `whatsappInboundRateLimiter` presente en `dist/index.{js,mjs,d.ts}` |
 
-## 3. Lo que está bien (con evidencia)
+Fallos preexistentes que **no** introduce esta entrega y quedan documentados:
+`claim-provenance CPI-004`, `media-generation TC-11`, `production-readiness session tokens`,
+`controlplane-adversarial ATTACK 05` (este último también falla en `HEAD` al correr la suite completa).
+
+`npx tsc -p packages/hermes-core/tsconfig.json` **no es un gate válido** en este monorepo: reporta
+~27 000 errores preexistentes porque resuelve tipos desde `dist` de paquetes internos. El gate real es
+el `tsc --noEmit` de la app.
+
+## 4. Lo que ya estaba bien (verificado, no se tocó)
 
 - **HMAC del webhook**: `POST` sin firma → 401; firma falsa → 401; `GET` de verificación → 200.
-- **Idempotencia**: índice único `idx_whatsapp_messages_incoming_wamid_unique`, claim
-  atómico con `onConflictDoNothing`, dedupe en memoria y nonce por sesión firmada.
-  Además: `idx_nda_email_version`, `uq_access_requests_room_email`, `idx_pof_room_email`.
+- **Idempotencia**: `idx_whatsapp_messages_incoming_wamid_unique`, claim atómico con
+  `onConflictDoNothing`, dedupe en memoria y nonce por sesión firmada. Además
+  `idx_nda_email_version`, `uq_access_requests_room_email`, `idx_pof_room_email`.
 - **Aislamiento por tenant**: destino por `phone_number_id` (fail-closed), runtime con
-  `organizationId: tenant.slug`, respuesta con `tenant.secrets`, knowledge filtrado por
-  organización y conversación con prefijo por tenant.
-- **Mesh fail-closed**: techo por canal; WhatsApp `PUBLIC`; lo que no cabe se descarta
-  (ahora con severidad proporcional).
-- **Knowledge gobernado**: sólo `ACTIVE` entra al contexto; índice único de un ACTIVE por
-  `(org, dimension, key)`; supersession soportada.
-- **Gate de tools**: cross-tenant por `organizationId`, resource scope y lista de tools
-  restringidas; `authorizeAsync` se ejecuta antes de cualquier handler.
-- **Super admin**: resolución como `OWNER` verificada en logs ("Boss: true"), con
-  permisos completos; handoff y pausas no aplican al jefe (por diseño).
-- **Proveedor**: Ollama Cloud con `gemma4:31b`; log `provider=ollama-native`; configuración
-  por tenant (`OLLAMA_<SLUG>_*`) sin hardcode.
-- **Contexto por contacto**: la ficha del pod se inyecta al contacto; el directorio de pods
-  sólo al jefe. Nada de eso se escribe en knowledge.
-- **Tests**: 10/10 (HMAC + slug de tenant + severidad del mesh).
+  `organizationId: tenant.slug`, respuesta con `tenant.secrets`, knowledge filtrado por organización
+  y conversación con prefijo por tenant.
+- **Knowledge gobernado**: sólo `ACTIVE` entra al contexto; un ACTIVE por `(org, dimension, key)`;
+  supersession soportada; el adapter omite hechos sin `content`.
+- **Gate de tools**: cross-tenant por `organizationId`, resource scope, lista de tools restringidas,
+  `authorizeAsync` antes de cualquier handler; `executive_send_whatsapp` /
+  `promote_contact` / `confirm_plan` sólo proponen (`ACTION_GATEWAY_REQUIRED`).
+- **Super admin**: resolución como `OWNER` verificada en logs (`Boss: true`), handoff y pausas no
+  aplican al jefe por diseño.
+- **Proveedor**: Ollama Cloud (`gemma4:31b`), config por tenant (`OLLAMA_<SLUG>_*`), log
+  `provider=ollama-native`, sin OpenAI.
+- **Contexto por contacto**: ficha del pod al contacto; directorio de pods sólo al jefe; nada de eso
+  se escribe en `hermes_knowledge`.
 
-## 4. "Saber decir no" hoy vs lo que falta
+## 5. Riesgos residuales
 
-**Ya dice no a**: escalar autoridad, presentar conocimiento no `ACTIVE` como hecho, usar
-tools sin capability, tocar recursos de otro tenant, clasificación desconocida, y ejecutar
-acciones sin gate.
-
-**No lo dice bien a**: afirmar que puede enviar WhatsApp (P0-2), asignar operadores
-(P0-3), y responder sobre conocimiento que no puede leer (P0-1). Además, al no tener
-claims policy propia, no hay lista explícita de "esto no lo afirmo" para Pandora's (P1-2).
-
-## 5. Roadmap propuesto
-
-| Orden | Acción | Esfuerzo |
+| # | Riesgo | Acción |
 |---|---|---|
-| 1 | Restaurar acceso al conocimiento (IPFS) o repoblar `content` crítico (P0-1) | 2–4 h + decisión |
-| 2 | Corregir la directiva del jefe: proponer, no afirmar envío; quitar el filtro de ROLE LIMITS (P0-2/P0-3) | 1 h |
-| 3 | Soul y claims policy de Pandora's (P1-2) | 2–3 h |
-| 4 | Limitar SECRET/CONFIDENTIAL en WhatsApp incluso para el jefe (P1-1) | 1 h |
-| 5 | Rate limit por teléfono (P1-3) | 1 h |
-| 6 | Match de identidad por país/E.164 (P1-4) y teléfono del jefe por env (P1-5) | 1–2 h |
-| 7 | Telemetría de inyección y retención de eventos (P2-1/P2-3) | 2 h |
+| R-1 | Sin Redis (`REDIS_URL` ausente), el rate limit es por instancia serverless | Configurar Upstash/Redis para hacerlo global |
+| R-2 | El dedupe de auto-registro de leads (STEP 5) sigue comparando últimos 10 dígitos | Un extranjero con los mismos dígitos no crea lead nuevo (pérdida de dato, no de autoridad) |
+| R-3 | 4 346 eventos `CRITICAL DISCLOSURE_BLOCKED` históricos | Definir retención; los nuevos bloqueos rutinarios ya son `INFO` |
+| R-4 | No hay detector de inyección de prompt en la entrada | Añadir heurísticas + telemetría; el gate de tools ya impide escalar autoridad |
+| R-5 | Dos rutas de webhook (`whatsapp/simple` y `v1/external/whatsapp/webhook`) | Documentado; no borrar la de bridge sin confirmar consumidor |
+| R-6 | El "sello soberano" (IPFS) falla en cada mensaje | Mismo bloqueo que Punto 1: o se re-mina el contenido o se desactiva el sellado mientras no esté configurado |
 
-**Nota:** los puntos 1 y 2 son los que explican por qué Hermes "no sabía de Luis" y por qué
-puede prometer cosas que no hace. Sin ellos, el resto es endurecimiento sobre una base
-funcionalmente incompleta.
+## 6. Lo único que falta para "Hermes al cien"
+
+**Decisión de gobernanza sobre el conocimiento** (Punto 1). Dos caminos:
+
+1. **Re-minar** los hechos críticos como contenido curado (constitución corporativa, legal, políticas,
+   academia, identidad) — implica que alguien autorice el texto, porque define verdad institucional.
+2. **Restaurar el nodo IPFS** desde un backup operativo externo al repositorio (Kubo/Cluster) y
+   re-pinnear; después verificar con `POST /api/v0/cat` por CID.
+
+Sin esa decisión, cualquier intento de "arreglar" el knowledge sería inventar contenido, y eso está
+prohibido por las directivas del repositorio.

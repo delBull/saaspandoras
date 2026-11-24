@@ -14,7 +14,7 @@ import { projects, whatsappMessages, nexusCollaborators } from '@saasfly/db/sche
 import { eq } from "@saasfly/db-core";
 import { HumanHandoffProtocol } from '@saasfly/hermes-core';
 import { InteractionRouter } from '@saasfly/hermes-core';
-import { sendWhatsAppMessage } from '@saasfly/shared';
+import { sendWhatsAppMessage, whatsappInboundRateLimiter } from '@saasfly/shared';
 import { resolveMasterPhoneNumberId, buildCanonicalWhatsAppConversationId, maskPhoneNumber } from '@saasfly/shared';
 import { getDefaultRuntime, CommercialCloserService, ActorIdentityBindingService, getActiveNonceStore } from '@saasfly/hermes-core';
 import { formatWhatsAppText } from './utils/formatter';
@@ -332,6 +332,23 @@ export class WhatsAppDispatcher {
     if (isMessageDuplicate(messageId)) {
       console.log(`⚡ [WhatsAppDispatcher] Duplicate Meta message ID detected in memory (${messageId}), ignoring.`);
       return { status: 'duplicate_ignored', handled: true, target: 'pandoras_acquisition' };
+    }
+
+    // ── 0.8. Cyber Security: Inbound Rate Limit (per phone, per minute) ─────
+    // Enforced after dedupe so Meta retries never consume budget. The limit comes
+    // from the channel contract (CHANNEL_CONFIGS.WHATSAPP), not from the prompt:
+    // flooding the number must not translate into unbounded LLM spend.
+    try {
+      const withinBudget = await whatsappInboundRateLimiter.isAllowed(`wa:${cleanPhone}`);
+      if (!withinBudget) {
+        console.warn(`🛑 [WhatsAppDispatcher] RATE LIMIT: ${maskPhoneNumber(phone)} exceeded inbound messages per minute. Dropping.`);
+        return { status: 'rate_limited', handled: true, target: 'pandoras_acquisition' };
+      }
+    } catch (rlErr) {
+      // Fail-open on limiter infrastructure failure: losing a legitimate customer
+      // message is worse than absorbing spam, and the dedupe + atomic claim still
+      // guarantee single processing.
+      console.warn('[WhatsAppDispatcher] Rate limiter unavailable, continuing:', rlErr);
     }
 
     try {

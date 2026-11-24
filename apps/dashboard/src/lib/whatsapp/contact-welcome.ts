@@ -1,6 +1,7 @@
 import { db } from "@saasfly/db";
 import { nexusDealPods, nexusPodContacts } from "@saasfly/db/schema";
 import { and, eq, sql } from "@saasfly/db-core";
+import { phonesShareIdentity } from "@saasfly/hermes-core";
 
 /**
  * Contacto de un **Deal Pod** en el canal WhatsApp.
@@ -49,7 +50,10 @@ export async function findPodContactByPhone(
   const digits = normalizePhone(phone);
   if (digits.length < 10) return null;
 
-  const [row] = await db
+  // SQL prefilter on the last 10 digits; the authoritative check is canonical
+  // (country-aware) so a foreign number sharing those digits cannot read a
+  // pod contact's context.
+  const candidates = await db
     .select()
     .from(nexusPodContacts)
     .where(
@@ -58,7 +62,9 @@ export async function findPodContactByPhone(
         sql`right(regexp_replace(${nexusPodContacts.phone}, '[^0-9]', '', 'g'), 10) = right(${digits}, 10)`,
       ),
     )
-    .limit(1);
+    .limit(5);
+
+  const row = candidates.find((c) => c.phone && phonesShareIdentity(c.phone, digits));
 
   if (!row) return null;
 

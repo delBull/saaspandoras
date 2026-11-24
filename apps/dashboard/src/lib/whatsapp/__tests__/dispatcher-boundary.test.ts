@@ -95,4 +95,34 @@ from: '5215500000000',
     );
     expect(sweepCheck.granted).toBe(false);
   });
+
+  it('BOUND-05: Inbound flood from one phone is rate limited by the dispatcher', async () => {
+    const { whatsappInboundRateLimiter } = await import('@saasfly/shared');
+    WhatsAppDispatcher.resetDeduplicationForTesting();
+
+    const phone = '5215599900011';
+    const payload = (wamid: string) => ({
+      entry: [{
+        changes: [{
+          value: {
+            metadata: { phone_number_id: masterPhone },
+            messages: [{ from: phone, id: wamid, type: 'text', text: { body: 'hola' } }],
+          },
+        }],
+      }],
+    });
+
+    // Control: a phone with budget left is not rate limited.
+    const first = await WhatsAppDispatcher.dispatch(payload('wamid.BOUND05.control') as any);
+    expect(first.status).not.toBe('rate_limited');
+
+    // Exhaust the same budget the dispatcher consumes (`wa:<phone>` keys).
+    for (let i = 0; i < 30; i++) {
+      await whatsappInboundRateLimiter.isAllowed(`wa:${phone}`);
+    }
+
+    const blocked = await WhatsAppDispatcher.dispatch(payload('wamid.BOUND05.blocked') as any);
+    expect(blocked.status).toBe('rate_limited');
+    expect(blocked.handled).toBe(true);
+  });
 });

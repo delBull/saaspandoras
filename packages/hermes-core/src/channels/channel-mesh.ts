@@ -59,6 +59,12 @@ export function normalizeHermesChannel(raw: string | null | undefined): HermesCh
 export interface ChannelConfig {
   channelType: HermesChannelType;
   maxClearanceCeiling: KnowledgeDisclosureClearance;
+  /**
+   * Techo cuando quien pregunta es el propietario (jefe). Permite algo más que
+   * el techo público sin exponer CONFIDENTIAL/SECRET en canales que salen del
+   * perímetro (WhatsApp, widget web).
+   */
+  executiveCeiling?: KnowledgeDisclosureClearance;
   requiresAuthentication: boolean;
   rateLimitPerMinute: number;
 }
@@ -67,6 +73,8 @@ export const CHANNEL_CONFIGS: Record<HermesChannelType, ChannelConfig> = {
   TELEGRAM: {
     channelType: 'TELEGRAM',
     maxClearanceCeiling: 'PUBLIC',
+    // Mensajería externa: el jefe conserva contexto operativo, no confidencial.
+    executiveCeiling: 'INTERNAL_OPERATIONAL',
     requiresAuthentication: false,
     rateLimitPerMinute: 30,
   },
@@ -85,12 +93,17 @@ export const CHANNEL_CONFIGS: Record<HermesChannelType, ChannelConfig> = {
   WHATSAPP: {
     channelType: 'WHATSAPP',
     maxClearanceCeiling: 'PUBLIC',
+    // El jefe conserva contexto operativo, pero lo confidencial/secreto no sale
+    // por un canal que pasa y queda en servidores de Meta.
+    executiveCeiling: 'INTERNAL_OPERATIONAL',
     requiresAuthentication: false,
     rateLimitPerMinute: 30,
   },
   INTERNAL_DASHBOARD: {
     channelType: 'INTERNAL_DASHBOARD',
     maxClearanceCeiling: 'CONFIDENTIAL',
+    // Consola interna autenticada: aquí el jefe sí conserva el nivel SECRET.
+    executiveCeiling: 'SECRET',
     requiresAuthentication: true,
     rateLimitPerMinute: 300,
   },
@@ -101,6 +114,15 @@ export const CHANNEL_CONFIGS: Record<HermesChannelType, ChannelConfig> = {
     rateLimitPerMinute: 180,
   },
 };
+
+/** Techo efectivo de un canal, opcionalmente con privilegio ejecutivo. */
+export function effectiveCeiling(
+  channelType: HermesChannelType,
+  isExecutive = false,
+): KnowledgeDisclosureClearance {
+  const config = CHANNEL_CONFIGS[channelType] || CHANNEL_CONFIGS.WEB_WIDGET;
+  return isExecutive ? (config.executiveCeiling ?? config.maxClearanceCeiling) : config.maxClearanceCeiling;
+}
 
 const CLEARANCE_LEVELS: Record<KnowledgeDisclosureClearance, number> = {
   PUBLIC: 1,
@@ -134,18 +156,21 @@ export class ChannelMeshService {
     requiredClearance: KnowledgeDisclosureClearance;
     tenantId: string;
     artifactId?: string;
+    /** El jefe conserva un techo propio, no acceso ilimitado. */
+    isExecutive?: boolean;
   }): Promise<{ allowed: boolean; reason?: string }> {
-    const { channelType, requiredClearance, tenantId, artifactId } = params;
-    const config = CHANNEL_CONFIGS[channelType] || CHANNEL_CONFIGS.WEB_WIDGET;
+    const { channelType, requiredClearance, tenantId, artifactId, isExecutive } = params;
+    const ceiling = effectiveCeiling(channelType, Boolean(isExecutive));
 
     const reqLevel = CLEARANCE_LEVELS[requiredClearance];
-    const ceilingLevel = CLEARANCE_LEVELS[config.maxClearanceCeiling];
+    const ceilingLevel = CLEARANCE_LEVELS[ceiling];
 
     if (reqLevel === undefined || ceilingLevel === undefined || reqLevel > ceilingLevel) {
       // Un artefacto interno por encima del techo de un canal público es rutina
       // (p. ej. WhatsApp). Sólo lo verdaderamente sensible —o una clasificación
       // que no se puede determinar— justifica un evento CRITICAL con alerta.
-      const severity = disclosureSeverity(reqLevel === undefined ? undefined : requiredClearance);
+      // Un bloqueo por el techo ejecutivo es la política funcionando: INFO.
+      const severity = isExecutive ? 'INFO' : disclosureSeverity(reqLevel === undefined ? undefined : requiredClearance);
       const isSensitive = severity === 'CRITICAL';
 
       await SecurityAuditLogger.logEvent({
@@ -158,16 +183,17 @@ export class ChannelMeshService {
         classification: requiredClearance as any,
         metadata: {
           channelType,
-          channelCeiling: config.maxClearanceCeiling,
+          channelCeiling: ceiling,
+          isExecutive: Boolean(isExecutive),
           requiredClearance,
           expectedRoutine: !isSensitive && reqLevel !== undefined,
-          reason: `Attempted to disclose [${requiredClearance}] artifact over [${channelType}] channel with maximum ceiling [${config.maxClearanceCeiling}].`,
+          reason: `Attempted to disclose [${requiredClearance}] artifact over [${channelType}] channel with maximum ceiling [${ceiling}].`,
         },
       });
 
       return {
         allowed: false,
-        reason: `Disclosure blocked: Channel "${channelType}" ceiling "${config.maxClearanceCeiling}" is below artifact classification "${requiredClearance}" or clearance is unknown.`,
+        reason: `Disclosure blocked: Channel "${channelType}" ceiling "${ceiling}" is below artifact classification "${requiredClearance}" or clearance is unknown.`,
       };
     }
 

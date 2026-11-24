@@ -425,9 +425,10 @@ describe('Hermes Omnichannel Identity & Boss Executive Authority Suite', () => {
       expect(lastSystemMsg?.content).toContain('Si el usuario pregunta qué sabes de su contexto');
       expect(lastSystemMsg?.content).toContain('Si el usuario pide un resumen de la conversación');
 
-      // Assert Block 2.5 has directive 8
+      // Assert Block 2.5 includes the identity recognition directive (numbering
+      // moved from 8 to 10 when TIER 0 / memoria were added — assert the text).
       const founderBlock = prompt.messages.find(m => m.content.includes('HERMES EXECUTIVE SOVEREIGN PLANE: MODO FUNDADOR'));
-      expect(founderBlock?.content).toContain('8. RECONOCIMIENTO ABSOLUTO DE IDENTIDAD');
+      expect(founderBlock?.content).toContain('RECONOCIMIENTO ABSOLUTO DE IDENTIDAD');
     });
   });
 });
