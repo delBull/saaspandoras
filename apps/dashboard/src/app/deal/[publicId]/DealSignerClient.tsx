@@ -579,14 +579,19 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                   <p className="text-[11px] font-mono uppercase tracking-widest text-sky-300">
                     Prueba de fondos (POF)
                   </p>
-                  <span className="rounded-md border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 text-[9px] font-mono uppercase tracking-wider text-sky-300">
-                    Requerida para el OM
+                  <span className="rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[9px] font-mono uppercase tracking-wider text-amber-300">
+                    Recomendado · prioridad
                   </span>
                 </div>
                 <p className="mt-1.5 text-[12px] leading-relaxed text-zinc-500">
-                  Sin ella puedes firmar, pero <strong className="text-zinc-300">no se libera el memorándum (OM)</strong>.
-                  Adjúntala ahora y se envía junto con tu firma; si prefieres, te la pedimos por correo
-                  después de firmar.
+                  <strong className="text-amber-300">Recomendado.</strong> Los expedientes con manifestación de
+                  fondos se revisan <strong className="text-zinc-300">primero</strong> y reciben el memorándum (OM)
+                  antes que el resto. Sin ella puedes firmar, pero tu solicitud entra a la cola general y el OM
+                  se libera sólo cuando la entregues.
+                </p>
+                <p className="mt-1 text-[11px] leading-relaxed text-zinc-600">
+                  Aceptamos carta del fondo o estado de cuenta (PDF o imagen, máx. 5 MB). También puedes
+                  enviarla después desde esta misma sala.
                 </p>
                 <div className="mt-2 grid gap-2 sm:grid-cols-2">
                   <input
