@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { exchangeCodeForUser, signLinkToken } from '@/lib/discord/oauth';
-import { isDiscordConfigured } from '@/lib/discord/config';
+import { isDiscordOAuthConfigured } from '@/lib/discord/config';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -18,7 +18,7 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const base = (process.env.NEXT_PUBLIC_APP_URL || url.origin).replace(/\/$/, '');
 
-  if (!isDiscordConfigured()) {
+  if (!isDiscordOAuthConfigured()) {
     return NextResponse.redirect(`${base}/discord/link?error=not_configured`);
   }
 

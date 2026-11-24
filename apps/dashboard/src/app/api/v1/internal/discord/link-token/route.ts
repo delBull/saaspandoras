@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { signLinkToken } from '@/lib/discord/oauth';
-import { isDiscordConfigured } from '@/lib/discord/config';
+import { isDiscordBotConfigured } from '@/lib/discord/config';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -34,7 +34,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: false, error: 'INVALID_DISCORD_USER' }, { status: 400 });
   }
 
-  if (!isDiscordConfigured()) {
+  if (!isDiscordBotConfigured()) {
     return NextResponse.json({ success: false, error: 'DISCORD_NOT_CONFIGURED' }, { status: 503 });
   }
 

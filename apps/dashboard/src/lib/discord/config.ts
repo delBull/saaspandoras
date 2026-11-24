@@ -1,33 +1,36 @@
 /**
- * 🎭 Discord · configuración y política de roles (S'Narai)
+ * 🎭 Discord · configuración y política de roles (S'Narai y heredables)
  *
- * Fail-closed: sin las variables de entorno, el módulo lanza. Nada se activa
- * "a medias" ni asigna roles por defecto.
+ * Hay DOS caminos independientes y no deben condicionarse entre sí:
  *
- * Variables requeridas:
- *   DISCORD_CLIENT_ID / DISCORD_CLIENT_SECRET  → OAuth2 (scope: identify)
- *   DISCORD_BOT_TOKEN                          → asignar/quitar roles (REST)
- *   DISCORD_GUILD_ID                           → servidor de Pandora's
- *   DISCORD_OAUTH_REDIRECT_URI                 → URL exacta del callback
- *   DISCORD_ROLE_*                             → ids de rol por nivel
+ *  A. Bot (activo hoy): el gateway ya sabe quién habla. Necesita
+ *     `DISCORD_BOT_TOKEN` + `DISCORD_GUILD_ID` + el rol verificado.
+ *  B. OAuth (dormido): requiere app de Discord con `DISCORD_CLIENT_ID` +
+ *     `DISCORD_CLIENT_SECRET` + `DISCORD_OAUTH_REDIRECT_URI`.
+ *
+ * Fail-closed por camino: cada función lanza o devuelve false si le faltan SUS
+ * variables, sin bloquear al otro.
  */
 
-export interface DiscordConfig {
-  clientId: string;
-  clientSecret: string;
+export interface DiscordRoles {
+  member: string;
+  verified: string;
+  explorer: string;
+  resident: string;
+  institutional: string;
+  riviera: string;
+}
+
+export interface DiscordBotConfig {
   botToken: string;
   guildId: string;
+  roles: DiscordRoles;
+}
+
+export interface DiscordOAuthConfig {
+  clientId: string;
+  clientSecret: string;
   redirectUri: string;
-  roles: {
-    /** Rol base de la capa pública (no da acceso a nada sensible). */
-    member: string;
-    /** Rol de la capa privada: requiere participación verificada. */
-    verified: string;
-    explorer: string;
-    resident: string;
-    institutional: string;
-    riviera: string;
-  };
 }
 
 function required(name: string): string {
@@ -42,13 +45,10 @@ function optional(name: string): string {
   return (process.env[name] || '').trim();
 }
 
-export function getDiscordConfig(): DiscordConfig {
+export function getDiscordBotConfig(): DiscordBotConfig {
   return {
-    clientId: required('DISCORD_CLIENT_ID'),
-    clientSecret: required('DISCORD_CLIENT_SECRET'),
     botToken: required('DISCORD_BOT_TOKEN'),
     guildId: required('DISCORD_GUILD_ID'),
-    redirectUri: required('DISCORD_OAUTH_REDIRECT_URI'),
     roles: {
       member: optional('DISCORD_ROLE_MEMBER'),
       verified: required('DISCORD_ROLE_VERIFIED'),
@@ -60,14 +60,29 @@ export function getDiscordConfig(): DiscordConfig {
   };
 }
 
-/** true si la integración está configurada (para mostrar/ocultar el botón). */
-export function isDiscordConfigured(): boolean {
+export function getDiscordOAuthConfig(): DiscordOAuthConfig {
+  return {
+    clientId: required('DISCORD_CLIENT_ID'),
+    clientSecret: required('DISCORD_CLIENT_SECRET'),
+    redirectUri: required('DISCORD_OAUTH_REDIRECT_URI'),
+  };
+}
+
+/** ¿Se puede asignar roles y emitir tokens de vínculo por el bot? */
+export function isDiscordBotConfigured(): boolean {
   return Boolean(
-    process.env.DISCORD_CLIENT_ID &&
-    process.env.DISCORD_CLIENT_SECRET &&
-    process.env.DISCORD_BOT_TOKEN &&
-    process.env.DISCORD_GUILD_ID &&
-    process.env.DISCORD_OAUTH_REDIRECT_URI,
+    (process.env.DISCORD_BOT_TOKEN || '').trim() &&
+    (process.env.DISCORD_GUILD_ID || '').trim() &&
+    (process.env.DISCORD_ROLE_VERIFIED || '').trim(),
+  );
+}
+
+/** ¿Está disponible el flujo OAuth (requiere client secret)? */
+export function isDiscordOAuthConfigured(): boolean {
+  return Boolean(
+    (process.env.DISCORD_CLIENT_ID || '').trim() &&
+    (process.env.DISCORD_CLIENT_SECRET || '').trim() &&
+    (process.env.DISCORD_OAUTH_REDIRECT_URI || '').trim(),
   );
 }
 

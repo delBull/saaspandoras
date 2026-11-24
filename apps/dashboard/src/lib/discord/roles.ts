@@ -4,7 +4,7 @@
  * Usa la API de Discord con el token del bot. Nunca asigna un rol fuera de la
  * lista gestionada y nunca falla en silencio: devuelve el detalle por rol.
  */
-import { getDiscordConfig } from './config';
+import { getDiscordBotConfig } from './config';
 
 const API = 'https://discord.com/api/v10';
 
@@ -30,7 +30,7 @@ async function discordFetch(path: string, init: RequestInit & { botToken: string
 }
 
 export async function getMemberRoles(discordUserId: string): Promise<{ ok: boolean; roles: string[]; error?: string }> {
-  const cfg = getDiscordConfig();
+  const cfg = getDiscordBotConfig();
   const res = await discordFetch(`/guilds/${cfg.guildId}/members/${discordUserId}`, {
     method: 'GET',
     botToken: cfg.botToken,
@@ -52,7 +52,7 @@ export async function syncMemberRoles(params: {
   desiredRoles: string[];
   managedRoles: string[];
 }): Promise<RoleSyncResult> {
-  const cfg = getDiscordConfig();
+  const cfg = getDiscordBotConfig();
   const { discordUserId, desiredRoles, managedRoles } = params;
   const result: RoleSyncResult = { userId: discordUserId, added: [], removed: [], skipped: [], errors: [] };
 

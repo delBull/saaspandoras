@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createOAuthState, buildAuthorizeUrl } from '@/lib/discord/oauth';
-import { isDiscordConfigured } from '@/lib/discord/config';
+import { isDiscordOAuthConfigured } from '@/lib/discord/config';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic';
  * evitar CSRF en el callback.
  */
 export async function GET() {
-  if (!isDiscordConfigured()) {
+  if (!isDiscordOAuthConfigured()) {
     return NextResponse.json(
       { success: false, error: 'DISCORD_NOT_CONFIGURED', message: 'La integración de Discord no está configurada.' },
       { status: 503 },

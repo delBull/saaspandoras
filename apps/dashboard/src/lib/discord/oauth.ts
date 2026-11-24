@@ -9,7 +9,7 @@
  *      el token y la firma, guarda el vínculo y sincroniza roles
  */
 import crypto from 'crypto';
-import { getDiscordConfig, DISCORD_OAUTH_SCOPES } from './config';
+import { getDiscordOAuthConfig, DISCORD_OAUTH_SCOPES } from './config';
 
 const LINK_TTL_MS = 10 * 60 * 1000;
 
@@ -26,7 +26,7 @@ export function createOAuthState(): string {
 }
 
 export function buildAuthorizeUrl(state: string): string {
-  const cfg = getDiscordConfig();
+  const cfg = getDiscordOAuthConfig();
   const params = new URLSearchParams({
     client_id: cfg.clientId,
     response_type: 'code',
@@ -45,7 +45,7 @@ export interface DiscordUser {
 }
 
 export async function exchangeCodeForUser(code: string): Promise<DiscordUser> {
-  const cfg = getDiscordConfig();
+  const cfg = getDiscordOAuthConfig();
 
   const tokenRes = await fetch('https://discord.com/api/v10/oauth2/token', {
     method: 'POST',
@@ -102,12 +102,4 @@ export function verifyLinkToken(token: string): { discordUserId: string; expires
   return { discordUserId, expiresAt };
 }
 
-/** Mensaje que el usuario firma con su wallet (incluye el token para evitar replay). */
-export function buildLinkMessage(discordUserId: string, token: string): string {
-  return [
-    'Autorizo vincular mi cuenta de Discord a mi wallet en Pandora\'s Growth OS.',
-    `Discord ID: ${discordUserId}`,
-    `Token: ${token.slice(-24)}`,
-    'Este mensaje no autoriza ninguna transacción ni transferencia de fondos.',
-  ].join('\n');
-}
+export { buildLinkMessage } from './link-message';

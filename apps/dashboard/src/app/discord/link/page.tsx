@@ -6,7 +6,7 @@ import { ConnectButton, useActiveAccount } from "thirdweb/react";
 import { client } from "@saasfly/shared/thirdweb-client";
 import { wallets } from "@/lib/wallets";
 import { Loader2, CheckCircle2, AlertTriangle, ShieldCheck } from "lucide-react";
-import { buildLinkMessage } from "@/lib/discord/oauth";
+import { buildLinkMessage } from "@/lib/discord/link-message";
 import { Button } from "@/components/ui/button";
 
 /**

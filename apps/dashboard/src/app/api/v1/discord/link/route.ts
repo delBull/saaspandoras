@@ -4,8 +4,9 @@ import { utils } from 'ethers';
 import { db } from '@saasfly/db';
 import { channelIdentityBindings } from '@saasfly/db/schema';
 import { and, eq } from '@saasfly/db-core';
-import { verifyLinkToken, buildLinkMessage } from '@/lib/discord/oauth';
-import { getDiscordConfig, isDiscordConfigured } from '@/lib/discord/config';
+import { verifyLinkToken } from '@/lib/discord/oauth';
+import { buildLinkMessage } from '@/lib/discord/link-message';
+import { getDiscordBotConfig, isDiscordBotConfigured } from '@/lib/discord/config';
 import { resolveMembershipForWallet } from '@/lib/discord/membership-db';
 import { syncMemberRoles } from '@/lib/discord/roles';
 import { rolesForMembership, allManagedRoles } from '@/lib/discord/membership';
@@ -24,7 +25,7 @@ export const dynamic = 'force-dynamic';
  * Body: { token, walletAddress, signature, message }
  */
 export async function POST(req: Request) {
-  if (!isDiscordConfigured()) {
+  if (!isDiscordBotConfigured()) {
     return NextResponse.json({ success: false, error: 'DISCORD_NOT_CONFIGURED' }, { status: 503 });
   }
 
@@ -68,7 +69,7 @@ export async function POST(req: Request) {
   }
 
   const membership = await resolveMembershipForWallet(walletAddress, body.tenant);
-  const cfg = getDiscordConfig();
+  const cfg = getDiscordBotConfig();
   const desiredRoles = rolesForMembership(membership, cfg.roles);
   const managedRoles = allManagedRoles(cfg.roles);
 
