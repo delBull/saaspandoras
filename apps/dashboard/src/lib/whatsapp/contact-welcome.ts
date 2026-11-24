@@ -1,5 +1,5 @@
 import { db } from "@saasfly/db";
-import { nexusPodContacts } from "@saasfly/db/schema";
+import { nexusDealPods, nexusPodContacts } from "@saasfly/db/schema";
 import { and, eq, sql } from "@saasfly/db-core";
 
 /**
@@ -158,4 +158,53 @@ export async function markPodWelcomed(contactId: string, at = new Date()): Promi
     .update(nexusPodContacts)
     .set({ lastWelcomedAt: at, updatedAt: new Date() })
     .where(eq(nexusPodContacts.id, contactId));
+}
+
+/**
+ * Directorio compacto de contactos de pods para el jefe.
+ *
+ * Sólo se inyecta cuando quien escribe es el propietario (Boss). No se expone a
+ * otros contactos ni a tenants: son fichas de Deal Pod, no knowledge de plataforma.
+ */
+export async function buildPodContactsDirectory(orgId = "pandoras", limit = 15): Promise<string> {
+  const rows = await db
+    .select({
+      name: nexusPodContacts.name,
+      role: nexusPodContacts.role,
+      relationship: nexusPodContacts.relationship,
+      context: nexusPodContacts.context,
+      podCode: nexusDealPods.code,
+      podName: nexusDealPods.displayName,
+      podStatus: nexusDealPods.status,
+      podConfig: nexusDealPods.config,
+    })
+    .from(nexusPodContacts)
+    .innerJoin(nexusDealPods, eq(nexusDealPods.id, nexusPodContacts.podId))
+    .where(and(eq(nexusPodContacts.canonicalOrgId, orgId), eq(nexusDealPods.status, "ACTIVE")))
+    .limit(limit);
+
+  if (rows.length === 0) return "";
+
+  const lines = rows.map((row) => {
+    const ctx = (row.context ?? {}) as PodContactContext;
+    const demo = Boolean((row.podConfig as Record<string, unknown> | null)?.demo);
+    const bits = [
+      `- ${row.name}`,
+      row.role,
+      ctx.company,
+      `pod ${row.podCode}${demo ? " (demo)" : ""} · ${row.podName}`,
+      ctx.dealId ? `sala ${ctx.dealId}` : "",
+      ctx.projectSummary ? `proyecto: ${ctx.projectSummary}` : "",
+      (ctx.pending ?? []).length ? `pendiente: ${(ctx.pending ?? []).join("; ")}` : "",
+    ].filter(Boolean);
+    return bits.join(" · ");
+  });
+
+  return [
+    "[DIRECTORIO DE CONTACTOS DE DEAL PODS · contexto para el jefe, no es un mensaje del usuario]",
+    "Estas son las personas registradas en los pods y su estado actual:",
+    ...lines,
+    "Usa este directorio para responder preguntas sobre contactos, negocios o pendientes. No lo transcribas como bloque.",
+    "[FIN DEL DIRECTORIO]",
+  ].join("\n");
 }

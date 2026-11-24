@@ -18,7 +18,7 @@ import { sendWhatsAppMessage } from '@saasfly/shared';
 import { resolveMasterPhoneNumberId, buildCanonicalWhatsAppConversationId, maskPhoneNumber } from '@saasfly/shared';
 import { getDefaultRuntime, CommercialCloserService, ActorIdentityBindingService, getActiveNonceStore } from '@saasfly/hermes-core';
 import { formatWhatsAppText } from './utils/formatter';
-import { buildContactContextBlock, buildPodWelcome, findPodContactByPhone, markPodWelcomed, shouldWelcome } from './contact-welcome';
+import { buildContactContextBlock, buildPodContactsDirectory, buildPodWelcome, findPodContactByPhone, markPodWelcomed, shouldWelcome } from './contact-welcome';
 
 export interface WhatsAppIncomingMessage {
   from: string;
@@ -601,10 +601,12 @@ export class WhatsAppDispatcher {
         throw bindErr;
       }
 
-      // Contexto de la ficha del pod: viaja en el turno, no en el knowledge global.
-      const messageForRuntime = podContact
-        ? `${buildContactContextBlock(podContact)}\n\n${messageText}`
-        : messageText;
+      // Contexto del turno (no knowledge global):
+      //  · jefe → directorio de contactos de pods (para responder "¿tienes a Luis?")
+      //  · contacto de pod → su propia ficha
+      const directorio = isBoss ? await buildPodContactsDirectory('pandoras') : '';
+      const ficha = podContact ? buildContactContextBlock(podContact) : '';
+      const messageForRuntime = [directorio, ficha, messageText].filter(Boolean).join('\n\n');
 
       const runtimeResponse = await runtime.respond({
         organizationId: 'pandoras',
