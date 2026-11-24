@@ -5,19 +5,19 @@
  * Fuente única: `packages/hermes-core/src/packs/snarai_knowledge_v1.1/*.md`
  * (frontmatter gobernado: organizationId, visibility, authority, status, version, sourceId).
  *
- * Por qué existe: `ingest-snarai-knowledge.ts` apuntaba a
- * `apps/dashboard/src/lib/hermes/packs/...`, una ruta que ya no existe, y escribía
- * plaintext en `hermes_knowledge`. Este script:
+ * Por qué existe: `ingest-snarai-knowledge.ts` apuntaba a una ruta que ya no
+ * existe y escribía plaintext en `hermes_knowledge`. Este script:
  *   1. cifra el cuerpo con el envelope vault (AES-256-GCM + AAD por artefacto),
- *   2. lo fija en IPFS (Pinata como primario; Kubo está sin bloques y con RPC 401),
- *   3. actualiza `hermes_knowledge_registry` con content_hash, ciphertext_hash y CID,
- *   4. NO escribe plaintext en Postgres (el runtime hidrata desde el vault),
- *   5. verifica el artefacto antes de marcarlo ACTIVE.
+ *   2. lo fija en el nodo propio (Kubo primario; Pinata como fallback),
+ *   3. FIRMA el pin con la identidad Hermes (EIP-712) y guarda firmante + firma,
+ *   4. verifica el artefacto antes de registrarlo,
+ *   5. NO escribe plaintext en Postgres (el runtime hidrata desde el vault).
  *
  * Uso:
- *   bun run scripts/seed-snarai-from-pack.ts                      # dry-run (cifra y verifica en memoria)
- *   bun run scripts/seed-snarai-from-pack.ts --apply              # cifra, fija y actualiza el registro
- *   bun run scripts/seed-snarai-from-pack.ts --only=snarai-brand  # un artefacto
+ *   bun run scripts/seed-snarai-from-pack.ts                    # dry-run (cifra y verifica en memoria)
+ *   bun run scripts/seed-snarai-from-pack.ts --apply            # cifra, fija, firma y registra
+ *   bun run scripts/seed-snarai-from-pack.ts --apply --force    # re-fija aunque el hash coincida
+ *   bun run scripts/seed-snarai-from-pack.ts --only=snarai-brand --via=pinata
  */
 
 import fs from 'node:fs';
@@ -26,7 +26,12 @@ import crypto from 'node:crypto';
 import { db } from '@saasfly/db-core';
 import { hermesKnowledgeRegistry, hermesKnowledge } from '@saasfly/db-core/schema';
 import { and, eq } from '@saasfly/db-core';
-import { TenantIpfsVaultService, KnowledgeEnvelopeVault, SecurityAuditLogger } from '@saasfly/hermes-core';
+import {
+  TenantIpfsVaultService,
+  KnowledgeEnvelopeVault,
+  HermesIdentitySigner,
+  SecurityAuditLogger,
+} from '@saasfly/hermes-core';
 
 const TENANT = 'snarai';
 const ACTOR = 'pack:snarai_knowledge_v1.1';
@@ -39,6 +44,7 @@ function arg(name: string): string | undefined {
   return hit ? hit.slice(name.length + 3) : undefined;
 }
 const apply = process.argv.includes('--apply');
+const force = process.argv.includes('--force');
 const only = arg('only');
 const targets = only ? [only] : DEFAULT_TARGETS;
 
@@ -79,32 +85,38 @@ const sha256 = (s: string) => crypto.createHash('sha256').update(s, 'utf8').dige
 
 /**
  * La key del nodo vive en el `.env.local` de la RAÍZ del monorepo (no en
- * apps/dashboard). Bun sólo carga el `.env` del cwd, así que la resolvemos aquí
- * para que el script corra sin exportar variables a mano. En producción las
+ * apps/dashboard) y la clave de firma en el `.env` de la app. Bun sólo carga el
+ * `.env` del cwd, así que resolvemos lo que falte aquí. En producción las
  * variables llegan por entorno y este bloque no hace nada.
  */
-function loadKuboEnvFromRoot(): void {
-  if (process.env.PANDORAS_KUBO_RPC_URL && process.env.PANDORAS_KUBO_API_KEY) return;
-  const candidates = [
+function hydrateEnvFromFiles(): void {
+  const want = [
+    'PANDORAS_KUBO_RPC_URL',
+    'PANDORAS_KUBO_GATEWAY_URL',
+    'PANDORAS_KUBO_API_KEY',
+    'HERMES_IDENTITY_PRIVATE_KEY',
+  ];
+  const sources = [
     path.resolve(process.cwd(), '../../.env.local'),
     path.resolve(process.cwd(), '.env.local'),
+    path.resolve(process.cwd(), '.env'),
   ];
-  for (const file of candidates) {
+  for (const file of sources) {
     if (!fs.existsSync(file)) continue;
     for (const line of fs.readFileSync(file, 'utf8').split('\n')) {
-      const match = line.match(/^(PANDORAS_KUBO_[A-Z_]+)=(.*)$/);
-      if (match && !process.env[match[1]!]) {
+      const match = line.match(/^([A-Z0-9_]+)=(.*)$/);
+      if (!match || !want.includes(match[1]!)) continue;
+      if (!process.env[match[1]!]) {
         process.env[match[1]!] = (match[2] || '').replace(/^["']|["']$/g, '').trim();
       }
     }
   }
-  // El RPC/gateway públicos no siempre están en .env.local; se fijan por defecto.
   if (!process.env.PANDORAS_KUBO_RPC_URL) process.env.PANDORAS_KUBO_RPC_URL = 'https://rpc.ipfs.pandoras.finance';
   if (!process.env.PANDORAS_KUBO_GATEWAY_URL) process.env.PANDORAS_KUBO_GATEWAY_URL = 'https://ipfs.pandoras.finance/ipfs';
 }
 
 async function main() {
-  loadKuboEnvFromRoot();
+  hydrateEnvFromFiles();
   const dir = resolvePackDir();
 
   // El nodo propio (Kubo) es el primario; Pinata queda como espejo/fallback.
@@ -123,9 +135,11 @@ async function main() {
 
   const vault = new TenantIpfsVaultService({ primaryProvider });
   const envelopeVault = new KnowledgeEnvelopeVault();
+  const signer = new HermesIdentitySigner();
 
   console.log(
-    `\nS'Narai · siembra desde pack\norigen: ${dir}\nprimario: ${primaryProvider} · modo: ${apply ? 'APPLY' : 'DRY-RUN'}\nartefactos: ${targets.join(', ')}\n`,
+    `\nS'Narai · siembra desde pack\norigen: ${dir}\nprimario: ${primaryProvider} · firmante: ${signer.getPublicAddress()}\n` +
+    `modo: ${apply ? 'APPLY' : 'DRY-RUN'}${force ? ' · FORCE' : ''} · artefactos: ${targets.join(', ')}\n`,
   );
 
   let processed = 0;
@@ -148,7 +162,7 @@ async function main() {
       .where(and(eq(hermesKnowledgeRegistry.tenantId, TENANT), eq(hermesKnowledgeRegistry.artifactId, sourceId)))
       .limit(1);
 
-    if (existing && existing.contentHash === contentHash && existing.governanceStatus === 'ACTIVE') {
+    if (!force && existing && existing.contentHash === contentHash && existing.governanceStatus === 'ACTIVE') {
       skipped++;
       console.log(`= ${sourceId}: sin cambios (hash ${contentHash.slice(0, 10)}…)`);
       continue;
@@ -156,24 +170,30 @@ async function main() {
 
     try {
       const ctx = { tenantId: TENANT, artifactId: sourceId, version, classification } as const;
-      const envelope = await envelopeVault.encryptArtifact(body, ctx as any);
-      const ciphertextHash = sha256(envelope.ciphertext);
 
       if (!apply) {
         // Verificación criptográfica sin red: el sobre debe descifrar y cuadrar.
-        const check = await vault.verifyAndDecryptEnvelope(envelope, ctx as any, ciphertextHash);
+        const envelope = await envelopeVault.encryptArtifact(body, ctx as any);
+        const check = await vault.verifyAndDecryptEnvelope(envelope, ctx as any, sha256(envelope.ciphertext));
         if (check.plaintext !== body) throw new Error('roundtrip distinto');
         processed++;
-        console.log(`✓ ${sourceId} [${classification}] ${body.length} chars → listo para fijar (dry-run)`);
+        console.log(`✓ ${sourceId} [${classification}] ${body.length} chars → listo para fijar y firmar (dry-run)`);
         continue;
       }
 
-      const cid = await vault.pinJsonToIpfs(envelope, `snarai-${sourceId}-v${version}.json`);
+      // Pipeline canónico: cifra + fija + firma (EIP-712) el pin.
+      const pinned = await vault.storeEncryptedKnowledgeToIpfs(body, ctx as any, signer);
+      const cid = pinned.cid;
       if (!/^baf[a-z0-9]{50,}$|^Qm[1-9A-HJ-NP-Za-km-z]{44}$/.test(cid)) {
         throw new Error(`CID inválido o simulado (${cid}). El proveedor no fijó el contenido de verdad.`);
       }
+      const ciphertextHash = sha256(pinned.encryptedMetadata.ciphertext);
+      const agentSignature = pinned.agentSignature;
+      if (!agentSignature) {
+        throw new Error('El pin no devolvió firma del agente; no se registra un artefacto sin firma.');
+      }
 
-      // Verificación real contra lo fijado: si no descifra e íntegro, no se promueve.
+      // Verificación real contra lo fijado: si no descifra e íntegro, no se registra.
       await vault.retrieveVerifiedFromIpfs(cid, ctx as any, ciphertextHash);
 
       const values = {
@@ -186,6 +206,8 @@ async function main() {
         ciphertextHash,
         ipfsCid: cid,
         ipfsUri: `ipfs://${cid}`,
+        signedByAddress: signer.getPublicAddress(),
+        agentSignature,
         governanceStatus: 'ACTIVE' as const,
         updatedAt: new Date(),
       };
@@ -235,7 +257,15 @@ async function main() {
         correlationId: `pack_seed_${sourceId}_${Date.now()}`,
         artifactId: sourceId,
         classification: classification as any,
-        metadata: { source: 'PACK', file, cid, contentHash, ciphertextHash, version },
+        metadata: {
+          source: 'PACK',
+          file,
+          cid,
+          contentHash,
+          ciphertextHash,
+          version,
+          signedBy: signer.getPublicAddress(),
+        },
       });
 
       processed++;
@@ -246,7 +276,9 @@ async function main() {
     }
   }
 
-  console.log(`\nResumen: ${processed} procesados · ${skipped} sin cambios · ${failed} fallidos${apply ? '' : ' (dry-run, nada escrito)'}\n`);
+  console.log(
+    `\nResumen: ${processed} procesados · ${skipped} sin cambios · ${failed} fallidos${apply ? '' : ' (dry-run, nada escrito)'}\n`,
+  );
   if (failed > 0) process.exit(2);
 }
 

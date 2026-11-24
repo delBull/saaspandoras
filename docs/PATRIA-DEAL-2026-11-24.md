@@ -8,7 +8,7 @@ Clon estructural de la oportunidad `PDR-VILLAGE`, adaptado al activo real de **P
 | Pieza | Valor |
 |---|---|
 | Deal Pod | `patria` · "Proyecto Patria" · `OFF_MARKET` · org `pandoras` |
-| Sala | `PDR-PATRIA` · `PROPOSAL` · `DRAFT` |
+| Sala | `PDR-PATRIA` · `PROPOSAL` · **`PROPOSAL_SENT`** (publicada) |
 | Título | Proyecto Patria — Oportunidad de adquisición |
 | Contraparte | *Proyecto Patria (terreno para desarrollo mixto)* — genérica, como Village |
 | Emisor (`company`) | AZTECAZ HUB S.A.P.I. de C.V. |
@@ -46,10 +46,34 @@ COS/CUS y factibilidades, proyectos y presupuestos, situación fiscal).
 El OM **no** se adjunta: se entrega por enlace. Es un documento distinto del PDF de la sala (ese se
 genera desde las secciones) y del PDF del NDA.
 
-## Pendiente / a decidir
+## Landing pública
 
-- **Landing pública** (`/pitch/patria`): no se creó. Village tiene una y es material de marketing
-  público; requiere el copy aprobado por el Fundador.
-- **Precio dentro del OM:** el PDF entregado incluye precio por m² y total. No se editó — si no debe
-  verse en esa etapa, hay que modificar el PDF antes de publicar la sala.
-- **Estado:** la sala está en `DRAFT` y no compartida. Se abre cuando exista prospecto.
+`apps/dashboard/src/app/pitch/patria/page.tsx` — clon de la de Village con el mismo layout, reglas y
+atribución (`?src=`, `utm_*` viajan a la sala):
+
+- ES/EN, `noindex`, sin nombre del predio, sin ubicación exacta, sin precio.
+- CTA a `/deal/PDR-PATRIA`; contacto `aztecaz@pandoras.finance`.
+- Los enlaces de radar `/l/<code>` redirigen a `/pitch/<pod.code>`, así que un link del pod `patria`
+  cae solo en esta landing.
+
+## Estado publicado
+
+Ambas salas quedaron en **`PROPOSAL_SENT`** (el único estado "publicada" del modelo):
+
+| Sala | Estado |
+|---|---|
+| `PDR-PATRIA` | PROPOSAL_SENT · NDA `v1.0-patria` · POF activo |
+| `PDR-VILLAGE` | PROPOSAL_SENT · NDA `v1.0-village` · POF activo |
+
+## Nota de integridad: firmas del registro
+
+Al republicar los 4 artefactos de S'Narai con el pipeline nuevo, el script pasó a **firmar el pin**
+(EIP-712) con la identidad Hermes `0x8515Fb0F…` — la misma que ya usaba el registro del tenant. Las
+firmas anteriores correspondían a los artefactos `MISSING` y habrían quedado desalineadas del CID
+nuevo. Ahora firmante, firma y CID son consistentes en las 4 filas.
+
+## Pendiente
+
+- **Precio dentro del OM:** el PDF entregado incluye precio por m² y total. Se deja como está (decisión
+  del Fundador).
+- Abrir la sala a un prospecto concreto cuando exista.
