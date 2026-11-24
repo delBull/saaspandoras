@@ -155,12 +155,28 @@ el `tsc --noEmit` de la app.
 
 ## 6. Lo único que falta para "Hermes al cien"
 
-**Decisión de gobernanza sobre el conocimiento** (Punto 1). Dos caminos:
+**Decisión vigente (24 nov 2026):** se opera con los **7 hechos gobernados que sí tienen contenido**.
+No se re-mina ni se toca IPFS por ahora.
 
-1. **Re-minar** los hechos críticos como contenido curado (constitución corporativa, legal, políticas,
-   academia, identidad) — implica que alguien autorice el texto, porque define verdad institucional.
-2. **Restaurar el nodo IPFS** desde un backup operativo externo al repositorio (Kubo/Cluster) y
-   re-pinnear; después verificar con `POST /api/v0/cat` por CID.
+El detalle completo —inventario exacto, por qué el contenido no existe, por qué "re-minar" no es
+trivial (plaintext vs K25, `DOCUMENTACIÓN/` fuera de Git, mapeo parcial en S'Narai) y los cuatro
+caminos posibles— está en `docs/HERMES-KNOWLEDGE-DECISION-2026-11-24.md`.
 
-Sin esa decisión, cualquier intento de "arreglar" el knowledge sería inventar contenido, y eso está
-prohibido por las directivas del repositorio.
+Resumen: Pandora's tiene 22 hechos recuperables desde documentos locales; S'Narai sólo 4 de 21
+tienen fuente identificable. Los tiers CONFIDENTIAL/SECRET exigen decisión explícita del Fundador
+porque revertirían el cifrado en reposo de K25.
+
+## 7. Acceso de Sofía (asistente personal del Fundador)
+
+Se abrió **lectura** por el puente A2A existente, sin canal ni token nuevos:
+
+| Mensaje | Capability | Alcance |
+|---|---|---|
+| `knowledge.query` | `hermes.knowledge.query` | `governedFacts` (ACTIVE con contenido) hasta el techo del agente |
+| `contacts.query` | `hermes.contacts.read` | fichas de pods + colaboradores (sin token ni permisos) |
+| `deals.query` | `hermes.deals.read` | Deal Rooms, sólo scope `pandoras` (fail-closed fuera) |
+
+Techo de Sofía: `SECRET` (decisión del Fundador), reducible con `A2A_SOFIA_MAX_CLEARANCE`.
+Cada lectura deja un evento `A2A_MESSAGE_RECEIVED` con metadatos, nunca contenido.
+Detalle y revocación: `docs/HERMES-SOFIA-A2A-READ-2026-11-24.md`.
+

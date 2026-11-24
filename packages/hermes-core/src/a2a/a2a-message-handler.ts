@@ -69,6 +69,12 @@ export class A2AMessageHandler {
         case 'knowledge.query':
           return await this.handleKnowledgeQuery(message);
 
+        case 'contacts.query':
+          return await this.handleContactsQuery(message);
+
+        case 'deals.query':
+          return await this.handleDealsQuery(message);
+
         case 'knowledge.grant':
           return await this.handleKnowledgeGrant(message as A2AMessage<KnowledgeGrant>);
 
@@ -151,6 +157,10 @@ export class A2AMessageHandler {
       case 'knowledge.query':
       case 'sofia.context.request':
         return 'hermes.knowledge.query';
+      case 'contacts.query':
+        return 'hermes.contacts.read';
+      case 'deals.query':
+        return 'hermes.deals.read';
       case 'knowledge.grant':
       case 'knowledge.share':
       case 'sofia.contact.sync':
@@ -190,6 +200,11 @@ export class A2AMessageHandler {
       ipfsCid: c.provenance.ipfsCid,
     })) || [];
 
+    // Hechos gobernados (hermes_knowledge ACTIVE con contenido), filtrados por el
+    // techo de clasificación del agente solicitante. Aditivo: `claims` se mantiene.
+    const canonicalOrgId = tenantAuth?.canonicalOrgId || tenantId;
+    const governed = await this.readGovernedKnowledge(message.from, canonicalOrgId);
+
     return {
       success: true,
       messageId: `resp_${crypto.randomUUID()}`,
@@ -197,13 +212,240 @@ export class A2AMessageHandler {
       type: 'knowledge.response',
       payload: {
         tenantId,
-        canonicalOrgId: tenantAuth?.canonicalOrgId || tenantId,
+        canonicalOrgId,
         projectSlug: tenantAuth?.projectSlug || tenantId,
         verifiedFactsCount: facts.length,
         contractHash: contract?.contractHash,
         ipfsCid: contract?.ipfsCid,
         claims: facts,
+        governedFacts: governed.facts,
+        governedFactsCount: governed.facts.length,
+        excludedByClearance: governed.excluded,
+        knowledgeCeiling: governed.ceiling,
         activeAuthorizedGrants: knowledgeGrants.length,
+      },
+    };
+  }
+
+  /**
+   * Lectura gobernada de `hermes_knowledge` para agentes A2A.
+   *
+   * Reglas (no negociables):
+   *  - sólo `status = ACTIVE` y con `content` (los hechos sin contenido no son
+   *    legibles: el texto vive en un vault IPFS que hoy no responde);
+   *  - sólo hasta el techo `maxClearance` del agente (sin techo ⇒ PUBLIC);
+   *  - sólo la organización canónica solicitada;
+   *  - `excluded` informa cuántos quedaron fuera por clasificación, nunca su texto.
+   */
+  private static async readGovernedKnowledge(
+    agentId: string,
+    canonicalOrgId: string,
+  ): Promise<{ facts: Array<Record<string, unknown>>; excluded: number; ceiling: string }> {
+    const { CLASSIFICATION_LATTICE_RANK } = await import('../runtime/contracts');
+    const entry = await AgentRegistry.getAgentAsync(agentId as any);
+    const ceiling = (entry?.maxClearance || 'PUBLIC').toUpperCase();
+    const maxRank = CLASSIFICATION_LATTICE_RANK[ceiling as keyof typeof CLASSIFICATION_LATTICE_RANK] ?? 1;
+
+    const { hermesKnowledge } = await import('@saasfly/db-core');
+    const { and, eq, isNotNull } = await import('@saasfly/db-core');
+
+    const rows = await db
+      .select({
+        key: hermesKnowledge.key,
+        dimension: hermesKnowledge.dimension,
+        classification: hermesKnowledge.classification,
+        content: hermesKnowledge.content,
+        version: hermesKnowledge.version,
+        updatedAt: hermesKnowledge.updatedAt,
+      })
+      .from(hermesKnowledge)
+      .where(and(
+        eq(hermesKnowledge.organizationId, canonicalOrgId),
+        eq(hermesKnowledge.status, 'ACTIVE'),
+        isNotNull(hermesKnowledge.content),
+      ))
+      .limit(200);
+
+    const visible: Array<Record<string, unknown>> = [];
+    let excluded = 0;
+    for (const row of rows) {
+      const rank = CLASSIFICATION_LATTICE_RANK[row.classification as keyof typeof CLASSIFICATION_LATTICE_RANK] ?? 1;
+      if (rank > maxRank) { excluded++; continue; }
+      visible.push({
+        key: row.key,
+        dimension: row.dimension,
+        classification: row.classification,
+        version: row.version,
+        updatedAt: row.updatedAt,
+        content: row.content,
+      });
+    }
+
+    await SecurityAuditLogger.logEvent({
+      organizationId: canonicalOrgId,
+      actorId: `a2a:${agentId}`,
+      eventType: 'A2A_MESSAGE_RECEIVED',
+      severity: 'INFO',
+      policyDecision: 'ALLOW',
+      correlationId: `knowledge_read_${Date.now()}`,
+      metadata: { scope: 'knowledge', ceiling, returned: visible.length, excludedByClearance: excluded },
+    });
+
+    return { facts: visible, excluded, ceiling };
+  }
+
+  /**
+   * Contactos del Fundador: fichas de Deal Pods + colaboradores del ecosistema.
+   * Sólo lectura. Nunca expone tokens, permisos granulares ni secretos de canal.
+   */
+  private static async handleContactsQuery(message: A2AMessage<any>): Promise<A2AProcessingResult> {
+    const payload = message.payload || {};
+    const requestedOrg = String(payload.tenantId || 'pandoras');
+    const tenantAuth = await TenantAuthorityService.resolveCanonicalTenant(requestedOrg);
+    const canonicalOrgId = tenantAuth?.canonicalOrgId || 'pandoras';
+
+    const { nexusPodContacts, nexusDealPods, nexusCollaborators } = await import('@saasfly/db-core');
+    const { eq } = await import('@saasfly/db-core');
+
+    const podContacts = await db
+      .select({
+        name: nexusPodContacts.name,
+        role: nexusPodContacts.role,
+        relationship: nexusPodContacts.relationship,
+        phone: nexusPodContacts.phone,
+        email: nexusPodContacts.email,
+        context: nexusPodContacts.context,
+        podCode: nexusDealPods.code,
+        podName: nexusDealPods.displayName,
+        updatedAt: nexusPodContacts.updatedAt,
+      })
+      .from(nexusPodContacts)
+      .leftJoin(nexusDealPods, eq(nexusPodContacts.podId, nexusDealPods.id))
+      .where(eq(nexusPodContacts.canonicalOrgId, canonicalOrgId))
+      .limit(200);
+
+    const collaborators = await db
+      .select({
+        name: nexusCollaborators.name,
+        role: nexusCollaborators.role,
+        email: nexusCollaborators.email,
+        whatsappPhone: nexusCollaborators.whatsappPhone,
+        status: nexusCollaborators.status,
+      })
+      .from(nexusCollaborators)
+      .where(eq(nexusCollaborators.canonicalOrgId, canonicalOrgId))
+      .limit(100);
+
+    await SecurityAuditLogger.logEvent({
+      organizationId: canonicalOrgId,
+      actorId: `a2a:${message.from}`,
+      eventType: 'A2A_MESSAGE_RECEIVED',
+      severity: 'INFO',
+      policyDecision: 'ALLOW',
+      correlationId: message.messageId,
+      metadata: {
+        scope: 'contacts',
+        podContacts: podContacts.length,
+        collaborators: collaborators.length,
+      },
+    });
+
+    return {
+      success: true,
+      messageId: `resp_${crypto.randomUUID()}`,
+      correlationId: message.messageId,
+      type: 'knowledge.response',
+      payload: {
+        status: 'CONTACTS_SHARED',
+        tenantId: requestedOrg,
+        canonicalOrgId,
+        podContacts,
+        collaborators,
+        counts: { podContacts: podContacts.length, collaborators: collaborators.length },
+      },
+    };
+  }
+
+  /**
+   * Deal Rooms de Pandora's (lectura). El scope es deliberadamente el del
+   * Fundador: si el tenant solicitado no es `pandoras`, se devuelve vacío en
+   * lugar de mezclar operaciones de otros tenants.
+   */
+  private static async handleDealsQuery(message: A2AMessage<any>): Promise<A2AProcessingResult> {
+    const payload = message.payload || {};
+    const requestedOrg = String(payload.tenantId || 'pandoras');
+    const tenantAuth = await TenantAuthorityService.resolveCanonicalTenant(requestedOrg);
+    const canonicalOrgId = tenantAuth?.canonicalOrgId || requestedOrg;
+
+    if (canonicalOrgId !== 'pandoras') {
+      return {
+        success: true,
+        messageId: `resp_${crypto.randomUUID()}`,
+        correlationId: message.messageId,
+        type: 'knowledge.response',
+        payload: {
+          status: 'NO_DEALS_IN_SCOPE',
+          tenantId: requestedOrg,
+          canonicalOrgId,
+          rooms: [],
+          pods: [],
+          reason: 'DEALS_SCOPE_PANDORAS_ONLY',
+        },
+      };
+    }
+
+    const { nexusDealRooms, nexusDealPods } = await import('@saasfly/db-core');
+
+    const rooms = await db
+      .select({
+        publicId: nexusDealRooms.publicId,
+        kind: nexusDealRooms.kind,
+        status: nexusDealRooms.status,
+        title: nexusDealRooms.title,
+        counterparty: nexusDealRooms.counterparty,
+        company: nexusDealRooms.company,
+        summary: nexusDealRooms.summary,
+        ndaEnabled: nexusDealRooms.ndaEnabled,
+        pofEnabled: nexusDealRooms.pofEnabled,
+        createdAt: nexusDealRooms.createdAt,
+        updatedAt: nexusDealRooms.updatedAt,
+      })
+      .from(nexusDealRooms)
+      .limit(200);
+
+    const pods = await db
+      .select({
+        code: nexusDealPods.code,
+        displayName: nexusDealPods.displayName,
+        status: nexusDealPods.status,
+        confidentiality: nexusDealPods.confidentiality,
+        currency: nexusDealPods.currency,
+      })
+      .from(nexusDealPods)
+      .limit(50);
+
+    await SecurityAuditLogger.logEvent({
+      organizationId: canonicalOrgId,
+      actorId: `a2a:${message.from}`,
+      eventType: 'A2A_MESSAGE_RECEIVED',
+      severity: 'INFO',
+      policyDecision: 'ALLOW',
+      correlationId: message.messageId,
+      metadata: { scope: 'deals', rooms: rooms.length, pods: pods.length },
+    });
+
+    return {
+      success: true,
+      messageId: `resp_${crypto.randomUUID()}`,
+      correlationId: message.messageId,
+      type: 'knowledge.response',
+      payload: {
+        status: 'DEALS_SHARED',
+        tenantId: requestedOrg,
+        canonicalOrgId,
+        rooms,
+        pods,
+        counts: { rooms: rooms.length, pods: pods.length },
       },
     };
   }

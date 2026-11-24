@@ -30,6 +30,14 @@ export class AgentRegistry {
       endpoint: process.env.SOFIA_BRIDGE_WEBHOOK_URL || 'https://bullss-mac-mini.taild7a2e2.ts.net/api/v1/sofia/a2a/webhook',
       protocolVersion: '1.1',
       status: 'ACTIVE',
+      /**
+       * Sofía es la asistente personal del Fundador (decisión explícita de Marco,
+       * 24 nov 2026): puede LEER knowledge hasta SECRET, además de contactos y
+       * deals, a través del puente A2A firmado. No obtiene escritura: las
+       * lecturas se auditan y el techo se puede bajar por env sin redeploy de código.
+       * `A2A_SOFIA_MAX_CLEARANCE=PUBLIC|...|CONFIDENTIAL` reduce el alcance.
+       */
+      maxClearance: (process.env.A2A_SOFIA_MAX_CLEARANCE || 'SECRET').toUpperCase() as any,
       allowedCapabilities: [
         // Hermes capabilities Sofia can invoke
         'hermes.status.read',
@@ -39,6 +47,9 @@ export class AgentRegistry {
         'hermes.artifact.share',
         'hermes.artifact.request',
         'hermes.escalation.create',
+        // Lectura gobernada de la operación del Fundador
+        'hermes.contacts.read',
+        'hermes.deals.read',
         // Media Co capabilities Sofia provides to Hermes
         'media.plan',
         'media.create',

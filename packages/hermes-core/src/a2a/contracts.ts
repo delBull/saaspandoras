@@ -10,6 +10,8 @@
 export type AgentId = 'sofia' | 'hermes' | 'external_agent';
 export type SignatureScheme = 'EIP191' | 'EIP712';
 
+import type { KnowledgeClassificationTier } from '../runtime/contracts';
+
 // ─── 5 MESSAGE FAMILIES ───────────────────────────────────────────────────────
 
 export type A2AKnowledgeMessageType =
@@ -18,7 +20,11 @@ export type A2AKnowledgeMessageType =
   | 'knowledge.share'
   | 'knowledge.grant'
   | 'knowledge.revoke'
-  | 'knowledge.update';
+  | 'knowledge.update'
+  // Read-only discovery surfaces (Sofía como Chief of Staff del Fundador).
+  // Requieren capabilities explícitas: hermes.contacts.read / hermes.deals.read.
+  | 'contacts.query'
+  | 'deals.query';
 
 export type A2AArtifactMessageType =
   | 'artifact.request'
@@ -182,6 +188,12 @@ export interface AgentRegistryEntry {
   protocolVersion: string;
   status: 'ACTIVE' | 'REVOKED' | 'MAINTENANCE';
   allowedCapabilities: string[];
+  /**
+   * Techo de clasificación que este agente puede LEER cuando consulta knowledge
+   * por A2A. Sin techo declarado no se entrega ningún hecho no público
+   * (fail-closed). No otorga escritura ni ejecución: la lectura se audita.
+   */
+  maxClearance?: KnowledgeClassificationTier;
   activeGrants?: CapabilityGrant[];
 }
 
