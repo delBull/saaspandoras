@@ -10,27 +10,41 @@ Todo lo que sigue está verificado en código o en base de datos; lo inferido va
 
 | Pregunta | Veredicto |
 |---|---|
-| ¿S'Narai está listo para vender desde su portal? | **Casi, pero no.** El contenido y la captación están listos; **el cobro no ocurre en el portal** y hay **tres tablas de precios contradictorias** en el mismo repo. |
+| ¿S'Narai está listo para vender desde su portal? | **Sí.** El cobro es real (paylink a Pandora's whitelabel, HTTP 200) y el precio por fase está definido. Falta **explicar** la diferencia entre costo por participación y paquetes, y limpiar el `.env.example`. |
 | ¿Sirve como tenant interno de Pandora's? | **Sí, ya lo es.** `projects.id=17`, `slug=snarai`, `status=live`. Growth y Hermes tienen todo lo necesario; RWA es donde debería cerrarse la venta. |
 | ¿Dónde va la estrategia de Discord? | **Growth OS**, como él intuyó — con Hermes capturando la conversación y RWA cerrando la transacción. Discord **no** debe ser el CRM. |
 
-**Tres bloqueadores antes de meter tráfico:**
+**Estructura de precios (verificada — corregida el 24 nov 2026):**
 
-1. **Precios contradictorios (P0).** Tres fuentes distintas en el mismo proyecto:
-   - `src/constants/memberships.tsx`: $500 / $2,500 / $25,000 / $100,000 (10 / 50 / 500 / 2,000 certs).
-   - `src/knowledge/snarai.ts`: $50 / $500 / $2,500 (+ unidad completa).
-   - `llms-full.txt` + gobernanza: $50 Explorer (10 CP), $500 Residente (50 CP), $2,500 Embajador (200 CP), Riviera Owner (1,000 CP).
-   - Además `messages/es.json` habla de “Miembro Fundador / Estratégico / Acceso General”.
-   → Cuatro relatos de precio. **Ningún tráfico debe entrar hasta unificar.**
-2. **El cobro no está en el portal (P0).** No hay pasarela ni acción de compra en la app de S'Narai
-   (`src/app/api` sólo tiene `send-magic-link`). El portal abre `projectState.globalCertificate.globalPortalUrl`,
-   que apunta al mercado de Pandora's. Ese mercado (`/protocol/market/[id]`) hoy **es de lectura**: muestra
-   listings y NAV, y pone `setUserBalance('1500.00')` con el comentario *“Mock balance for demo if not
-   logged in”*. La participación real entra por un webhook S2S (`/api/v1/internal/agora/participate`,
-   autenticado con `PANDORA_CORE_KEY`) desde la Edge API. **Falta el botón de compra real.**
-3. **Claims prohibidos en el copy (P1).** “plusvalía anual proyectada del 12–15%”, “gana hasta un 40% más
-   por entrar primero”, “noches garantizadas”, “Riviera Maya” (el proyecto es Riviera Nayarit). Contradicen
-   la política de claims del propio ecosistema y son material de riesgo regulatorio si se promocionan.
+No hay tablas contradictorias: hay **dos conceptos distintos** que el copy mezcla.
+
+| Concepto | Valores | Fuente |
+|---|---|---|
+| **Costo de participación** (por título) | **Fase 1 $50 · Fase 2 $75 · Fase 3 $100 USD** (las fases se desbloquean) | `src/lib/marketing/snarai-materials.ts` |
+| **Paquetes opcionales** (más beneficios) | $500 Explorer (10 CP) · $2,500 Residente (50 CP) · $25,000 Institutional (500 CP) · $100,000 Riviera (2,000 CP) | `src/constants/memberships.tsx` |
+| **Fases comerciales** | `fundador` · `estratégica` · `pública` | `src/hooks/useCheckout.ts` (`phaseSlugMap`) |
+
+`src/knowledge/snarai.ts` mezcla ambos ($50 = participación fase 1; $500/$2,500 = paquetes), y
+`messages/es.json` nombra las fases como “Miembro Fundador / Estratégico / General”. **No es un
+conflicto de precios: es falta de una explicación única.** El trabajo pendiente es redactar esa
+explicación en landing, white paper y knowledge, no “elegir una tabla”.
+
+**Cobro (verificado):** es real y ocurre en Pandora's como whitelabel. `useCheckout.proceedToPayment()`
+abre `https://dash.pandoras.finance/pay/snarai/<fundador|estratégica|pública>?quantity=…&ref=…&utm_*`
+— comprobado en producción: **HTTP 200**. El checkout (`pay/[slug]/[tier]/CheckoutClient.tsx`, 1,266
+líneas) usa `ensure-pandora-key`, `fast-lane` (SPEI) + `fast-lane/confirm`, `dao/register-holder` y tipo
+de cambio USD→MXN. **No hay mock en el cobro.** El “mock balance” que reporté antes vive en
+`/protocol/market/[id]`, que es el mercado de lectura, **no** la caja de S'Narai.
+
+**Landmine detectado:** `NEXT_PUBLIC_DASHBOARD_URL` sólo existe en `.env.example` y apunta a
+`https://dashboard.narai.mx`, que **no resuelve** (DNS). El `.env` real usa
+`NEXT_PUBLIC_PANDORAS_API_URL=https://dash.pandoras.finance`, que sí funciona. Si alguien copia el
+`.env.example` a producción, **el botón de pago muere**. Corregir el ejemplo.
+
+**Claims (corregido y commiteado):** se eliminaron “12–15%”, “40% más”, “35–40%”, “noches
+garantizadas” y el error “Riviera Maya” en ES/EN y en `FoundersPlaybook` (commit `afeff63` del repo
+de S'Narai). No se tocaron los disclaimers de riesgo, que dicen lo correcto (“el capital no está
+garantizado”).
 
 ---
 
@@ -148,6 +162,79 @@ CATEGORÍA · S'NARAI MIEMBROS (privada, rol verificado)
 | Intención | clics atribuidos por publicación | 15% de miembros activos |
 | Conversión | leads calificados en CRM | 5 / semana |
 | Cierre | participaciones (RWA) | 1–2 / mes |
+
+---
+
+# Parte C-bis · Implementación de Discord (cableada)
+
+## Flujo de vínculo (identidad + wallet + membresía)
+
+```
+#s-narai (público)  →  "Verifica tu acceso"  →  /api/v1/discord/oauth/start
+   → Discord OAuth (identify)  →  /api/v1/discord/oauth/callback
+   → token de vínculo firmado (HMAC, 10 min)  →  /discord/link?t=…
+   → el usuario firma con su wallet  →  /api/v1/discord/link
+   → se guarda el vínculo + se asignan/quitan roles en el servidor
+```
+
+El OAuth prueba **quién es en Discord**; la firma prueba **qué wallet posee**. Sin las dos cosas no
+se escribe ningún vínculo ni se asigna un rol.
+
+## Archivos
+
+| Archivo | Función |
+|---|---|
+| `src/lib/discord/config.ts` | env + política fail-closed (sin variables no opera) |
+| `src/lib/discord/membership.ts` | resolución de nivel (puro, testeado) + mapa de roles |
+| `src/lib/discord/membership-db.ts` | membresía real por wallet: órdenes pagadas + certificados emitidos |
+| `src/lib/discord/oauth.ts` | authorize URL, canje de código, token de vínculo firmado |
+| `src/lib/discord/roles.ts` | asignación de roles vía REST (sin dependencias nuevas) |
+| `src/app/api/v1/discord/oauth/{start,callback}/route.ts` | flujo OAuth |
+| `src/app/api/v1/discord/link/route.ts` | cierre del vínculo + sync de roles + auditoría |
+| `src/app/discord/link/page.tsx` | página de firma con wallet |
+| `scripts/discord-provision-snarai.ts` | crea categorías, canales y roles (idempotente) |
+
+## Regla de niveles (no se inventan cantidades)
+
+- **Acceso (rol verificado):** orden pagada/verificada **o** certificado emitido **o** concesión manual.
+- **Nivel:** sólo por **certificados emitidos** (1 / 50 / 500 / 2,000). Una orden pagada que no
+  registra cuántos certificados incluye **no** da nivel.
+- El bot sólo toca los roles que gestiona (`allManagedRoles`); el resto del servidor queda intacto.
+
+## Estado real de datos (24 nov 2026)
+
+```
+tenant_nft_issuances (proyecto 17): 11 filas, TODAS pending_mint, 1 wallet
+commercial_orders (org snarai):     0
+```
+
+Traducción: **todavía no hay participantes confirmados**. El sistema está listo y no asignará nada
+hasta que exista un mint confirmado o una orden pagada; el primer miembro se verificará solo.
+
+## Para activarlo (5 variables en Vercel)
+
+```
+DISCORD_CLIENT_ID / DISCORD_CLIENT_SECRET   → app de Discord (scope identify)
+DISCORD_BOT_TOKEN / DISCORD_GUILD_ID        → bot con permiso "Manage Roles"
+DISCORD_OAUTH_REDIRECT_URI                  → https://dash.pandoras.finance/api/v1/discord/oauth/callback
+DISCORD_LINK_SECRET                         → secreto propio (o reutiliza NEXUS_DEAL_TOKEN_SECRET)
+```
+
+Los ids de rol se obtienen ejecutando el aprovisionamiento:
+
+```
+bun run scripts/discord-provision-snarai.ts            # plan, sin tocar la API
+bun run scripts/discord-provision-snarai.ts --apply    # crea y devuelve los ids
+```
+
+El bot necesita: `Manage Roles` (con su rol **por encima** de los roles de nivel), `Manage Channels`
+(sólo para el aprovisionamiento) y `View Channels` en las categorías.
+
+## Mantenimiento
+
+- Re-sincronizar tras una compra: `POST /api/v1/discord/link` con un token nuevo (o un cron que
+  recorra los vínculos y llame `syncMemberRoles`). El motor ya está separado para ese uso.
+- Revocar: poner `status='REVOKED'` en `channel_identity_bindings` y volver a sincronizar.
 
 ---
 
