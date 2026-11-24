@@ -90,9 +90,54 @@ usa el mismo `/l/<code>`, y los límites son los permisos que ya existen.
 
 ---
 
-## 5. Decisiones que necesito
+## 5. Decisiones tomadas (24 nov 2026)
 
-1. ¿El rol se llama `COMMUNITY_MANAGER` o prefieres otro nombre visible?
-2. ¿Puede **crear** campañas de email o sólo prepararlas para aprobación?
-3. ¿Puede ver conversaciones completas de WhatsApp (lectura) o sólo resúmenes?
-4. ¿Quién aprueba la media: sólo tú, o también un `ADMIN_MARKETING`?
+1. **Campañas de email:** el Community Manager **sí puede crearlas**, pero quedan
+   **pendientes de aprobación del admin** antes de programarse o enviarse.
+2. **Media:** el Community Manager **puede aprobar** la generación de media. No necesita pasar por el
+   Fundador (sí sigue pasando por el gate de herramientas de Hermes, que no cambia).
+3. **Aviso de aprobaciones:** llegan a **Discord**, a un canal privado del tenant (S'Narai).
+4. **Nombre del rol:** pendiente de confirmar (`COMMUNITY_MANAGER` por ahora).
+
+---
+
+## 6. Aprobaciones: cómo funcionan hoy y qué falta
+
+**Lo que ya existe**
+
+| Pieza | Rol |
+|---|---|
+| `nexus_approvals` | tabla de aprobaciones gobernadas: `action_token`, `proposer_id`, `what`, `why`, `resource_scope`, `capability_required`, `risk_level`, `status`, `next_action`, `resolved_by` |
+| `PATCH /api/nexus/approvals` | resuelve una aprobación (aprobar/rechazar) validando `canonical_org_id` |
+| `operations-repo.listApprovals()` | bandeja de aprobaciones por organización (hoy 0 filas) |
+| `operational_approvals` | 32 filas; es otra cosa (decisiones de intent) |
+| `hermes_media_requests` | 204 filas; peticiones de media de Sofía |
+
+**Lo que falta**
+
+1. **La creación de campaña no genera aprobación.** `POST /api/v1/growth/email` crea la campaña
+   directamente; no pasa por `nexus_approvals`.
+2. **No hay aviso.** Nadie recibe un ping cuando hay algo pendiente: ni Discord ni correo.
+3. **No hay ejecución diferida.** Aprobar no dispara nada; falta el paso “aprobado → programada”.
+
+**Flujo propuesto (mínimo, sin infraestructura nueva)**
+
+```
+Community Manager crea campaña
+  → estado BORRADOR + fila en nexus_approvals (what='email_campaign', risk_level=MEDIUM)
+  → aviso a Discord del tenant (canal privado) con botones Aprobar / Rechazar
+  → PATCH /api/nexus/approvals  →  campaña pasa a PROGRAMADA
+  → (rechazo) → RECHAZADA + motivo, y se avisa al manager
+```
+
+El aviso usa el mismo patrón de webhooks que ya existe (`apps/dashboard/src/lib/discord.ts`), pero
+apuntando al canal del tenant, no a los webhooks globales de alertas.
+
+**Bloqueo actual:** el canal `narai-bucerias` **no es visible para el bot**. Los canales que el bot ve
+hoy son `#s-narai-anuncios`, `#s-narai-la-oportunidad`, `#s-narai-avance`, `#s-narai-preguntas`,
+`#s-narai-amas` y los tres privados de miembros. Hace falta el **ID del canal** (o darle visibilidad al
+bot) para cablear el aviso.
+
+**Nota de seguridad:** el aviso va al canal, pero la **decisión** se valida en el servidor con la
+sesión del admin. Un botón en Discord no autoriza nada por sí mismo: abre o confirma una acción que el
+servidor vuelve a comprobar.
