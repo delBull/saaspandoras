@@ -27,10 +27,20 @@ tenants (`0x8515Fb0F…`). El sello probaba quién operó, no de quién era el c
 - Tests: `tenant-signer.test.ts` — **5/5** (roundtrip, IV distinto, manipulación detectada, formatos
   inválidos, la llave no aparece en el cifrado).
 
-**Pendiente:** 21 filas históricas siguen firmadas por la plataforma. El script
-`re-sign-vault-artifacts.ts` las migra (descifra, re-cifra, re-firma, actualiza CID y seguro) y ya
-tiene reintentos porque el nodo aborta bajo ráfaga. Las 4 más recientes de S'Narai **ya** firman con
-su llave propia.
+**Completado (24 nov 2026):** las **43 filas** de Pandora's y S'Narai quedaron firmadas por su propia
+identidad.
+
+```
+pandoras  0xa282c6c7B2…  22/22
+snarai    0x704b96191e…  21/21
+```
+
+Sólo los fixtures de certificación (`cert-*`, `tenant_A/B`) conservan la firma de plataforma, que es
+lo correcto: son datos de prueba.
+
+El script `re-sign-vault-artifacts.ts` soporta ahora `--only`, `--limit`, `--include-inactive` y
+registra el stack del error. La lección operativa: **el nodo aborta si se le manda una ráfaga**; hay
+que correrlo de uno en uno (con `--only`) y en tandas. Así pasó de 0/12 a 18/18.
 
 ---
 

@@ -53,6 +53,11 @@ async function main() {
   }
 
   const vault = new TenantIpfsVaultService();
+  const limit = Number.parseInt(arg('limit') || '0', 10);
+  const only = (arg('only') || '').split(',').map((x) => x.trim()).filter(Boolean);
+  // Por defecto sólo ACTIVE (lo que hidrata el runtime). Con --include-inactive se
+  // migran también SHADOW_VERIFIED y compañía, para que el registro no quede mixto.
+  const includeInactive = process.argv.includes('--include-inactive');
   const rows = await db
     .select({
       id: hermesKnowledgeRegistry.id,
@@ -67,16 +72,18 @@ async function main() {
     .from(hermesKnowledgeRegistry)
     .where(and(
       eq(hermesKnowledgeRegistry.tenantId, tenantId),
-      eq(hermesKnowledgeRegistry.governanceStatus, 'ACTIVE'),
+      ...(includeInactive ? [] : [eq(hermesKnowledgeRegistry.governanceStatus, 'ACTIVE')]),
       ne(hermesKnowledgeRegistry.signedByAddress, signerInfo.address),
-    ));
+    ))
+    .limit(limit > 0 ? limit : 500);
 
-  console.log(`\nRe-firma ${tenantId} → ${signerInfo.address}\nartefactos a migrar: ${rows.length} · modo ${apply ? 'APPLY' : 'DRY-RUN'}\n`);
+  const queue = only.length > 0 ? rows.filter((r) => only.includes(r.artifactId)) : rows;
+  console.log(`\nRe-firma ${tenantId} → ${signerInfo.address}\nartefactos a migrar: ${queue.length} · modo ${apply ? 'APPLY' : 'DRY-RUN'}\n`);
 
   let done = 0;
   let failed = 0;
 
-  for (const row of rows) {
+  for (const row of queue) {
     const ctx = {
       tenantId,
       artifactId: row.artifactId,
@@ -147,6 +154,7 @@ async function main() {
     } catch (err: any) {
       failed++;
       console.error(`  ✗ ${row.artifactId}: ${err?.message || err}`);
+      if (err?.stack) console.error(String(err.stack).split('\n').slice(1, 6).join('\n'));
     }
   }
 
