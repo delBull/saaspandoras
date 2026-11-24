@@ -1,8 +1,12 @@
 # Decisión · Conocimiento de Hermes (24 nov 2026)
 
-**Decisión vigente:** operar con los **7 hechos gobernados que hoy tienen contenido**. No se
-re-mina ni se toca IPFS por ahora. Este documento existe para que la deuda quede explícita y
-para poder retomarla sin volver a investigar.
+**Decisión vigente (actualizada):** se ejecutó el **camino A** — el vault soberano vuelve a
+hidratar en el runtime sin escribir plaintext en Postgres. Pandora's tiene 9 artefactos activos
+(2 PUBLIC + 7 INTERNAL_OPERATIONAL) y S'Narai 16 (11 PUBLIC + 5 TENANT_RESTRICTED). Los tiers
+CONFIDENTIAL/SECRET siguen fuera del prompt por diseño.
+
+Este documento conserva el diagnóstico original (secciones 1–3), el registro de lo ejecutado
+(4-bis) y lo que queda pendiente.
 
 ## 1. Estado real (medido, no estimado)
 
@@ -59,6 +63,74 @@ El texto fuente **sí está en la máquina del Fundador**, pero:
 
 **Prohibido en cualquiera de los caminos:** inventar contenido, deducir cifras legales o
 patrimoniales, o presentar un hecho sin `content` como si Hermes lo supiera.
+
+## 4-bis. ✅ EJECUTADO: camino A (24 nov 2026)
+
+El Fundador autorizó A. Estado final: **el vault hidrata en producción sin escribir plaintext
+en Postgres**.
+
+### Qué estaba roto (y por qué no era "el RPC")
+
+| # | Defecto real | Evidencia |
+|---|---|---|
+| 1 | `context-merger` comparaba `sha256(plaintext)` contra `registry.content_hash`, pero **esa columna tiene dos convenciones**: Pandora's guarda el hash del sobre (`10d4d051…`), S'Narai el del plaintext (`876452950e…`) | para Pandora's el hash del plaintext es `5a75c737…` → fail-closed en los 9 artefactos |
+| 2 | `hermes_knowledge_registry` estaba en `SHADOW_VERIFIED` y **no existía ningún camino a `ACTIVE`** | 0 ACTIVE antes de esta entrega |
+| 3 | al hidratar, el merger **reemplazaba** los hechos de BD en vez de unirlos | habría ocultado los 7 hechos operativos |
+| 4 | el gate sólo permitía `PUBLIC`/`TENANT_RESTRICTED` | los `INTERNAL_OPERATIONAL` de Hermes quedaban fuera |
+
+### Qué se hizo
+
+1. **`TenantIpfsVaultService.retrieveVerifiedFromIpfs` / `verifyAndDecryptEnvelope`**: verificación en
+   tres pasos — identidad del blob (`sha256(ciphertext) === ciphertext_hash`, la única columna con
+   convención uniforme), identidad del artefacto (AAD del GCM + campos del sobre) e integridad del
+   plaintext (`sha256 === envelope.contentHash`).
+2. **`context-merger`**: usa la hidratación verificada, **une** vault + BD (sin duplicar por
+   `artifactId`), respeta el `visibility` real y audita distinto un fallo de integridad
+   (`CRITICAL`) de un fallo de red (`WARN`).
+3. **Gate de tiers**: `PUBLIC`, `TENANT_RESTRICTED` e `INTERNAL_OPERATIONAL` (autorizado por el
+   Fundador). **`CONFIDENTIAL` y `SECRET` siguen fuera** del prompt.
+4. **`scripts/promote-knowledge-registry.ts`**: camino gobernado a `ACTIVE`, con verificación previa
+   obligatoria, dry-run por defecto, actor explícito y evento `KNOWLEDGE_PROMOTED`/`KNOWLEDGE_DEMOTED`.
+
+### Estado del registro
+
+```
+pandoras  9 ACTIVE (2 PUBLIC + 7 INTERNAL_OPERATIONAL) · 13 SHADOW_VERIFIED (10 CONFIDENTIAL + 3 SECRET)
+snarai   16 ACTIVE (11 PUBLIC + 5 TENANT_RESTRICTED)   ·  5 SHADOW_VERIFIED (CONFIDENTIAL)
+```
+
+### Verificación ejecutada
+
+| Prueba | Resultado |
+|---|---|
+| Fase 0 · descifrado con la KEK real (Pinata) | ✅ `security_whitepaper` 16 081 chars y `blindaje_corporativo` 90 942 chars; hash del plaintext = `envelope.contentHash` |
+| `promote-knowledge-registry --dry-run` (2 PUBLIC) | ✅ 2/2 verificados |
+| Dry-run S'Narai (16 artefactos) | ✅ 16/16 verificados |
+| Hidratación real por tenant | ✅ Pandora's 9 del vault + 7 de BD = 21 con contenido; S'Narai 16 del vault + 1 de BD |
+| `vitest src/knowledge/__tests__/k25a-verified-hydration.test.ts` | ✅ 6/6 |
+| `vitest` hermes-core completo | 556 passed / 4 failed preexistentes / 347 skipped |
+
+### Costo asumido (medido, no estimado)
+
+| Tenant | Knowledge en el prompt | ≈ tokens/turno |
+|---|---|---|
+| pandoras | 78 408 chars | ~19 600 |
+| snarai | 19 836 chars | ~5 000 |
+
+Si el costo por mensaje pesa, se puede revertir por artefacto:
+`bun run scripts/promote-knowledge-registry.ts --tenant=pandoras --artifacts=<id> --actor=<actor> --apply --demote`.
+Candidatos a recortar por tamaño: `security_whitepaper` (16k), `academy_walkthrough_v2` (9.4k),
+`production_readiness_milestone` (8.5k).
+
+### Notas de honestidad
+
+- Los artefactos de S'Narai `snarai-brand` (102 chars), `snarai-market` (103), `safety_level` (93),
+  `snarai-operations` (107) y `snarai-projects` (105) son **stubs**: verifican y se hidratan, pero no
+  aportan conocimiento real. Hay que reponerlos desde su fuente.
+- Antes del deploy, el código viejo sigue en producción: para Pandora's los nuevos `ACTIVE` no
+  hidratan (falla la comparación de hash) y para S'Narai hidratan sin unión (se pierde
+  temporalmente `pricing_transparency`, 32 chars, de política). El deploy corrige ambos.
+
 
 ## 5. Mapeo verificado key → archivo (Pandora's, 22/22)
 

@@ -29,7 +29,8 @@
     "db:seed:journeys": "bun run scripts/seed-canonical-journeys.mjs",
     "verify:safety": "bun run scripts/verify-migration-safety.mjs",
     "typecheck": "tsc --noEmit",
-    "seed:decks": "bun scripts/seed-decks.ts"
+    "seed:decks": "bun scripts/seed-decks.ts",
+    "knowledge:promote": "bun run scripts/promote-knowledge-registry.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

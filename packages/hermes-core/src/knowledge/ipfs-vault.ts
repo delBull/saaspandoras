@@ -198,6 +198,85 @@ export class TenantIpfsVaultService {
   }
 
   /**
+   * Hidratación verificada para el runtime (K25-A). Es la única forma en que el
+   * contexto cognitivo debe leer del vault.
+   *
+   * Por qué existe: `hermes_knowledge_registry.content_hash` NO tiene una
+   * convención única — el escritor de Pandora's guarda el sha256 del sobre y el
+   * de S'Narai guarda el sha256 del plaintext. Comparar `sha256(plaintext)`
+   * contra esa columna falla en uno de los dos casos (fail-closed silencioso).
+   *
+   * Verificación en tres pasos, cada uno con una fuente distinta:
+   *  1. Identidad del blob: `sha256(envelope.ciphertext) === ciphertextHash`
+   *     (columna uniforme entre ambos escritores).
+   *  2. Identidad del artefacto: AAD del GCM = tenantId:artifactId:version:classification
+   *     (un sobre ajeno no descifra) + coincidencia explícita de los campos.
+   *  3. Integridad del contenido: `sha256(plaintext) === envelope.contentHash`.
+   *
+   * Cualquier discrepancia lanza; el llamador debe excluir el hecho (nunca
+   * caer a plaintext).
+   */
+  public async retrieveVerifiedFromIpfs(
+    cid: string,
+    expectedContext: EncryptionContextAAD,
+    expectedCiphertextHash: string | null | undefined,
+    authContext?: VaultAccessContext
+  ): Promise<{ plaintext: string; contentHash: string }> {
+    const envelope = await this.fetchJsonFromIpfs<EncryptedKnowledgeArtifact>(cid);
+    return await this.verifyAndDecryptEnvelope(envelope, expectedContext, expectedCiphertextHash, authContext);
+  }
+
+  /**
+   * Verificación + descifrado de un sobre ya cargado (sin IO).
+   * Separado de `retrieveVerifiedFromIpfs` para poder probarlo con sobres
+   * generados en memoria: si la verificación desaparece, el test falla.
+   */
+  public async verifyAndDecryptEnvelope(
+    envelope: EncryptedKnowledgeArtifact,
+    expectedContext: EncryptionContextAAD,
+    expectedCiphertextHash: string | null | undefined,
+    authContext?: VaultAccessContext
+  ): Promise<{ plaintext: string; contentHash: string }> {
+    if (!envelope || typeof envelope.ciphertext !== 'string' || !envelope.contentHash) {
+      throw new Error('KNOWLEDGE_ENVELOPE_INVALID: artifact is not an encrypted knowledge envelope.');
+    }
+
+    if (
+      envelope.artifactId !== expectedContext.artifactId ||
+      envelope.tenantId !== expectedContext.tenantId ||
+      Number(envelope.version) !== Number(expectedContext.version) ||
+      String(envelope.classification) !== String(expectedContext.classification)
+    ) {
+      throw new Error(
+        `KNOWLEDGE_ENVELOPE_MISMATCH: expected ${expectedContext.tenantId}/${expectedContext.artifactId}/v${expectedContext.version}/${expectedContext.classification}, ` +
+        `envelope declares ${envelope.tenantId}/${envelope.artifactId}/v${envelope.version}/${envelope.classification}.`,
+      );
+    }
+
+    if (expectedCiphertextHash) {
+      const computedCiphertextHash = crypto.createHash('sha256').update(envelope.ciphertext, 'utf8').digest('hex');
+      if (computedCiphertextHash !== expectedCiphertextHash) {
+        throw new Error(
+          `KNOWLEDGE_CIPHERTEXT_HASH_MISMATCH: artifact does not match the registered ciphertext hash ` +
+          `(expected ${expectedCiphertextHash.slice(0, 12)}…, got ${computedCiphertextHash.slice(0, 12)}…).`,
+        );
+      }
+    }
+
+    const plaintext = await this.decryptArtifact(envelope, expectedContext, authContext);
+
+    const computedContentHash = crypto.createHash('sha256').update(plaintext, 'utf8').digest('hex');
+    if (computedContentHash !== envelope.contentHash) {
+      throw new Error(
+        `KNOWLEDGE_CONTENT_HASH_MISMATCH: decrypted plaintext does not match the envelope content hash ` +
+        `(expected ${String(envelope.contentHash).slice(0, 12)}…, got ${computedContentHash.slice(0, 12)}…).`,
+      );
+    }
+
+    return { plaintext, contentHash: computedContentHash };
+  }
+
+  /**
    * Exports an append-only security event log chain to an immutable, signed IPFS Merkle snapshot.
    */
   public async exportAuditSnapshotToIpfs(

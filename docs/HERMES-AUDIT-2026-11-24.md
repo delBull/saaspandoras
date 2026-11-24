@@ -155,16 +155,18 @@ el `tsc --noEmit` de la app.
 
 ## 6. Lo único que falta para "Hermes al cien"
 
-**Decisión vigente (24 nov 2026):** se opera con los **7 hechos gobernados que sí tienen contenido**.
-No se re-mina ni se toca IPFS por ahora.
+**Actualización 24 nov 2026 — camino A ejecutado.** El vault vuelve a hidratar en el runtime
+(9 artefactos en Pandora's, 16 en S'Narai) sin plaintext en Postgres, y la KEK quedó verificada
+contra el contenido real. Detalle, evidencia y costo por turno:
+`docs/HERMES-KNOWLEDGE-DECISION-2026-11-24.md` §4-bis.
 
-El detalle completo —inventario exacto, por qué el contenido no existe, por qué "re-minar" no es
-trivial (plaintext vs K25, `DOCUMENTACIÓN/` fuera de Git, mapeo parcial en S'Narai) y los cuatro
-caminos posibles— está en `docs/HERMES-KNOWLEDGE-DECISION-2026-11-24.md`.
+Queda fuera, por decisión explícita: los tiers **CONFIDENTIAL (10) y SECRET (3)** de Pandora's.
+No es un problema de IPFS (el contenido existe y descifra): es que se sirven al LLM remoto. Para
+usarlos hace falta una ruta de modelo local o aceptar la exposición.
 
-Resumen: Pandora's tiene 22 hechos recuperables desde documentos locales; S'Narai sólo 4 de 21
-tienen fuente identificable. Los tiers CONFIDENTIAL/SECRET exigen decisión explícita del Fundador
-porque revertirían el cifrado en reposo de K25.
+Resumen del hueco restante: **13 artefactos de Pandora's** (10 CONFIDENTIAL + 3 SECRET) y **5 de
+S'Narai** (CONFIDENTIAL) siguen sin hidratar por diseño, más 5 stubs de S'Narai con contenido
+insuficiente (`snarai-brand`, `snarai-market`, `safety_level`, `snarai-operations`, `snarai-projects`).
 
 ## 7. Acceso de Sofía (asistente personal del Fundador)
 

@@ -1,4 +1,3 @@
-import crypto from 'crypto';
 import { HermesAddOnManifest } from './contracts';
 import { db } from "@saasfly/db-core";
 import { hermesAddonInstallations, hermesKnowledge, hermesKnowledgeRegistry, projects, installedProducts, nexusCollaborators } from "@saasfly/db-core";
@@ -11,6 +10,20 @@ import { SecurityAuditLogger } from '../runtime/security-audit-logger';
 import { TenantIpfsVaultService } from '../knowledge/ipfs-vault';
 import { ClaimContractEngine } from '../knowledge/claim-contract-engine';
 import { SovereignIpfsAlerting } from '../knowledge/ipfs/ipfs-alerting';
+
+/**
+ * Tiers que el runtime puede hidratar desde el vault soberano.
+ *
+ * PUBLIC y TENANT_RESTRICTED: diseñado originalmente (K25 Phase C).
+ * INTERNAL_OPERATIONAL: autorizado por el Fundador el 24 nov 2026 para que
+ * Hermes pueda explicar su propia arquitectura, límites y academia.
+ *
+ * CONFIDENTIAL y SECRET quedan FUERA a propósito: son los tiers legales,
+ * patrimoniales y de tesorería. No se sirven al LLM (remoto) hasta que exista
+ * una ruta de modelo local o una decisión explícita del Fundador.
+ */
+const HYDRATABLE_KNOWLEDGE_TIERS = new Set(['PUBLIC', 'TENANT_RESTRICTED', 'INTERNAL_OPERATIONAL']);
+
 
 export interface CoreSecurityContext {
   organizationId: string;
@@ -139,10 +152,13 @@ export class CognitiveContextBuilder {
       version: number;
     }> = [];
 
+    /** Artefactos hidratados del vault: evita duplicar los que también están en BD. */
+    const hydratedArtifactIds = new Set<string>();
+
     for (const r of ipfsRecords) {
       if (
         r.governanceStatus !== 'ACTIVE' ||
-        (r.classification !== 'PUBLIC' && r.classification !== 'TENANT_RESTRICTED')
+        !HYDRATABLE_KNOWLEDGE_TIERS.has(String(r.classification || '').toUpperCase())
       ) {
         continue;
       }
@@ -154,15 +170,29 @@ export class CognitiveContextBuilder {
           ipfsVault.ipfsOrchestrator.registerCidAlias(r.ipfsCid, r.backupIpfsCid);
         }
 
-        decryptedContent = await ipfsVault.retrieveAndDecryptFromIpfs(r.ipfsCid, {
-          tenantId: r.tenantId,
-          artifactId: r.artifactId,
-          version: r.version,
-          classification: (r.classification || 'PUBLIC') as any,
-        });
+        // Hidratación verificada: identidad del blob (ciphertext_hash), AAD del
+        // artefacto e integridad del plaintext (envelope.contentHash).
+        const verified = await ipfsVault.retrieveVerifiedFromIpfs(
+          r.ipfsCid,
+          {
+            tenantId: r.tenantId,
+            artifactId: r.artifactId,
+            version: r.version,
+            classification: (r.classification || 'PUBLIC') as any,
+          },
+          r.ciphertextHash,
+        );
 
-        const computedHash = crypto.createHash('sha256').update(decryptedContent, 'utf8').digest('hex');
-        if (computedHash !== r.contentHash) {
+        decryptedContent = verified.plaintext;
+        hydratedArtifactIds.add(r.artifactId);
+      } catch (err: any) {
+        const reason = String(err?.message || '');
+        const isIntegrityFailure =
+          reason.includes('KNOWLEDGE_CIPHERTEXT_HASH_MISMATCH') ||
+          reason.includes('KNOWLEDGE_CONTENT_HASH_MISMATCH') ||
+          reason.includes('KNOWLEDGE_ENVELOPE_MISMATCH');
+
+        if (isIntegrityFailure) {
           console.warn(`[ContextMerger] 🚨 KNOWLEDGE_INTEGRITY_MISMATCH: ${r.artifactId}. Failing closed.`);
           SecurityAuditLogger.logEvent({
             organizationId: r.tenantId,
@@ -171,11 +201,9 @@ export class CognitiveContextBuilder {
             policyDecision: 'DENY',
             correlationId: `integ_${Date.now()}`,
             artifactId: r.artifactId,
-            contentHash: computedHash,
             metadata: {
               reason: 'KNOWLEDGE_INTEGRITY_MISMATCH',
-              expectedHash: r.contentHash,
-              receivedHash: computedHash,
+              detail: reason,
               cid: r.ipfsCid,
             },
           }).catch(() => {});
@@ -185,28 +213,27 @@ export class CognitiveContextBuilder {
             artifactId: r.artifactId,
             cid: r.ipfsCid,
             expectedHash: r.contentHash,
-            receivedHash: computedHash,
+            receivedHash: 'MISMATCHED',
           }).catch(() => {});
-
-          continue;
+        } else {
+          // Fallback fail-closed: exclude pack if IPFS retrieval fails, never fall back to plaintext
+          console.warn(`[ContextMerger] 🚨 IPFS_FETCH_FAILED for "${r.artifactId}":`, err?.message);
+          SecurityAuditLogger.logEvent({
+            organizationId: r.tenantId,
+            eventType: 'RESOURCE_MISMATCH_BLOCKED',
+            severity: 'WARN',
+            policyDecision: 'DENY',
+            correlationId: `ipfs_fail_${Date.now()}`,
+            artifactId: r.artifactId,
+            metadata: {
+              reason: 'IPFS_FETCH_FAILED',
+              ipfsCid: r.ipfsCid,
+              error: err?.message,
+              action: 'FAIL_CLOSED_EXCLUSION',
+            },
+          }).catch((e) => console.error('[ContextMerger] Failed to record audit:', e));
         }
-      } catch (err: any) {
-        // Fallback fail-closed: exclude pack if IPFS retrieval fails, never fall back to plaintext
-        console.warn(`[ContextMerger] 🚨 IPFS_FETCH_FAILED for "${r.artifactId}":`, err?.message);
-        SecurityAuditLogger.logEvent({
-          organizationId: r.tenantId,
-          eventType: 'RESOURCE_MISMATCH_BLOCKED',
-          severity: 'WARN',
-          policyDecision: 'DENY',
-          correlationId: `ipfs_fail_${Date.now()}`,
-          artifactId: r.artifactId,
-          metadata: {
-            reason: 'IPFS_FETCH_FAILED',
-            ipfsCid: r.ipfsCid,
-            error: err?.message,
-            action: 'FAIL_CLOSED_EXCLUSION',
-          },
-        }).catch(e => console.error('[ContextMerger] Failed to record audit:', e));
+
         decryptedContent = null;
       }
 
@@ -218,21 +245,26 @@ export class CognitiveContextBuilder {
           key: `${r.domain || 'DOCUMENT'}: ${r.artifactId}`,
           content: `[IPFS Sovereign Verified: ${r.ipfsCid}]\n${decryptedContent}`,
           status: 'ACTIVE',
-          visibility: 'PUBLIC',
+          // La visibilidad refleja el tier real: hardcodear PUBLIC degradaba el
+          // gate de visibilidad del ContextAdapter para TENANT_RESTRICTED.
+          visibility: r.classification || 'PUBLIC',
           classification: r.classification || 'PUBLIC',
           version: r.version,
         });
       }
     }
 
-    // Pure sovereign knowledge: if IPFS records exist, prioritize verified IPFS payloads
-    const unpurgedRecords = rawRecords.filter(r => r.content !== null && r.content !== undefined);
+    // Unión de fuentes: el vault (hidratado y verificado) + los hechos que viven
+    // en BD con contenido. Antes se reemplazaba uno por otro, así que hidratar el
+    // vault habría ocultado los hechos operativos que ya funcionan.
+    const unpurgedRecords = rawRecords.filter(
+      (r) => r.content !== null && r.content !== undefined && !hydratedArtifactIds.has(r.key),
+    );
     const hasSovereignRegistry = ipfsRecords.length > 0;
 
-    const knowledgeRecords = mappedIpfsKnowledge.length > 0 
-      ? mappedIpfsKnowledge 
+    const knowledgeRecords = mappedIpfsKnowledge.length > 0
+      ? [...mappedIpfsKnowledge, ...unpurgedRecords]
       : unpurgedRecords;
-      
     // 1.1 Calculate Intelligence Scores
     const intelligenceScores = this.calculateIntelligenceScores(knowledgeRecords as unknown as any[]);
 
