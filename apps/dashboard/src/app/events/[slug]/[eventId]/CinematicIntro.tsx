@@ -2,11 +2,10 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Playfair_Display } from "next/font/google";
+import { playfairDisplay as playfair } from "@/lib/fonts";
 import { XMarkIcon, SpeakerWaveIcon, SpeakerXMarkIcon } from '@heroicons/react/24/outline';
 import { PlayIcon } from '@heroicons/react/24/solid';
 
-const playfair = Playfair_Display({ subsets: ["latin"] });
 
 export function CinematicIntro({ videoSrc, projectName }: { videoSrc: string, projectName: string }) {
     const [showIntro, setShowIntro] = useState(true); // Inicialmente en true para tapar la landing en SSR

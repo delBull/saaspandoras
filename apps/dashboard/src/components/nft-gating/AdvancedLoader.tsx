@@ -2,13 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shadows_Into_Light } from "next/font/google";
+import { shadowsIntoLight } from "@/lib/fonts";
 import { cn } from "@saasfly/shared/utils";
-
-const shadowsIntoLight = Shadows_Into_Light({
-  subsets: ["latin"],
-  weight: "400",
-});
 
 interface AdvancedLoaderProps {
   onComplete: () => void;

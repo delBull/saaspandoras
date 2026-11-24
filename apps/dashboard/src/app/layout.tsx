@@ -1,10 +1,9 @@
 import "./globals.css"; // Webpack cache buster
-import { Inter } from "next/font/google";
+import { inter } from "@/lib/fonts";
 import { Providers } from "./providers";
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 
-const inter = Inter({ subsets: ["latin"] });
 
 export const viewport: Viewport = {
   themeColor: "#000000",

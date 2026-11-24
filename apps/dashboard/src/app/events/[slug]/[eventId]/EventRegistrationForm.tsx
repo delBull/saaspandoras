@@ -2,12 +2,11 @@
 
 import { useActionState, useEffect, useState } from 'react';
 import { registerForEvent } from './actions';
-import { Playfair_Display } from "next/font/google";
+import { playfairDisplay as playfair } from "@/lib/fonts";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isBefore, startOfDay, addMonths, subMonths, addHours, addDays, isAfter } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 
-const playfair = Playfair_Display({ subsets: ["latin"] });
 
 export function EventRegistrationForm({ eventId, projectId, eventDate, eventLocation, isCalendar, config }: { eventId: number, projectId: number, eventDate: string, eventLocation: string, isCalendar?: boolean, config?: any }) {
     const [state, formAction, isPending] = useActionState(registerForEvent, null);

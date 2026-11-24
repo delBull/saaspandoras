@@ -6,13 +6,8 @@ import { motion } from 'framer-motion';
 import type { Variants } from 'framer-motion';
 import Image from 'next/image';
 import { FramerConfetti } from '../framer-confetti';
-import { Shadows_Into_Light } from "next/font/google";
+import { shadowsIntoLight } from "@/lib/fonts";
 import { cn } from "@saasfly/shared/utils";
-
-const shadowsIntoLight = Shadows_Into_Light({
-  subsets: ["latin"],
-  weight: "400",
-});
 
 interface SuccessNFTCardProps {
   onAnimationComplete: () => void;

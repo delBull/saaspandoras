@@ -2,15 +2,13 @@ import { ProjectRepository } from "@/lib/domain/project-repository";
 import { EventRepository } from "@/lib/domain/event-repository";
 import { EventRegistrationRepository } from "@/lib/domain/event-registration-repository";
 import { notFound } from "next/navigation";
-import { Playfair_Display, Inter } from "next/font/google";
+import { inter, playfairDisplay as playfair } from "@/lib/fonts";
 import { EventRegistrationForm } from "./EventRegistrationForm";
 import { CinematicIntro } from "./CinematicIntro";
 import { Metadata } from "next";
 import { resolveIpfsUrl } from "@saasfly/shared/project-utils";
 import { sanitizeUrl } from "@saasfly/shared/project-utils";
 
-const playfair = Playfair_Display({ subsets: ["latin"] });
-const inter = Inter({ subsets: ["latin"] });
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string, eventId: string }> }): Promise<Metadata> {
     const { slug, eventId: eventIdStr } = await params;

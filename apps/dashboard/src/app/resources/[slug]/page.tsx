@@ -1,13 +1,11 @@
 import { notFound } from "next/navigation";
 import { ProjectRepository } from "@/lib/domain/project-repository";
 import { EventRepository } from "@/lib/domain/event-repository";
-import { Playfair_Display, Inter } from "next/font/google";
+import { inter, playfairDisplay as playfair } from "@/lib/fonts";
 import Link from "next/link";
 import { Metadata } from "next";
 import { ArrowRightIcon, DocumentTextIcon, ChatBubbleOvalLeftEllipsisIcon, MegaphoneIcon } from "@heroicons/react/24/outline";
 
-const playfair = Playfair_Display({ subsets: ["latin"] });
-const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "600"] });
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
     const slug = (await params).slug;
