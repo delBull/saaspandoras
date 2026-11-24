@@ -177,23 +177,23 @@ Verificación hecha (dry-run, cifra + roundtrip):
 Resumen: 4 procesados · 0 fallidos (dry-run, nada escrito)
 ```
 
-**Bloqueo para publicar (no es código ni contenido):**
+**Publicado (24 nov 2026, 20:10):** el nodo propio (Kubo) es el primario y sí escribe. La key vive en
+`.env.local` de la raíz del monorepo; el script la resuelve solo.
 
-| Vía | Estado |
-|---|---|
-| Pinata (pin) | **403 `Account blocked due to plan usage limit`** — verificado con curl directo |
-| Kubo (pin) | RPC responde **401**; la `PANDORAS_KUBO_API_KEY` sólo existe en Vercel como *sensitive* (ilegible con `vercel env pull`) |
-| Otras | sin credenciales (Filebase / web3.storage / Storacha) |
+```
+✓ snarai-brand      2 172 chars → bafkreifza5v7k3v42i2x3lgl4ej5jxsm5uu7u7x7hj52uvxtmlv36cmumm
+✓ snarai-projects   2 814 chars → bafkreiausn7bxpp2gcv5z2mjjmccpaos3sigzwtxfy4dz5lx3n56dxhmvm
+✓ snarai-market     2 455 chars → bafkreiagyiuk3s4rzrac2bpvm7f7uvwnz7me5nb3ewlywrfhy2qqd4t5xu
+✓ snarai-operations 2 408 chars → bafkreigktvwhw56kquv2kueveyu3oqjgskm6b7piieeuuutrhwja2dpza4
+```
 
-Lectura sí funciona (los bloques viejos están en el gateway de Pinata); **escritura no**.
+Verificado: el gateway propio sirve los CID (200) y el contexto de S'Narai ya no contiene `MISSING`
+(16 artefactos hidratados, 29 616 chars ≈ 7.4k tokens).
 
-Para desbloquear: (a) reactivar el plan de Pinata, (b) entregar la
-`PANDORAS_KUBO_API_KEY` real para fijar en Kubo, o (c) dar credenciales de otro proveedor. Con
-cualquiera de las tres, `bun run scripts/seed-snarai-from-pack.ts --apply` publica los 4 en un minuto.
-
-Mientras tanto, los 4 artefactos viejos siguen `ACTIVE` con el texto `MISSING` (ruido inofensivo en
-el prompt). Se pueden apagar con
-`bun run scripts/promote-knowledge-registry.ts --tenant=snarai --artifacts=snarai-brand,snarai-market,snarai-projects,snarai-operations --actor=<actor> --apply --demote`.
+**Sobre Pinata:** queda como fallback, no como primario. Hoy está **bloqueada**
+(`403 Account blocked due to plan usage limit`), así que **no hay espejo** de los 4 nuevos: si Kubo
+cae, se pierden hasta que se reactive. El diseño K25 exige réplica externa, así que reactivarla es
+deuda operativa abierta (no bloquea el funcionamiento actual porque el nodo es el primario).
 
 ### Decisiones que siguen pendientes
 

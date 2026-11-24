@@ -77,13 +77,56 @@ function classificationFor(visibility?: string): 'PUBLIC' | 'TENANT_RESTRICTED' 
 
 const sha256 = (s: string) => crypto.createHash('sha256').update(s, 'utf8').digest('hex');
 
+/**
+ * La key del nodo vive en el `.env.local` de la RAÍZ del monorepo (no en
+ * apps/dashboard). Bun sólo carga el `.env` del cwd, así que la resolvemos aquí
+ * para que el script corra sin exportar variables a mano. En producción las
+ * variables llegan por entorno y este bloque no hace nada.
+ */
+function loadKuboEnvFromRoot(): void {
+  if (process.env.PANDORAS_KUBO_RPC_URL && process.env.PANDORAS_KUBO_API_KEY) return;
+  const candidates = [
+    path.resolve(process.cwd(), '../../.env.local'),
+    path.resolve(process.cwd(), '.env.local'),
+  ];
+  for (const file of candidates) {
+    if (!fs.existsSync(file)) continue;
+    for (const line of fs.readFileSync(file, 'utf8').split('\n')) {
+      const match = line.match(/^(PANDORAS_KUBO_[A-Z_]+)=(.*)$/);
+      if (match && !process.env[match[1]!]) {
+        process.env[match[1]!] = (match[2] || '').replace(/^["']|["']$/g, '').trim();
+      }
+    }
+  }
+  // El RPC/gateway públicos no siempre están en .env.local; se fijan por defecto.
+  if (!process.env.PANDORAS_KUBO_RPC_URL) process.env.PANDORAS_KUBO_RPC_URL = 'https://rpc.ipfs.pandoras.finance';
+  if (!process.env.PANDORAS_KUBO_GATEWAY_URL) process.env.PANDORAS_KUBO_GATEWAY_URL = 'https://ipfs.pandoras.finance/ipfs';
+}
+
 async function main() {
+  loadKuboEnvFromRoot();
   const dir = resolvePackDir();
-  // Escritura forzada a Pinata: el nodo Kubo no tiene bloques y su RPC responde 401.
-  const vault = new TenantIpfsVaultService({ primaryProvider: 'PINATA' });
+
+  // El nodo propio (Kubo) es el primario; Pinata queda como espejo/fallback.
+  // `--via=pinata` fuerza el espejo (útil si el nodo está caído).
+  const via = (arg('via') || '').toUpperCase();
+  const kuboConfigured = Boolean(process.env.PANDORAS_KUBO_RPC_URL && process.env.PANDORAS_KUBO_API_KEY);
+  const primaryProvider = (via === 'PINATA' ? 'PINATA' : via === 'KUBO' ? 'KUBO' : kuboConfigured ? 'KUBO' : 'PINATA') as
+    | 'KUBO'
+    | 'PINATA';
+  if (primaryProvider === 'KUBO' && !kuboConfigured) {
+    throw new Error(
+      'Kubo seleccionado como primario pero falta PANDORAS_KUBO_RPC_URL o PANDORAS_KUBO_API_KEY. ' +
+      'La key vive en .env.local de la raíz del repo.',
+    );
+  }
+
+  const vault = new TenantIpfsVaultService({ primaryProvider });
   const envelopeVault = new KnowledgeEnvelopeVault();
 
-  console.log(`\nS'Narai · siembra desde pack\norigen: ${dir}\nmodo: ${apply ? 'APPLY' : 'DRY-RUN'} · artefactos: ${targets.join(', ')}\n`);
+  console.log(
+    `\nS'Narai · siembra desde pack\norigen: ${dir}\nprimario: ${primaryProvider} · modo: ${apply ? 'APPLY' : 'DRY-RUN'}\nartefactos: ${targets.join(', ')}\n`,
+  );
 
   let processed = 0;
   let skipped = 0;
@@ -126,6 +169,9 @@ async function main() {
       }
 
       const cid = await vault.pinJsonToIpfs(envelope, `snarai-${sourceId}-v${version}.json`);
+      if (!/^baf[a-z0-9]{50,}$|^Qm[1-9A-HJ-NP-Za-km-z]{44}$/.test(cid)) {
+        throw new Error(`CID inválido o simulado (${cid}). El proveedor no fijó el contenido de verdad.`);
+      }
 
       // Verificación real contra lo fijado: si no descifra e íntegro, no se promueve.
       await vault.retrieveVerifiedFromIpfs(cid, ctx as any, ciphertextHash);
