@@ -3750,6 +3750,10 @@ export const nexusDealSigners = pgTable("nexus_deal_signers", {
   signatureMessage: text("signature_message"),
   signatureCompany: text("signature_company"),
   signatureRole: text("signature_role"),
+  /** Teléfono de contacto del firmante (opcional, capturado al firmar). */
+  signaturePhone: varchar("signature_phone", { length: 40 }),
+  /** Constancia de que el documento (PDF) se envió al firmante. */
+  documentSentAt: timestamp("document_sent_at", { withTimezone: true }),
   /** POF: none | declared | verified. El OM solo se entrega con `verified`. */
   pofStatus: varchar("pof_status", { length: 24 }).default("none"),
   pofVerifiedAt: timestamp("pof_verified_at", { withTimezone: true }),

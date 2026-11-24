@@ -142,6 +142,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
   const [signCompany, setSignCompany] = useState("");
   const [signCompanyType, setSignCompanyType] = useState<string>("");
   const [signRole, setSignRole] = useState("Representante Legal");
+  const [signPhone, setSignPhone] = useState("");
   const [signing, setSigning] = useState(false);
   const [signingNda, setSigningNda] = useState(false);
   const [signed, setSigned] = useState(false);
@@ -479,6 +480,7 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
           // NDA combined flow fields
           isCombined: usesCombined,
           ndaTimestamp: usesCombined ? ts : undefined,
+          phone: signPhone.trim() || undefined,
         }),
       });
       const data = await res.json();
@@ -577,13 +579,14 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                   <p className="text-[11px] font-mono uppercase tracking-widest text-sky-300">
                     Prueba de fondos (POF)
                   </p>
-                  <span className="rounded-md border border-white/10 bg-white/5 px-2 py-0.5 text-[9px] font-mono uppercase tracking-wider text-zinc-400">
-                    Opcional ahora
+                  <span className="rounded-md border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 text-[9px] font-mono uppercase tracking-wider text-sky-300">
+                    Requerida para el OM
                   </span>
                 </div>
                 <p className="mt-1.5 text-[12px] leading-relaxed text-zinc-500">
-                  La necesitamos para entregarte el OM. Puedes adjuntarla ahora y se envía junto con tu
-                  firma, o dejarla para después.
+                  Sin ella puedes firmar, pero <strong className="text-zinc-300">no se libera el memorándum (OM)</strong>.
+                  Adjúntala ahora y se envía junto con tu firma; si prefieres, te la pedimos por correo
+                  después de firmar.
                 </p>
                 <div className="mt-2 grid gap-2 sm:grid-cols-2">
                   <input
@@ -1329,6 +1332,23 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                           onChange={(e) => setSignRole(e.target.value)}
                           className="w-full bg-black/40 border border-amber-500/30 rounded-lg px-3 py-2.5 text-[13px] text-white placeholder:text-zinc-500 focus:outline-none focus:border-amber-500/60 transition-colors"
                         />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-mono text-zinc-400 mb-1">
+                          Teléfono de contacto (opcional)
+                        </label>
+                        <input
+                          type="tel"
+                          inputMode="tel"
+                          placeholder="+52 1 322 000 0000"
+                          value={signPhone}
+                          onChange={(e) => setSignPhone(e.target.value)}
+                          className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2.5 text-[13px] text-white placeholder:text-zinc-600 focus:outline-none focus:border-amber-500/40"
+                        />
+                        <p className="text-[9px] text-zinc-500 mt-1">
+                          Lo usamos sólo para dar seguimiento a esta operación. Puedes dejarlo vacío y te escribimos por correo.
+                        </p>
                       </div>
                       
                       {signName.trim() && (

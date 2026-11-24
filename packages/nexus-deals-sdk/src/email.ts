@@ -156,10 +156,75 @@ export async function sendDealSignedEmail(input: {
     counterparty: string;
     company: string;
   };
+  /** PDF del documento firmado. Va adjunto: el firmante se queda con su copia. */
+  attachments?: Array<{ filename: string; content: string; content_type?: string }>;
+  /** Si el deal exige manifestación de fondos, se pide en este mismo correo. */
+  pofRequired?: boolean;
+  /** Enlace a la sala donde se sube el POF. */
+  pofUrl?: string;
+  /** Correo de operaciones para dar seguimiento. */
+  contactEmail?: string;
+  /** Pasos siguientes explícitos. */
+  nextSteps?: string[];
+  /** Datos que quedaron registrados (para que el cliente los confirme). */
+  registered?: { name?: string | null; email?: string; phone?: string | null };
 }): Promise<any> {
-  const { to, firstName, dealKindLabel, counterparty, publicId, enteredIntoForce, nextRoom, baseUrl } = input;
+  const {
+    to, firstName, dealKindLabel, counterparty, publicId, enteredIntoForce, nextRoom, baseUrl,
+    attachments, pofRequired, pofUrl, contactEmail, nextSteps, registered,
+  } = input;
   const base = baseUrl ?? "https://dash.pandoras.finance";
   const date = new Date().toLocaleString("es-MX", { timeZone: "America/Mexico_City" });
+  const opsEmail = contactEmail || "operaciones@pandoras.finance";
+  const steps = nextSteps && nextSteps.length > 0
+    ? nextSteps
+    : [
+        "Recibimos tu firma y quedó registrada con sello de tiempo.",
+        pofRequired
+          ? "Falta tu manifestación de fondos (POF): súbela en la sala para liberar el memorándum."
+          : "El equipo revisará la documentación y te compartirá el siguiente paso.",
+        "Un miembro del equipo te contactará en un plazo de 24 a 48 horas hábiles.",
+      ];
+
+  const pofSection = pofRequired ? `
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;background:rgba(251,191,36,0.06);border:1px solid rgba(251,191,36,0.25);border-radius:10px;">
+              <tr><td style="padding:16px 20px;">
+                <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:rgba(251,191,36,0.8);margin-bottom:10px;">Falta un paso · Manifestación de Fondos (POF)</div>
+                <p style="margin:0 0 12px;font-size:13px;color:rgba(255,255,255,0.65);line-height:1.6;">
+                  Para liberar el memorándum de inversión necesitamos tu manifestación de fondos
+                  (carta del fondo o estado de cuenta, PDF o imagen ≤ 5 MB).
+                </p>
+                <a href="${pofUrl || `${base}/deal/${publicId}`}" style="display:inline-block;background:#fbbf24;color:#08080C;font-size:13px;font-weight:700;text-decoration:none;padding:10px 22px;border-radius:6px;">Subir mi POF</a>
+              </td></tr>
+            </table>` : "";
+
+  const stepsSection = `
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:10px;">
+              <tr><td style="padding:16px 20px;">
+                <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:rgba(134,239,172,0.7);margin-bottom:12px;">Qué sigue</div>
+                <ol style="margin:0;padding-left:18px;font-size:13px;color:rgba(255,255,255,0.65);line-height:1.9;">
+                  ${steps.map((step) => `<li>${step}</li>`).join("")}
+                </ol>
+                <p style="margin:12px 0 0;font-size:12px;color:rgba(255,255,255,0.45);">
+                  Seguimiento: <a href="mailto:${opsEmail}" style="color:rgba(134,239,172,0.8);">${opsEmail}</a>
+                </p>
+              </td></tr>
+            </table>`;
+
+  const registeredSection = registered ? `
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;">
+              <tr><td style="padding:14px 20px;">
+                <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-bottom:10px;">Datos de contacto registrados</div>
+                <div style="font-size:13px;color:rgba(255,255,255,0.6);line-height:1.9;">
+                  <strong style="color:rgba(255,255,255,0.85);">Nombre:</strong> ${registered.name || "—"}<br/>
+                  <strong style="color:rgba(255,255,255,0.85);">Correo:</strong> ${registered.email || to}<br/>
+                  <strong style="color:rgba(255,255,255,0.85);">Teléfono:</strong> ${registered.phone || "no proporcionado"}<br/>
+                </div>
+                <p style="margin:8px 0 0;font-size:11px;color:rgba(255,255,255,0.35);">
+                  Si algún dato es incorrecto, responde a este correo y lo corregimos.
+                </p>
+              </td></tr>
+            </table>` : "";
 
   const nextRoomSection = nextRoom ? `
             <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;background:rgba(134,239,172,0.06);border:1px solid rgba(134,239,172,0.2);border-radius:10px;">
@@ -220,8 +285,11 @@ export async function sendDealSignedEmail(input: {
               </td></tr>
             </table>
             ${nextRoomSection}
+            ${pofSection}
+            ${stepsSection}
+            ${registeredSection}
             <p style="margin:0;font-size:12px;color:rgba(255,255,255,0.35);text-align:center;line-height:1.6;">
-              Conserva este correo como evidencia de tu aceptación.<br/>
+              Adjuntamos tu copia del documento firmado. Consérvala como evidencia.<br/>
               Para cualquier consulta: <a href="mailto:legal@pandoras.finance" style="color:rgba(134,239,172,0.7);">legal@pandoras.finance</a>
             </p>
           </td>
@@ -242,6 +310,7 @@ export async function sendDealSignedEmail(input: {
     to,
     subject: `${enteredIntoForce ? "Documento en vigor" : "Firma registrada"} · ${dealKindLabel} · ${counterparty}`,
     html,
+    ...(attachments && attachments.length > 0 ? { attachments } : {}),
   });
 }
 

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getNexusAuthContext } from "@saasfly/shared";
 import { db } from "@saasfly/db";
-import { nexusDealPods, nexusDealRooms, nexusOutreachLinks } from "@saasfly/db/schema";
+import { nexusDealPods, nexusDealRooms, nexusOutreachLinks, nexusPodContacts } from "@saasfly/db/schema";
 import { desc, eq, sql } from "@saasfly/db-core";
 import { nexusOutreachEvents } from "@saasfly/db/schema";
 import { requirePodActor, normalizeCode } from "@/lib/nexus/pod-auth";
@@ -63,6 +63,19 @@ export async function GET() {
       .from(nexusDealRooms)
       .where(sql`${nexusDealRooms.podId} is not null`);
 
+    // Contactos del pod: el firmante queda aquí tras firmar (nombre, correo, teléfono).
+    const contacts = await db
+      .select({
+        podId: nexusPodContacts.podId,
+        name: nexusPodContacts.name,
+        email: nexusPodContacts.email,
+        phone: nexusPodContacts.phone,
+        role: nexusPodContacts.role,
+        relationship: nexusPodContacts.relationship,
+      })
+      .from(nexusPodContacts)
+      .orderBy(desc(nexusPodContacts.updatedAt));
+
     return NextResponse.json({
       pods: pods.map((pod) => ({
         ...pod,
@@ -75,6 +88,7 @@ export async function GET() {
             lastOpen: eventsByLink.get(link.id)?.lastOpen ?? null,
           })),
         rooms: rooms.filter((room) => room.podId === pod.id),
+        contacts: contacts.filter((c) => c.podId === pod.id),
       })),
     });
   } catch (error) {

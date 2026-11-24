@@ -4,7 +4,8 @@ import { verifyDealToken } from "@saasfly/nexus-deals-sdk";
 import { buildSignMessage } from "@saasfly/nexus-deals-sdk";
 import { buildCombinedSignMessage } from "@saasfly/nexus-deals-sdk";
 import { sendSignatureAlert, sendNdaSignedAlert } from "@saasfly/nexus-deals-sdk";
-import { sendNdaConfirmationEmail, sendDealSignedEmail } from "@saasfly/nexus-deals-sdk";
+import { sendNdaConfirmationEmail } from "@saasfly/nexus-deals-sdk";
+import { afterSignature } from "@/lib/nexus/after-signature";
 import { verifySignature } from "thirdweb/auth";
 import { client } from "@saasfly/shared/thirdweb-client";
 import { db } from "@saasfly/db-core";
@@ -16,7 +17,7 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: Request, { params }: { params: Promise<{ publicId: string }> }) {
   try {
-    const { token, name, company, role, wallet, signature, isCombined, ndaTimestamp } = await request.json();
+    const { token, name, company, role, wallet, signature, isCombined, ndaTimestamp, phone } = await request.json();
 
     const room = await getRoomByPublicId((await params).publicId);
     if (!room) return NextResponse.json({ error: "Documento no encontrado" }, { status: 404 });
@@ -155,31 +156,33 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
         signatureMessage: message,
         company: cleanCompany,
         role: cleanRole,
+        ...(cleanWallet.includes("@") ? { email: cleanWallet } : {}),
+        phone: typeof phone === "string" && phone.trim() ? phone.trim().slice(0, 40) : undefined,
       });
 
-      // Send follow-up email to signer (skip if wallet-only, no email)
-      if (cleanWallet.includes("@")) {
-        const nextRoom = room.nextRoomId ? await getRoom(room.nextRoomId) : null;
-        await Promise.allSettled([
-          sendDealSignedEmail({
-            to: cleanWallet,
-            firstName: cleanName.split(" ")[0],
-            dealKindLabel: KIND_LABEL[room.kind],
-            counterparty: room.counterparty,
-            publicId: room.publicId,
-            enteredIntoForce: updated?.status === "SIGNED",
-            nextRoom: nextRoom ? {
-              publicId: nextRoom.publicId,
-              kind: nextRoom.kind,
-              kindLabel: KIND_LABEL[nextRoom.kind as keyof typeof KIND_LABEL] ?? nextRoom.kind,
-              counterparty: nextRoom.counterparty,
-              company: nextRoom.company,
-            } : undefined,
-          }),
-        ]);
-      }
+      // Efectos completos: contacto en el pod, PDF adjunto, POF y qué sigue.
+      const post = await afterSignature({
+        room: updated ?? room,
+        signerEmail: cleanWallet,
+        name: cleanName,
+        phone: typeof phone === "string" ? phone.trim().slice(0, 40) : null,
+        company: cleanCompany,
+        role: cleanRole,
+        wallet: cleanWallet,
+        signature: cleanSig,
+        signedAt: new Date(ts),
+      }).catch((err) => {
+        console.warn("[Deals] afterSignature (openSign) failed:", err?.message || err);
+        return null;
+      });
 
-      return NextResponse.json({ ok: true, status: updated?.status, ndaRecorded: isCombined && effectiveNdaEnabled });
+      return NextResponse.json({
+        ok: true,
+        status: updated?.status,
+        ndaRecorded: isCombined && effectiveNdaEnabled,
+        documentEmailed: post?.emailed ?? false,
+        pofRequired: Boolean(room.pofEnabled),
+      });
     }
 
     if (!token || typeof token !== "string") {
@@ -303,33 +306,33 @@ export async function POST(request: Request, { params }: { params: Promise<{ pub
       signatureMessage: message,
       company: cleanCompany,
       role: cleanRole,
+      phone: typeof phone === "string" && phone.trim() ? phone.trim().slice(0, 40) : undefined,
     });
 
     // `signRoom` ya dispara la alerta de firma; no duplicar.
 
-    // Send follow-up email to signer
-    if (payload.email && payload.email.includes("@")) {
-      const nextRoom = room.nextRoomId ? await getRoom(room.nextRoomId) : null;
-      await Promise.allSettled([
-        sendDealSignedEmail({
-          to: payload.email,
-          firstName: cleanName.split(" ")[0],
-          dealKindLabel: KIND_LABEL[room.kind],
-          counterparty: room.counterparty,
-          publicId: room.publicId,
-          enteredIntoForce: updated?.status === "SIGNED",
-          nextRoom: nextRoom ? {
-            publicId: nextRoom.publicId,
-            kind: nextRoom.kind,
-            kindLabel: KIND_LABEL[nextRoom.kind as keyof typeof KIND_LABEL] ?? nextRoom.kind,
-            counterparty: nextRoom.counterparty,
-            company: nextRoom.company,
-          } : undefined,
-        }),
-      ]);
-    }
+    // Mismo flujo que la firma online: pod, PDF adjunto, POF y qué sigue.
+    const post = await afterSignature({
+      room: updated ?? room,
+      signerEmail: payload.email,
+      name: cleanName,
+      phone: typeof phone === "string" ? phone.trim().slice(0, 40) : null,
+      company: cleanCompany,
+      role: cleanRole,
+      wallet: cleanWallet,
+      signature: cleanSig,
+      signedAt: new Date(ts),
+    }).catch((err) => {
+      console.warn("[Deals] afterSignature (token) failed:", err?.message || err);
+      return null;
+    });
 
-    return NextResponse.json({ ok: true, status: updated?.status });
+    return NextResponse.json({
+      ok: true,
+      status: updated?.status,
+      documentEmailed: post?.emailed ?? false,
+      pofRequired: Boolean(room.pofEnabled),
+    });
   } catch (e: any) {
     console.error("❌ [Deals] sign error:", e);
     return NextResponse.json({ error: e.message }, { status: 500 });

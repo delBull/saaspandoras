@@ -36,6 +36,13 @@ interface Pod {
   linkCount: number;
   links: PodLink[];
   rooms: PodRoom[];
+  contacts?: Array<{
+    name: string;
+    email: string | null;
+    phone: string | null;
+    role: string;
+    relationship: string | null;
+  }>;
 }
 
 /**
@@ -334,6 +341,28 @@ export function OperationsPodsTab() {
                 </button>
               ))}
             </div>
+
+            {pod.contacts && pod.contacts.length > 0 && (
+              <div className="rounded-lg border border-white/10 bg-black/20 p-3">
+                <p className="mb-2 text-[9px] font-mono uppercase tracking-widest text-zinc-500">
+                  Contactos del pod · {pod.contacts.length}
+                </p>
+                <div className="space-y-1">
+                  {pod.contacts.map((contact, index) => (
+                    <div key={`${contact.email ?? contact.name}-${index}`} className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 text-[11px]">
+                      <span className="font-semibold text-zinc-200">{contact.name}</span>
+                      {contact.email && <span className="text-zinc-400">{contact.email}</span>}
+                      {contact.phone ? (
+                        <span className="text-emerald-300/80">{contact.phone}</span>
+                      ) : (
+                        <span className="text-zinc-600">sin teléfono</span>
+                      )}
+                      {contact.relationship && <span className="text-zinc-600">{contact.relationship}</span>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="flex flex-wrap items-center gap-2">
               <button

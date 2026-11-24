@@ -440,7 +440,7 @@ export async function signRoom(
   roomId: string,
   email: string,
   name: string,
-  opts: { wallet?: string; signature?: string; signatureMessage?: string; company?: string; role?: string } = {}
+  opts: { wallet?: string; signature?: string; signatureMessage?: string; company?: string; role?: string; phone?: string } = {}
 ) {
   const now = new Date();
   await db
@@ -454,6 +454,7 @@ export async function signRoom(
       signatureMessage: opts.signatureMessage ?? null,
       signatureCompany: opts.company ?? null,
       signatureRole: opts.role ?? null,
+      ...(opts.phone ? { signaturePhone: opts.phone } : {}),
     })
     .where(and(eq(nexusDealSigners.roomId, roomId), eq(nexusDealSigners.email, email)));
 
@@ -489,7 +490,7 @@ export async function signRoom(
 export async function signRoomOnline(
   roomId: string,
   name: string,
-  opts: { wallet: string; signature: string; signatureMessage: string; company?: string; role?: string; email?: string }
+  opts: { wallet: string; signature: string; signatureMessage: string; company?: string; role?: string; email?: string; phone?: string }
 ) {
   const now = new Date();
   // El firmante se identifica por correo cuando existe (magic link). Usar la
@@ -515,6 +516,7 @@ export async function signRoomOnline(
         signatureMessage: opts.signatureMessage,
         signatureCompany: opts.company ?? null,
         signatureRole: opts.role ?? null,
+        ...(opts.phone ? { signaturePhone: opts.phone } : {}),
       })
       .where(eq(nexusDealSigners.id, existing[0].id));
   } else {
@@ -529,6 +531,7 @@ export async function signRoomOnline(
       signatureMessage: opts.signatureMessage,
       signatureCompany: opts.company ?? null,
       signatureRole: opts.role ?? null,
+      signaturePhone: opts.phone ?? null,
     });
   }
 
