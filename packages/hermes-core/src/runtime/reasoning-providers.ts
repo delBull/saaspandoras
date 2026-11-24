@@ -141,6 +141,31 @@ export class MockReasoningProvider implements ReasoningProvider {
  */
 import { ReasoningProviderConfig } from './contracts';
 
+/** Slug estable del tenant para resolver envs `OLLAMA_<SLUG>_*`. */
+export function tenantSlug(organizationName?: string | null): string {
+  return String(organizationName ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/['\u2019]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+/**
+ * Configuración por tenant: `OLLAMA_<SLUG>_BASE_URL`, `_MODEL`, `_API_KEY`.
+ * Reemplaza el caso especial hardcodeado de S'Narai por una convención genérica.
+ */
+export function tenantEnv(
+  organizationName: string | null | undefined,
+  suffix: "BASE_URL" | "MODEL" | "API_KEY",
+): string | undefined {
+  const slug = tenantSlug(organizationName);
+  if (!slug) return undefined;
+  const value = process.env[`OLLAMA_${slug.toUpperCase()}_${suffix}`];
+  return value && value.trim() ? value : undefined;
+}
+
 export class OllamaReasoningProvider implements ReasoningProvider {
   private config: ReasoningProviderConfig;
 
@@ -150,27 +175,28 @@ export class OllamaReasoningProvider implements ReasoningProvider {
 
   async generate(input: ReasoningInput): Promise<ReasoningOutput> {
     const start = Date.now();
-    const isSnarai = input.reasoningContext.tenantIdentity.organizationName.toLowerCase().includes('snarai');
+    const orgName = input.reasoningContext.tenantIdentity?.organizationName;
     const dynamicLlm = (input.reasoningContext as any).core?.llmConfig;
 
-    const rawBaseUrl = isSnarai && process.env.OLLAMA_SNARAI_BASE_URL 
-      ? process.env.OLLAMA_SNARAI_BASE_URL 
-      : (!isSnarai && dynamicLlm?.baseUrl 
-          ? dynamicLlm.baseUrl 
-          : (this.config.baseUrl || process.env.OLLAMA_BASE_URL || 'http://localhost:11434'));
-
     const prompt = HermesPromptBuilder.build(input);
-    const model = isSnarai && process.env.OLLAMA_SNARAI_MODEL
-      ? process.env.OLLAMA_SNARAI_MODEL
-      : (!isSnarai && dynamicLlm?.model
-          ? dynamicLlm.model
-          : (prompt.hints.model || this.config.model || process.env.OLLAMA_MODEL || 'llama3'));
 
-    const apiKey = isSnarai && process.env.OLLAMA_SNARAI_API_KEY
-      ? process.env.OLLAMA_SNARAI_API_KEY
-      : (!isSnarai && dynamicLlm?.apiKey
-          ? dynamicLlm.apiKey
-          : process.env.OLLAMA_API_KEY);
+    // Precedencia: configuración explícita del producto/tenant → env por slug → global.
+    const rawBaseUrl =
+      dynamicLlm?.baseUrl ||
+      tenantEnv(orgName, "BASE_URL") ||
+      this.config.baseUrl ||
+      process.env.OLLAMA_BASE_URL ||
+      'http://localhost:11434';
+
+    const model =
+      prompt.hints.model ||
+      dynamicLlm?.model ||
+      tenantEnv(orgName, "MODEL") ||
+      this.config.model ||
+      process.env.OLLAMA_MODEL ||
+      'llama3';
+
+    const apiKey = dynamicLlm?.apiKey || tenantEnv(orgName, "API_KEY") || process.env.OLLAMA_API_KEY;
 
     const temperature = prompt.hints.temperature ?? this.config.defaultTemperature ?? 0.15;
     const cleanBase = rawBaseUrl.replace(/\/+$/, '').replace(/\/api$/, '').replace(/\/v1$/, '');
@@ -396,27 +422,27 @@ export class OllamaStreamingProvider implements StreamingReasoningProvider {
 
   async stream(input: ReasoningInput, signal?: AbortSignal): Promise<ReasoningStream> {
     const start = Date.now();
-    const isSnarai = input.reasoningContext.tenantIdentity.organizationName.toLowerCase().includes('snarai');
+    const orgName = input.reasoningContext.tenantIdentity?.organizationName;
     const dynamicLlm = (input.reasoningContext as any).core?.llmConfig;
 
-    const baseUrl = isSnarai && process.env.OLLAMA_SNARAI_BASE_URL 
-      ? process.env.OLLAMA_SNARAI_BASE_URL 
-      : (!isSnarai && dynamicLlm?.baseUrl 
-          ? dynamicLlm.baseUrl 
-          : (this.config.baseUrl || process.env.OLLAMA_BASE_URL || 'http://localhost:11434'));
-
     const prompt = HermesPromptBuilder.build(input);
-    const model = isSnarai && process.env.OLLAMA_SNARAI_MODEL
-      ? process.env.OLLAMA_SNARAI_MODEL
-      : (!isSnarai && dynamicLlm?.model
-          ? dynamicLlm.model
-          : (prompt.hints.model || this.config.model || process.env.OLLAMA_MODEL || 'llama3'));
 
-    const apiKey = isSnarai && process.env.OLLAMA_SNARAI_API_KEY
-      ? process.env.OLLAMA_SNARAI_API_KEY
-      : (!isSnarai && dynamicLlm?.apiKey
-          ? dynamicLlm.apiKey
-          : process.env.OLLAMA_API_KEY);
+    const baseUrl =
+      dynamicLlm?.baseUrl ||
+      tenantEnv(orgName, "BASE_URL") ||
+      this.config.baseUrl ||
+      process.env.OLLAMA_BASE_URL ||
+      'http://localhost:11434';
+
+    const model =
+      prompt.hints.model ||
+      dynamicLlm?.model ||
+      tenantEnv(orgName, "MODEL") ||
+      this.config.model ||
+      process.env.OLLAMA_MODEL ||
+      'llama3';
+
+    const apiKey = dynamicLlm?.apiKey || tenantEnv(orgName, "API_KEY") || process.env.OLLAMA_API_KEY;
 
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;

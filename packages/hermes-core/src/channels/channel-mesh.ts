@@ -110,6 +110,20 @@ const CLEARANCE_LEVELS: Record<KnowledgeDisclosureClearance, number> = {
   SECRET: 5,
 };
 
+/**
+ * Severidad del evento de bloqueo.
+ *
+ * Un artefacto interno por encima del techo de un canal público es rutina
+ * (INFO). Sólo lo sensible —o una clasificación desconocida, que debe fallar
+ * ruidosamente— merece CRITICAL y alerta.
+ */
+export function disclosureSeverity(clearance?: string | null): 'INFO' | 'CRITICAL' {
+  const value = String(clearance ?? '').toUpperCase();
+  if (!value) return 'CRITICAL';
+  if (value === 'CONFIDENTIAL' || value === 'SECRET' || value === 'B2B_RESTRICTED') return 'CRITICAL';
+  return 'INFO';
+}
+
 export class ChannelMeshService {
   /**
    * Evaluates if a given knowledge clearance can be disclosed over a specific channel.
@@ -128,10 +142,16 @@ export class ChannelMeshService {
     const ceilingLevel = CLEARANCE_LEVELS[config.maxClearanceCeiling];
 
     if (reqLevel === undefined || ceilingLevel === undefined || reqLevel > ceilingLevel) {
+      // Un artefacto interno por encima del techo de un canal público es rutina
+      // (p. ej. WhatsApp). Sólo lo verdaderamente sensible —o una clasificación
+      // que no se puede determinar— justifica un evento CRITICAL con alerta.
+      const severity = disclosureSeverity(reqLevel === undefined ? undefined : requiredClearance);
+      const isSensitive = severity === 'CRITICAL';
+
       await SecurityAuditLogger.logEvent({
         organizationId: tenantId,
         eventType: 'DISCLOSURE_BLOCKED',
-        severity: 'CRITICAL',
+        severity,
         policyDecision: 'DENY',
         correlationId: `mesh_disc_${Date.now()}`,
         artifactId,
@@ -140,6 +160,7 @@ export class ChannelMeshService {
           channelType,
           channelCeiling: config.maxClearanceCeiling,
           requiredClearance,
+          expectedRoutine: !isSensitive && reqLevel !== undefined,
           reason: `Attempted to disclose [${requiredClearance}] artifact over [${channelType}] channel with maximum ceiling [${config.maxClearanceCeiling}].`,
         },
       });
