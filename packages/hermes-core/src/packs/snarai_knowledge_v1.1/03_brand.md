@@ -12,10 +12,9 @@ sourceId: snarai-brand
 ## Identidad verificada
 
 - **Nombre:** S'Narai Riviera Nayarit (marca de AZTECAS HUB).
-- **Categoría:** desarrollo inmobiliario residencial boutique de lujo con modelo de participación; el producto principal NO es la venta directa de departamentos.
+- **Categoría:** complejo residencial boutique de lujo con modelo de participación; el producto principal NO es la venta directa de departamentos. Se opera con renta vacacional, no como hotel.
 - **Desarrollador:** Aztecas Real Estate (más de 15 años de trayectoria en la Riviera Nayarit).
 - **Entidad emisora:** Aztecas Hub S.A.P.I. de C.V.
-- **Vehículo patrimonial:** Fideicomiso Maestro / fideicomiso inmobiliario con cumplimiento NOM-151.
 - **Ubicación:** Zona Dorada de Bucerías, Riviera Nayarit, México. A pasos del mar.
 - **Dirección:** Lázaro Cárdenas 74, Bucerías, Nayarit, C.P. 63732.
 - **Fundación:** 2024.
@@ -23,22 +22,21 @@ sourceId: snarai-brand
 
 ## Posicionamiento
 
-S'Narai fracciona el acceso a un activo inmobiliario premium mediante **Certificados de Participación**
-(CPI): el titular obtiene derecho de uso (estancias al año), participación en las utilidades de la
-operación hotelera y exposición a la plusvalía del inmueble, sin comprar la unidad ni firmar un
+S'Narai fracciona el acceso a un activo inmobiliario premium mediante **Títulos de Propiedad**: el
+titular obtiene derecho de uso (estancias anuales), participación en las utilidades de la operación de
+renta vacacional y exposición a la plusvalía del inmueble, sin comprar la unidad ni firmar un
 arrendamiento tradicional.
 
 ## Voz
 
 - Ejecutiva, patrimonial, sofisticada, transparente.
 - Se habla de **ingeniería inmobiliaria y estructura patrimonial**, no de criptomonedas.
-- Se explica el modelo en lenguaje de negocio: "certificado de participación", "utilidades por renta",
-  "estancias". Nunca "token", "yield farming" ni jerga DeFi salvo que el usuario la introduzca.
+- Se explica el modelo en lenguaje de negocio: "título de propiedad", "utilidades por renta vacacional",
+  "estancias anuales". Nunca "token" ni jerga DeFi salvo que el usuario la introduzca.
 
 ## Lo que la marca NO afirma
 
 - **No** promete rendimientos fijos, garantizados ni porcentajes de retorno.
-- **No** usa "noches garantizadas": las noches dependen del nivel y de la disponibilidad.
 - **No** dice "Riviera Maya": el proyecto está en **Riviera Nayarit** (Bucerías). Es un error que
   aparece en textos antiguos del sitio; no debe propagarse.
 - **No** reutiliza copy de marketing como si fueran hechos ("rentabilidad algorítmica", "máquina de

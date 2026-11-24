@@ -16,6 +16,7 @@ import type { ProductKey } from '@saasfly/shared';
 import { SessionTokenService } from '@saasfly/hermes-core';
 import { isWalletAuthorizedForTenant } from '@saasfly/hermes-core';
 import { capabilityRegistry } from '@/lib/growth/capability-registry.service';
+import { requestCampaignApproval } from '@/lib/growth/campaign-approval';
 import type { 
   GetEmailMarketingResponseDTO, 
   EmailTemplateDTO, 
@@ -272,13 +273,14 @@ export async function POST(req: NextRequest) {
       .values({
         name: name.trim(),
         triggerType: 'manual',
-        isActive: !scheduledAt,
+        // Nace inactiva: no se programa ni se envía hasta que el admin apruebe.
+        isActive: false,
         config: {
           organizationId: auth.organizationId,
           templateId: templateId ?? null,
           subject: subject ? subject.trim() : null,
           scheduledAt: scheduledAt ?? null,
-          status: scheduledAt ? 'SCHEDULED' : 'DRAFT',
+          status: 'PENDING_APPROVAL',
           createdVia: 'growth_os_email_modal',
         },
       })
@@ -288,19 +290,37 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ code: 'INSERT_FAILED', message: 'Failed to persist campaign.' }, { status: 500 });
     }
 
+    // Toda campaña pasa por aprobación del admin (aunque venga con fecha).
+    let approvalId: string | null = null;
+    try {
+      const approval = await requestCampaignApproval({
+        organizationId: auth.organizationId,
+        organizationSlug: auth.organizationSlug,
+        campaignId: String(createdCampaign.id),
+        campaignName: createdCampaign.name,
+        subject: subject ?? null,
+        scheduledAt: scheduledAt ?? null,
+        requestedBy: (auth as any).collaboratorId ? String((auth as any).collaboratorId) : null,
+      });
+      approvalId = approval.approvalId;
+    } catch (err: any) {
+      console.warn('[Growth Email] no se pudo crear la aprobación:', err?.message || err);
+    }
+
     const cfg = (createdCampaign.config as Record<string, unknown> | null) ?? {};
     const campaign = {
       id: String(createdCampaign.id),
       name: createdCampaign.name,
       templateId: (cfg.templateId as string | null) ?? null,
       subject: (cfg.subject as string | null) ?? null,
-      status: scheduledAt ? 'SCHEDULED' : 'DRAFT',
+      status: 'PENDING_APPROVAL',
       scheduledAt: scheduledAt ?? null,
       organizationId: auth.organizationId,
       createdAt: new Date().toISOString(),
+      approvalId,
     };
 
-    return NextResponse.json({ success: true, campaign }, { status: 201 });
+    return NextResponse.json({ success: true, campaign, pendingApproval: true, approvalId }, { status: 201 });
   } catch (error: unknown) {
     const err = error instanceof Error ? error : new Error(String(error));
     console.error('[Growth API: email POST] Error:', err);

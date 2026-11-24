@@ -26,7 +26,7 @@ sourceId: snarai-market
    activo trabaje durante la temporada completa.
 4. **Acceso fraccionado:** entrar en etapa fundadora permite un costo por metro cuadrado fraccional menor
    que el de mercado, lo que captura la apreciación de la obra.
-5. **Dos fuentes de valor:** plusvalía del inmueble + utilidades de la operación hotelera.
+5. **Dos fuentes de valor:** plusvalía del inmueble + utilidades de la operación de renta vacacional.
 
 ## Lo que NO se puede afirmar
 
@@ -42,7 +42,7 @@ sourceId: snarai-market
 ## Riesgos declarados por el proyecto
 
 Capital no garantizado; riesgo de desarrollo (permisos, clima, retrasos de obra); riesgo de mercado y de
-liquidez; dependencia de la operación hotelera. Cualquier conversación de inversión debe incluir esta
+liquidez; dependencia de la operación de renta vacacional. Cualquier conversación de inversión debe incluir esta
 declaración antes de dar cifras.
 
 ## Fuente

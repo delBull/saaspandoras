@@ -11,10 +11,10 @@ sourceId: snarai-projects
 
 ## El activo
 
-- **Tipo:** desarrollo de complejo de departamentos y suites de lujo (condo hotel) en la Zona Dorada
-  de Bucerías, Riviera Nayarit.
-- **Operación:** el edificio se explota comercialmente como renta vacacional y hotelera; de ahí salen
-  las utilidades que se distribuyen a los titulares de certificados.
+- **Tipo:** complejo residencial boutique de departamentos y suites de lujo en la Zona Dorada de
+  Bucerías, Riviera Nayarit.
+- **Operación:** el edificio se explota como **renta vacacional**; de ahí salen las utilidades que se
+  distribuyen a los titulares de Títulos de Propiedad.
 - **Estado del desarrollo:** el proyecto se comunica por etapas con estados verificables:
   `Completed`, `In Progress`, `Pending Approval` y `Future Phase`.
 
@@ -26,18 +26,26 @@ sourceId: snarai-projects
 | Etapa 2 | Miembro Estratégico | posterior a fundadores |
 | General | Acceso General | próximamente |
 
-## Niveles y certificados
+## Costo de participación y niveles
 
-| Nivel | Aportación | Certificados (CP) | Derechos |
-|---|---|---|---|
-| Explorador | desde $50 USD | 10 CP | acceso a hub de recursos y canal comunitario |
-| Residente | $500 USD | 50 CP | voto en mejoras operativas, 2 noches anuales |
-| Embajador | $2,500 USD | 200 CP | prioridad en propuestas, 10 noches anuales, acceso preferente |
-| Riviera Owner | — | 1,000 CP | asiento en comités consultivos, 50 noches anuales, voz en expansión |
+**Costo por Título de Propiedad** (según la fase vigente): Fase 1 **$50 USD**, Fase 2 **$75 USD**,
+Fase 3 **$100 USD**. Las fases se desbloquean por avance del proyecto.
+
+**Niveles** (los de la landing oficial): 
+
+| Nivel | Aportación | Títulos incluidos | Estancias anuales | Derechos |
+|---|---|---|---|---|
+| Explorador | $500 USD | 10 | 1 | acceso al hub de recursos y canal comunitario |
+| Residente | $2,500 USD | 50 | 4 | voto en mejoras operativas y bono de utilidad |
+| Embajador | $25,000 USD | 500 | 10 | capital estratégico con voz en la mesa directiva |
+| Riviera Owner | $100,000 USD | 2,000 | 20 | nivel patrimonial máximo con gobernanza ampliada |
+
+- El derecho de uso se expresa en **estancias anuales**.
+- La **unidad completa** (departamento con escrituración directa) es un producto secundario.
 
 - La **unidad completa** (departamento residencial con escrituración directa) existe como producto
   secundario, no como producto principal del proyecto.
-- El Certificado de Participación se emite bajo Aztecas Hub S.A.P.I. de C.V.
+- El Título de Propiedad se emite bajo Aztecas Hub S.A.P.I. de C.V. mediante contrato de participación digital.
 
 ## Documentación oficial del proyecto
 

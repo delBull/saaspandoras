@@ -22,7 +22,7 @@ sourceId: snarai-operations
 
 ## Generación y distribución de utilidades
 
-- Los ingresos provienen de la **explotación hotelera y de renta vacacional** del edificio.
+- Los ingresos provienen de la **renta vacacional** del edificio.
 - Se descuentan costos operativos y se distribuye la **utilidad neta pro-rata** entre los titulares de
   certificados.
 - La dispersión se realiza en **USDC** con una ventana de liquidación de **7 días**.

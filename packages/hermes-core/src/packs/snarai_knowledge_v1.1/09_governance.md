@@ -3,28 +3,48 @@ organizationId: snarai
 visibility: PUBLIC
 authority: VERIFIED
 status: ACTIVE
-version: 1
+version: 3
 sourceId: snarai-governance
 ---
 
 # S'Narai — Gobernanza y DAO
 
-Este documento describe la estructura y mecanismos de gobernanza para los miembros del ecosistema S'Narai.
+Estructura y mecanismos de gobernanza para los miembros del ecosistema S'Narai.
 
-## 01 / Marco Institucional y Legal
-- **Entidad Legal:** Aztecas Hub S.A.P.I. de C.V.
-- **Vehículo Patrimonial:** Fideicomiso Inmobiliario en México garantizando cumplimiento NOM-151 y protección patrimonial de grado institucional.
-- **Participación:** Cada Certificado de Participación (CP) otorga derechos económicos proporcionales y poder de voto en la DAO comunitaria.
+## 01 / Marco institucional
+- **Entidad legal:** Aztecas Hub S.A.P.I. de C.V.
+- **Instrumento:** contratos de participación digital suscritos con la entidad.
+- **Participación:** cada **Título de Propiedad** otorga derechos económicos proporcionales y poder de
+  voto en la DAO comunitaria.
+- **Documentación:** el marco completo vive en el Data Room Institucional y se entrega tras el NDA.
 
-## 02 / Parámetros de Votación DAO
-- **Quórum Estándar:** 10% de los tokens en circulación requeridos para validar propuestas.
-- **Quórum de Emergencia:** 10% con ventana de resolución acelerada.
-- **Periodo de Votación:** 24 horas por propuesta ordinaria.
-- **Ejecución de Propuestas:** 24 horas de timelock posterior a la aprobación para salvaguardar fondos.
-- **Distribución de Utilidades:** Ventana de liquidación y dispersión de 7 días (604,800 segundos) pro-rata en USDC.
+## 02 / Parámetros de votación
+- **Quórum estándar:** 10% de los títulos en circulación para validar propuestas.
+- **Quórum de emergencia:** 10% con ventana de resolución acelerada.
+- **Periodo de votación:** 24 horas por propuesta ordinaria.
+- **Ejecución:** 24 horas de timelock posterior a la aprobación.
+- **Distribución de utilidades:** ventana de liquidación de 7 días, pro-rata, en USDC.
 
-## 03 / Tiers de Gobernanza
-- **Explorer (10 CPs):** Acceso al Hub de Recursos y canal comunitario.
-- **Resident (50 CPs):** Derecho a voto en mejoras operativas y 2 noches anuales.
-- **Ambassador (200 CPs):** Prioridad en propuestas, 10 noches anuales y acceso preferente.
-- **Riviera Owner (1,000 CPs):** Asiento preferencial en comités consultivos, participación directa en decisiones de expansión y 50 noches anuales.
+## 03 / Niveles de participación
+
+Los nombres y condiciones son los de la landing oficial (`snarai.aztecaz.xyz`):
+
+| Nivel | Títulos incluidos | Estancias anuales | Derecho adicional |
+|---|---|---|---|
+| **Explorador** | 10 | 1 | Acceso al hub de recursos y canal comunitario |
+| **Residente** | 50 | 4 | Voto en mejoras operativas y bono de utilidad |
+| **Embajador** | 500 | 10 | Participación de capital estratégico con voz en la mesa directiva |
+| **Riviera Owner** | 2,000 | 20 | Nivel patrimonial máximo con derechos de gobernanza ampliados |
+
+- La **estancia** es un derecho de uso anual; su cantidad depende del nivel y de la disponibilidad.
+- El acceso a las estancias se reserva con prioridad según el nivel.
+
+## 04 / Qué no se afirma
+
+- No se garantiza rendimiento fijo ni retorno asegurado.
+- No se prometen plazos de obra que no estén publicados en el reporte de estatus.
+
+## Fuente
+
+`snarai-governance` v3 · alineado a `src/constants/memberships.tsx` y `messages/Packs` de la landing
+oficial, y a las reglas de `banned_topics` v2.
