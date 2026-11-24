@@ -131,6 +131,42 @@ Candidatos a recortar por tamaño: `security_whitepaper` (16k), `academy_walkthr
   hidratan (falla la comparación de hash) y para S'Narai hidratan sin unión (se pierde
   temporalmente `pricing_transparency`, 32 chars, de política). El deploy corrige ambos.
 
+## 4-ter. S'Narai — inventario pendiente (preparado, no ejecutado)
+
+La fuente canónica **sí está versionada en Git**: `packages/hermes-core/src/packs/snarai_knowledge_v1.1/`
+(10 archivos con frontmatter gobernado: `organizationId`, `visibility`, `authority`, `status`, `version`).
+
+Pero el pack está incompleto **en origen**, no en el pipeline:
+
+| Artefacto | Fuente del pack | Estado real |
+|---|---|---|
+| `snarai-brand` | `03_brand.md` | **`# Brand` → `MISSING`** |
+| `snarai-projects` | `05_projects.md` | **`MISSING`** |
+| `snarai-market` | `07_market.md` | **`MISSING`** |
+| `snarai-operations` | `08_operations.md` | **`MISSING`** |
+| `safety_level` | *(sin archivo)* | **sin fuente** |
+| `snarai-identity`, `snarai-business`, `snarai-products`, `snarai-public-faq`, `snarai-governance` | 01, 02, 06, 09, 10 | contenido real (breve) |
+| `snarai-agent-soul` | `04_agent-soul.md` | declara que el alma vive en `snarai-domain-pack.ts`, no en knowledge (redundante por diseño) |
+| `core_persona`, `snarai-public-faq`, `banned_topics`, `tone_of_voice` | `sync-snarai-knowledge-vault.ts` | contenido inline en el script |
+
+Material adicional disponible para poblar los `MISSING` (local, fuera de Git):
+`S_NARAI_LAUNCH_PLAN.md` (3.6 KB), `AUDIT_NARAI.md` (5.3 KB),
+`Pandora-SNarai-Distribution-OS.md` (3.6 KB), `S_NARAI_AI_SUPPORT.md` (3.0 KB),
+`S_NARAI_FOUNDER_ACTIONS.md` (2.4 KB), `S_NARAI_METRICS.md` (1.0 KB).
+
+### Lo que falta para ejecutarlo
+
+1. **Decisión de política**: los 5 `CONFIDENTIAL` de S'Narai (`banned_topics`, `escalation_rules`,
+   `tone_of_voice`, `snarai_founder_actions`, `snarai_audit_report`) siguen fuera del prompt. Tres de
+   ellos son *reglas de comportamiento* del agente, no datos sensibles. Propuesta: permitir
+   `CONFIDENTIAL` sólo en dimensiones `policy`/`identity` del tenant, nunca en legal/patrimonial.
+2. **Autoría de los 5 `MISSING`**: no se puede "reponer de la fuente" porque la fuente dice
+   literalmente `MISSING`. O el Fundador aporta el texto, o se destila de los documentos de
+   lanzamiento (requiere su aprobación, porque define verdad institucional).
+3. **Re-pin**: escribir artefactos nuevos exige un nodo de pin. En producción el primario es Kubo
+   (401); para un script local basta con no definir `PANDORAS_KUBO_RPC_URL`, de modo que el primario
+   sea Pinata (verificado: sirve y verifica).
+
 
 ## 5. Mapeo verificado key → archivo (Pandora's, 22/22)
 
