@@ -1,7 +1,7 @@
 {
   "version": 2,
   "framework": "nextjs",
-  "buildCommand": "SKIP_DTS=1 turbo run build --filter=@saasfly/dashboard...",
+  "buildCommand": "SKIP_DTS=1 turbo run build --filter=@saasfly/dashboard... --concurrency=1",
   "installCommand": "bun install --no-frozen-lockfile",
   "crons": [
     {
