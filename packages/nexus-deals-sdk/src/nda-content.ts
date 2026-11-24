@@ -287,6 +287,108 @@ Cargo: _______________________________
 Correo: ______________________________
 Firma: _______________________________  Fecha: ____________`;
 
+
+// ─── 2-bis. PATRIA NDA (TERRENO PARA DESARROLLO DE USOS MIXTOS) ──────────────
+//
+// Clon del NDA de VILLAGE, ajustado al activo real: un terreno, no un activo en
+// operación. Cambios deliberados: no se menciona operación hotelera, la lista de
+// información confidencial es de suelo (títulos, CUS, avalúos, factibilidades) y
+// la jurisdicción es Jalisco, donde está el inmueble (el template de VILLAGE
+// sometía a Nayarit y habría sido incorrecto).
+
+export const PATRIA_NDA_VERSION = "v1.0-patria";
+
+export const PATRIA_NDA_TITLE =
+  "Acuerdo de Confidencialidad, No Uso y No Circunvención — Proyecto Patria";
+
+export const PATRIA_NDA_SUBTITLE =
+  "Project Patria — Confidentiality, Non-Use and Non-Circumvention Agreement";
+
+export const PATRIA_NDA_SUMMARY_BULLETS = [
+  "Mantener en estricta confidencialidad la identidad, ubicación, uso de suelo y términos del Activo",
+  "Usar la información únicamente para evaluar una posible adquisición o coinversión",
+  "No contactar al propietario, desarrolladores, acreedores o intermediarios por fuera de AZTECAZ (24 meses)",
+  "No divulgar el memorándum, estudios técnicos, factibilidades ni documentos de la oportunidad",
+  "No usar la información para competir, replicar el desarrollo o adquirir por cuenta de terceros",
+  "Confidencialidad por 3 años; secretos industriales de forma indefinida",
+  "La circunvención se sanciona con la comisión pactada (3% del precio de cierre)",
+];
+
+export const PATRIA_NDA_FULL_TEXT = `ACUERDO DE CONFIDENCIALIDAD, NO USO Y NO CIRCUNVENCIÓN
+PROYECTO PATRIA — CONFIDENTIALITY, NON-USE AND NON-CIRCUMVENTION AGREEMENT
+Versión: 1.0-patria
+Fecha de vigencia: la fecha de aceptación electrónica registrada en el Deal Room de Nexus.
+
+1. PARTES
+
+El presente Acuerdo (el "Acuerdo") se celebra entre AZTECAZ HUB S.A.P.I. DE C.V., en lo sucesivo "AZTECAZ" o la "Parte Reveladora", y la persona física o moral que acceda a este documento, lo acepte electrónicamente o reciba Información Confidencial (el "Receptor").
+
+2. ANTECEDENTES
+
+AZTECAZ tiene acceso a información relativa a una oportunidad de adquisición de un terreno para desarrollo de usos mixtos identificado bajo el nombre clave "Proyecto Patria" (el "Activo"). El Receptor manifiesta interés en evaluar una posible adquisición total o parcial del Activo y reconoce que para ello requiere acceso a información reservada.
+
+3. INFORMACIÓN CONFIDENCIAL
+
+Es Información Confidencial toda información revelada por AZTECAZ, por el vendedor o por sus asesores, en cualquier formato, incluyendo sin limitación: identidad y ubicación del Activo; títulos de propiedad, cadena de dominio, fideicomisos y gravámenes; memorándum de inversión (OM) y anexos; estudios técnicos, avalúos y levantamientos topográficos; uso de suelo, coeficientes de ocupación y utilización (COS/CUS) y factibilidades; proyectos arquitectónicos y presupuestos de obra; situación fiscal, pasivos y litigios; estrategia de venta, precio de referencia y cualquier término comercial; y la simple existencia de la oportunidad.
+
+4. INFORMACIÓN EXCLUIDA
+
+No es Información Confidencial la que: (a) fuera pública antes de su revelación; (b) se volviera pública sin incumplimiento del Receptor; (c) el Receptor ya tuviera documentalmente antes de la revelación; (d) reciba de un tercero sin deber de confidencialidad; o (e) AZTECAZ autorice por escrito su divulgación.
+
+5. OBLIGACIONES DEL RECEPTOR
+
+El Receptor se obliga a: (a) mantener la Información Confidencial en estricta reserva; (b) usarla exclusivamente para el Propósito Autorizado; (c) limitar el acceso a sus directivos, empleados y asesores que lo necesiten, bajo obligaciones equivalentes; (d) no reproducir, fotografiar ni reenviar documentos sin autorización escrita; (e) custodiar el OM y los anexos con medidas razonables de seguridad; y (f) notificar de inmediato cualquier acceso o divulgación no autorizada.
+
+6. PROPÓSITO AUTORIZADO
+
+La Información Confidencial solo podrá utilizarse para evaluar, negociar y, en su caso, ejecutar una adquisición del Activo por el propio Receptor o por una entidad de su grupo, siempre por conducto de AZTECAZ.
+
+7. NO CIRCUNVENCIÓN
+
+Durante 24 meses contados desde la aceptación de este Acuerdo, el Receptor y sus afiliados, socios, fondos, vehículos de inversión y asesores no podrán, directa o indirectamente: (a) contactar al propietario, desarrolladores, acreedores, fiduciario o cualquier contraparte del Activo sin autorización escrita de AZTECAZ; (b) adquirir, financiar, coinvertir o participar en la adquisición del Activo por fuera de AZTECAZ; ni (c) introducir a un tercero en la operación evadiendo a AZTECAZ.
+
+En caso de incumplimiento, el Receptor pagará a AZTECAZ, como pena convencional, el monto equivalente a la comisión pactada del 3% (tres por ciento) sobre el precio de cierre de la operación, sin perjuicio de los daños y perjuicios adicionales que procedan. Las Partes reconocen que la cuantificación anticipada es razonable por la dificultad de valorar el daño.
+
+8. PLAZO
+
+Las obligaciones de confidencialidad subsistirán por 3 (tres) años desde la aceptación. Respecto de secretos industriales y de información que constituya secreto comercial, la obligación será indefinida conforme a la ley aplicable.
+
+9. DEVOLUCIÓN O DESTRUCCIÓN
+
+A solicitud de AZTECAZ, o al concluir las conversaciones, el Receptor devolverá o destruirá la Información Confidencial y confirmará por escrito dicha destrucción, conservando únicamente una copia en sus archivos legales cuando la ley lo exija, sujeta a este Acuerdo.
+
+10. SIN GARANTÍAS Y SIN OBLIGACIÓN DE TRANSAR
+
+La información se entrega "tal cual". AZTECAZ no garantiza su exactitud ni integridad y no asume obligación alguna de negociar, aceptar ofertas o concluir la operación. Ninguna conducta previa crea exclusividad ni mandato.
+
+11. DATOS PERSONALES
+
+Los datos de contacto se tratarán conforme a la Ley Federal de Protección de Datos Personales en Posesión de los Particulares, únicamente para gestionar esta oportunidad.
+
+12. LEY APLICABLE Y JURISDICCIÓN
+
+Este Acuerdo se rige por las leyes de los Estados Unidos Mexicanos. Para cualquier controversia, las Partes se someten a los tribunales competentes del Estado de Jalisco, renunciando a cualquier otro fuero. Lo anterior es sin perjuicio de la jurisdicción que corresponda tratándose de inmuebles ubicados en ese Estado.
+
+13. FIRMA ELECTRÓNICA
+
+Las Partes reconocen la validez de la firma electrónica conforme al Código de Comercio y a la NOM-151-SCFI-2016 en lo conducente. La aceptación registrada en el Deal Room de Nexus (correo, wallet, fecha y hash) constituye prueba de consentimiento.
+
+14. ACEPTACIÓN
+
+Al firmar, el Receptor declara haber leído y comprendido este Acuerdo, contar con facultades suficientes para obligarse y aceptar íntegramente sus términos.
+
+POR AZTECAZ HUB S.A.P.I. DE C.V.
+Nombre: ______________________________
+Cargo: _______________________________
+Firma: _______________________________  Fecha: ____________
+
+POR EL RECEPTOR
+Nombre: ______________________________
+Empresa: _____________________________
+Cargo: _______________________________
+Correo: ______________________________
+Firma: _______________________________  Fecha: ____________`;
+
 export function getNdaConfig(version?: string): NdaConfig {
   if (version === VILLAGE_NDA_VERSION || version === "village") {
     return {
@@ -295,6 +397,18 @@ export function getNdaConfig(version?: string): NdaConfig {
       subtitle: VILLAGE_NDA_SUBTITLE,
       summaryBullets: VILLAGE_NDA_SUMMARY_BULLETS,
       fullText: VILLAGE_NDA_FULL_TEXT,
+      requiredSigners: 1,
+      isBilateral: false,
+    };
+  }
+
+  if (version === PATRIA_NDA_VERSION || version === "patria") {
+    return {
+      version: PATRIA_NDA_VERSION,
+      title: PATRIA_NDA_TITLE,
+      subtitle: PATRIA_NDA_SUBTITLE,
+      summaryBullets: PATRIA_NDA_SUMMARY_BULLETS,
+      fullText: PATRIA_NDA_FULL_TEXT,
       requiredSigners: 1,
       isBilateral: false,
     };
