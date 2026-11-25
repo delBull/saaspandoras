@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { tryResolvePortalContext } from '@/lib/portal/resolve-portal-context';
 import { SettingsClient, TenantSettingsData, ApiKeyItem } from './SettingsClient';
 import { DashApi } from '@/lib/dash-api';
+import { NotificationChannelsCard } from './NotificationChannelsCard';
 
 export default async function SettingsPage({ params }: { params: Promise<{ organizationSlug: string }> }) {
   const { organizationSlug } = await params;
@@ -70,6 +71,10 @@ export default async function SettingsPage({ params }: { params: Promise<{ organ
         organizationSlug={organizationSlug}
         initialData={initialData}
       />
+
+      <div className="mt-6">
+        <NotificationChannelsCard organizationSlug={organizationSlug} />
+      </div>
     </div>
   );
 }

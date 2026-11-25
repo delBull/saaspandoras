@@ -35,6 +35,45 @@ async function authorize(tenantId: string) {
   return { ok: true as const, orgId: ctx.organization.slug };
 }
 
+export async function GET(
+  _request: Request,
+  { params }: { params: Promise<{ tenantId: string }> },
+) {
+  const { tenantId } = await params;
+
+  try {
+    const auth = await authorize(tenantId);
+    if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
+
+    const rows = await db
+      .select({
+        kind: tenantNotificationChannels.kind,
+        target: tenantNotificationChannels.target,
+        enabled: tenantNotificationChannels.enabled,
+        updatedAt: tenantNotificationChannels.updatedAt,
+      })
+      .from(tenantNotificationChannels)
+      .where(eq(tenantNotificationChannels.canonicalOrgId, auth.orgId));
+
+    return NextResponse.json({
+      ok: true,
+      organization: auth.orgId,
+      channels: rows.map((row) => ({
+        kind: row.kind,
+        target: row.target ? mask(row.target) : null,
+        enabled: row.enabled,
+        updatedAt: row.updatedAt,
+      })),
+    });
+  } catch (err: any) {
+    const code = err?.code;
+    if (code === 'NO_SESSION' || code === 'INVALID_SESSION') {
+      return NextResponse.json({ error: 'Autenticación requerida' }, { status: 401 });
+    }
+    return NextResponse.json({ error: 'No se pudieron leer los canales' }, { status: 403 });
+  }
+}
+
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ tenantId: string }> },
