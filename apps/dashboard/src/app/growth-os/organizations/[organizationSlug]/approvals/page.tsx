@@ -77,13 +77,21 @@ export default async function ApprovalsPage({ params }: { params: Promise<{ orga
 
   return (
     <div className="p-6 md:p-10">
-      <div className="mb-8">
-        <p className="text-[10px] font-mono uppercase tracking-[0.3em] text-zinc-500">Growth OS</p>
-        <h1 className="mt-2 text-3xl font-black tracking-tight text-white">Aprobaciones</h1>
-        <p className="mt-2 max-w-2xl text-sm text-zinc-400">
-          Acciones propuestas por el equipo que requieren tu autorización. Aprobar aquí es la
-          autorización: el servidor vuelve a validar tu sesión antes de ejecutar.
-        </p>
+      <div className="mb-8 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="text-[10px] font-mono uppercase tracking-[0.3em] text-zinc-500">Growth OS</p>
+          <h1 className="mt-2 text-3xl font-black tracking-tight text-white">Aprobaciones</h1>
+          <p className="mt-2 max-w-2xl text-sm text-zinc-400">
+            Acciones propuestas por el equipo que requieren tu autorización. Aprobar aquí es la
+            autorización: el servidor vuelve a validar tu sesión antes de ejecutar.
+          </p>
+        </div>
+        <a
+          href={`/growth-os/organizations/${organizationSlug}/approvals/historial`}
+          className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-[11px] font-semibold text-zinc-300 hover:bg-white/[0.06]"
+        >
+          Historial →
+        </a>
       </div>
 
       <ApprovalsClient
