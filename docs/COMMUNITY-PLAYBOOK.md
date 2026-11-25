@@ -186,3 +186,16 @@ Permisos del token: `pages_manage_posts`, `pages_read_engagement`, `instagram_ba
 
 Se cargan por **stdin** en un script que las guarda cifradas en `tenant_social_integrations`
 (una fila por tenant y red). Nunca por chat, nunca por env, nunca en el repo.
+
+### Canales de aviso (no de publicación)
+
+Cada tenant apunta sus avisos a su propio canal. S'Narai usa *snarai-alerts* para `leads` y
+`approvals`. Sin canal configurado, el aviso queda sólo in-app — nunca se cae a un canal de
+Pandora's.
+
+```
+PUT    /api/v1/tenant/<slug>/notification-channels   { "kind": "leads", "url": "…" }
+DELETE /api/v1/tenant/<slug>/notification-channels?kind=leads
+```
+
+Requiere sesión de owner del tenant; la organización se toma de la sesión.

@@ -101,6 +101,18 @@ Reglas:
 `^s-narai-` **en duro**. Para hospedar otro tenant hay que derivar el prefijo del `slug` del
 proyecto. Sin eso, el hub no es multi-tenant: es el servidor de S'Narai con canales extra.
 
+**Canales de aviso del tenant:** `tenant_notification_channels` con `kind`
+(`leads` · `approvals` · `alerts`). Puede ser el mismo canal para varios kinds o uno distinto por
+kind. Se configuran por API, con la sesión del owner:
+
+```
+PUT    /api/v1/tenant/<slug>/notification-channels   { kind, url }
+DELETE /api/v1/tenant/<slug>/notification-channels?kind=leads
+```
+
+La organización **sale de la sesión**; pedir el canal de otro tenant devuelve 403. La URL se valida
+como webhook de Discord y se desactiva (`enabled=false`) en vez de borrarse.
+
 **Límites y ruta de escape:** Discord permite 500 canales por servidor y los permisos se vuelven
 frágiles con muchos tenants. Regla operativa: hasta ~5 tenants activos, hub; por encima de eso —o
 si el tenant es enterprise— servidor dedicado. El código ya resuelve por `DISCORD_GUILD_ID`, así
