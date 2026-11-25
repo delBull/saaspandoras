@@ -126,6 +126,38 @@ No se cobra por acceder a la información. La remuneración de AZTECAZ correspon
   },
 
   /**
+   * Sala institucional de S'Narai.
+   *
+   * No es un mandato de venta ni una intermediación: es el acceso ordenado a la
+   * documentación del proyecto para un inversionista o institución. El NDA es el
+   * genérico del ecosistema (v2.2) hasta que exista uno específico de S'Narai
+   * revisado por asesoría legal.
+   */
+  snarai: {
+    code: "snarai",
+    displayName: "S'Narai Riviera Nayarit",
+    confidentiality: "CONFIDENTIAL",
+    feeEntity: null,
+    feePct: null,
+    createdBy: "marco.munoz9@gmail.com",
+    relation: "Acceso institucional a documentación",
+    landing: null,
+    room: {
+      publicId: "PDR-SNARAI",
+      title: "S'Narai — Oportunidad de participación patrimonial",
+      kind: "PROPOSAL",
+      counterparty: "S'Narai Riviera Nayarit (proyecto residencial boutique en Bucerías, Nayarit)",
+      company: "Aztecas Hub S.A.P.I. de C.V.",
+      summary:
+        "Acceso ordenado a la documentación del proyecto: el activo, el modelo de Título de Propiedad, los niveles de participación y el proceso. Información sujeta a confidencialidad y a la firma del acuerdo correspondiente. No constituye oferta pública.",
+      ndaEnabled: true,
+      ndaVersion: "v2.2",
+      pofEnabled: false,
+      sectionsFile: "../../../docs/SNARAI-DEAL-ROOM.md",
+    },
+  },
+
+  /**
    * Servicios de Marco (persona física) a un cliente editorial. Independiente
    * de Village: no hay activo en venta, no hay comisión, no hay NDA (el propio
    * contrato contiene confidencialidad) y no aplica POF.
