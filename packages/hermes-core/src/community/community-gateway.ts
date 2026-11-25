@@ -14,6 +14,7 @@
 import crypto from 'crypto';
 import { db } from '@saasfly/db-core';
 import {
+  communityProposals,
   marketingLeads,
   nexusApprovals,
   nexusOutreachEvents,
@@ -200,26 +201,45 @@ export async function createCommunityProposal(input: {
     return { status: 'REJECTED_BY_POLICY', violations, warnings };
   }
 
+  const proposalId = `CMP-${Date.now()}-${crypto.randomBytes(2).toString('hex')}`.slice(0, 64);
   const approvalId = `APP-${Date.now()}-${crypto.randomBytes(2).toString('hex')}`.slice(0, 64);
   const actionToken = crypto.randomBytes(16).toString('hex');
-  const idempotencyKey = (input.proposalKey || approvalId).slice(0, 120);
+  const idempotencyKey = (input.proposalKey || proposalId).slice(0, 120);
   const what = `${COMMUNITY_CAPABILITIES.PROPOSE_PUBLISH}:${idempotencyKey}`;
 
-  // Idempotencia: misma clave + misma organización + aún pendiente → devolver la
-  // existente. Un reintento no crea una segunda aprobación.
-  const [existing] = await db
-    .select({ id: nexusApprovals.id })
-    .from(nexusApprovals)
+  // Idempotencia por clave de propuesta: si ya existe, se devuelve la misma.
+  const [existingProposal] = await db
+    .select({ id: communityProposals.id, approvalId: communityProposals.approvalId, status: communityProposals.status })
+    .from(communityProposals)
     .where(and(
-      eq(nexusApprovals.canonicalOrgId, input.canonicalOrgId),
-      eq(nexusApprovals.what, what),
-      eq(nexusApprovals.status, 'PENDING'),
+      eq(communityProposals.canonicalOrgId, input.canonicalOrgId),
+      eq(communityProposals.proposalKey, idempotencyKey),
     ))
     .limit(1);
 
-  if (existing) {
-    return { status: 'PENDING_APPROVAL', approvalId: existing.id, warnings, posts: input.posts.length, idempotent: true };
+  if (existingProposal?.approvalId) {
+    return {
+      status: 'PENDING_APPROVAL',
+      approvalId: existingProposal.approvalId,
+      warnings,
+      posts: input.posts.length,
+      idempotent: true,
+    };
   }
+
+  // El texto se guarda ANTES de la aprobación: aprobar sin contenido no tendría
+  // qué ejecutar, y la evidencia se perdería.
+  await db.insert(communityProposals).values({
+    id: proposalId,
+    canonicalOrgId: input.canonicalOrgId,
+    projectId: input.projectId,
+    proposalKey: idempotencyKey,
+    intent: input.intent ?? null,
+    posts: input.posts,
+    approvalId,
+    status: 'PENDING',
+    requestedBy: input.requestedBy,
+  }).onConflictDoNothing();
 
   await db.insert(nexusApprovals).values({
     id: approvalId,

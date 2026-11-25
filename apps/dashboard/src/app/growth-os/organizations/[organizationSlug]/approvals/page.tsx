@@ -1,5 +1,5 @@
 import { db } from '@saasfly/db';
-import { nexusApprovals, projects } from '@saasfly/db/schema';
+import { communityProposals, nexusApprovals, projects } from '@saasfly/db/schema';
 import { and, desc, eq, inArray } from '@saasfly/db-core';
 import ApprovalsClient from './ApprovalsClient';
 
@@ -58,6 +58,23 @@ export default async function ApprovalsPage({ params }: { params: Promise<{ orga
     console.warn('[Approvals] no se pudieron leer:', err);
   }
 
+  // Texto propuesto (community.publish_post): el aprobador debe ver QUÉ aprueba.
+  const approvalIds = approvals.map((a) => a.id);
+  let proposals: Array<{ approvalId: string | null; posts: Array<{ channel: string; text: string }> }> = [];
+  if (approvalIds.length > 0) {
+    try {
+      proposals = await db
+        .select({ approvalId: communityProposals.approvalId, posts: communityProposals.posts })
+        .from(communityProposals)
+        .where(inArray(communityProposals.approvalId, approvalIds));
+    } catch (err) {
+      console.warn('[Approvals] no se pudieron leer las propuestas:', err);
+    }
+  }
+  const postsByApproval = new Map(
+    proposals.map((p) => [p.approvalId ?? '', p.posts ?? []]),
+  );
+
   return (
     <div className="p-6 md:p-10">
       <div className="mb-8">
@@ -71,7 +88,11 @@ export default async function ApprovalsPage({ params }: { params: Promise<{ orga
 
       <ApprovalsClient
         organizationSlug={organizationSlug}
-        approvals={approvals.map((a) => ({ ...a, createdAt: a.createdAt.toISOString() }))}
+        approvals={approvals.map((a) => ({
+          ...a,
+          createdAt: a.createdAt.toISOString(),
+          posts: postsByApproval.get(a.id) ?? [],
+        }))}
       />
     </div>
   );

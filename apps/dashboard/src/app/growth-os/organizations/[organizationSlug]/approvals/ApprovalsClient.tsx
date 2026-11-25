@@ -12,6 +12,7 @@ interface Approval {
   resourceScope: string;
   proposerName: string;
   createdAt: string;
+  posts?: Array<{ channel: string; text: string }>;
 }
 
 const KIND_LABEL: Record<string, string> = {
@@ -109,6 +110,21 @@ export default function ApprovalsClient({
                 </span>
               </div>
               <p className="mt-2 text-sm text-white">{approval.why}</p>
+
+              {approval.posts && approval.posts.length > 0 && (
+                <div className="mt-3 space-y-2">
+                  {approval.posts.map((post, index) => (
+                    <div key={index} className="rounded-lg border border-white/10 bg-black/30 p-3">
+                      <p className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">
+                        #{index + 1} · #{post.channel}
+                      </p>
+                      <p className="mt-1 whitespace-pre-wrap text-[12px] leading-relaxed text-zinc-300">
+                        {post.text}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
               <p className="mt-1 text-[11px] text-zinc-500">
                 Propuso {approval.proposerName} ·{" "}
                 {new Date(approval.createdAt).toLocaleString("es-MX", { timeZone: "America/Mexico_City" })}{" "}

@@ -4367,6 +4367,31 @@ export const hermesKnowledgeRegistry = pgTable("hermes_knowledge_registry", {
 }));
 
 /**
+ * Propuestas de comunidad (ADR-019).
+ *
+ * Guarda el texto que se aprobará: sin esto, la aprobación sólo tendría un
+ * "por qué" y no habría nada que ejecutar. `posts` es el contenido propuesto.
+ */
+export const communityProposals = pgTable("community_proposals", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  canonicalOrgId: varchar("canonical_org_id", { length: 255 }).notNull(),
+  projectId: integer("project_id").notNull(),
+  proposalKey: varchar("proposal_key", { length: 120 }).notNull(),
+  intent: text("intent"),
+  posts: jsonb("posts").$type<Array<{ channel: string; text: string }>>().notNull(),
+  approvalId: varchar("approval_id", { length: 64 }),
+  status: varchar("status", { length: 24 }).notNull().default('PENDING'),
+  requestedBy: varchar("requested_by", { length: 255 }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  executedAt: timestamp("executed_at", { withTimezone: true }),
+  result: jsonb("result"),
+}, (t) => ({
+  orgKeyUq: uniqueIndex("community_proposals_org_key_uq").on(t.canonicalOrgId, t.proposalKey),
+  approvalIdx: index("community_proposals_approval_idx").on(t.approvalId),
+  statusIdx: index("community_proposals_status_idx").on(t.canonicalOrgId, t.status),
+}));
+
+/**
  * Identidad criptográfica POR TENANT (gap 1).
  *
  * Antes todas las filas del registro firmaban con una sola
