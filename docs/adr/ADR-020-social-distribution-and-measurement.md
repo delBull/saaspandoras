@@ -120,17 +120,46 @@ que migrar es configuración, no refactor.
 
 ### 2.6 Marcas y redes
 
-| Marca | Redes | Rol |
-|---|---|---|
-| Pandora's | LinkedIn (corporativo) | tesis, alianzas, RWA, hiring |
-| S'Narai | Instagram + Facebook | producto, obra, captación |
-| Tenants | las que conecten | cada uno por su portal |
+| Marca | Redes | Rol | Etapa |
+|---|---|---|---|
+| **Pandora's** | LinkedIn · X | institucional: tesis, alianzas, tecnología, hiring | 1 |
+| **Pandora's** | YouTube | demos y presentaciones (sin material aún) | diferido |
+| **S'Narai** | Discord (hub) · X | comunidad + descubrimiento sin coste de media | 1 |
+| **S'Narai** | Instagram | identidad visual y deseo (requiere assets) | 2 |
+| **S'Narai** | Facebook | alcance complementario y grupos | 3 |
+| **Tenants** | las que conecten | su propio contenido | por su portal |
 
-- **Pandora's no abre IG/FB/TikTok**: audiencia institucional, coste de operación no justificado.
-  Presencia sutil y profesional (LinkedIn), no contenido de producto.
-- **S'Narai concentra el esfuerzo**: es donde vive el comprador y donde hay material real.
-- **X** queda diferido para la narrativa RWA con la cuenta de Pandora's.
+Reglas:
+
+- **Una comunidad central, varias puertas.** Discord es donde se construye; X/IG/FB sólo llevan
+  gente hacia ella. No se administran cuatro comunidades.
+- **Pandora's no abre IG/FB/TikTok** y no publica producto: su audiencia es institucional.
+- **S'Narai es marca propia**, con identidad y analíticas separadas; puede mencionar el ecosistema
+  Pandora's sin depender de la marca matriz.
+- **X va antes que Instagram para S'Narai** por una razón operativa: no exige imagen, así que no
+  depende del material y se puede automatizar sin fricción. Instagram entra cuando haya assets.
+- **Propiedad institucional**: cuentas, correos, dominios y servidores pertenecen a la entidad, no
+  al community manager. Los accesos se otorgan, no se ceden.
 - Los tenants heredan el mecanismo, no el contenido: conectan sus cuentas por el portal.
+
+**Indicadores por canal (S'Narai):** X → alcance, interacciones y clics a Discord · Instagram →
+alcance, reproducciones, compartidos y visitas al perfil · Facebook → alcance, participación y CPA ·
+Discord → miembros activos, retención, participación y leads.
+
+### 2.7 La pregunta que define el contenido
+
+Antes de contratar a nadie para operar la comunidad hay que fijar: **¿qué es S'Narai para el público
+y qué debe hacer una persona después de descubrirlo?**
+
+Propuesta (ya soportada por la infraestructura): el objetivo no es "tener comunidad", es **provocar
+una conversación calificada**. El recorrido medible es:
+
+```
+publicación → /l/<code> → /join/<slug> (datos + consentimiento) → CRM → llamada con el equipo
+```
+
+Eso define el contenido: explicar el modelo (Título de Propiedad, estancias anuales), mostrar obra
+real y resolver objeciones. No memes, no frases de IA, no promesas de rentabilidad.
 
 ## 3. Multi-tenant
 

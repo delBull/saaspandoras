@@ -135,9 +135,16 @@ ofrecer esa llamada, no sólo "conoce más".
 
 | Marca | Redes activas | Rol | Frecuencia |
 |---|---|---|---|
-| **Pandora's** | LinkedIn | tesis, alianzas, RWA, hiring | 1–2 / mes, institucional |
-| **S'Narai** | Instagram + Facebook | producto, obra, captación | 2–3 / semana |
+| **Pandora's** | LinkedIn + X | tesis, alianzas, tecnología, hiring | 1–2 / mes, institucional |
+| **S'Narai** | Discord + X (etapa 1) · IG (etapa 2) · FB (etapa 3) | comunidad, producto, captación | 2–3 / semana |
 | **Tenants** | las que conecten | su propio contenido | la suya |
+
+**Por qué X antes que Instagram en S'Narai:** no exige imagen, así que no depende del material real y
+se automatiza sin fricción. Instagram entra cuando existan los 15–20 assets; Facebook al final, según
+resultados.
+
+**Regla de la comunidad:** una sola comunidad central (Discord) con varias puertas (X/IG/FB). Las
+redes llevan gente a Discord y a `/join/<slug>`; no se administran comunidades separadas.
 
 Pandora's **no** abre IG/FB/TikTok: su audiencia es institucional y no justifica operación diaria.
 Los tenants heredan el mecanismo (adaptador + credenciales por portal), no el contenido.
