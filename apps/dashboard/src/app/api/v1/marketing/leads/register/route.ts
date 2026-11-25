@@ -614,11 +614,28 @@ export async function POST(req: NextRequest) {
         console.error("[Webhook] Background FastPath failed (non-critical):", e.message);
       });
 
-      // 🚨 PANDORAS ALERTS WEBHOOK DISPATCH (Discord — same var used across platform)
+      // 🧲 Aviso del lead al TENANT (in-app + su canal si lo configuró).
+      // No usa webhooks globales: si el tenant no tiene canal, sólo queda in-app.
+      if (projectContext?.slug) {
+        const { notifyLeadCaptured } = await import('@saasfly/hermes-core');
+        await notifyLeadCaptured({
+          canonicalOrgId: projectContext.slug,
+          leadId: String(result.id),
+          name: result.name ?? null,
+          source: attributionContext?.source ?? null,
+          interest: scope ?? null,
+        }).catch((err: any) =>
+          console.warn('[Growth OS] Aviso de lead al tenant falló:', err?.message || err),
+        );
+      }
+
+      // 🚨 Alerta operativa de PLATAFORMA (sólo B2B/enterprise y simulador: el caso
+      // normal ya lo avisa el Growth Engine con el nombre del proyecto y el score;
+      // mandarlo dos veces llenaba dos canales con el mismo evento).
       const pandorasAlertsWebhookUrl = process.env.DISCORD_WEBHOOK_PANDORAS_ALERTS;
-      if (pandorasAlertsWebhookUrl) {
-        const isB2BLead = scope === 'b2b' || metadata?.moduleInterest || metadata?.company;
-        const isSimulatorLead = metadata?.source === 'hermes_simulator';
+      const isB2BLead = scope === 'b2b' || metadata?.moduleInterest || metadata?.company;
+      const isSimulatorLead = metadata?.source === 'hermes_simulator';
+      if (pandorasAlertsWebhookUrl && (isB2BLead || isSimulatorLead)) {
         const alertTitle = isSimulatorLead
           ? "🏆 NUEVO LEAD — HERMES SIMULATOR"
           : isB2BLead

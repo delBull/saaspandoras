@@ -104,14 +104,15 @@ export function buildApprovalNotice(input: ApprovalNoticeInput): ApprovalNotice 
  * Devuelve `null` si no hay canal configurado o está deshabilitado. **No** cae a
  * variables globales: el tenant sin canal sólo recibe el aviso in-app.
  */
-export async function resolveApprovalWebhook(canonicalOrgId: string): Promise<string | null> {
+/** Webhook del tenant para un tipo de aviso (`approvals` | `leads` | `alerts`). */
+export async function resolveTenantWebhook(canonicalOrgId: string, kind: string): Promise<string | null> {
   try {
     const [row] = await db
       .select({ target: tenantNotificationChannels.target })
       .from(tenantNotificationChannels)
       .where(and(
         eq(tenantNotificationChannels.canonicalOrgId, canonicalOrgId),
-        eq(tenantNotificationChannels.kind, 'approvals'),
+        eq(tenantNotificationChannels.kind, kind),
         eq(tenantNotificationChannels.channel, 'discord_webhook'),
         eq(tenantNotificationChannels.enabled, true),
       ))
@@ -119,12 +120,50 @@ export async function resolveApprovalWebhook(canonicalOrgId: string): Promise<st
 
     return row?.target?.trim() || null;
   } catch (err: any) {
-    console.warn('[ApprovalNotifier] No se pudo leer el canal del tenant:', err?.message || err);
+    console.warn('[TenantNotifier] No se pudo leer el canal del tenant:', err?.message || err);
     return null;
   }
 }
 
-async function postWebhook(url: string, payload: unknown): Promise<WebhookDelivery> {
+
+/**
+ * Escribe un aviso in-app por tenant. Idempotente por `(tenant, dedupeKey)`.
+ * Devuelve `true` sólo si la fila es nueva.
+ */
+export async function insertTenantNotification(input: {
+  tenantId: string;
+  kind: string;
+  severity?: 'info' | 'warning' | 'critical';
+  title: string;
+  body: string;
+  link?: string | null;
+  dedupeKey: string;
+  metadata?: Record<string, unknown> | null;
+}): Promise<boolean> {
+  try {
+    const inserted = await db
+      .insert(hermesTenantNotifications)
+      .values({
+        id: `ntf_${crypto.randomUUID()}`,
+        tenantId: input.tenantId,
+        kind: input.kind,
+        severity: input.severity ?? 'info',
+        title: truncate(input.title, 200),
+        body: input.body,
+        link: input.link ?? null,
+        dedupeKey: truncate(input.dedupeKey, 160),
+        metadataJson: (input.metadata ?? null) as any,
+      })
+      .onConflictDoNothing()
+      .returning({ id: hermesTenantNotifications.id });
+    return Array.isArray(inserted) && inserted.length > 0;
+  } catch (err: any) {
+    console.warn('[TenantNotifier] No se pudo registrar el aviso in-app:', err?.message || err);
+    return false;
+  }
+}
+
+export async function postWebhook(url: string, payload: unknown): Promise<WebhookDelivery> {
   try {
     const res = await fetch(url, {
       method: 'POST',
@@ -191,7 +230,7 @@ export async function notifyApprovalPending(input: ApprovalNoticeInput): Promise
     return { inApp: false, webhook: 'SKIPPED' };
   }
 
-  const webhookUrl = await resolveApprovalWebhook(input.canonicalOrgId);
+  const webhookUrl = await resolveTenantWebhook(input.canonicalOrgId, 'approvals');
   const webhook = webhookUrl ? await postWebhook(webhookUrl, notice.embed) : 'SKIPPED';
 
   return { inApp, webhook };
