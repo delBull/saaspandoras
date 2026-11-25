@@ -204,3 +204,41 @@ Reglas que se mantienen:
 - Todo hallazgo de moderación es una recomendación: la ejecución sigue siendo humana.
 - La atribución no inventa: si la landing externa no reenvía `src`, `leads` es `null`.
 
+## 8. Notificaciones (aviso, no autorización)
+
+Cuando se crea una aprobación hay que avisar a quien puede resolverla. Se usan dos canales y sólo dos:
+
+| Canal | Cómo | Garantía |
+|---|---|---|
+| **In-app** | `hermes_tenant_notifications` (`kind = APPROVAL`) | Siempre se escribe; idempotente por `dedupeKey = approval:<id>` |
+| **Discord** | webhook del canal privado del tenant (`tenant_notification_channels`) | Aviso con enlace al portal; nunca aprueba |
+
+Decisiones y límites:
+
+1. **Sin fallback global.** Si el tenant no tiene canal configurado, sólo queda el aviso in-app. Nunca se
+   usa `DISCORD_WEBHOOK_PANDORAS_ALERTS` como respaldo: el contenido de un tenant no puede terminar en el
+   canal de otro.
+2. **El aviso no lleva el texto de la publicación.** Sólo intención, número de publicaciones y canales.
+   El texto se revisa en `/growth-os/organizations/<org>/approvals`, con la sesión del aprobador.
+3. **El webhook no vive en `tenantRuntimeConfig`.** La config de runtime se devuelve completa en
+   `/api/v1/tenant/:id/manifest`; un webhook ahí quedaría expuesto. Por eso hay tabla propia.
+4. **Destinatario por tenant, nunca "el jefe".** La resolución es por `canonicalOrgId`; la identidad
+   transversal de un owner de plataforma no convierte un aviso en acceso.
+5. **Un aviso fallido no bloquea la aprobación.** El notificador nunca lanza; devuelve
+   `SENT | SKIPPED | FAILED`.
+
+Configuración (una vez por tenant):
+
+```bash
+bun run apps/dashboard/scripts/set-tenant-notification-channel.ts \
+  --org=snarai --url=https://discord.com/api/webhooks/… --by=marco
+```
+
+Migraciones: `0121_tenant_notification_channels` (canales por tenant) y
+`0122_hermes_tenant_notifications` (la tabla de avisos in-app existía en el schema pero **nunca se había
+creado** en la base: los recordatorios de trial y el banner del portal se perdían en silencio).
+
+Pendiente (no bloquea): WhatsApp requiere plantillas aprobadas por Meta y destinatarios registrados por
+tenant; Telegram puede reutilizar `NexusActionDispatcher` para botones de aprobar/rechazar.
+
+

@@ -499,3 +499,4 @@ export * from './community/community-capabilities';
 export * from './community/community-gateway';
 export * from './community/community-publisher';
 export * from './community/community-insights';
+export * from './notifications/approval-notifier';

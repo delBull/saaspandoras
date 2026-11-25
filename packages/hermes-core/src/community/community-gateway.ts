@@ -22,6 +22,7 @@ import {
 } from '@saasfly/db-core/schema';
 import { and, desc, eq, gte, inArray, isNotNull, or, sql } from '@saasfly/db-core';
 import { COMMUNITY_CAPABILITIES } from './community-capabilities';
+import { notifyApprovalPending } from '../notifications/approval-notifier';
 
 /** Términos prohibidos por `banned_topics` v2 (política vigente del tenant). */
 const FORBIDDEN_TERMS: Array<{ pattern: RegExp; reason: string }> = [
@@ -421,6 +422,16 @@ export async function createCommunityProposal(input: {
     riskLevel: warnings.length > 0 ? 'HIGH' : 'MEDIUM',
     status: 'PENDING',
     nextAction: 'PUBLISH_COMMUNITY_POST',
+  });
+
+  // Aviso: in-app siempre; Discord sólo si el tenant tiene canal configurado.
+  // La aprobación no se resuelve desde el aviso (el enlace lleva al portal).
+  await notifyApprovalPending({
+    canonicalOrgId: input.canonicalOrgId,
+    approvalId,
+    intent: input.intent ?? null,
+    channels: postsWithTracking.map((post) => post.channel),
+    posts: postsWithTracking.length,
   });
 
   return {

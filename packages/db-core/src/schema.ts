@@ -5124,6 +5124,28 @@ export const hermesTenantNotifications = pgTable("hermes_tenant_notifications", 
   tenantCreatedIdx: index("hermes_tenant_notifications_tenant_idx").on(t.tenantId, t.createdAt),
 }));
 
+/**
+ * Canales de notificación por tenant (ADR-019 · avisos).
+ *
+ * `target` es el webhook del canal privado del tenant. Vive aquí y no en
+ * `tenantRuntimeConfig` porque la config de runtime se devuelve completa en
+ * `/api/v1/tenant/:id/manifest`: un webhook ahí quedaría expuesto.
+ */
+export const tenantNotificationChannels = pgTable("tenant_notification_channels", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  canonicalOrgId: varchar("canonical_org_id", { length: 255 }).notNull(),
+  kind: varchar("kind", { length: 32 }).notNull().default("approvals"), // approvals | alerts
+  channel: varchar("channel", { length: 32 }).notNull(), // discord_webhook
+  target: varchar("target", { length: 600 }).notNull(),
+  enabled: boolean("enabled").notNull().default(true),
+  createdBy: varchar("created_by", { length: 255 }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  orgKindChannelUq: uniqueIndex("tenant_notification_channels_uq").on(t.canonicalOrgId, t.kind, t.channel),
+  orgEnabledIdx: index("tenant_notification_channels_org_idx").on(t.canonicalOrgId, t.enabled),
+}));
+
 export const hermesComputeUsageEvents = pgTable("hermes_compute_usage_events", {
   id: varchar("id", { length: 128 }).primaryKey(),
   tenantId: varchar("tenant_id", { length: 128 }).notNull(),
