@@ -17,6 +17,7 @@ interface Approval {
 
 const KIND_LABEL: Record<string, string> = {
   email_campaign: "Campaña de email",
+  "community.publish_post": "Publicación de comunidad",
 };
 
 function labelFor(what: string): string {
@@ -37,6 +38,13 @@ function riskColor(risk: string): string {
   }
 }
 
+interface CommunityResult {
+  status: string;
+  published?: Array<{ channel: string; messageId: string }>;
+  errors?: string[];
+  reason?: string;
+}
+
 export default function ApprovalsClient({
   organizationSlug,
   approvals,
@@ -47,32 +55,57 @@ export default function ApprovalsClient({
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  // Motivo del rechazo en un modal propio (no `window.prompt`): es la señal de
+  // aprendizaje del agente y merece la identidad de la plataforma.
+  const [rejecting, setRejecting] = useState<Approval | null>(null);
+  const [reasonText, setReasonText] = useState("");
 
-  const resolve = async (id: string, action: "APPROVED" | "REJECTED") => {
-    setBusy(id);
+  const resolve = async (
+    approval: Approval,
+    action: "APPROVED" | "REJECTED",
+    reason?: string | null,
+  ) => {
+    setBusy(approval.id);
     setError(null);
-
-    // El motivo del rechazo es la señal de aprendizaje del agente (ADR-019 fase 3).
-    let reason: string | null = null;
-    if (action === "REJECTED") {
-      reason = window.prompt("¿Por qué lo rechazas? (el agente aprende de esto)") ?? null;
-      if (reason === null) {
-        setBusy(null);
-        return;
-      }
-    }
+    setNotice(null);
 
     try {
       const res = await fetch("/api/nexus/approvals", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, action, reason }),
+        body: JSON.stringify({
+          id: approval.id,
+          action,
+          reason: reason ?? null,
+          // Contexto de ruta; la organización autorizada la resuelve el servidor
+          // desde la sesión (portal) o la credencial (Nexus).
+          organizationSlug,
+        }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.success) {
         setError(data?.error || `No se pudo resolver (${res.status}).`);
         return;
       }
+
+      const community = data.community as CommunityResult | null;
+      if (action === "REJECTED") {
+        setNotice("Rechazada. El motivo queda como señal para el agente.");
+      } else if (community?.status === "EXECUTED") {
+        const channels = (community.published ?? []).map((p) => `#${p.channel}`).join(", ");
+        setNotice(`Publicada en ${channels || "el canal"}.`);
+      } else if (community && community.status !== "EXECUTED") {
+        setError(
+          `Aprobada, pero la publicación quedó en ${community.status}` +
+            (community.errors?.length ? `: ${community.errors[0]}` : "."),
+        );
+      } else {
+        setNotice("Aprobada.");
+      }
+
+      setRejecting(null);
+      setReasonText("");
       router.refresh();
     } catch (err: any) {
       setError(err?.message || "Error de red.");
@@ -99,6 +132,11 @@ export default function ApprovalsClient({
       {error && (
         <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-[12px] text-red-300">
           {error}
+        </div>
+      )}
+      {notice && (
+        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-[12px] text-emerald-200">
+          {notice}
         </div>
       )}
 
@@ -146,7 +184,10 @@ export default function ApprovalsClient({
             <div className="flex shrink-0 items-center gap-2">
               <button
                 type="button"
-                onClick={() => void resolve(approval.id, "REJECTED")}
+                onClick={() => {
+                  setRejecting(approval);
+                  setReasonText("");
+                }}
                 disabled={busy === approval.id}
                 className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-[11px] font-semibold text-red-200 hover:bg-red-500/20 disabled:opacity-50"
               >
@@ -154,7 +195,7 @@ export default function ApprovalsClient({
               </button>
               <button
                 type="button"
-                onClick={() => void resolve(approval.id, "APPROVED")}
+                onClick={() => void resolve(approval, "APPROVED")}
                 disabled={busy === approval.id}
                 className="rounded-lg border border-emerald-500/40 bg-emerald-500/15 px-3 py-2 text-[11px] font-semibold text-emerald-200 hover:bg-emerald-500/25 disabled:opacity-50"
               >
@@ -164,6 +205,71 @@ export default function ApprovalsClient({
           </div>
         </div>
       ))}
+
+      {rejecting && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="reject-title"
+        >
+          <div className="w-full max-w-lg rounded-2xl border border-white/10 bg-[#0B0B10] p-6 shadow-2xl">
+            <p className="text-[10px] font-mono uppercase tracking-[0.25em] text-zinc-500">
+              Pandora&apos;s · Governance
+            </p>
+            <h3 id="reject-title" className="mt-2 text-base font-semibold text-white">
+              Rechazar propuesta
+            </h3>
+            <p className="mt-1 text-[12px] leading-relaxed text-zinc-400">
+              <span className="text-zinc-300">{rejecting.why}</span>
+              <br />
+              El motivo se guarda con la decisión y el agente lo lee en su siguiente corrida
+              para no volver a proponer lo mismo.
+            </p>
+
+            <textarea
+              autoFocus
+              value={reasonText}
+              onChange={(e) => setReasonText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") {
+                  setRejecting(null);
+                  setReasonText("");
+                }
+              }}
+              rows={4}
+              placeholder="Ej.: no menciones precios ni comparaciones con otros desarrollos."
+              className="mt-4 w-full resize-none rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-[12px] text-zinc-200 outline-none placeholder:text-zinc-600 focus:border-white/25"
+            />
+
+            <div className="mt-4 flex items-center justify-between gap-3">
+              <span className="text-[10px] text-zinc-500">
+                {reasonText.trim().length < 4 ? "Escribe un motivo (mín. 4 caracteres)." : "Se guardará con la decisión."}
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRejecting(null);
+                    setReasonText("");
+                  }}
+                  className="rounded-lg border border-white/10 px-3 py-2 text-[11px] font-semibold text-zinc-300 hover:bg-white/5"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  disabled={reasonText.trim().length < 4 || busy === rejecting.id}
+                  onClick={() => void resolve(rejecting, "REJECTED", reasonText.trim())}
+                  className="rounded-lg border border-red-500/40 bg-red-500/15 px-3 py-2 text-[11px] font-semibold text-red-200 hover:bg-red-500/25 disabled:opacity-40"
+                >
+                  {busy === rejecting.id ? "Rechazando…" : "Rechazar con este motivo"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
