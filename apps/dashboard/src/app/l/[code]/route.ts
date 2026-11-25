@@ -3,6 +3,11 @@ import crypto from "node:crypto";
 import { db } from "@saasfly/db";
 import { nexusOutreachEvents, nexusOutreachLinks, nexusDealPods } from "@saasfly/db/schema";
 import { and, eq, isNull, sql } from "@saasfly/db-core";
+import {
+  ATTRIBUTION_COOKIE,
+  ATTRIBUTION_COOKIE_MAX_AGE,
+  isValidAttributionCode,
+} from '@/lib/growth/attribution';
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -57,6 +62,30 @@ async function notifyDiscord(input: {
   } catch (error) {
     console.error("[Outreach] Discord notify failed:", error);
   }
+}
+
+
+/**
+ * Deja el código del enlace en una cookie de primera parte (ADR-020).
+ *
+ * Así el visitante que convierte más tarde —en la captura o en el checkout—
+ * sigue atribuido a la publicación de la que vino. No es `httpOnly` porque
+ * también la leen los formularios del cliente, y el código no es un secreto:
+ * ya viaja en la URL pública.
+ */
+function withAttribution(response: NextResponse, code: string): NextResponse {
+  if (isValidAttributionCode(code)) {
+    response.cookies.set({
+      name: ATTRIBUTION_COOKIE,
+      value: code,
+      httpOnly: false,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: ATTRIBUTION_COOKIE_MAX_AGE,
+      secure: process.env.NODE_ENV === 'production',
+    });
+  }
+  return response;
 }
 
 export async function GET(_req: Request, { params }: { params: Promise<{ code: string }> }) {
@@ -126,7 +155,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ code: s
           const value = _req.headers.get(key) ?? new URL(_req.url).searchParams.get(key);
           if (value) custom.searchParams.set(key, value.slice(0, 64));
         }
-        return NextResponse.redirect(custom, 302);
+        return withAttribution(NextResponse.redirect(custom, 302), code);
       } catch {
         console.warn("[Outreach] destination_url inválida:", link.destinationUrl);
       }
@@ -134,7 +163,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ code: s
 
     const destination = new URL(`/pitch/${pod?.code ?? "village"}`, _req.url);
     destination.searchParams.set("src", code);
-    return NextResponse.redirect(destination, 302);
+    return withAttribution(NextResponse.redirect(destination, 302), code);
   } catch (error) {
     console.error("[Outreach] /l/[code] error:", error);
     return NextResponse.redirect(new URL("/pitch/village", _req.url), 302);

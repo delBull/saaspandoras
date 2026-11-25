@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { CheckCircle, Loader2, Lock, ArrowRight, ShieldCheck, Flame, ChevronRight, Zap, AlertTriangle, FileText, CheckSquare, Square, X, Crown, Star } from 'lucide-react';
 import { LegalDocModal } from '@/components/legal/LegalDocModal';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { readAttributionCookie, resolveAttributionSource } from '@/lib/growth/attribution';
 import { useConnectModal } from "thirdweb/react";
 import { wallets } from "@/lib/wallets";
 import useSWR from 'swr';
@@ -472,7 +473,8 @@ export default function CheckoutClient({ project, rawPhase, tierName }: { projec
                     tier: displayTierName,
                     amount: totalCostDisplay,
                     quantity: safeAmount,
-                    source: 'checkout_hub',
+                    // ADR-020: el origen viene del clic (/l/<code>), no del checkout.
+                    source: resolveAttributionSource(searchParams.get('src'), readAttributionCookie(typeof document !== 'undefined' ? document.cookie : '')) || 'checkout_hub',
                     wallet_connected: !!account,
                     wallet_address: account?.address || null,
                     confirmIntent: confirm

@@ -1,0 +1,117 @@
+# ADR-020 · Distribución social y medición de primera parte
+
+- **Estado:** aceptado · fase 0 en implementación
+- **Fecha:** 2026-11-25
+- **Contexto anterior:** ADR-019 (agente de comunidad con propuestas gobernadas)
+
+## 1. Contexto
+
+El agente de comunidad ya propone, el humano aprueba y Hermes publica en Discord. Faltan tres
+piezas para que eso sea una estrategia y no una demostración:
+
+1. **Medición**: hoy se mide el clic (`nexus_outreach_events` / `/l/<code>`) pero el lead queda
+   sin atribuir (`attribution.leads = null`). El checkout (`/pay/<slug>/<tier>`) manda
+   `source: 'checkout_hub'` fijo y no lee el origen.
+2. **Distribución**: sólo Discord está realmente cableado. X tiene publicador sin credenciales;
+   Instagram y Facebook no existen como adaptadores, aunque el registro A2A **declara**
+   `media.publish.channel:*` (y hoy falla cerrado).
+3. **Media**: el motor existe (orquestador Sofía/RunPod) pero en inmobiliaria no se puede inventar
+   material: el proyecto se construye y el contenido debe apoyarse en piezas reales (renders,
+   fotos de obra, planos, avances).
+
+Restricción de operación: el dueño no tiene equipo para operar varias redes. La fricción debe
+quedar en **aprobar**, no en producir ni publicar.
+
+## 2. Decisión
+
+### 2.1 Medición de primera parte
+
+- El clic en `/l/<code>` deja la cookie `nx_src` (30 días, `SameSite=Lax`, no `httpOnly`).
+  El código **no es secreto**: ya viaja en la URL pública; se valida formato `^[a-z0-9]{4,16}$`.
+- Prioridad de resolución: `?src=` de la URL → cookie → `null`. **Nunca se inventa un origen.**
+- Punto de captura por tenant: `/join/<organizationSlug>` (público) que crea el lead por el
+  endpoint canónico `POST /api/v1/marketing/leads/register` con `utm_source = <code>` y
+  `consent: true`. El lead queda en `marketing_leads` (mismo embudo, mismos reportes).
+- El checkout propaga el origen: `CheckoutClient` resuelve `src`/cookie y lo manda en
+  `source` al `fast-lane` (que ya lo aceptaba). Sin `src`, se conserva `checkout_hub`.
+
+**Contrato congelado de medición:** `nx_src` · `utm_source = <code>` · `marketing_leads.source`.
+Cambiar cualquiera rompe los reportes; se extiende, no se sustituye.
+
+### 2.2 Adaptadores por red (reutilizando lo existente)
+
+No se crea subsistema nuevo. Se usa lo que ya existe:
+
+| Pieza existente | Uso |
+|---|---|
+| `IChannelPublisher` + `PublicationReceipt` (idempotencyKey, códigos de error) | contrato de publicación |
+| `DirectChannelPublisher` | registro `telegram · x · newsletter` + los nuevos |
+| `tenant_social_integrations` (`encryptedPayload`, `credentialFingerprint`, `lastVerifiedAt`) | credenciales **por tenant**, cifradas |
+| A2A `capability.request` | ejecución gobernada tras aprobación |
+
+Se añade:
+
+- `ChannelType` += `'instagram' | 'facebook'`.
+- `FacebookPagePublisher` (Page feed; texto o foto) e `InstagramPublisher` (contenedor → publicar;
+  **exige imagen pública https**, 25 posts/24 h, caption ≤ 2200).
+- Implementación real de `media.publish.channel:facebook|instagram` (hoy declaradas y fail-closed).
+
+**Prohibido:** un bot por plataforma. Los bots son roles (proponer, leer), no credenciales.
+Las credenciales viven en Hermes y se conectan por tenant.
+
+### 2.3 Media: material real primero
+
+- Fuente de verdad del material: **assets del proyecto** (renders, fotos de obra, planos, video),
+  no generación por IA.
+- La IA sólo produce **derivados** (recortes, portadas, textos sobre plantilla), nunca "el edificio".
+- Cada publicación referencia un asset existente; si no hay asset, no hay publicación con imagen.
+- `media.image.create` queda opcional y detrás de aprobación, igual que el texto.
+
+### 2.4 Una aprobación, varias redes
+
+Una propuesta puede llevar varias plataformas. La aprobación es única (una tarjeta) y el servidor
+publica en cada red con el copy adaptado. Cada ejecución es idempotente por `(aprobación, red)`.
+
+Diferencias por red (no se copia y pega):
+
+| | Instagram | Facebook |
+|---|---|---|
+| Texto | caption corto (≤ 2200), 3–5 hashtags | 1–3 párrafos, enlace en el cuerpo |
+| Imagen | **obligatoria** (1:1 o 4:5) | opcional |
+| CTA | "escríbenos por DM" + enlace en bio | enlace directo medible `/l/<code>` |
+| Riesgo | no permite texto suelto | permite enlace y más texto |
+
+## 3. Multi-tenant
+
+- Todo se resuelve por `canonicalOrgId`; jamás por un `tenantId` del cliente.
+- Credenciales: una fila por `(tenant, channel)` en `tenant_social_integrations`; revocación
+  borra el payload y deja `credentialFingerprint` para auditoría.
+- Captura: `/join/<slug>` resuelve el proyecto en servidor; un tenant nuevo hereda la ruta sin
+  código nuevo.
+- Notificaciones y aprobaciones ya son tenant-scoped (ADR-019): sin fallback global.
+
+## 4. Seguridad
+
+- El código de atribución se valida antes de escribir cookie o base.
+- Consentimiento explícito obligatorio en la captura; se guarda `consentAt` y `consentSource`.
+- Tokens de red cifrados, nunca en logs ni en respuestas; `lastVerifiedAt` y verificación
+  periódica; si la credencial está revocada, la publicación **falla cerrada** (no se publica en otra).
+- El checkout no confía en el `source` del cliente para autorizar nada: sólo atribuye.
+
+## 5. Fases
+
+| Fase | Alcance | Estado |
+|---|---|---|
+| 0 | Cookie `nx_src`, `/join/<slug>`, `src` en checkout | ✅ implementado |
+| 1 | `FacebookPagePublisher` + `InstagramPublisher` + registro | pendiente (credenciales) |
+| 2 | A2A `media.publish.channel:*` real + aprobación multi-red | pendiente |
+| 3 | Media: biblioteca de assets por tenant y `media.image.create` opcional | pendiente |
+| 4 | X/LinkedIn como extensiones del mismo contrato | diferido |
+
+## 6. Consecuencias y deuda
+
+- `attribution.leads` deja de ser `null` en cuanto exista un lead que llegue por `/join`.
+- El `source` del fast-lane mejora la atribución de pagos, pero la orden completa
+  (`commercial_orders`) aún no guarda el código: se resuelve leyendo el lead.
+- La auto-descubierta de proyecto por `Origin` en `leads/register` es deuda de seguridad
+  heredada: se mantiene por compatibilidad, pero la captura nueva resuelve por slug.
