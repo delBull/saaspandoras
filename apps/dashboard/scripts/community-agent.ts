@@ -33,6 +33,7 @@ import {
   buildCommunityHealth,
   type CommunityMessage,
 } from '../../../packages/hermes-core/src/community/community-insights';
+import { resolveChannelPrefix } from '../../../packages/hermes-core/src/community/channel-prefixes';
 
 /**
  * Carga el `.env` de la carpeta del bot.
@@ -140,8 +141,12 @@ async function discordGet(pathname: string, token: string): Promise<any> {
   return res.json();
 }
 
-/** Lista blanca de canales: sólo `s-narai-*` públicos (nunca la categoría privada). */
-async function resolveReadableChannels(token: string, guildId: string): Promise<Map<string, string>> {
+/**
+ * Lista blanca de canales del tenant: `<prefijo>-*` públicos (nunca la categoría
+ * privada de miembros). El prefijo se puede forzar con `COMMUNITY_CHANNEL_PREFIX`
+ * o `--prefix=`, y por defecto sale del tenant (ADR-020 §2.5).
+ */
+async function resolveReadableChannels(token: string, guildId: string, prefix: string): Promise<Map<string, string>> {
   const channels: any[] = await discordGet(`/guilds/${guildId}/channels`, token);
   const privateCategory = channels.find((c) => c.type === 4 && /MIEMBROS/i.test(String(c.name)))?.id;
 
@@ -150,7 +155,7 @@ async function resolveReadableChannels(token: string, guildId: string): Promise<
     if (channel.type !== 0) continue;
     if (privateCategory && channel.parent_id === privateCategory) continue;
     const name = String(channel.name || '');
-    if (!/^s-narai-[a-z0-9-]+$/.test(name)) continue;
+    if (!new RegExp(`^${prefix}-[a-z0-9-]+$`).test(name)) continue;
     readable.set(name, channel.id);
   }
   return readable;
@@ -184,9 +189,15 @@ async function readCommand() {
   const days = Number(arg('days') || 0);
   const analyze = (arg('analyze') || 'both') as 'health' | 'moderation' | 'both';
 
-  const readable = await resolveReadableChannels(token, guildId);
+  const prefix = (arg('prefix') || process.env.COMMUNITY_CHANNEL_PREFIX || resolveChannelPrefix(ORG) || '').toLowerCase();
+  if (!prefix) {
+    console.error('No se pudo derivar el prefijo de canales del tenant. Usa --prefix=<prefijo>.');
+    process.exit(1);
+  }
+
+  const readable = await resolveReadableChannels(token, guildId, prefix);
   if (readable.size === 0) {
-    console.error('El bot lector no ve ningún canal s-narai-*. Revisa permisos (Ver canales + Leer historial).');
+    console.error(`El bot lector no ve ningún canal ${prefix}-*. Revisa permisos (Ver canales + Leer historial).`);
     process.exit(1);
   }
 

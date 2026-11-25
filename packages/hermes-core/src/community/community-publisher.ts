@@ -11,7 +11,7 @@
  *    (`status='PENDING'` → `'EXECUTING'`). Si otra petición ya la tomó, no se publica dos veces.
  *  - **Defensa en profundidad**: el texto se vuelve a validar contra `banned_topics`
  *    antes de tocar Discord; si algo cambió, se bloquea y se registra.
- *  - **Lista blanca de canales**: sólo `s-narai-*` fuera de la categoría privada de miembros.
+ *  - **Lista blanca de canales**: sólo `<prefijo-del-tenant>-*`, fuera de la categoría privada de miembros.
  *  - **Auditoría**: cada resultado (publicado, bloqueado, fallido) queda en `result` y en el
  *    log de seguridad.
  */
@@ -20,6 +20,7 @@ import { communityProposals } from '@saasfly/db-core/schema';
 import { and, eq } from '@saasfly/db-core';
 import { SecurityAuditLogger } from '../runtime/security-audit-logger';
 import { validateCommunityPost } from './community-gateway';
+import { isChannelOfTenant } from './channel-prefixes';
 
 const API = 'https://discord.com/api/v10';
 
@@ -50,7 +51,7 @@ async function discordGet(path: string, token: string): Promise<any> {
  * Resuelve la lista blanca de canales por nombre (sin ids hardcodeados).
  * Excluye la categoría privada de miembros.
  */
-export async function resolveAllowedChannels(): Promise<Map<string, string>> {
+export async function resolveAllowedChannels(canonicalOrgId: string): Promise<Map<string, string>> {
   const token = botToken();
   const guild = guildId();
   if (!token || !guild) return new Map();
@@ -63,14 +64,15 @@ export async function resolveAllowedChannels(): Promise<Map<string, string>> {
     if (channel.type !== 0) continue;
     if (privateCategory && channel.parent_id === privateCategory) continue;
     const name = String(channel.name || '');
-    if (!/^s-narai-[a-z0-9-]+$/.test(name)) continue;
+    // ADR-020 §2.5: el prefijo sale del tenant, no de una constante.
+    if (!isChannelOfTenant(name, canonicalOrgId)) continue;
     allowed.set(name, channel.id);
   }
   return allowed;
 }
 
-export function isAllowedChannelName(name: string): boolean {
-  return /^s-narai-[a-z0-9-]+$/.test(String(name || ''));
+export function isAllowedChannelName(name: string, canonicalOrgId: string): boolean {
+  return isChannelOfTenant(name, canonicalOrgId);
 }
 
 export async function publishCommunityProposal(input: {
@@ -109,7 +111,7 @@ export async function publishCommunityProposal(input: {
   for (const post of proposal.posts ?? []) {
     const result = validateCommunityPost(post);
     violations.push(...result.violations.map((v) => `${post.channel}: ${v}`));
-    if (!isAllowedChannelName(post.channel)) violations.push(`${post.channel}: canal fuera de la lista blanca`);
+    if (!isAllowedChannelName(post.channel, proposal.canonicalOrgId)) violations.push(`${post.channel}: canal fuera de la lista blanca`);
   }
   if (violations.length > 0) {
     await db
@@ -139,7 +141,7 @@ export async function publishCommunityProposal(input: {
 
   let allowed: Map<string, string>;
   try {
-    allowed = await resolveAllowedChannels();
+    allowed = await resolveAllowedChannels(proposal.canonicalOrgId);
   } catch (err: any) {
     await db
       .update(communityProposals)

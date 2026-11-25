@@ -14,16 +14,16 @@ describe('Community publisher · lista blanca de canales', () => {
       's-narai-preguntas',
       's-narai-amas',
     ]) {
-      expect(isAllowedChannelName(channel)).toBe(true);
+      expect(isAllowedChannelName(channel, 'snarai')).toBe(true);
     }
   });
 
   it('rechaza canales de miembros, de otros tenants y nombres libres', () => {
-    expect(isAllowedChannelName('miembros-documentos')).toBe(false);
-    expect(isAllowedChannelName('general')).toBe(false);
-    expect(isAllowedChannelName('s-narai-')).toBe(false);
-    expect(isAllowedChannelName('s-narai-preguntas-x')).toBe(true); // sigue siendo s-narai-*
-    expect(isAllowedChannelName('S-NARAI-PREGUNTAS')).toBe(false);
-    expect(isAllowedChannelName('s-narai-preguntas\n@everyone')).toBe(false);
+    expect(isAllowedChannelName('miembros-documentos', 'snarai')).toBe(false);
+    expect(isAllowedChannelName('general', 'snarai')).toBe(false);
+    expect(isAllowedChannelName('s-narai-', 'snarai')).toBe(false);
+    expect(isAllowedChannelName('s-narai-preguntas-x', 'snarai')).toBe(true); // sigue siendo s-narai-*
+    expect(isAllowedChannelName('S-NARAI-PREGUNTAS', 'snarai')).toBe(false);
+    expect(isAllowedChannelName('s-narai-preguntas\n@everyone', 'snarai')).toBe(false);
   });
 });

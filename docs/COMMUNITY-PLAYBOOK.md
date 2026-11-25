@@ -130,3 +130,59 @@ ofrecer esa llamada, no sólo "conoce más".
 2. **CTA de llamada** en las publicaciones (con el flujo de agenda existente).
 3. **AMA** cuando haya fecha (requiere permiso en el bot).
 4. **WhatsApp** cuando existan destinatarios por tenant y plantilla aprobada por Meta.
+
+## 8. Redes por marca
+
+| Marca | Redes activas | Rol | Frecuencia |
+|---|---|---|---|
+| **Pandora's** | LinkedIn | tesis, alianzas, RWA, hiring | 1–2 / mes, institucional |
+| **S'Narai** | Instagram + Facebook | producto, obra, captación | 2–3 / semana |
+| **Tenants** | las que conecten | su propio contenido | la suya |
+
+Pandora's **no** abre IG/FB/TikTok: su audiencia es institucional y no justifica operación diaria.
+Los tenants heredan el mecanismo (adaptador + credenciales por portal), no el contenido.
+
+## 9. Calendario S'Narai · primeras 2 semanas
+
+Requisito: 15–20 assets reales cargados en `/portal/snarai/media` (renders, obra, planos, video).
+Sin asset no hay post con imagen; en ese caso, texto sólo en Facebook.
+
+| Día | Pieza | IG | FB | Objetivo |
+|---|---|---|---|---|
+| 1 | "Abrimos la conversación" | imagen render + caption corto | texto + enlace `/join/snarai` | primer lead atribuido |
+| 3 | Avance de obra | foto real 4:5 | foto + párrafo | prueba de realidad |
+| 5 | Cómo funciona el Título de Propiedad | carrusel/plano | explicación larga | educar la objeción |
+| 8 | Anuncio de AMA (si hay fecha) | imagen + fecha | evento | primera conversación pública |
+| 10 | Bucerías / ubicación | render + mapa | texto + enlace | deseo, no promesa |
+| 12 | 3 preguntas frecuentes reales | carrusel | hilo corto | cerrar dudas sin DM |
+
+Cada pieza lleva su `/l/<code>`; el CTA es **siempre** `/join/snarai` (medible), no la landing.
+
+## 10. Backlog priorizado
+
+| # | Tarea | Depende de | Esfuerzo |
+|---|---|---|---|
+| 1 | Deploy de la fase 0 y prueba de humo (clic → cookie → lead) | Marco | 20 min |
+| 2 | **Whitelist por tenant** en publisher y lector (ADR-020 §2.5) | — | 2–3 h |
+| 3 | `FacebookPagePublisher` | credenciales | 2–3 h |
+| 4 | `InstagramPublisher` | credenciales + assets | 4–6 h |
+| 5 | A2A real `media.publish.channel:*` + aprobación multi-red | 3 y 4 | 3–4 h |
+| 6 | Carga de 15–20 assets en el portal | Marco | 1 sesión |
+| 7 | Hub: categoría + rol por tenant + prueba de fuga | 2 | 1 h por tenant |
+| 8 | Permiso `Manage Events` para AMA | Marco | 5 min |
+| 9 | Reportes: leads atribuidos por publicación en el portal | 1 + primeros leads | 3 h |
+| 10 | Opt-in de los 40 teléfonos (plantilla Meta) | consentimiento | 1 semana + revisión |
+
+## 11. Credenciales (Meta)
+
+| Dato | De dónde |
+|---|---|
+| `META_APP_ID` / `META_APP_SECRET` | App de Meta (el secret ya existe para WhatsApp) |
+| Page ID + Page access token largo | Graph API Explorer → `/me/accounts` |
+| Instagram Business Account ID | `GET /{page-id}?fields=instagram_business_account` |
+
+Permisos del token: `pages_manage_posts`, `pages_read_engagement`, `instagram_basic`,
+`instagram_content_publish`.
+
+Se cargan por **stdin** en un script que las guarda cifradas en `tenant_social_integrations`
+(una fila por tenant y red). Nunca por chat, nunca por env, nunca en el repo.

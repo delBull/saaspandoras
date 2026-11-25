@@ -81,6 +81,45 @@ Diferencias por red (no se copia y pega):
 | CTA | "escríbenos por DM" + enlace en bio | enlace directo medible `/l/<code>` |
 | Riesgo | no permite texto suelto | permite enlace y más texto |
 
+
+### 2.5 Hub de Discord multi-tenant
+
+**Decisión:** un solo servidor (el de Pandora's) hospeda a los tenants por **categoría**, con un
+rol por tenant y permisos deny-by-default. S'Narai es el primer inquilino (`S'NARAI` +
+`S'NARAI · MIEMBROS`).
+
+Reglas:
+
+1. Una categoría y un rol por tenant.
+2. Canales privados por defecto: `@everyone` no ve; sólo el rol del tenant y el staff.
+3. El publicador sólo escribe en canales con el prefijo del tenant (`<slug>-*`) y nunca en la
+   categoría de miembros.
+4. El lector sólo lee esos mismos canales.
+5. **Prueba de fuga obligatoria** en cada alta: con el rol del tenant A no se ve ningún canal de B.
+
+**Prerrequisito técnico (hoy bloqueado):** `community-publisher.ts` y la CLI del lector filtran
+`^s-narai-` **en duro**. Para hospedar otro tenant hay que derivar el prefijo del `slug` del
+proyecto. Sin eso, el hub no es multi-tenant: es el servidor de S'Narai con canales extra.
+
+**Límites y ruta de escape:** Discord permite 500 canales por servidor y los permisos se vuelven
+frágiles con muchos tenants. Regla operativa: hasta ~5 tenants activos, hub; por encima de eso —o
+si el tenant es enterprise— servidor dedicado. El código ya resuelve por `DISCORD_GUILD_ID`, así
+que migrar es configuración, no refactor.
+
+### 2.6 Marcas y redes
+
+| Marca | Redes | Rol |
+|---|---|---|
+| Pandora's | LinkedIn (corporativo) | tesis, alianzas, RWA, hiring |
+| S'Narai | Instagram + Facebook | producto, obra, captación |
+| Tenants | las que conecten | cada uno por su portal |
+
+- **Pandora's no abre IG/FB/TikTok**: audiencia institucional, coste de operación no justificado.
+  Presencia sutil y profesional (LinkedIn), no contenido de producto.
+- **S'Narai concentra el esfuerzo**: es donde vive el comprador y donde hay material real.
+- **X** queda diferido para la narrativa RWA con la cuenta de Pandora's.
+- Los tenants heredan el mecanismo, no el contenido: conectan sus cuentas por el portal.
+
 ## 3. Multi-tenant
 
 - Todo se resuelve por `canonicalOrgId`; jamás por un `tenantId` del cliente.
@@ -103,10 +142,12 @@ Diferencias por red (no se copia y pega):
 | Fase | Alcance | Estado |
 |---|---|---|
 | 0 | Cookie `nx_src`, `/join/<slug>`, `src` en checkout | ✅ implementado |
+| 0.5 | Whitelist por tenant (publisher + lector) — prerrequisito del hub | pendiente |
 | 1 | `FacebookPagePublisher` + `InstagramPublisher` + registro | pendiente (credenciales) |
 | 2 | A2A `media.publish.channel:*` real + aprobación multi-red | pendiente |
 | 3 | Media: biblioteca de assets por tenant y `media.image.create` opcional | pendiente |
-| 4 | X/LinkedIn como extensiones del mismo contrato | diferido |
+| 4 | Hub multi-tenant (categoría + rol por tenant + prueba de fuga) | pendiente |
+| 5 | X/LinkedIn como extensiones del mismo contrato | diferido |
 
 ## 6. Consecuencias y deuda
 
