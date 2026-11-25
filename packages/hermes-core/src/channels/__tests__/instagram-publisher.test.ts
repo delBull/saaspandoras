@@ -76,6 +76,22 @@ describe('Instagram Publisher', () => {
     expect(r.retryable).toBe(true);
   });
 
+  it('usa graph.instagram.com cuando las credenciales lo indican (sin Página)', async () => {
+    fetchMock
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ id: 'c' }) })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ id: 'm' }) })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({}) });
+
+    await publisher.publish(
+      { ...creds, apiBase: 'https://graph.instagram.com/v21.0' },
+      payload(),
+      ctx,
+    );
+
+    expect(String(fetchMock.mock.calls[0]![0])).toContain('graph.instagram.com');
+    expect(String(fetchMock.mock.calls[0]![0])).toContain('/ig1/media');
+  });
+
   it('trunca el caption a 2200 caracteres', async () => {
     fetchMock
       .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ id: 'c' }) })

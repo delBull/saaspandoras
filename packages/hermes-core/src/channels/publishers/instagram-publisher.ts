@@ -18,7 +18,14 @@ import type {
   PublicationErrorCode,
 } from './publisher.types';
 
-const GRAPH = 'https://graph.facebook.com/v21.0';
+/**
+ * Meta tiene dos caminos para publicar en Instagram:
+ *  - **Instagram Login** (recomendado cuando no hay Página): `graph.instagram.com`
+ *    con `instagram_business_basic` + `instagram_business_content_publish`.
+ *  - **Facebook Login** (requiere Página vinculada): `graph.facebook.com`.
+ * El host sale de las credenciales; nunca se adivina por el token.
+ */
+const DEFAULT_GRAPH = 'https://graph.facebook.com/v21.0';
 const CAPTION_LIMIT = 2200;
 
 function mapError(status: number): { errorCode: PublicationErrorCode; retryable: boolean } {
@@ -38,6 +45,8 @@ export class InstagramPublisher implements IChannelPublisher {
   ): Promise<PublicationReceipt> {
     const igUserId = String(credentials?.igUserId || '').trim();
     const accessToken = String(credentials?.accessToken || '').trim();
+    // `apiBase` permite usar Instagram Login (graph.instagram.com) sin Página.
+    const graph = String(credentials?.apiBase || DEFAULT_GRAPH).replace(/\/$/, '');
 
     if (!igUserId || !accessToken) {
       return {
@@ -68,7 +77,7 @@ export class InstagramPublisher implements IChannelPublisher {
 
     try {
       // 1. Contenedor
-      const containerRes = await fetch(`${GRAPH}/${igUserId}/media`, {
+      const containerRes = await fetch(`${graph}/${igUserId}/media`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ image_url: imageUrl, caption, access_token: accessToken }),
@@ -88,7 +97,7 @@ export class InstagramPublisher implements IChannelPublisher {
       }
 
       // 2. Publicación
-      const publishRes = await fetch(`${GRAPH}/${igUserId}/media_publish`, {
+      const publishRes = await fetch(`${graph}/${igUserId}/media_publish`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ creation_id: container.id, access_token: accessToken }),
@@ -111,7 +120,7 @@ export class InstagramPublisher implements IChannelPublisher {
       let externalUrl: string | undefined;
       try {
         const permalinkRes = await fetch(
-          `${GRAPH}/${published.id}?fields=permalink&access_token=${encodeURIComponent(accessToken)}`,
+          `${graph}/${published.id}?fields=permalink&access_token=${encodeURIComponent(accessToken)}`,
         );
         const permalink = await permalinkRes.json().catch(() => ({}));
         if (permalink?.permalink) externalUrl = String(permalink.permalink);

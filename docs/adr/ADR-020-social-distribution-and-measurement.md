@@ -67,6 +67,21 @@ Las credenciales viven en Hermes y se conectan por tenant.
 - Cada publicación referencia un asset existente; si no hay asset, no hay publicación con imagen.
 - `media.image.create` queda opcional y detrás de aprobación, igual que el texto.
 
+### 2.3-bis URL de la media
+
+Instagram (y Meta en general) **descarga la imagen desde una URL https pública**: no acepta binarios.
+Regla: lo que se publica es un **asset con URL estable**, no un archivo local.
+
+| Etapa | Fuente de la URL | Estado |
+|---|---|---|
+| Puente | `apps/dashboard/public/media/<tenant>/…` servido por el dashboard | ✅ disponible |
+| Objetivo | biblioteca de assets del portal: subir → pin IPFS → fila con `url`/`cid` | pendiente |
+
+El Media Studio del portal hoy genera y cobra créditos, pero **no** es una biblioteca de subida. La
+biblioteca unifica dos orígenes: lo generado por Hermes (artefactos ya pineados) y lo aportado a mano
+(renders, fotos de obra). Requisito: el pinning IPFS del tenant debe estar sano; si no, el puente por
+`public/media` es suficiente porque Meta sólo necesita una URL.
+
 ### 2.4 Una aprobación, varias redes
 
 Una propuesta puede llevar varias plataformas. La aprobación es única (una tarjeta) y el servidor
