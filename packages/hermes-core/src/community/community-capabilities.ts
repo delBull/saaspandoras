@@ -11,6 +11,8 @@ export const COMMUNITY_CAPABILITIES = {
   REPORT: 'community.report',
   /** Propone publicaciones; crea una aprobación, no publica. */
   PROPOSE_PUBLISH: 'community.publish_post',
+  /** Plan semanal: señales reales → 2-3 piezas concretas. Sólo lectura. */
+  PLAN_WEEK: 'community.plan_week',
 } as const;
 
 export type CommunityCapability = (typeof COMMUNITY_CAPABILITIES)[keyof typeof COMMUNITY_CAPABILITIES];
@@ -24,6 +26,13 @@ export const COMMUNITY_CAPABILITY_DEFINITIONS = [
     version: '1.0.0',
     inputType: 'CommunityReportRequest',
     outputType: 'CommunityDigest',
+  },
+  {
+    id: COMMUNITY_CAPABILITIES.PLAN_WEEK,
+    name: 'Community weekly plan',
+    version: '1.0.0',
+    inputType: 'CommunityPlanRequest',
+    outputType: 'WeeklyPlan',
   },
   {
     id: COMMUNITY_CAPABILITIES.PROPOSE_PUBLISH,

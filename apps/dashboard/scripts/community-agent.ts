@@ -293,6 +293,18 @@ async function main() {
     return;
   }
 
+  if (command === 'plan') {
+    await send('capability.request', {
+      capability: 'community.plan_week',
+      canonicalOrgId: ORG,
+      projectId: PROJECT_ID,
+      windowDays: Number(arg('days') || 30),
+      openQuestions: Number(arg('open-questions') || 0),
+      hasAssets: arg('assets') === '1' || arg('assets') === 'true',
+    });
+    return;
+  }
+
   if (command === 'propose') {
     let posts: Array<{ channel: string; text: string; imageUrl?: string; platform?: string }> = [];
     const file = arg('file');
@@ -337,7 +349,7 @@ async function main() {
     return;
   }
 
-  console.error('Comandos: report | propose | read');
+  console.error('Comandos: report | plan | propose | read');
   process.exit(1);
 }
 

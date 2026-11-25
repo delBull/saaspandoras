@@ -805,6 +805,33 @@ export class A2AMessageHandler {
       };
     }
 
+    if (capability === COMMUNITY_CAPABILITIES.PLAN_WEEK) {
+      const { buildWeeklyPlan } = await import('../community/planner');
+      const digest = await buildCommunityDigest({
+        projectId,
+        canonicalOrgId,
+        windowDays: Number(payload.windowDays) || undefined,
+      });
+
+      const plan = buildWeeklyPlan({
+        tenantId: canonicalOrgId,
+        openQuestions: Number(payload.openQuestions) || 0,
+        pendingChannels: digest.pendingApprovals.map((p) => p.what),
+        repeatedRejectionReasons: digest.recentDecisions
+          .filter((d) => d.status === 'REJECTED' && d.reason)
+          .map((d) => String(d.reason)),
+        hasAssets: payload.hasAssets === true,
+      });
+
+      return {
+        success: true,
+        messageId: `resp_${crypto.randomUUID()}`,
+        correlationId: message.messageId,
+        type: 'capability.completed',
+        payload: { capability, status: 'PLAN_READY', plan },
+      };
+    }
+
     if (capability === COMMUNITY_CAPABILITIES.PROPOSE_PUBLISH) {
       const result = await createCommunityProposal({
         canonicalOrgId,

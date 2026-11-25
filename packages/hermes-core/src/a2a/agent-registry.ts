@@ -85,6 +85,7 @@ export class AgentRegistry {
       status: communityWallet ? 'ACTIVE' : 'MAINTENANCE',
       allowedCapabilities: [
         'community.report',
+        'community.plan_week',
         'community.publish_post',
       ],
     });

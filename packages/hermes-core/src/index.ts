@@ -501,6 +501,7 @@ export * from './community/community-capabilities';
 export * from './community/community-gateway';
 export * from './community/community-publisher';
 export * from './community/community-insights';
+export * from './community/planner';
 export * from './notifications/approval-notifier';
 export * from './notifications/lead-notifier';
 export * from './channels/whatsapp-tenant';
