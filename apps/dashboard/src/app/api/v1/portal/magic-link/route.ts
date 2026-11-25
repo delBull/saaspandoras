@@ -4,6 +4,7 @@ import { db } from '@saasfly/db';
 import { projects, installedProducts, users, accessRequests, marketingLeads } from '@saasfly/db/schema';
 import { eq, desc, or, sql } from "@saasfly/db-core";
 import { generatePortalToken, normalizeProductKey } from '@saasfly/shared';
+import { normalizeReturnPath, slugFromReturnPath } from '@/lib/portal/safe-return';
 import { sendEmail } from '@/lib/email/client';
 
 const MAGIC_LINK_EMAIL_DAILY_LIMIT = 3;
@@ -21,10 +22,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Proporciona un correo electrónico válido.' }, { status: 400 });
     }
 
-    // Only allow internal portal redirects (anti open-redirect)
-    const safeReturn = typeof returnPath === 'string' && /^\/portal\/[a-zA-Z0-9-]+/.test(returnPath)
-      ? returnPath
-      : '';
+    // Only allow internal relative redirects (anti open-redirect)
+    const safeReturn = normalizeReturnPath(returnPath) ?? '';
 
     const cleanEmail = email.trim().toLowerCase();
 
@@ -66,7 +65,7 @@ export async function POST(req: NextRequest) {
 
     // Priority 0: Protected project operator resolution (e.g. Marco requesting S'Narai)
     if (!project && cleanEmail === PROTECTED_PROJECT_OPERATOR_EMAIL) {
-      const requestedSlug = safeReturn ? safeReturn.split('/')[2] : 'snarai';
+      const requestedSlug = slugFromReturnPath(returnPath) || 'snarai';
       if (requestedSlug) {
         [project] = await db
           .select()
@@ -200,6 +199,15 @@ export async function POST(req: NextRequest) {
       }
       
       token = generatePortalToken(installedId, activeProjectId, portalProduct.toLowerCase());
+
+      // El token es de un solo uso, pero el producto NO: el flag se ponía a true
+      // al consumir y nunca se reseteaba, así que el primer login dejaba el
+      // producto marcado como usado para siempre y todos los enlaces siguientes
+      // fallaban con "Portal token has already been consumed".
+      await db
+        .update(installedProducts)
+        .set({ portalToken: token, portalTokenUsed: false, updatedAt: new Date() })
+        .where(eq(installedProducts.id, installedId));
     }
     // Sin proyecto no se genera token: el flujo devuelve 403 NOT_PROVISIONED arriba.
     // (Antes se auto-creaba un workspace bootstrap y se mandaba al onboarding a
