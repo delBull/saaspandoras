@@ -1,5 +1,6 @@
 import React from 'react';
 import { MediaStudioDashboard } from '@/components/hermes-portal/media/MediaStudioDashboard';
+import { MediaLibrary } from './MediaLibrary';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,5 +21,11 @@ export default async function MediaStudioPage({
   params: Promise<{ organizationSlug: string }>;
 }) {
   const { organizationSlug } = await params;
-  return <MediaStudioDashboard organizationSlug={organizationSlug} />;
+  return (
+    <div className="space-y-6">
+      {/* Biblioteca primero: es de donde salen las URLs que usan las redes. */}
+      <MediaLibrary organizationSlug={organizationSlug} />
+      <MediaStudioDashboard organizationSlug={organizationSlug} />
+    </div>
+  );
 }

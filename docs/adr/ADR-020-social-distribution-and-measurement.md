@@ -75,12 +75,15 @@ Regla: lo que se publica es un **asset con URL estable**, no un archivo local.
 | Etapa | Fuente de la URL | Estado |
 |---|---|---|
 | Puente | `apps/dashboard/public/media/<tenant>/…` servido por el dashboard | ✅ disponible |
-| Objetivo | biblioteca de assets del portal: subir → pin IPFS → fila con `url`/`cid` | pendiente |
+| **Biblioteca** | `tenant_media_assets`: subir → almacenamiento público (Vercel Blob) → fila con `url` | ✅ implementada |
 
-El Media Studio del portal hoy genera y cobra créditos, pero **no** es una biblioteca de subida. La
-biblioteca unifica dos orígenes: lo generado por Hermes (artefactos ya pineados) y lo aportado a mano
-(renders, fotos de obra). Requisito: el pinning IPFS del tenant debe estar sano; si no, el puente por
-`public/media` es suficiente porque Meta sólo necesita una URL.
+`POST/GET /api/v1/tenant/<slug>/media-assets` (organización desde la sesión) y tarjeta *Biblioteca*
+en `/portal/<slug>/media`. Path `tenants/<slug>/<año>/<mes>/<nombre>-<rand>.<ext>`, JPG/PNG/WebP
+hasta 8 MB. Es la fuente de `imageUrl` para cualquier red.
+
+La biblioteca unifica dos orígenes: lo aportado a mano (renders, fotos de obra) y lo generado por
+Hermes. Para publicar, Meta sólo necesita una URL https pública estable; el almacenamiento elegido es
+Vercel Blob (ya configurado) y no depende del pinning IPFS.
 
 ### 2.4 Una aprobación, varias redes
 

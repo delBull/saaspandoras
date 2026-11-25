@@ -5131,6 +5131,31 @@ export const hermesTenantNotifications = pgTable("hermes_tenant_notifications", 
 }));
 
 /**
+ * Biblioteca de medios por tenant (ADR-020 §2.3-bis).
+ *
+ * Instagram publica con una **URL https pública**, no con un archivo. Esta tabla
+ * es la fuente de esa URL, por organización, tanto para material subido a mano
+ * como para lo generado por Hermes.
+ */
+export const tenantMediaAssets = pgTable("tenant_media_assets", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  canonicalOrgId: varchar("canonical_org_id", { length: 255 }).notNull(),
+  kind: varchar("kind", { length: 32 }).notNull().default("image"),
+  title: varchar("title", { length: 255 }).notNull(),
+  url: varchar("url", { length: 1000 }).notNull(),
+  mimeType: varchar("mime_type", { length: 100 }),
+  sizeBytes: integer("size_bytes"),
+  width: integer("width"),
+  height: integer("height"),
+  source: varchar("source", { length: 32 }).notNull().default("manual"),
+  meta: jsonb("meta"),
+  createdBy: varchar("created_by", { length: 255 }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  orgIdx: index("tenant_media_assets_org_idx").on(t.canonicalOrgId, t.createdAt),
+}));
+
+/**
  * Canales de notificación por tenant (ADR-019 · avisos).
  *
  * `target` es el webhook del canal privado del tenant. Vive aquí y no en
