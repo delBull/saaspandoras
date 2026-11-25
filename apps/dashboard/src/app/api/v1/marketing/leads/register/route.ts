@@ -398,7 +398,8 @@ export async function POST(req: NextRequest) {
       source: attributionContext.source || (existingLead as any)?.source || null,
       referrer: processedMetadata.ref || processedMetadata.referrer || body.ref || (existingLead as any)?.referrer || null,
       intent: (['invest', 'explore', 'whitelist', 'earn', 'other'].includes(intent) ? intent : 'explore') as any,
-      consent: true,
+      // Un formulario marca consent=true; un mensaje entrante (DM) NO es opt-in de marketing.
+      consent: body.consent === false ? false : true,
       metadata: finalMetadata,
       status: (isHighIntent ? 'hot' : (existingLead ? (existingLead as any).status : 'active')) as any,
       score: isHighIntent ? 100 : (existingLead ? undefined : 50),

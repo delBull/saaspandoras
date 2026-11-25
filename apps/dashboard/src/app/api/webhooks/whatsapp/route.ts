@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { InterlocutorResolver } from '@saasfly/hermes-core';
 import { getDefaultRuntime } from '@saasfly/hermes-core';
 import { TenantAuthorityService } from '@saasfly/hermes-core';
-import { sendWhatsAppMessage } from '@saasfly/shared'; // Must be implemented in your WA utils
+import { sendWhatsAppMessageWithCredentials } from '@saasfly/shared';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, note: 'Unsupported message type ignored' });
     }
 
-    console.log(`[Hermes WhatsApp Webhook] 🟢 Message received from ${contactName} (${fromPhone})`);
+    console.log(`[Hermes WhatsApp Webhook] 🟢 Message received from ${contactName} (${fromPhone}) → número ${waPhoneId}`);
 
     // 1. Resolve Interlocutor using the phone number
     const interlocutor = await InterlocutorResolver.resolve({
@@ -48,14 +48,56 @@ export async function POST(req: NextRequest) {
       nameHint: contactName,
     });
 
-    // 2. Resolve Tenant Scope (Defaults to pandoras if not bound explicitly)
-    let tenantSlug = interlocutor.tenantSlug || 'pandoras';
+    // 2. Resolve Tenant Scope.
+    //    Autoridad: el NÚMERO que recibió el mensaje (phone_number_id), no el remitente.
+    //    Antes se resolvía sólo por el interlocutor y caía a 'pandoras', así que un
+    //    prospecto escribiendo al número de S'Narai podía acabar en el Hermes equivocado.
+    const { resolveTenantByPhoneNumberId, DatabaseSecretResolver, parseDmKeyword } = await import('@saasfly/hermes-core');
+    const tenantByPhone = await resolveTenantByPhoneNumberId(waPhoneId).catch(() => null);
+    let tenantSlug = tenantByPhone || interlocutor.tenantSlug || 'pandoras';
+    console.log(`[Hermes WhatsApp Webhook] tenant=${tenantSlug} (por número: ${tenantByPhone ?? 'sin coincidencia'})`);
 
     const canonical = await TenantAuthorityService.resolveCanonicalTenant(tenantSlug);
     if (canonical) {
       tenantSlug = canonical.projectSlug;
     } else {
       tenantSlug = 'pandoras';
+    }
+
+    // 2.5 Palabra clave de campaña (ADR-020): el post pide escribir `SNARAI`
+    //     (opcionalmente con el código del post). El DM queda atribuido al post.
+    const keywordMatch = parseDmKeyword(rawText);
+    if (keywordMatch.matched) {
+      try {
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://dash.pandoras.finance';
+        const res = await fetch(`${baseUrl}/api/v1/marketing/leads/register`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Origin: baseUrl,
+            'User-Agent': 'hermes-whatsapp-dm',
+          },
+          body: JSON.stringify({
+            projectId: tenantSlug,
+            name: contactName,
+            phoneNumber: fromPhone,
+            consent: false, // escribió él; no es opt-in de marketing
+            source: 'whatsapp_dm',
+            utm_source: keywordMatch.code ?? undefined,
+            utm_medium: 'direct_message',
+            metadata: {
+              dmKeyword: keywordMatch.keyword,
+              consentSource: 'inbound_whatsapp',
+              attributionCode: keywordMatch.code ?? null,
+            },
+          }),
+        });
+        if (!res.ok) {
+          console.warn('[Hermes WhatsApp Webhook] No se pudo registrar el lead del DM:', res.status);
+        }
+      } catch (err: any) {
+        console.warn('[Hermes WhatsApp Webhook] Error registrando lead del DM:', err?.message || err);
+      }
     }
 
     // 3. Dispatch to HermesRuntime with WHATSAPP Channel Context
@@ -104,11 +146,27 @@ export async function POST(req: NextRequest) {
 
     const replyContent = runtimeResponse.content || 'Entendido, procesando tu solicitud...';
 
-    // 4. Send Response back via Meta WhatsApp API
+    // 4. Responder DESDE el número del tenant, con su token.
+    //    Antes se llamaba `sendWhatsAppMessage(from, text, waPhoneId)`: el tercer
+    //    argumento es `replyToMessageId`, así que se enviaba con el número maestro y
+    //    un contexto inválido -> Meta devolvía 400 y el usuario no recibía nada.
     try {
-      await sendWhatsAppMessage(fromPhone, replyContent, waPhoneId);
-    } catch (sendErr) {
-      console.error('[Hermes WhatsApp Webhook] Failed to send reply to WhatsApp:', sendErr);
+      const resolved = await new DatabaseSecretResolver().resolve(`vault:channel:${tenantSlug}`);
+      const [tenantToken, tenantPhoneId] = String(resolved || '').split('|');
+
+      const sent = await sendWhatsAppMessageWithCredentials({
+        to: fromPhone,
+        text: replyContent,
+        phoneNumberId: tenantPhoneId || waPhoneId,
+        accessToken: tenantToken || '',
+        replyToMessageId: messageId,
+      });
+
+      if (!sent.success) {
+        console.error('[Hermes WhatsApp Webhook] Meta rechazó la respuesta:', sent.error);
+      }
+    } catch (sendErr: any) {
+      console.error('[Hermes WhatsApp Webhook] Failed to send reply to WhatsApp:', sendErr?.message || sendErr);
     }
 
     return NextResponse.json({ ok: true, processed: true });
@@ -128,9 +186,16 @@ export async function GET(req: NextRequest) {
   const token = url.searchParams.get('hub.verify_token');
   const challenge = url.searchParams.get('hub.challenge');
 
-  const EXPECTED_TOKEN = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN;
+  // Meta se configura con UN token; en el proyecto conviven dos nombres. Antes
+  // sólo se comparaba con `WHATSAPP_WEBHOOK_VERIFY_TOKEN` (no configurado), así
+  // que la verificación devolvía 403 y el webhook nunca quedaba suscrito: los
+  // mensajes entrantes no llegaban.
+  const EXPECTED_TOKEN =
+    process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN ||
+    process.env.WHATSAPP_VERIFY_TOKEN ||
+    '';
 
-  if (mode === 'subscribe' && token === EXPECTED_TOKEN) {
+  if (mode === 'subscribe' && EXPECTED_TOKEN && token === EXPECTED_TOKEN) {
     console.log('[Hermes WhatsApp Webhook] Verification successful.');
     return new NextResponse(challenge, { status: 200 });
   }

@@ -4,6 +4,73 @@ import { WHATSAPP, validateWhatsAppConfig } from '../config';
 /**
  * Enviar mensaje de texto a través de WhatsApp Cloud API
  */
+/**
+ * Envía con credenciales EXPLÍCITAS (token + phone number id del tenant).
+ *
+ * El envío con la configuración maestra vive en `sendWhatsAppMessage`; esta
+ * variante es la que debe usar el webhook, porque el número que recibió el
+ * mensaje pertenece a un tenant concreto y Meta exige su propio token.
+ */
+export async function sendWhatsAppMessageWithCredentials(input: {
+  to: string;
+  text: string;
+  phoneNumberId: string;
+  accessToken: string;
+  replyToMessageId?: string;
+}): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  const { to, text, phoneNumberId, accessToken, replyToMessageId } = input;
+
+  if (!to || !text) {
+    return { success: false, error: 'Parámetros inválidos: teléfono o mensaje faltante' };
+  }
+  if (!phoneNumberId || !accessToken) {
+    return { success: false, error: 'Faltan credenciales del tenant (phoneNumberId/accessToken)' };
+  }
+
+  const requestBody: any = {
+    messaging_product: 'whatsapp',
+    to,
+    type: 'text',
+    text: { body: text },
+  };
+
+  // Sólo se usa como contexto si es un id de mensaje real (nunca un phone number id:
+  // Meta rechaza el envío con 400 y el usuario no recibe nada).
+  if (replyToMessageId) {
+    requestBody.context = { message_id: replyToMessageId };
+  }
+
+  try {
+    const response = await fetch(`${WHATSAPP.API_URL}/${phoneNumberId}/messages`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      console.error('[WHATSAPP] Envío rechazado:', {
+        status: response.status,
+        code: result?.error?.code,
+        message: result?.error?.message,
+      });
+      return {
+        success: false,
+        error: result?.error?.message || `HTTP ${response.status}`,
+      };
+    }
+
+    return { success: true, messageId: result?.messages?.[0]?.id };
+  } catch (err: any) {
+    console.error('[WHATSAPP] Error de red al enviar:', err?.message || err);
+    return { success: false, error: err?.message || 'Error de red' };
+  }
+}
+
 export async function sendWhatsAppMessage(
   to: string,
   text: string,

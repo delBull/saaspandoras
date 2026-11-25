@@ -503,3 +503,5 @@ export * from './community/community-publisher';
 export * from './community/community-insights';
 export * from './notifications/approval-notifier';
 export * from './notifications/lead-notifier';
+export * from './channels/whatsapp-tenant';
+export * from './channels/dm-keyword';
