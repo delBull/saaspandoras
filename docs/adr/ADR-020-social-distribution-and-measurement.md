@@ -125,8 +125,8 @@ que migrar es configuración, no refactor.
 | **Pandora's** | LinkedIn · X | institucional: tesis, alianzas, tecnología, hiring | 1 |
 | **Pandora's** | YouTube | demos y presentaciones (sin material aún) | diferido |
 | **S'Narai** | Discord (hub) · canales web3 | comunidad + descubrimiento sin coste de media | 1 |
-| **S'Narai** | Instagram | identidad visual y deseo (requiere assets) | 2 |
-| **S'Narai** | Facebook | alcance complementario y grupos | 3 |
+| **S'Narai** | Instagram | identidad visual y deseo (requiere assets) | 1 (activo) |
+| **S'Narai** | Facebook | implementado, **no habilitado** por decisión de operación | diferido |
 | **Tenants** | las que conecten | su propio contenido | por su portal |
 
 Reglas:
