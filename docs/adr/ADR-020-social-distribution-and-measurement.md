@@ -85,6 +85,24 @@ La biblioteca unifica dos orígenes: lo aportado a mano (renders, fotos de obra)
 Hermes. Para publicar, Meta sólo necesita una URL https pública estable; el almacenamiento elegido es
 Vercel Blob (ya configurado) y no depende del pinning IPFS.
 
+### 2.3-ter Motor de plantillas (identidad, no improvisación)
+
+La media se genera con **plantillas** que reciben el brand kit del tenant, no dibujando a mano:
+
+```
+POST /api/v1/hermes/media/render?organizationSlug=<slug>
+  { template, lines[], goldLine?, kicker?, body?, imageUrl?, phone?, format? }
+      → PNG en la biblioteca → URL pública
+```
+
+Plantillas: `cover` (foto + titular), `statement` (idea fuerte), `levels` (cuatro niveles),
+`cta` (WhatsApp). Render con Satori (`next/og`) sobre el brand kit (`tenantRuntimeConfig.brandConfig`).
+
+**Límite técnico real:** Satori (esta versión) falla al cargar las sans probadas (Inter, Roboto, DM Sans,
+Manrope) por tablas GSUB no soportadas. Playfair renderiza estable en 400/600/700, así que el cuerpo
+también va en serif. Cuando se actualice Satori o se encuentre una sans compatible, se cambia
+`FONT_BODY` y nada más.
+
 ### 2.4 Una aprobación, varias redes
 
 Una propuesta puede llevar varias plataformas. La aprobación es única (una tarjeta) y el servidor
