@@ -66,8 +66,9 @@ function PortalLoginContent() {
         
         if (data.sessionToken) {
           // Set cookie and local storage
+          // La cookie la fija el servidor (HttpOnly) en /api/v1/portal/auth.
+          // Aquí sólo se guarda la copia local que usa /portal para redirigir.
           localStorage.setItem('pandoras_portal_session', data.sessionToken);
-          document.cookie = `pandoras_portal_session=${data.sessionToken}; Max-Age=${60 * 60 * 24 * 30}; Path=/; SameSite=Lax`;
           
           // Determine specific target URL
           let target = returnPath && returnPath.startsWith('/') && returnPath !== '/portal' ? returnPath : '';

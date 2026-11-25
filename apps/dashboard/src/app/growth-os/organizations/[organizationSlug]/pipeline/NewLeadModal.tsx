@@ -72,19 +72,7 @@ export function NewLeadModal({ organizationSlug, onSuccess }: NewLeadModalProps)
 
   return (
     <>
-      <div className="pt-2">
-            <label className="text-[10px] text-violet-400 font-mono uppercase tracking-wider flex items-center gap-1.5">
-              <Sparkles className="w-3 h-3" /> Hermes Concierge · Contexto Multicanal
-            </label>
-            <textarea
-              rows={2}
-              value={form.hermesNarrative}
-              onChange={(e) => setForm({ ...form, hermesNarrative: e.target.value })}
-              placeholder="Dísele a Hermes dónde, cómo y por qué quiere este lead (ej. 'vino del portal de S'Narai, interesado en la fase 2')"
-              className="mt-1 w-full rounded-xl border border-violet-500/20 bg-white/[0.02] bg-transparent px-3 py-2 text-xs text-white placeholder-zinc-500 focus:border-violet-500/40 focus:outline-none"
-            />
-          </div>
-          <button
+      <button
         onClick={() => setOpen(true)}
         className="flex items-center gap-2 px-5 py-2.5 bg-indigo-500 hover:bg-indigo-400 text-white font-bold rounded-xl text-sm transition-all shadow-[0_0_20px_rgba(99,102,241,0.3)] hover:shadow-[0_0_25px_rgba(99,102,241,0.5)]"
       >
@@ -100,7 +88,7 @@ export function NewLeadModal({ organizationSlug, onSuccess }: NewLeadModalProps)
           />
 
           {/* Modal */}
-          <div className="relative w-full max-w-lg rounded-3xl border border-white/10 bg-[#09090D]/95 backdrop-blur-2xl shadow-2xl p-8 z-10 animate-in fade-in zoom-in-95 duration-300">
+          <div className="relative w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-3xl border border-white/10 bg-[#09090D]/95 backdrop-blur-2xl shadow-2xl p-8 z-10 animate-in fade-in zoom-in-95 duration-300">
             {/* Ambient glow */}
             <div className="absolute top-0 right-0 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -192,6 +180,22 @@ export function NewLeadModal({ organizationSlug, onSuccess }: NewLeadModalProps)
                     placeholder="Información relevante del prospecto, motivaciones, contexto..."
                     className="w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white text-sm placeholder-zinc-600 focus:outline-none focus:border-indigo-500/50 focus:bg-white/[0.08] transition-all font-medium resize-none"
                   />
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs font-bold text-violet-300 uppercase tracking-wider flex items-center gap-2">
+                    <Sparkles className="w-3.5 h-3.5" /> Hermes Concierge · Contexto multicanal
+                  </label>
+                  <textarea
+                    rows={4}
+                    value={form.hermesNarrative}
+                    onChange={(e) => setForm({ ...form, hermesNarrative: e.target.value })}
+                    placeholder="Dile a Hermes dónde, cómo y por qué quiere este lead (ej. 'vino del portal de S'Narai, interesado en la fase 2')."
+                    className="w-full px-4 py-3 rounded-2xl bg-violet-500/[0.04] border border-violet-500/25 text-white text-sm placeholder-zinc-600 focus:outline-none focus:border-violet-400/60 transition-all font-medium resize-none"
+                  />
+                  <p className="text-[10px] text-zinc-500 leading-relaxed">
+                    Este contexto lo lee Hermes para hablar con el prospecto. Se guarda con el lead.
+                  </p>
                 </div>
 
                 {error && (
