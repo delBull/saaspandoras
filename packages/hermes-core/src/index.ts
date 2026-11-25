@@ -105,6 +105,8 @@ export * from './channels/publishers/newsletter-publisher';
 export * from './channels/publishers/publisher.types';
 export * from './channels/publishers/telegram-publisher';
 export * from './channels/publishers/x-publisher';
+export * from './channels/publishers/facebook-publisher';
+export * from './channels/publishers/instagram-publisher';
 export * from './channels/secret-resolver';
 export * from './channels/tenant-channel.service';
 export * from './commerce-engine';

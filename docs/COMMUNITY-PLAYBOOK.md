@@ -136,12 +136,13 @@ ofrecer esa llamada, no sólo "conoce más".
 | Marca | Redes activas | Rol | Frecuencia |
 |---|---|---|---|
 | **Pandora's** | LinkedIn + X | tesis, alianzas, tecnología, hiring | 1–2 / mes, institucional |
-| **S'Narai** | Discord + X (etapa 1) · IG (etapa 2) · FB (etapa 3) | comunidad, producto, captación | 2–3 / semana |
+| **S'Narai** | Discord + Farcaster/Reddit (etapa 1) · IG (etapa 2) · FB (etapa 3) | comunidad, producto, captación | 2–3 / semana |
 | **Tenants** | las que conecten | su propio contenido | la suya |
 
-**Por qué X antes que Instagram en S'Narai:** no exige imagen, así que no depende del material real y
-se automatiza sin fricción. Instagram entra cuando existan los 15–20 assets; Facebook al final, según
-resultados.
+**Por qué no X en S'Narai:** pide más esfuerzo que el resto y su impacto no es proporcional a lo que
+buscamos. En su lugar, **canales web3** (Farcaster y Reddit `r/RWA`): texto, sin material, audiencia de
+tokenización y enlaces medibles hacia Discord y `/join`. Instagram entra con los assets; Facebook al
+final, según resultados.
 
 **Regla de la comunidad:** una sola comunidad central (Discord) con varias puertas (X/IG/FB). Las
 redes llevan gente a Discord y a `/join/<slug>`; no se administran comunidades separadas.

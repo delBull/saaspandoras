@@ -38,6 +38,8 @@ import type {
 } from './publisher.types';
 import { TelegramPublisher } from './telegram-publisher';
 import { XPublisher } from './x-publisher';
+import { FacebookPagePublisher } from './facebook-publisher';
+import { InstagramPublisher } from './instagram-publisher';
 import { NewsletterPublisher } from './newsletter-publisher';
 import { HermesTrialPolicyService } from '../../trial/hermes-trial-policy.service';
 import { HermesTrialTimelineService } from '../../trial/hermes-trial-timeline.service';
@@ -50,6 +52,8 @@ export class DirectChannelPublisher {
   constructor() {
     this.publishers.set('telegram', new TelegramPublisher());
     this.publishers.set('x', new XPublisher());
+    this.publishers.set('facebook', new FacebookPagePublisher());
+    this.publishers.set('instagram', new InstagramPublisher());
     this.publishers.set('newsletter', new NewsletterPublisher());
   }
 

@@ -1,4 +1,4 @@
-export type ChannelType = 'portal' | 'telegram' | 'whatsapp' | 'x' | 'newsletter' | 'web' | 'tma' | 'email' | 'sms';
+export type ChannelType = 'portal' | 'telegram' | 'whatsapp' | 'x' | 'instagram' | 'facebook' | 'newsletter' | 'web' | 'tma' | 'email' | 'sms';
 
 export interface ChannelInboundMessage {
   channelType: ChannelType;

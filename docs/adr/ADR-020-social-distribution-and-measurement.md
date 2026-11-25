@@ -124,7 +124,7 @@ que migrar es configuración, no refactor.
 |---|---|---|---|
 | **Pandora's** | LinkedIn · X | institucional: tesis, alianzas, tecnología, hiring | 1 |
 | **Pandora's** | YouTube | demos y presentaciones (sin material aún) | diferido |
-| **S'Narai** | Discord (hub) · X | comunidad + descubrimiento sin coste de media | 1 |
+| **S'Narai** | Discord (hub) · canales web3 | comunidad + descubrimiento sin coste de media | 1 |
 | **S'Narai** | Instagram | identidad visual y deseo (requiere assets) | 2 |
 | **S'Narai** | Facebook | alcance complementario y grupos | 3 |
 | **Tenants** | las que conecten | su propio contenido | por su portal |
@@ -136,8 +136,13 @@ Reglas:
 - **Pandora's no abre IG/FB/TikTok** y no publica producto: su audiencia es institucional.
 - **S'Narai es marca propia**, con identidad y analíticas separadas; puede mencionar el ecosistema
   Pandora's sin depender de la marca matriz.
-- **X va antes que Instagram para S'Narai** por una razón operativa: no exige imagen, así que no
-  depende del material y se puede automatizar sin fricción. Instagram entra cuando haya assets.
+- **S'Narai no usa X**: exige más esfuerzo que el resto y su impacto no es proporcional al objetivo
+  (conversación calificada). X queda como canal institucional de Pandora's.
+- **Canales web3 en lugar de X**: Farcaster y Reddit (`r/RWA`, real estate investing) son texto,
+  no exigen material, tienen audiencia de tokenización y permiten enlazar a Discord. Se miden con
+  los mismos enlaces `/l/<code>`. Regla: aportar antes de promocionar; nada de spam en comunidades
+  ajenas.
+- **Instagram** entra cuando existan los assets (es la red visual del comprador).
 - **Propiedad institucional**: cuentas, correos, dominios y servidores pertenecen a la entidad, no
   al community manager. Los accesos se otorgan, no se ceden.
 - Los tenants heredan el mecanismo, no el contenido: conectan sus cuentas por el portal.
