@@ -112,6 +112,21 @@ La propuesta lleva `proposalKey`. El servidor la usa como parte de `what`:
 organización, devuelve esa (`idempotent: true`) en lugar de crear otra. Reintentos del bot no llenan la
 bandeja. La CLI deriva la clave del hash del contenido si no se pasa `--key`.
 
+### 3.3-quater Ejecución (fase 2)
+
+Al resolver la aprobación:
+
+1. Se carga la propuesta de `community_proposals`.
+2. **Revalidación**: se vuelve a aplicar `banned_topics` y la lista blanca de canales
+   (`s-narai-*`, excluyendo la categoría de miembros). Si algo falla → `BLOCKED`, sin tocar Discord.
+3. **Reclamo atómico**: `UPDATE … SET status='EXECUTING' WHERE status='PENDING'`. Si otra petición ya
+   la tomó, no se publica dos veces.
+4. Publica cada post con el bot de Discord y guarda `published[]` / `errors[]` en `result`.
+5. Auditoría `EXECUTIVE_ACTION_EXECUTED` con conteos (nunca el texto).
+
+Un rechazo guarda el motivo en `result.reason` y aparece en `recentDecisions` del digest: el agente lo
+lee en la siguiente corrida.
+
 ### 3.4 Registro de aprobación
 
 `nexus_approvals` con `canonical_org_id`, `what = community.publish_post:<id>`,
@@ -167,6 +182,6 @@ por el sistema; el humano decide; cada acción deja traza con identidad propia.
 |---|---|---|
 | 0 | Digest + agente registrado + CLI firmada | ✅ esta entrega |
 | 1 | `capability.request` real + aprobación | ✅ esta entrega |
-| 2 | Ejecución: `PUBLISH_COMMUNITY_POST` en el Action Gateway + devolución del resultado al webhook del bot | pendiente |
-| 3 | Señal de aprendizaje (aprobaciones → `HermesLearningLoop`) y métricas de calidad | pendiente |
+| 2 | Ejecución: publica tras la aprobación, con revalidación, lista blanca de canales y reclamo atómico | ✅ implementado (resultado en `community_proposals.result`) |
+| 3 | Señal de aprendizaje: decisiones con motivo en el digest (`recentDecisions`) | ✅ implementado; el extractor LLM de `HermesLearningLoop` queda como deuda (es por perfil de usuario, no por decisión) |
 | 4 | Ampliar: responder hilo, agendar AMA, mover etapa del lead | pendiente |

@@ -51,11 +51,22 @@ export default function ApprovalsClient({
   const resolve = async (id: string, action: "APPROVED" | "REJECTED") => {
     setBusy(id);
     setError(null);
+
+    // El motivo del rechazo es la señal de aprendizaje del agente (ADR-019 fase 3).
+    let reason: string | null = null;
+    if (action === "REJECTED") {
+      reason = window.prompt("¿Por qué lo rechazas? (el agente aprende de esto)") ?? null;
+      if (reason === null) {
+        setBusy(null);
+        return;
+      }
+    }
+
     try {
       const res = await fetch("/api/nexus/approvals", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, action }),
+        body: JSON.stringify({ id, action, reason }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.success) {

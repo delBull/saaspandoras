@@ -20,7 +20,7 @@ import {
   nexusOutreachEvents,
   nexusOutreachLinks,
 } from '@saasfly/db-core/schema';
-import { and, desc, eq, gte, isNotNull, sql } from '@saasfly/db-core';
+import { and, desc, eq, gte, inArray, isNotNull, sql } from '@saasfly/db-core';
 import { COMMUNITY_CAPABILITIES } from './community-capabilities';
 
 /** Términos prohibidos por `banned_topics` v2 (política vigente del tenant). */
@@ -86,6 +86,11 @@ export interface CommunityDigest {
   sources: Array<{ source: string; count: number }>;
   links: Array<{ code: string; label: string | null; opens: number; destination: string | null }>;
   pendingApprovals: Array<{ id: string; what: string; why: string; createdAt: string }>;
+  /**
+   * Fase 3 (ADR-019): decisiones recientes con su motivo. El agente las lee en
+   * cada corrida para no volver a proponer lo que ya se rechazó.
+   */
+  recentDecisions: Array<{ status: string; intent: string | null; reason: string | null; at: string | null }>;
 }
 
 /** Lee el estado del embudo. Solo lectura, con límites duros. */
@@ -141,6 +146,22 @@ export async function buildCommunityDigest(input: {
     .orderBy(desc(nexusApprovals.createdAt))
     .limit(20);
 
+  const decisionRows = await db
+    .select({
+      status: communityProposals.status,
+      intent: communityProposals.intent,
+      result: communityProposals.result,
+      createdAt: communityProposals.createdAt,
+      executedAt: communityProposals.executedAt,
+    })
+    .from(communityProposals)
+    .where(and(
+      eq(communityProposals.canonicalOrgId, input.canonicalOrgId),
+      inArray(communityProposals.status, ['EXECUTED', 'REJECTED', 'BLOCKED', 'FAILED']),
+    ))
+    .orderBy(desc(communityProposals.createdAt))
+    .limit(15);
+
   return {
     tenantId: input.canonicalOrgId,
     generatedAt: new Date().toISOString(),
@@ -158,6 +179,12 @@ export async function buildCommunityDigest(input: {
       what: r.what,
       why: r.why,
       createdAt: r.createdAt.toISOString(),
+    })),
+    recentDecisions: decisionRows.map((r) => ({
+      status: r.status,
+      intent: r.intent ?? null,
+      reason: (r.result as any)?.reason ?? (Array.isArray((r.result as any)?.errors) ? (r.result as any).errors[0] : null),
+      at: (r.executedAt ?? r.createdAt)?.toISOString?.() ?? null,
     })),
   };
 }

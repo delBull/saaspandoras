@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getNexusAuthContext } from '@saasfly/shared';
 import { getApprovals } from "@/lib/nexus/operations-repo";
 import { resolveCampaignApproval } from "@/lib/growth/campaign-approval";
+import { publishCommunityProposal } from "@saasfly/hermes-core";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -79,7 +80,22 @@ export async function PATCH(request: Request) {
       console.warn("[Approvals] no se pudo aplicar a la campaña:", err?.message || err);
     }
 
-    return NextResponse.json({ success: true, approval: updated });
+    // Fase 2 (ADR-019): propuestas de comunidad → publicar (o rechazar) de verdad.
+    let community: Awaited<ReturnType<typeof publishCommunityProposal>> | null = null;
+    if (typeof updated.what === "string" && updated.what.startsWith("community.publish_post:")) {
+      try {
+        community = await publishCommunityProposal({
+          approvalId: updated.id,
+          decision: action as "APPROVED" | "REJECTED",
+          resolvedBy: auth.collaboratorId ? String(auth.collaboratorId) : null,
+          reason: typeof body.reason === "string" ? body.reason : null,
+        });
+      } catch (err: any) {
+        console.warn("[Approvals] fallo al publicar la propuesta de comunidad:", err?.message || err);
+      }
+    }
+
+    return NextResponse.json({ success: true, approval: updated, community });
   } catch (err: any) {
     console.error("[Approvals] PATCH Error:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });

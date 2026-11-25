@@ -85,13 +85,22 @@ Qué devuelve:
 | Quién puede pedirle | sólo tú |
 | Automatizaciones | digest L-V 8:00 · plan lunes 9:00 · revisar aprobaciones cada hora |
 
+## 4-bis. Ciclo completo (fase 2)
+
+Al aprobar en `/growth-os/organizations/snarai/approvals`:
+
+- el servidor **revalida** el texto y el canal (lista blanca `s-narai-*`);
+- reclama la propuesta de forma atómica (nadie publica dos veces);
+- publica con el bot de Discord y guarda mensaje por canal;
+- si rechazas, guarda tu motivo y el agente lo ve en el siguiente `report`.
+
 ## 5. Qué puede y qué no
 
 | Puede | No puede |
 |---|---|
 | Leer embudo, fuentes, clics y pendientes | Publicar en Discord |
 | Redactar posts y propuestas | Aprobar |
-| Crear la aprobación (queda pendiente) | Tocar la base de datos |
+| Crear la aprobación (queda pendiente) | Aprobar (eso es humano) |
 | Reportar el resultado de lo aprobado | Asignar roles |
 
 ## 6. Verificación
