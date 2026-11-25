@@ -498,3 +498,4 @@ export * from './knowledge/governance-service';
 export * from './community/community-capabilities';
 export * from './community/community-gateway';
 export * from './community/community-publisher';
+export * from './community/community-insights';

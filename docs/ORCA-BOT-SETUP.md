@@ -60,20 +60,60 @@ El binario (~60 MB, con `ethers` incluido) no necesita el repo ni `node_modules`
 ./community-agent propose --file=posts.json --intent="Plan de la semana"
 ```
 
-`posts.json`:
+`posts.json` (la imagen es opcional y debe ser `https`):
 
 ```json
 [
-  { "channel": "s-narai-la-oportunidad", "text": "…" },
+  { "channel": "s-narai-la-oportunidad", "text": "…", "imageUrl": "https://…/render.png" },
   { "channel": "s-narai-preguntas", "text": "…" }
 ]
 ```
 
 Qué devuelve:
 
-- `REPORT_READY` con el digest (etapas, fuentes, clics, aprobaciones pendientes).
+- `REPORT_READY` con el digest (etapas, fuentes, clics, aprobaciones pendientes, decisiones recientes y atribución).
 - `PENDING_APPROVAL` con `approvalId` y advertencias → aparece en `/growth-os/organizations/snarai/approvals`.
 - `REJECTED_BY_POLICY` con las violaciones (no se crea nada).
+
+## 3-bis. Lectura de Discord (`read`) — bot de sólo lectura
+
+El bot que publica (Hermes) **no** se usa para leer: tiene `Manage Roles` y `Manage Channels`. La
+lectura la hace un bot aparte, `S'Narai Reader`, con permisos únicamente de **Ver canales (1024) +
+Leer historial (65536) = 66560**.
+
+| Dato | Valor |
+|---|---|
+| Carpeta | `/Users/Marco/.orca/bots/s-narai-reader` |
+| `.env` (600) | `DISCORD_READER_TOKEN`, `DISCORD_GUILD_ID` |
+| Token | **sólo** ahí; nunca en Vercel, nunca el de publicación |
+
+```bash
+# salud + moderación de todos los canales s-narai-* (50 mensajes por canal)
+./community-agent read
+
+# un canal, 100 mensajes, sólo salud, guardando el JSON
+./community-agent read --channel=s-narai-preguntas --limit=100 --analyze=health --out=salud.json
+
+# sólo amenazas (spam, invitaciones ajenas, promesas prohibidas, enlaces externos)
+./community-agent read --analyze=moderation
+```
+
+Salida: `health` (mensajes, autores, preguntas, sin responder, horas de la más vieja) y `moderation`
+(hallazgos con severidad y extracto). **No borra, no silencia y no responde**: son avisos para un
+humano. El token del lector no puede escribir, así que un hallazgo jamás se ejecuta solo.
+
+## 3-ter. Atribución por publicación
+
+Cada publicación propuesta recibe un enlace propio `/l/<code>` que se añade al texto **antes** de la
+aprobación (el aprobador ve exactamente lo que se publica). El digest devuelve `attribution`:
+
+```json
+{ "proposalId": "CMP-…", "channel": "s-narai-anuncios", "code": "ab12cd34",
+  "opens": 12, "uniqueVisitors": 9, "leads": null }
+```
+
+`leads: null` significa **no atribuible**: la landing externa no reenvió el código. Un `0` significaría
+"llegó gente y nadie convirtió", que es distinto y no se inventa.
 
 ## 4. Configuración del bot en Orca
 

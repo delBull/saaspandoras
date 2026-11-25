@@ -158,10 +158,17 @@ export async function publishCommunityProposal(input: {
       continue;
     }
     try {
+      // La imagen se publica como embed (Discord no acepta adjuntos por URL en
+      // `content`). Si el embed falla por una URL rota, el mensaje sigue vivo.
+      const payload: Record<string, unknown> = { content: post.text };
+      if (post.imageUrl) {
+        payload.embeds = [{ image: { url: post.imageUrl } }];
+      }
+
       const res = await fetch(`${API}/channels/${channelId}/messages`, {
         method: 'POST',
         headers: { Authorization: `Bot ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: post.text }),
+        body: JSON.stringify(payload),
         cache: 'no-store',
       });
       if (!res.ok) {

@@ -20,7 +20,7 @@ import {
   nexusOutreachEvents,
   nexusOutreachLinks,
 } from '@saasfly/db-core/schema';
-import { and, desc, eq, gte, inArray, isNotNull, sql } from '@saasfly/db-core';
+import { and, desc, eq, gte, inArray, isNotNull, or, sql } from '@saasfly/db-core';
 import { COMMUNITY_CAPABILITIES } from './community-capabilities';
 
 /** Términos prohibidos por `banned_topics` v2 (política vigente del tenant). */
@@ -49,6 +49,13 @@ const REVIEW_FLAGS: Array<{ pattern: RegExp; warning: string }> = [
 export interface CommunityPostInput {
   channel: string;
   text: string;
+  /** Imagen opcional (https). Se publica como embed. */
+  imageUrl?: string;
+  /**
+   * Código de atribución (`/l/<code>`) asignado por el servidor al proponer.
+   * No lo envía el cliente: sirve para cruzar publicación → clics → leads.
+   */
+  code?: string;
 }
 
 export interface CommunityPostValidation {
@@ -66,6 +73,9 @@ export function validateCommunityPost(post: CommunityPostInput): CommunityPostVa
   if (text.length > 1800) violations.push(`Excede 1800 caracteres (${text.length})`);
   if (!post.channel || !/^[a-z0-9-]{2,64}$/i.test(post.channel)) {
     violations.push(`Canal inválido: "${post.channel}"`);
+  }
+  if (post.imageUrl && !/^https:\/\//i.test(post.imageUrl)) {
+    violations.push('La imagen debe ser una URL https');
   }
 
   for (const term of FORBIDDEN_TERMS) {
@@ -86,6 +96,24 @@ export interface CommunityDigest {
   sources: Array<{ source: string; count: number }>;
   links: Array<{ code: string; label: string | null; opens: number; destination: string | null }>;
   pendingApprovals: Array<{ id: string; what: string; why: string; createdAt: string }>;
+  /**
+   * Atribución por publicación (punto 3 del roadmap).
+   *
+   * Cruza cada publicación ejecutada con su enlace `/l/<code>`: aperturas,
+   * visitantes únicos y leads que llegaron con ese código. `leads: null` significa
+   * **no atribuible** (la landing externa no reenvió el código), no "cero".
+   */
+  attribution: Array<{
+    proposalId: string;
+    intent: string | null;
+    channel: string;
+    code: string | null;
+    status: string;
+    publishedAt: string | null;
+    opens: number;
+    uniqueVisitors: number;
+    leads: number | null;
+  }>;
   /**
    * Fase 3 (ADR-019): decisiones recientes con su motivo. El agente las lee en
    * cada corrida para no volver a proponer lo que ya se rechazó.
@@ -162,6 +190,89 @@ export async function buildCommunityDigest(input: {
     .orderBy(desc(communityProposals.createdAt))
     .limit(15);
 
+  // Atribución por publicación: la propuesta guarda el código de cada post.
+  const executedRows = await db
+    .select({
+      id: communityProposals.id,
+      intent: communityProposals.intent,
+      status: communityProposals.status,
+      posts: communityProposals.posts,
+      executedAt: communityProposals.executedAt,
+    })
+    .from(communityProposals)
+    .where(and(
+      eq(communityProposals.canonicalOrgId, input.canonicalOrgId),
+      eq(communityProposals.status, 'EXECUTED'),
+    ))
+    .orderBy(desc(communityProposals.executedAt))
+    .limit(20);
+
+  const codes = Array.from(new Set(
+    executedRows.flatMap((row) => (row.posts ?? []).map((post) => post.code).filter(Boolean) as string[]),
+  ));
+
+  const linkStats = new Map<string, { opens: number; uniqueVisitors: number }>();
+  const leadsByCode = new Map<string, number>();
+
+  if (codes.length > 0) {
+    const statsRows = await db
+      .select({
+        code: nexusOutreachLinks.code,
+        opens: sql<number>`count(${nexusOutreachEvents.id})::int`,
+        uniqueVisitors: sql<number>`count(distinct ${nexusOutreachEvents.ipHash})::int`,
+      })
+      .from(nexusOutreachLinks)
+      .leftJoin(nexusOutreachEvents, and(
+        eq(nexusOutreachEvents.linkId, nexusOutreachLinks.id),
+        eq(nexusOutreachEvents.event, 'OPEN'),
+      ))
+      .where(inArray(nexusOutreachLinks.code, codes))
+      .groupBy(nexusOutreachLinks.code);
+
+    for (const row of statsRows) {
+      linkStats.set(row.code, { opens: Number(row.opens), uniqueVisitors: Number(row.uniqueVisitors) });
+    }
+
+    // Los leads sólo son atribuibles si la landing reenvía el código (`src`).
+    // Si no lo hace, se reporta null en lugar de un cero que parecería "no convirtió".
+    const leadRows = await db
+      .select({
+        source: marketingLeads.source,
+        metadataSrc: sql<string | null>`${marketingLeads.metadata}->>'src'`,
+      })
+      .from(marketingLeads)
+      .where(and(
+        eq(marketingLeads.projectId, input.projectId),
+        or(
+          inArray(marketingLeads.source, codes),
+          inArray(sql`${marketingLeads.metadata}->>'src'`, codes),
+        ),
+      ))
+      .limit(2000);
+
+    for (const row of leadRows) {
+      const code = row.source && codes.includes(row.source) ? row.source : row.metadataSrc;
+      if (code && codes.includes(code)) leadsByCode.set(code, (leadsByCode.get(code) ?? 0) + 1);
+    }
+  }
+
+  const attribution = executedRows.flatMap((row) =>
+    (row.posts ?? []).map((post) => {
+      const stats = post.code ? linkStats.get(post.code) : undefined;
+      return {
+        proposalId: row.id,
+        intent: row.intent ?? null,
+        channel: post.channel,
+        code: post.code ?? null,
+        status: row.status,
+        publishedAt: row.executedAt?.toISOString() ?? null,
+        opens: stats?.opens ?? 0,
+        uniqueVisitors: stats?.uniqueVisitors ?? 0,
+        leads: post.code ? leadsByCode.get(post.code) ?? null : null,
+      };
+    }),
+  );
+
   return {
     tenantId: input.canonicalOrgId,
     generatedAt: new Date().toISOString(),
@@ -186,6 +297,7 @@ export async function buildCommunityDigest(input: {
       reason: (r.result as any)?.reason ?? (Array.isArray((r.result as any)?.errors) ? (r.result as any).errors[0] : null),
       at: (r.executedAt ?? r.createdAt)?.toISOString?.() ?? null,
     })),
+    attribution,
   };
 }
 
@@ -254,6 +366,34 @@ export async function createCommunityProposal(input: {
     };
   }
 
+  // Atribución: cada publicación recibe su propio enlace /l/<code>. Se añade al
+  // texto ANTES de guardarlo, para que el aprobador vea exactamente lo que se
+  // publicará y luego podamos medir qué post trae gente.
+  const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://dash.pandoras.finance').replace(/\/$/, '');
+  const postsWithTracking: CommunityPostInput[] = [];
+  for (const post of input.posts) {
+    let attributed: CommunityPostInput = post;
+    // Reintento corto por colisión del código (el índice es único): si no se
+    // consigue, la publicación sigue sin código en lugar de perderse.
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const code = crypto.randomBytes(6).toString('base64url').replace(/[^a-zA-Z0-9]/g, '').slice(0, 8).toLowerCase();
+      const destination = `${baseUrl}/l/${code}`;
+      try {
+        await db.insert(nexusOutreachLinks).values({
+          code,
+          door: 'community',
+          targetLabel: `${proposalId} · ${post.channel}`.slice(0, 255),
+          destinationUrl: 'https://snarai.aztecaz.xyz/?utm_source=discord&utm_medium=social',
+        });
+        attributed = { ...post, text: `${post.text}\n\n${destination}`, code };
+        break;
+      } catch {
+        // código repetido: se intenta otro
+      }
+    }
+    postsWithTracking.push(attributed);
+  }
+
   // El texto se guarda ANTES de la aprobación: aprobar sin contenido no tendría
   // qué ejecutar, y la evidencia se perdería.
   await db.insert(communityProposals).values({
@@ -262,7 +402,7 @@ export async function createCommunityProposal(input: {
     projectId: input.projectId,
     proposalKey: idempotencyKey,
     intent: input.intent ?? null,
-    posts: input.posts,
+    posts: postsWithTracking,
     approvalId,
     status: 'PENDING',
     requestedBy: input.requestedBy,

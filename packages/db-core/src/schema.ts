@@ -4378,7 +4378,7 @@ export const communityProposals = pgTable("community_proposals", {
   projectId: integer("project_id").notNull(),
   proposalKey: varchar("proposal_key", { length: 120 }).notNull(),
   intent: text("intent"),
-  posts: jsonb("posts").$type<Array<{ channel: string; text: string }>>().notNull(),
+  posts: jsonb("posts").$type<Array<{ channel: string; text: string; imageUrl?: string; code?: string }>>().notNull(),
   approvalId: varchar("approval_id", { length: 64 }),
   status: varchar("status", { length: 24 }).notNull().default('PENDING'),
   requestedBy: varchar("requested_by", { length: 255 }),

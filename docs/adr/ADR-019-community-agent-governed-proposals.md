@@ -185,3 +185,22 @@ por el sistema; el humano decide; cada acción deja traza con identidad propia.
 | 2 | Ejecución: publica tras la aprobación, con revalidación, lista blanca de canales y reclamo atómico | ✅ implementado (resultado en `community_proposals.result`) |
 | 3 | Señal de aprendizaje: decisiones con motivo en el digest (`recentDecisions`) | ✅ implementado; el extractor LLM de `HermesLearningLoop` queda como deuda (es por perfil de usuario, no por decisión) |
 | 4 | Ampliar: responder hilo, agendar AMA, mover etapa del lead | pendiente |
+
+## 7. Lectura, media y atribución (roadmap de community)
+
+| # | Integración | Estado | Evidencia / límite |
+|---|---|---|---|
+| 1 | Lectura de Discord con bot dedicado (`read`) | ✅ implementado · ⏳ credencial | `community-insights.ts` (analizadores puros) + `read` en la CLI. El token de `S'Narai Reader` es **sólo lectura** (66560) y vive únicamente en `~/.orca/bots/s-narai-reader/.env`. Sin token el comando falla cerrado. |
+| 2 | Media en publicaciones | 🟡 parcial | `imageUrl` se valida (`https`) en la propuesta y se publica como **embed** en `community-publisher`. La **generación** de la imagen sigue en `HermesMediaOrchestratorService`; no se añadió una capacidad nueva para no duplicar ese motor. |
+| 3 | Atribución por publicación | ✅ implementado | Cada post recibe su código `/l/<code>` al proponerse (guardado en `community_proposals.posts[].code`). El digest devuelve `attribution` con `opens`, `uniqueVisitors` y `leads` (`null` = no atribuible, nunca 0 inventado). |
+| 4 | Moderación en modo reporte | ✅ analizador · ⏳ cableado a lectura | `analyzeModeration` detecta invitaciones ajenas, promesas prohibidas, enlaces externos y repetición. Nunca borra ni silencia: sólo reporta. Requiere el token del lector para operar sobre datos reales. |
+| 5 | Salud de comunidad semanal | ✅ analizador · ⏳ cableado a lectura | `buildCommunityHealth` cuenta mensajes, autores, preguntas y sin responder (conservador: sólo dentro de la ventana leída). |
+| 6 | Otras redes | ❌ bloqueado | Existen `media.publish.channel:x/telegram/newsletter` en A2A, pero cada red necesita credencial propia y su política. |
+| 7 | AMAs y eventos | ❌ bloqueado | Requiere permiso `Manage Events` en el bot de Hermes y una capacidad nueva. |
+
+Reglas que se mantienen:
+
+- El bot **lector** no puede escribir; el que **publica** no lee contenido de terceros para razonar.
+- Todo hallazgo de moderación es una recomendación: la ejecución sigue siendo humana.
+- La atribución no inventa: si la landing externa no reenvía `src`, `leads` es `null`.
+
