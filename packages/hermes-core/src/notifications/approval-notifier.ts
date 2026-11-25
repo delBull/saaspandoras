@@ -158,6 +158,7 @@ export async function notifyApprovalPending(input: ApprovalNoticeInput): Promise
   const notice = buildApprovalNotice(input);
 
   let inApp = false;
+  let alreadyNotified = false;
   try {
     const inserted = await db
       .insert(hermesTenantNotifications)
@@ -179,8 +180,15 @@ export async function notifyApprovalPending(input: ApprovalNoticeInput): Promise
       .onConflictDoNothing()
       .returning({ id: hermesTenantNotifications.id });
     inApp = Array.isArray(inserted) && inserted.length > 0;
+    // El índice único (tenant, dedupeKey) es la garantía: si ya existía, el aviso
+    // ya se envió y no se reenvía al canal (una aprobación = un aviso).
+    alreadyNotified = !inApp;
   } catch (err: any) {
     console.warn('[ApprovalNotifier] No se pudo registrar el aviso in-app:', err?.message || err);
+  }
+
+  if (alreadyNotified) {
+    return { inApp: false, webhook: 'SKIPPED' };
   }
 
   const webhookUrl = await resolveApprovalWebhook(input.canonicalOrgId);

@@ -123,9 +123,25 @@ describe('Approval notifier · aviso', () => {
     expect(String(init.body)).toContain('Aprobación');
   });
 
+  it('una aprobación ya avisada no reenvía el webhook', async () => {
+    selectLimit.mockResolvedValueOnce([{ target: 'https://discord.com/api/webhooks/1/abc' }]);
+    insertReturning.mockResolvedValueOnce([]); // conflicto: ya existía el aviso
+
+    const result = await notifyApprovalPending({
+      canonicalOrgId: 'snarai',
+      approvalId: 'APP-6',
+      intent: 'Apertura',
+      channels: ['s-narai-anuncios'],
+      posts: 1,
+    });
+
+    expect(result).toEqual({ inApp: false, webhook: 'SKIPPED' });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it('un webhook caído no rompe la creación de la aprobación', async () => {
     selectLimit.mockResolvedValueOnce([{ target: 'https://discord.com/api/webhooks/1/abc' }]);
-    insertReturning.mockResolvedValueOnce([]);
+    insertReturning.mockResolvedValueOnce([{ id: 'ntf_3' }]);
     fetchMock.mockRejectedValueOnce(new Error('network down'));
 
     const result = await notifyApprovalPending({
