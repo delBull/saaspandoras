@@ -14,7 +14,7 @@ import jwt from 'jsonwebtoken';
 import { db } from '@saasfly/db-core';
 import { installedProducts, projects } from '@saasfly/db-core/schema';
 import { eq, and } from "@saasfly/db-core";
-import { randomUUID } from 'crypto';
+import { createHmac, randomUUID, timingSafeEqual } from 'crypto';
 
 const PORTAL_JWT_SECRET = process.env.PORTAL_JWT_SECRET || process.env.NEXTAUTH_SECRET || '';
 const PORTAL_SESSION_DURATION_DAYS = 30;
@@ -44,6 +44,58 @@ export interface PortalSession {
   projectId: number;
   product: string;
   expiresAt: Date;
+}
+
+// ── Sesiones virtuales firmadas ───────────────────────────────────────────────
+
+/**
+ * Una sesión virtual (`ps_v_<projectId>_<hash>[_<firma>]`) no tiene fila en base
+ * que comparar, así que su validez debe salir de una firma. Antes se aceptaba
+ * cualquier `ps_v_<id>_<32hex>`: bastaba inventar el hash para obtener sesión de
+ * CUALQUIER proyecto. Ahora la firma es obligatoria.
+ */
+export function signVirtualSessionToken(projectId: number, hash: string): string {
+  const cleanHash = String(hash).toLowerCase();
+  const signature = createHmac('sha256', requirePortalSecret())
+    .update(`portal:virtual:v1:${projectId}:${cleanHash}`)
+    .digest('hex')
+    .slice(0, 32);
+
+  return `ps_v_${projectId}_${cleanHash}_${signature}`;
+}
+
+/**
+ * Verifica la firma de una sesión virtual. Devuelve `null` si el formato no es
+ * el firmado o si la firma no coincide (incluye los tokens antiguos sin firma).
+ */
+export function verifyVirtualSessionToken(
+  token: string,
+): { projectId: number; hash: string } | null {
+  const match = String(token).match(/^ps_v_(\d{1,10})_([a-f0-9]{32})_([a-f0-9]{32})$/i);
+  if (!match) return null;
+
+  const projectId = Number(match[1]);
+  const hash = match[2]!.toLowerCase();
+  const presented = Buffer.from(match[3]!.toLowerCase(), 'hex');
+
+  let expected: Buffer;
+  try {
+    expected = Buffer.from(
+      createHmac('sha256', requirePortalSecret())
+        .update(`portal:virtual:v1:${projectId}:${hash}`)
+        .digest('hex')
+        .slice(0, 32),
+      'hex',
+    );
+  } catch {
+    // Sin secreto configurado no se valida nada (fail-closed).
+    return null;
+  }
+
+  if (presented.length !== expected.length) return null;
+  if (!timingSafeEqual(presented, expected)) return null;
+
+  return { projectId, hash };
 }
 
 // ── Token Generation ──────────────────────────────────────────────────────────
@@ -139,7 +191,7 @@ export async function consumePortalToken(token: string): Promise<PortalSession> 
   }
 
   // Embed the projectId in the session token so validatePortalSession can recover it if it's virtual
-  const sessionToken = `ps_v_${actualProjectId}_${randomUUID().replace(/-/g, '')}`;
+  const sessionToken = signVirtualSessionToken(actualProjectId, randomUUID().replace(/-/g, ''));
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + PORTAL_SESSION_DURATION_DAYS);
 
@@ -196,11 +248,13 @@ export async function validatePortalSession(sessionToken: string): Promise<{
       };
     }
 
-    // 2. Recovery for embedded virtual/project sessions (ps_v_<projectId>_<hash>)
-    const match = sessionToken.match(/^ps_v_(\d+)_[a-f0-9]{32}$/i);
-    if (match && match[1]) {
-      const projectId = parseInt(match[1], 10);
-      if (!isNaN(projectId) && projectId > 0) {
+    // 2. Recovery for embedded virtual/project sessions: la firma es obligatoria.
+    //    Un `ps_v_<projectId>_<hash>` sin firma es una sesión forjable, así que los
+    //    tokens antiguos sin firma dejan de valer (a propósito).
+    const virtual = verifyVirtualSessionToken(sessionToken);
+    if (virtual) {
+      const projectId = virtual.projectId;
+      if (projectId > 0) {
         // Check if installedProduct exists for this project
         const productRow = await db.query.installedProducts.findFirst({
           where: eq(installedProducts.projectId, projectId),

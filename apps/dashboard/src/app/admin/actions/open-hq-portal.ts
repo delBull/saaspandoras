@@ -10,7 +10,7 @@
  *
  * Security:
  *  - Requires isAdmin(wallet) validation — any non-admin call returns an error.
- *  - Token is virtual (ps_v_<projectId>_<uuid>), following the existing
+ *  - Token is virtual and FIRMADO (HMAC), validado por validatePortalSession.
  *    validatePortalSession fallback path in portal-auth.ts (lines 181-218).
  *  - Cookie is HttpOnly, SameSite=Lax, 1h TTL — minimal blast radius.
  */
@@ -19,6 +19,7 @@ import { cookies, headers } from 'next/headers';
 import { randomUUID } from 'crypto';
 import { getAuth, isAdmin } from '@saasfly/auth-sdk';
 import { OrganizationSDK } from '@saasfly/shared';
+import { signVirtualSessionToken } from '@/lib/platform/portal-auth';
 
 const PORTAL_SESSION_COOKIE = 'pandoras_portal_session';
 const HQ_ORG_SLUG = 'pandoras';
@@ -56,8 +57,9 @@ export async function openHQPortalAction(): Promise<
       };
     }
 
-    // 4. Generate a virtual session token (matches validatePortalSession ps_v_ path)
-    const sessionToken = `ps_v_${projectId}_${randomUUID().replace(/-/g, '')}`;
+    // 4. Generate a SIGNED virtual session token. Desde el cierre del bypass, un
+    //    `ps_v_<id>_<hash>` sin firma es rechazado por validatePortalSession.
+    const sessionToken = signVirtualSessionToken(projectId, randomUUID().replace(/-/g, ''));
 
     // 5. Set HttpOnly cookie — server-side only, so no JS can read it
     const cookieStore = await cookies();
