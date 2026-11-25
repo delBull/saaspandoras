@@ -16,11 +16,40 @@
  *    log de seguridad.
  */
 import { db } from '@saasfly/db-core';
-import { communityProposals } from '@saasfly/db-core/schema';
+import { communityProposals, tenantSocialIntegrations } from '@saasfly/db-core/schema';
 import { and, eq } from '@saasfly/db-core';
 import { SecurityAuditLogger } from '../runtime/security-audit-logger';
 import { validateCommunityPost } from './community-gateway';
 import { isChannelOfTenant } from './channel-prefixes';
+import { DirectChannelPublisher } from '../channels/publishers/direct-channel-publisher';
+
+const isDiscordPost = (post: { platform?: string }) => (post.platform ?? 'discord') === 'discord';
+
+/**
+ * Integración CONNECTED del tenant para esa red. El `channel` del post es el
+ * handle; si no coincide con ninguno, se usa la primera cuenta conectada.
+ */
+async function resolveSocialIntegration(
+  canonicalOrgId: string,
+  platform: string,
+  handle: string,
+): Promise<string | null> {
+  const rows = await db
+    .select({ id: tenantSocialIntegrations.id, accountHandle: tenantSocialIntegrations.accountHandle })
+    .from(tenantSocialIntegrations)
+    .where(and(
+      eq(tenantSocialIntegrations.tenantId, canonicalOrgId),
+      eq(tenantSocialIntegrations.channel, platform),
+      eq(tenantSocialIntegrations.status, 'CONNECTED'),
+    ))
+    .limit(10);
+
+  const first = rows[0];
+  if (!first) return null;
+  const wanted = String(handle || '').replace(/^@/, '').toLowerCase();
+  const match = rows.find((row) => String(row.accountHandle || '').replace(/^@/, '').toLowerCase() === wanted);
+  return (match ?? first).id;
+}
 
 const API = 'https://discord.com/api/v10';
 
@@ -107,11 +136,14 @@ export async function publishCommunityProposal(input: {
 
   // Revalidación antes de publicar: el texto se aprobó, pero la política se
   // vuelve a aplicar para que un cambio de reglas no deje pasar algo prohibido.
+  const posts = proposal.posts ?? [];
   const violations: string[] = [];
-  for (const post of proposal.posts ?? []) {
+  for (const post of posts) {
     const result = validateCommunityPost(post);
     violations.push(...result.violations.map((v) => `${post.channel}: ${v}`));
-    if (!isAllowedChannelName(post.channel, proposal.canonicalOrgId)) violations.push(`${post.channel}: canal fuera de la lista blanca`);
+    if (isDiscordPost(post) && !isAllowedChannelName(post.channel, proposal.canonicalOrgId)) {
+      violations.push(`${post.channel}: canal fuera de la lista blanca`);
+    }
   }
   if (violations.length > 0) {
     await db
@@ -130,8 +162,9 @@ export async function publishCommunityProposal(input: {
 
   if (!claimed) return { status: 'ALREADY_HANDLED', published: [], errors: [] };
 
-  const token = botToken();
-  if (!token) {
+  const needsDiscord = posts.some(isDiscordPost);
+  const token = needsDiscord ? botToken() : null;
+  if (needsDiscord && !token) {
     await db
       .update(communityProposals)
       .set({ status: 'FAILED', result: { decision: 'FAILED', error: 'DISCORD_BOT_TOKEN ausente' } })
@@ -139,21 +172,53 @@ export async function publishCommunityProposal(input: {
     return { status: 'FAILED', published: [], errors: ['DISCORD_BOT_TOKEN ausente'] };
   }
 
-  let allowed: Map<string, string>;
-  try {
-    allowed = await resolveAllowedChannels(proposal.canonicalOrgId);
-  } catch (err: any) {
-    await db
-      .update(communityProposals)
-      .set({ status: 'FAILED', result: { decision: 'FAILED', error: err?.message || 'canales inaccesibles' } })
-      .where(eq(communityProposals.id, proposal.id));
-    return { status: 'FAILED', published: [], errors: [err?.message || 'canales inaccesibles'] };
+  let allowed = new Map<string, string>();
+  if (needsDiscord) {
+    try {
+      allowed = await resolveAllowedChannels(proposal.canonicalOrgId);
+    } catch (err: any) {
+      await db
+        .update(communityProposals)
+        .set({ status: 'FAILED', result: { decision: 'FAILED', error: err?.message || 'canales inaccesibles' } })
+        .where(eq(communityProposals.id, proposal.id));
+      return { status: 'FAILED', published: [], errors: [err?.message || 'canales inaccesibles'] };
+    }
   }
 
   const published: Array<{ channel: string; messageId: string }> = [];
   const errors: string[] = [];
+  const directPublisher = needsDiscord || posts.length > 0 ? new DirectChannelPublisher() : null;
 
-  for (const post of proposal.posts ?? []) {
+  for (const post of posts) {
+    // ── Redes sociales (Instagram / Facebook) ────────────────────────────────
+    if (!isDiscordPost(post)) {
+      const platform = String(post.platform);
+      try {
+        const integrationId = await resolveSocialIntegration(proposal.canonicalOrgId, platform, post.channel);
+        if (!integrationId) {
+          errors.push(`${post.channel}: cuenta de ${platform} no conectada`);
+          continue;
+        }
+
+        const receipt = await directPublisher!.publishToChannel(proposal.canonicalOrgId, integrationId, {
+          text: post.text,
+          mediaUrls: post.imageUrl ? [post.imageUrl] : [],
+          contentType: post.imageUrl ? 'image' : 'text',
+          idempotencyKey: `${proposal.id}:${platform}:${integrationId}`,
+        });
+
+        if (!receipt.success) {
+          errors.push(`${post.channel}: ${receipt.errorCode}${receipt.errorMessage ? ` — ${receipt.errorMessage}` : ''}`);
+          continue;
+        }
+        published.push({ channel: `${platform}:${post.channel}`, messageId: String(receipt.externalPostId ?? '') });
+      } catch (err: any) {
+        errors.push(`${post.channel}: ${err?.message || 'error de red'}`);
+      }
+      continue;
+    }
+
+    // ── Discord ─────────────────────────────────────────────────────────────
     const channelId = allowed.get(post.channel);
     if (!channelId) {
       errors.push(`${post.channel}: canal no disponible o no permitido`);

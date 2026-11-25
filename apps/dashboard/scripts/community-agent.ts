@@ -294,7 +294,7 @@ async function main() {
   }
 
   if (command === 'propose') {
-    let posts: Array<{ channel: string; text: string; imageUrl?: string }> = [];
+    let posts: Array<{ channel: string; text: string; imageUrl?: string; platform?: string }> = [];
     const file = arg('file');
     if (file) {
       const parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
@@ -303,11 +303,16 @@ async function main() {
       const channel = arg('channel');
       const text = arg('text');
       const imageUrl = arg('image');
+      const platform = arg('platform');
       if (!channel || !text) {
-        console.error('Uso: propose --channel=<canal> --text="…" [--image=https://…] | --file=posts.json [--intent="…"]');
+        console.error('Uso: propose --channel=<canal|handle> --text="…" [--platform=discord|instagram|facebook] [--image=https://…] | --file=posts.json [--intent="…"]');
         process.exit(1);
       }
-      posts = [{ channel, text, ...(imageUrl ? { imageUrl } : {}) }];
+      if (platform && !['discord', 'instagram', 'facebook'].includes(platform)) {
+        console.error('--platform debe ser discord, instagram o facebook.');
+        process.exit(1);
+      }
+      posts = [{ channel, text, ...(imageUrl ? { imageUrl } : {}), ...(platform ? { platform } : {}) }];
     }
 
     // Clave de idempotencia: si el bot reintenta la misma propuesta, no se

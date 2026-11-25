@@ -838,6 +838,49 @@ export class A2AMessageHandler {
       };
     }
 
+    // ── Redes sociales (ADR-020): la propuesta es la misma, cambia la plataforma ──
+    const socialMatch = /^media\.publish\.channel:(instagram|facebook)$/.exec(capability);
+    if (socialMatch) {
+      const platform = socialMatch[1] as 'instagram' | 'facebook';
+      const result = await createCommunityProposal({
+        canonicalOrgId,
+        projectId,
+        posts: [{
+          channel: String(payload.channel || payload.handle || '').trim(),
+          text: String(payload.text || ''),
+          platform,
+          imageUrl: typeof payload.imageUrl === 'string' ? payload.imageUrl : undefined,
+        }],
+        requestedBy: `a2a:${message.from}`,
+        intent: typeof payload.intent === 'string' ? payload.intent : `Publicación en ${platform}`,
+        proposalKey: typeof payload.proposalKey === 'string' ? payload.proposalKey : undefined,
+      });
+
+      await SecurityAuditLogger.logEvent({
+        organizationId: canonicalOrgId,
+        actorId: `a2a:${message.from}`,
+        eventType: 'A2A_MESSAGE_RECEIVED',
+        severity: result.status === 'REJECTED_BY_POLICY' ? 'WARN' : 'INFO',
+        policyDecision: result.status === 'REJECTED_BY_POLICY' ? 'DENY' : 'ESCALATE',
+        correlationId: message.messageId,
+        metadata: {
+          capability,
+          platform,
+          status: result.status,
+          approvalId: result.status === 'PENDING_APPROVAL' ? result.approvalId : undefined,
+          violations: result.status === 'REJECTED_BY_POLICY' ? result.violations.slice(0, 5) : undefined,
+        },
+      }).catch(() => {});
+
+      return {
+        success: true,
+        messageId: `resp_${crypto.randomUUID()}`,
+        correlationId: message.messageId,
+        type: 'capability.completed',
+        payload: { capability, platform, ...result },
+      };
+    }
+
     return {
       success: false,
       messageId: `resp_${crypto.randomUUID()}`,

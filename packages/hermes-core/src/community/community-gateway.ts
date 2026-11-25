@@ -47,9 +47,16 @@ const REVIEW_FLAGS: Array<{ pattern: RegExp; warning: string }> = [
   { pattern: /https?:\/\//i, warning: 'Incluye enlaces: verifica que sean oficiales' },
 ];
 
+export type CommunityPlatform = 'discord' | 'instagram' | 'facebook';
+
 export interface CommunityPostInput {
   channel: string;
   text: string;
+  /**
+   * Red de destino (ADR-020). Por defecto `discord`, que es el canal histórico.
+   * Cada red tiene sus reglas: Instagram exige imagen; Facebook admite texto.
+   */
+  platform?: CommunityPlatform;
   /** Imagen opcional (https). Se publica como embed. */
   imageUrl?: string;
   /**
@@ -72,11 +79,28 @@ export function validateCommunityPost(post: CommunityPostInput): CommunityPostVa
 
   if (!text) violations.push('Texto vacío');
   if (text.length > 1800) violations.push(`Excede 1800 caracteres (${text.length})`);
-  if (!post.channel || !/^[a-z0-9-]{2,64}$/i.test(post.channel)) {
-    violations.push(`Canal inválido: "${post.channel}"`);
+  const platform: CommunityPlatform = post.platform ?? 'discord';
+  if (!['discord', 'instagram', 'facebook'].includes(platform)) {
+    violations.push(`Red no soportada: "${platform}"`);
   }
+
+  if (platform === 'discord') {
+    if (!post.channel || !/^[a-z0-9-]{2,64}$/i.test(post.channel)) {
+      violations.push(`Canal inválido: "${post.channel}"`);
+    }
+  } else {
+    // En redes, `channel` es el handle de la cuenta conectada.
+    if (!post.channel || !/^[a-z0-9._@-]{2,64}$/i.test(post.channel)) {
+      violations.push(`Cuenta inválida: "${post.channel}"`);
+    }
+  }
+
   if (post.imageUrl && !/^https:\/\//i.test(post.imageUrl)) {
     violations.push('La imagen debe ser una URL https');
+  }
+  // Instagram no permite publicaciones de sólo texto.
+  if (platform === 'instagram' && !post.imageUrl) {
+    violations.push('Instagram requiere una imagen');
   }
 
   for (const term of FORBIDDEN_TERMS) {
