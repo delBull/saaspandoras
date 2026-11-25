@@ -97,6 +97,21 @@ capabilities:   community.report · community.publish_post
 | Propuesta inválida | `REJECTED_BY_POLICY` | `violations[]` (no se crea nada) |
 | Capacidad desconocida | error `CAPABILITY_NOT_IMPLEMENTED` | falla cerrada |
 
+### 3.3-bis Secreto propio del agente (no compartido)
+
+`community` **no** usa el `A2A_HMAC_SECRET` compartido de Sofía/Hermes. Tiene el suyo:
+`COMMUNITY_A2A_HMAC_SECRET`. Motivo: el secreto compartido permite firmar un mensaje como `sofia`
+(con `signature: 'mock_sig'` pasa la validación), así que dárselo a un agente que lee contenido de
+terceros habría abierto una escalada de identidad. El transporte acepta el secreto compartido **o** el
+dedicado; el servidor exige, en ambos casos, la firma EIP-191 del agente.
+
+### 3.3-ter Idempotencia
+
+La propuesta lleva `proposalKey`. El servidor la usa como parte de `what`:
+`community.publish_post:<proposalKey>`. Si ya existe una aprobación **PENDING** con la misma clave y
+organización, devuelve esa (`idempotent: true`) en lugar de crear otra. Reintentos del bot no llenan la
+bandeja. La CLI deriva la clave del hash del contenido si no se pasa `--key`.
+
 ### 3.4 Registro de aprobación
 
 `nexus_approvals` con `canonical_org_id`, `what = community.publish_post:<id>`,

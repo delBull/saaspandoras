@@ -812,6 +812,7 @@ export class A2AMessageHandler {
         posts: Array.isArray(payload.posts) ? payload.posts : [],
         requestedBy: `a2a:${message.from}`,
         intent: typeof payload.intent === 'string' ? payload.intent : undefined,
+        proposalKey: typeof payload.proposalKey === 'string' ? payload.proposalKey : undefined,
       });
       await SecurityAuditLogger.logEvent({
         organizationId: canonicalOrgId,

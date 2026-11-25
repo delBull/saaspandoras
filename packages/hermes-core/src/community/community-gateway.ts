@@ -163,7 +163,7 @@ export async function buildCommunityDigest(input: {
 
 export type CommunityProposalResult =
   | { status: 'REJECTED_BY_POLICY'; violations: string[]; warnings: string[] }
-  | { status: 'PENDING_APPROVAL'; approvalId: string; warnings: string[]; posts: number };
+  | { status: 'PENDING_APPROVAL'; approvalId: string; warnings: string[]; posts: number; idempotent?: boolean };
 
 /**
  * Crea la aprobación. No publica: la ejecución ocurre tras la decisión humana.
@@ -174,6 +174,12 @@ export async function createCommunityProposal(input: {
   posts: CommunityPostInput[];
   requestedBy: string;
   intent?: string;
+  /**
+   * Clave de idempotencia del cliente. Si llega la misma, se devuelve la
+   * aprobación pendiente existente en lugar de crear un duplicado (los reintentos
+   * del bot no deben llenar la bandeja).
+   */
+  proposalKey?: string;
 }): Promise<CommunityProposalResult> {
   if (!Array.isArray(input.posts) || input.posts.length === 0) {
     return { status: 'REJECTED_BY_POLICY', violations: ['Sin publicaciones'], warnings: [] };
@@ -196,6 +202,24 @@ export async function createCommunityProposal(input: {
 
   const approvalId = `APP-${Date.now()}-${crypto.randomBytes(2).toString('hex')}`.slice(0, 64);
   const actionToken = crypto.randomBytes(16).toString('hex');
+  const idempotencyKey = (input.proposalKey || approvalId).slice(0, 120);
+  const what = `${COMMUNITY_CAPABILITIES.PROPOSE_PUBLISH}:${idempotencyKey}`;
+
+  // Idempotencia: misma clave + misma organización + aún pendiente → devolver la
+  // existente. Un reintento no crea una segunda aprobación.
+  const [existing] = await db
+    .select({ id: nexusApprovals.id })
+    .from(nexusApprovals)
+    .where(and(
+      eq(nexusApprovals.canonicalOrgId, input.canonicalOrgId),
+      eq(nexusApprovals.what, what),
+      eq(nexusApprovals.status, 'PENDING'),
+    ))
+    .limit(1);
+
+  if (existing) {
+    return { status: 'PENDING_APPROVAL', approvalId: existing.id, warnings, posts: input.posts.length, idempotent: true };
+  }
 
   await db.insert(nexusApprovals).values({
     id: approvalId,
@@ -203,7 +227,7 @@ export async function createCommunityProposal(input: {
     actionToken,
     proposerId: null,
     proposerName: input.requestedBy,
-    what: `${COMMUNITY_CAPABILITIES.PROPOSE_PUBLISH}:${approvalId}`,
+    what,
     why: (input.intent || `Propuesta de ${input.posts.length} publicación(es) de comunidad`).slice(0, 500),
     resourceScope: `project:${input.projectId}|posts:${input.posts.length}`.slice(0, 256),
     capabilityRequired: COMMUNITY_CAPABILITIES.PROPOSE_PUBLISH,

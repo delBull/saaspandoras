@@ -3,31 +3,33 @@
 El bot ya existe en Orca (`S'Narai Manager`, agente `opencode`). Esto lo conecta al puente A2A para
 que **proponga** y **lea el embudo**, sin poder publicar ni tocar la base.
 
-## 1. Crear la identidad del agente
+## 1. Identidad del agente (ya provisionada)
 
-En la carpeta del bot (fuera del repo), genera una wallet nueva y regístrala:
+| Dato | Valor |
+|---|---|
+| Carpeta | `/Users/Marco/.orca/bots/s-narai-manager` |
+| Wallet (pública) | `0x6D1f9049d6415B4C3054a254c54E4FA2bbA46272` |
+| En Vercel | `COMMUNITY_AGENT_WALLET`, `COMMUNITY_A2A_HMAC_SECRET` |
+| En la carpeta | `.env` con permisos `600` (llave + secreto dedicado) |
 
-```bash
-cd ~/bots/snarai-manager
-node -e "const{Wallet}=require('ethers');const w=Wallet.createRandom();console.log('ADDRESS='+w.address);console.log('PRIVATE_KEY='+w.privateKey)"
+La llave privada **nunca** se imprime ni se guarda en `MEMORY.md`. Si hace falta regenerarla, se
+escribe directamente en `.env` y sólo se publica la dirección.
+
+Sin `COMMUNITY_AGENT_WALLET` el agente queda en `MAINTENANCE`: fail-closed.
+
+## 2. Variables del bot (`~/.orca/bots/s-narai-manager/.env`)
+
 ```
-
-- `ADDRESS` → variable `COMMUNITY_AGENT_WALLET` en Vercel (producción) **y** en el `.env` del bot.
-- `PRIVATE_KEY` → **solo** en el `.env` del bot (`COMMUNITY_AGENT_PRIVATE_KEY`). Nunca en Vercel ni en el repo.
-
-Sin `COMMUNITY_AGENT_WALLET` el agente queda en `MAINTENANCE` y no puede autenticarse: fail-closed.
-
-## 2. Variables del bot (`~/bots/snarai-manager/.env`)
-
-```
-COMMUNITY_AGENT_PRIVATE_KEY=0x…
-A2A_HMAC_SECRET=<el mismo del servidor>
+COMMUNITY_AGENT_PRIVATE_KEY=0x…            # sólo aquí
+COMMUNITY_A2A_HMAC_SECRET=…                # secreto PROPIO del agente
 HERMES_A2A_URL=https://dash.pandoras.finance/api/v1/a2a/messages
 COMMUNITY_ORG=snarai
 COMMUNITY_PROJECT_ID=17
 ```
 
-**No** copies el `.env` del repo: ni `DATABASE_URL`, ni `HERMES_KMS_KEK`, ni el token de Discord.
+**No** copies el `.env` del repo: ni `DATABASE_URL`, ni `HERMES_KMS_KEK`, ni el token de Discord. El
+agente **no** conoce `A2A_HMAC_SECRET` (el compartido de Sofía/Hermes): con él podría firmar mensajes
+como otro agente.
 
 ## 3. La CLI (binario aislado)
 
@@ -36,8 +38,11 @@ entorno del bot. Compílala como binario independiente y cópiala a la carpeta d
 
 ```bash
 cd <repo>
-bun build apps/dashboard/scripts/community-agent.ts --compile --outfile ~/bots/snarai-manager/community-agent
+bun build apps/dashboard/scripts/community-agent.ts --compile --outfile ~/.orca/bots/s-narai-manager/community-agent
 ```
+
+Ya está instalado en la carpeta del bot. El binario lee el `.env` de su propio directorio (o el que
+indique `COMMUNITY_ENV_FILE`).
 
 El binario (~60 MB, con `ethers` incluido) no necesita el repo ni `node_modules`. Comandos:
 

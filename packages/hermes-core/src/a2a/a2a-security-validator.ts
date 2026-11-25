@@ -132,9 +132,22 @@ export class A2ASecurityValidator {
     let expectedHmac: string;
     let hmacRequired = false;
     try {
-      if (message.from === 'sofia' || message.from === 'hermes' || message.from === 'community') {
+      if (message.from === 'sofia' || message.from === 'hermes') {
         // Legacy hardcoded agents: shared A2A_HMAC_SECRET env var
         expectedHmac = this.computeHmac(canonicalHash);
+        hmacRequired = true;
+      } else if (message.from === 'community') {
+        // Secreto DEDICADO del agente de comunidad. Nunca comparte el de Sofía/Hermes:
+        // con el secreto compartido podría firmarse un mensaje como 'sofia'.
+        const dedicated = process.env.COMMUNITY_A2A_HMAC_SECRET;
+        if (!dedicated) {
+          return {
+            valid: false,
+            errorCode: 'HMAC_SECRET_UNCONFIGURED',
+            errorMessage: 'COMMUNITY_A2A_HMAC_SECRET is not configured (fail-closed).',
+          };
+        }
+        expectedHmac = crypto.createHmac('sha256', dedicated).update(canonicalHash).digest('hex');
         hmacRequired = true;
       } else {
         // Dynamic agents (GAP2 fix): decrypt per-agent secret and verify HMAC bilaterally

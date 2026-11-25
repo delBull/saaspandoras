@@ -55,9 +55,16 @@ function validateTransportHeaders(
     );
   }
 
-  const expectedSig = 'sha256=' + createHmac('sha256', secret).update(`${tsS}.${rawBody}`).digest('hex');
+  const sign = (key: string) =>
+    'sha256=' + createHmac('sha256', key).update(`${tsS}.${rawBody}`).digest('hex');
 
-  if (sigHeader !== expectedSig) {
+  const expectedSig = sign(secret);
+  // El agente de comunidad usa un secreto propio: aceptar cualquiera de los dos
+  // evita que tenga que conocer el compartido de Sofía/Hermes.
+  const communitySecret = process.env.COMMUNITY_A2A_HMAC_SECRET;
+  const accepted = communitySecret ? [expectedSig, sign(communitySecret)] : [expectedSig];
+
+  if (!accepted.includes(sigHeader || '')) {
     console.warn('[A2A Ingress] Transport HMAC mismatch', { received: sigHeader?.slice(0, 20), expected: expectedSig.slice(0, 20) });
     return NextResponse.json(
       { success: false, error: { code: 'INVALID_TRANSPORT_HMAC', message: 'Transport HMAC header verification failed' } },
