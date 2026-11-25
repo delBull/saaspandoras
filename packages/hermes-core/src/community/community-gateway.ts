@@ -239,7 +239,7 @@ export async function buildCommunityDigest(input: {
     const leadRows = await db
       .select({
         source: marketingLeads.source,
-        metadataSrc: sql<string | null>`${marketingLeads.metadata}->>'src'`,
+        metadataSrc: sql<string | null>`coalesce(${marketingLeads.metadata}->>'src', ${marketingLeads.metadata}->'attribution'->'context'->>'source')`,
       })
       .from(marketingLeads)
       .where(and(
@@ -247,6 +247,9 @@ export async function buildCommunityDigest(input: {
         or(
           inArray(marketingLeads.source, codes),
           inArray(sql`${marketingLeads.metadata}->>'src'`, codes),
+          // Leads capturados antes de guardar `source`: el código quedó en la
+          // atribución del metadata.
+          inArray(sql`${marketingLeads.metadata}->'attribution'->'context'->>'source'`, codes),
         ),
       ))
       .limit(2000);

@@ -343,7 +343,9 @@ export async function POST(req: NextRequest) {
       userId: existingUser?.id || null
     });
 
-    const identityHash = IdentityService.getIdentityHash(email, walletAddress, fingerprint);
+    // `phoneNumber` es la cuarta identidad: sin esto, un lead que sólo deja
+    // WhatsApp (el caso normal en este negocio) no se podía registrar.
+    const identityHash = IdentityService.getIdentityHash(email, walletAddress, fingerprint, phoneNumber);
 
     if (!identityHash) {
       return NextResponse.json({ error: 'Failed to resolve identity' }, { status: 400 });
@@ -391,6 +393,9 @@ export async function POST(req: NextRequest) {
       fingerprint: fingerprint || (existingLead as any)?.fingerprint || null,
       identityHash: identityHash,
       origin: origin || (existingLead as any)?.origin || null,
+      // El utm_source (= código de la publicación, p. ej. `god2f7wy`) es el origen
+      // real y es lo que agrupan los reportes del embudo. Antes quedaba null.
+      source: attributionContext.source || (existingLead as any)?.source || null,
       referrer: processedMetadata.ref || processedMetadata.referrer || body.ref || (existingLead as any)?.referrer || null,
       intent: (['invest', 'explore', 'whitelist', 'earn', 'other'].includes(intent) ? intent : 'explore') as any,
       consent: true,
