@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { LinkifiedText } from '@/components/nexus/LinkifiedText';
 import Image from 'next/image';
 import { 
   Users, 
@@ -716,7 +717,7 @@ export function PresenceDock({ hidden = false }: { hidden?: boolean }) {
                                     : 'bg-white/10 text-white border border-white/10 rounded-tl-xs'
                                 }`}
                               >
-                                {msg.content}
+                                <LinkifiedText text={msg.content} />
                               </div>
                             </div>
                           );
