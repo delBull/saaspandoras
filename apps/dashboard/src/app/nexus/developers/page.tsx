@@ -15,8 +15,17 @@ export default async function NexusDevelopersPage({ searchParams }: { searchPara
     redirect("/portal/login?return=/nexus/developers");
   }
 
-  // 2. Authorize capability: Only ADMIN and SUPER_ADMIN have full access
-  const isAuthorized = auth.role === 'SUPER_ADMIN' || auth.role === 'ADMIN';
+  /**
+   * 2. Autorización por rol **o** por permiso explícito.
+   *
+   * El rol ADMIN/SUPER_ADMIN entra por defecto; además, `permissions.developer`
+   * permite dar el módulo a una persona concreta sin ascenderla de rol (es lo que
+   * otorga la bandeja de aprobaciones de /nexus/ops?tab=approvals).
+   */
+  const isAuthorized =
+    auth.role === 'SUPER_ADMIN' ||
+    auth.role === 'ADMIN' ||
+    auth.permissions?.developer === true;
 
   if (!isAuthorized) {
     return (

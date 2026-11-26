@@ -61,6 +61,8 @@ export interface NexusPermissions {
   dealRoom?: boolean;
   settings?: boolean;
   hermesQa?: boolean;
+  /** Acceso al Developer Hub (se otorga desde la bandeja de aprobaciones). */
+  developer?: boolean;
 }
 
 // Re-export moved to shared/src/index.ts for client compatibility

@@ -96,7 +96,7 @@ export function NexusSidebar({ auth, onAction }: NexusSidebarProps) {
     {
       label: "SYSTEMS",
       items: [
-        { name: "Developers", href: "/nexus/developers", icon: Code2, show: auth.role === "SUPER_ADMIN" || auth.role === "ADMIN" },
+        { name: "Developers", href: "/nexus/developers", icon: Code2, show: auth.role === "SUPER_ADMIN" || auth.role === "ADMIN" || (permissions as any).developer === true },
       ]
     },
     {
