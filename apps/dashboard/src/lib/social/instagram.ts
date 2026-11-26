@@ -290,7 +290,7 @@ export async function resolveInstagramIdentity(igUserId: string): Promise<Instag
     ? ['META_APP_SECRET', 'WHATSAPP_APP_SECRET']
     : [`META_IG_APP_SECRET_${envSuffix(tenantSlug)}`, `META_APP_SECRET_${envSuffix(tenantSlug)}`];
 
-  let secretEnvName = secretCandidates[0];
+  let secretEnvName: string = secretCandidates[0] ?? '';
   let appSecret = '';
   for (const name of secretCandidates) {
     const value = (process.env[name] || '').trim();
