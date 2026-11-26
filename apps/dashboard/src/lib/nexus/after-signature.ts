@@ -1,5 +1,5 @@
 import { db } from "@saasfly/db";
-import { nexusDealSigners, nexusPodContacts } from "@saasfly/db/schema";
+import { nexusDealPods, nexusDealSigners, nexusPodContacts } from "@saasfly/db/schema";
 import { and, eq } from "@saasfly/db-core";
 import { sendDealSignedEmail } from "@saasfly/nexus-deals-sdk";
 import { buildRoomPdf } from "./room-pdf";
@@ -23,6 +23,61 @@ const KIND_LABEL: Record<string, string> = {
  *  4. Explica qué sigue y con quién dar seguimiento.
  *  5. Marca `document_sent_at` para no reenviar y poder auditar la entrega.
  */
+
+/** Tope por documento del proyecto (Resend acepta 40 MB en total). */
+const MAX_PROJECT_DOC_BYTES = 15 * 1024 * 1024;
+
+/**
+ * Documentación del proyecto que el firmante recibe al firmar el NDA.
+ *
+ * Se configura por Deal Pod en `config.projectDocuments`:
+ *   { "projectDocuments": [{ "title": "Dossier Patria", "url": "https://.../patria.pdf" }] }
+ *
+ * Se descarga y se adjunta al mismo correo de la firma; si un documento falla,
+ * se registra y el correo sale igual (la firma nunca se queda sin enviar por
+ * un PDF que no cargó).
+ */
+async function loadProjectDocuments(podId?: string | null): Promise<{
+  attachments: Array<{ filename: string; content: string; content_type: string }>;
+  titles: string[];
+}> {
+  if (!podId) return { attachments: [], titles: [] };
+
+  const [pod] = await db
+    .select({ config: nexusDealPods.config })
+    .from(nexusDealPods)
+    .where(eq(nexusDealPods.id, podId))
+    .limit(1);
+
+  const docs = (((pod?.config as Record<string, unknown> | null)?.projectDocuments ?? []) as Array<{
+    title?: string;
+    url?: string;
+  }>).slice(0, 5);
+
+  const attachments: Array<{ filename: string; content: string; content_type: string }> = [];
+  const titles: string[] = [];
+
+  for (const doc of docs) {
+    if (!doc?.url || !/^https?:\/\//i.test(doc.url)) continue;
+    try {
+      const res = await fetch(doc.url, { signal: AbortSignal.timeout(15_000) });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const buffer = Buffer.from(await res.arrayBuffer());
+      if (buffer.byteLength === 0) throw new Error("documento vacío");
+      if (buffer.byteLength > MAX_PROJECT_DOC_BYTES) throw new Error("documento demasiado grande");
+
+      const title = (doc.title || "Documentación del proyecto").trim();
+      const filename = `${title.replace(/[^\w.-]+/g, "-")}.pdf`;
+      attachments.push({ filename, content: buffer.toString("base64"), content_type: "application/pdf" });
+      titles.push(title);
+    } catch (err: any) {
+      console.warn(`[afterSignature] documento del proyecto no adjuntado (${doc?.title ?? doc.url}): ${err?.message || err}`);
+    }
+  }
+
+  return { attachments, titles };
+}
+
 export async function afterSignature(params: {
   room: any;
   signerEmail: string;
@@ -117,6 +172,9 @@ export async function afterSignature(params: {
     console.warn("[afterSignature] PDF generation failed:", err?.message || err);
   }
 
+  // 2-bis. Documentación del proyecto (dossier, planos, etc.) que el NDA desbloquea.
+  const projectDocs = await loadProjectDocuments(room.podId);
+
   // 3. Correo único y completo.
   let emailed = false;
   try {
@@ -128,7 +186,24 @@ export async function afterSignature(params: {
       publicId: room.publicId,
       enteredIntoForce: room.status === "SIGNED",
       contactEmail: process.env.DEAL_OPS_EMAIL || undefined,
-      attachments: attachment ? [attachment] : undefined,
+      attachments:
+        attachment || projectDocs.attachments.length > 0
+          ? [attachment, ...projectDocs.attachments].filter(Boolean) as Array<{
+              filename: string;
+              content: string;
+              content_type: string;
+            }>
+          : undefined,
+      nextSteps: [
+        "Recibimos tu firma y quedó registrada con sello de tiempo.",
+        ...(projectDocs.titles.length > 0
+          ? [`Documentación del proyecto adjunta a este correo: ${projectDocs.titles.join(", ")}.`]
+          : []),
+        room.pofEnabled
+          ? "Falta tu manifestación de fondos (POF): súbela en la sala para liberar el memorándum."
+          : "El equipo revisará la documentación y te compartirá el siguiente paso.",
+        "Un miembro del equipo te contactará en un plazo de 24 a 48 horas hábiles.",
+      ],
       pofRequired: Boolean(room.pofEnabled),
       pofUrl: `${base}/deal/${room.publicId}`,
       registered: { name, email, phone: params.phone || null },
