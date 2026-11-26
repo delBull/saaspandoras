@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LinkifiedText } from '@/components/nexus/LinkifiedText';
+import { useVoiceInput } from '@/components/nexus/useVoiceInput';
 import Image from 'next/image';
 import { 
   Users, 
@@ -15,7 +16,9 @@ import {
   PlusCircle, 
   ExternalLink,
   MessageSquare,
-  Loader2
+  Loader2,
+  Mic,
+  Square
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -103,6 +106,13 @@ export function PresenceDock({ hidden = false }: { hidden?: boolean }) {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [isSendingMessage, setIsSendingMessage] = useState(false);
+  // Dictado por voz: transcribe en el servidor (Whisper) y deja el texto en el
+  // input para revisarlo antes de enviar.
+  const voice = useVoiceInput({
+    onTranscript: (text) =>
+      setChatInput((prev) => (prev.trim() ? `${prev.trim()} ${text}` : text)),
+    onError: (message) => toast.error(message),
+  });
   const [isLoadingChat, setIsLoadingChat] = useState(false);
   const [myEmail, setMyEmail] = useState<string>('');
   const [unreadMap, setUnreadMap] = useState<Record<string, number>>({});
@@ -736,6 +746,34 @@ export function PresenceDock({ hidden = false }: { hidden?: boolean }) {
                           placeholder={`Escribe un mensaje directo a ${selectedCollaborator.name}...`}
                           className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-white/30 focus:outline-none focus:border-amber-400/50 transition-colors"
                         />
+                        {voice.supported && (
+                          <button
+                            type="button"
+                            onClick={voice.toggle}
+                            disabled={voice.state === 'transcribing' || isSendingMessage}
+                            title={
+                              voice.state === 'recording'
+                                ? 'Detener y transcribir'
+                                : 'Dictar con voz (Whisper)'
+                            }
+                            aria-label={
+                              voice.state === 'recording' ? 'Detener grabación' : 'Dictar mensaje'
+                            }
+                            className={`px-3 py-2.5 rounded-xl border transition-all flex items-center justify-center shrink-0 cursor-pointer disabled:opacity-40 ${
+                              voice.state === 'recording'
+                                ? 'bg-red-500/20 border-red-500/50 text-red-300 animate-pulse'
+                                : 'bg-white/5 border-white/10 text-white/70 hover:text-white hover:border-amber-400/40'
+                            }`}
+                          >
+                            {voice.state === 'transcribing' ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : voice.state === 'recording' ? (
+                              <Square className="w-3.5 h-3.5 fill-current" />
+                            ) : (
+                              <Mic className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+                        )}
                         <button
                           type="submit"
                           disabled={isSendingMessage || !chatInput.trim()}
