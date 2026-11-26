@@ -29,6 +29,10 @@ export interface TemplateProps {
   kicker?: string | null;
   body?: string | null;
   imageUrl?: string | null;
+  /** Fondo fotográfico con velo (statement/cta). */
+  backgroundImage?: string | null;
+  /** Cuatro imágenes para las tarjetas de `levels` (una por nivel). */
+  cardImages?: string[] | null;
   phone?: string | null;
   width: number;
   height: number;
@@ -130,7 +134,7 @@ function TitleLines({ props }: { props: TemplateProps }) {
   };
 }
 
-function LevelsRow({ brand }: { brand: BrandKit }) {
+function LevelsRow({ brand, images }: { brand: BrandKit; images?: string[] | null }) {
   return {
     type: 'div',
     props: {
@@ -143,12 +147,26 @@ function LevelsRow({ brand }: { brand: BrandKit }) {
             flexDirection: 'column' as const,
             gap: 8,
             flex: 1,
-            border: `1px solid ${brand.gold}66`,
+            border: `1px solid ${brand.gold}88`,
             borderRadius: 16,
             padding: 18,
-            background: 'rgba(255,255,255,0.03)',
+            background: 'rgba(10,21,31,0.72)',
+            overflow: 'hidden' as const,
           },
           children: [
+            ...(images?.[LEVELS.indexOf(level)]
+              ? [
+                  {
+                    type: 'img',
+                    props: {
+                      src: images[LEVELS.indexOf(level)],
+                      width: 190,
+                      height: 210,
+                      style: { objectFit: 'cover' as const, borderRadius: 12, marginBottom: 6 },
+                    },
+                  },
+                ]
+              : []),
             {
               type: 'span',
               props: {
@@ -217,8 +235,37 @@ function CtaPill({ brand, phone }: { brand: BrandKit; phone: string }) {
 export function buildTemplateElement(props: TemplateProps) {
   const { brand, template, width, height } = props;
   const hasImage = template === 'cover' && props.imageUrl;
+  // `statement` y `cta` aceptan foto de fondo con un velo fuerte: sin imagen se
+  // ven planas y pierden la calidad del resto.
+  const hasBg = template !== 'cover' && props.backgroundImage;
 
   const stack: any[] = [];
+
+  if (hasBg) {
+    stack.push({
+      type: 'img',
+      props: {
+        src: props.backgroundImage,
+        width,
+        height,
+        style: { position: 'absolute' as const, top: 0, left: 0, width, height, objectFit: 'cover' as const },
+      },
+    });
+    stack.push({
+      type: 'div',
+      props: {
+        style: {
+          position: 'absolute' as const,
+          top: 0,
+          left: 0,
+          width,
+          height,
+          background:
+            'linear-gradient(160deg, rgba(10,21,31,0.96) 0%, rgba(10,21,31,0.80) 55%, rgba(10,21,31,0.95) 100%)',
+        },
+      },
+    });
+  }
 
   if (hasImage) {
     stack.push({
@@ -294,7 +341,7 @@ export function buildTemplateElement(props: TemplateProps) {
                     },
                   ]
                 : []),
-              ...(template === 'levels' ? [LevelsRow({ brand })] : []),
+              ...(template === 'levels' ? [LevelsRow({ brand, images: props.cardImages })] : []),
               ...(template === 'cta' ? [CtaPill({ brand, phone: props.phone || '+1 833 652-9213' })] : []),
             ],
           },
