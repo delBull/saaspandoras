@@ -90,7 +90,16 @@ export async function POST(request: Request) {
     // Determine if it's Native Meta Cloud API or Bridge
     if (isNativeMeta) {
       const { WhatsAppDispatcher } = await import('@/lib/whatsapp/dispatcher');
-      const dispatchResult = await WhatsAppDispatcher.dispatch(body);
+      /**
+       * La evidencia del canal es obligatoria para crear la sesión verificada del
+       * tenant en producción. Sin ella, el dispatcher caía al mensaje genérico
+       * ("un asesor te responderá") y el Hermes del tenant nunca se ejecutaba.
+       */
+      const dispatchResult = await WhatsAppDispatcher.dispatch(body, {
+        rawBody: bodyText,
+        hubSignature: signatureHeader || undefined,
+        appSecret: identity.appSecret || undefined,
+      });
       return NextResponse.json(dispatchResult);
     }
 

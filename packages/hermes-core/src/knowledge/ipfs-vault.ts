@@ -222,8 +222,53 @@ export class TenantIpfsVaultService {
     expectedCiphertextHash: string | null | undefined,
     authContext?: VaultAccessContext
   ): Promise<{ plaintext: string; contentHash: string }> {
-    const envelope = await this.fetchJsonFromIpfs<EncryptedKnowledgeArtifact>(cid);
+    let envelope: EncryptedKnowledgeArtifact;
+    try {
+      envelope = await this.fetchJsonFromIpfs<EncryptedKnowledgeArtifact>(cid);
+    } catch (ipfsErr: any) {
+      /**
+       * Fallback soberano: el sobre también vive en Postgres
+       * (`knowledge_vault_blobs.envelope_json`). Si Kubo perdió el bloque o el
+       * pinning está bloqueado, se hidrata desde ahí con **la misma
+       * verificación** (ciphertext hash + AAD + content hash). Antes, un pin
+       * perdido dejaba al tenant sin conocimiento y Hermes respondía genérico.
+       */
+      const stored = await this.loadEnvelopeFromLocalVault(expectedContext);
+      if (!stored) throw ipfsErr;
+      console.warn(
+        `[IpfsVault] ${expectedContext.tenantId}/${expectedContext.artifactId}: IPFS no disponible, hidratado desde el sobre local.`,
+      );
+      envelope = stored;
+    }
+
     return await this.verifyAndDecryptEnvelope(envelope, expectedContext, expectedCiphertextHash, authContext);
+  }
+
+  /** Sobre cifrado guardado en Postgres para ese artefacto (si existe). */
+  private async loadEnvelopeFromLocalVault(
+    expectedContext: EncryptionContextAAD,
+  ): Promise<EncryptedKnowledgeArtifact | null> {
+    try {
+      const { db } = await import('@saasfly/db-core');
+      const { knowledgeVaultBlobs } = await import('@saasfly/db-core/schema');
+      const { and, eq } = await import('@saasfly/db-core');
+
+      const [row] = await db
+        .select({ envelopeJson: knowledgeVaultBlobs.envelopeJson })
+        .from(knowledgeVaultBlobs)
+        .where(and(
+          eq(knowledgeVaultBlobs.tenantId, expectedContext.tenantId),
+          eq(knowledgeVaultBlobs.artifactId, expectedContext.artifactId),
+          eq(knowledgeVaultBlobs.version, expectedContext.version),
+        ))
+        .limit(1);
+
+      if (!row?.envelopeJson) return null;
+      return JSON.parse(row.envelopeJson) as EncryptedKnowledgeArtifact;
+    } catch (err: any) {
+      console.warn('[IpfsVault] No se pudo leer el sobre local:', err?.message || err);
+      return null;
+    }
   }
 
   /**
