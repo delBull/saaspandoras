@@ -141,7 +141,7 @@ No se cobra por acceder a la información. La remuneración de AZTECAZ correspon
     feePct: null,
     createdBy: "marco.munoz9@gmail.com",
     relation: "Acceso institucional a documentación",
-    landing: null,
+    landing: "/pitch/snarai",
     room: {
       publicId: "PDR-SNARAI",
       title: "S'Narai — Oportunidad de participación patrimonial",
@@ -313,6 +313,9 @@ async function main() {
          fee_entity = excluded.fee_entity,
          fee_pct = excluded.fee_pct,
          created_by = excluded.created_by,
+         -- Sin esto, un cambio de landing (o de doors) no se aplicaba nunca en un
+         -- pod existente: el upsert era idempotente sólo en los campos sueltos.
+         config = excluded.config,
          updated_at = now()
        returning id`,
       [

@@ -67,7 +67,20 @@ export async function POST(request: Request) {
     const tenantSecret = tenantSlug
       ? (process.env[`META_APP_SECRET_${tenantSlug.replace(/-/g, '_').toUpperCase()}`] || '').trim()
       : '';
-    let metaAppSecret = tenantSecret || globalSecret;
+    /**
+     * Hermes (plataforma) y S'Narai son **apps de Meta distintas**: número, token
+     * y app secret propios. Si el número resuelve a un tenant, su secreto es el
+     * único válido; el global sólo aplica cuando no hay tenant (número maestro o
+     * payload de bridge). Así una firma de otra app nunca se acepta por error.
+     */
+    const tenantResolved = Boolean(tenantSlug && tenantSlug !== 'pandoras');
+    let metaAppSecret = tenantResolved ? tenantSecret : (tenantSecret || globalSecret);
+    if (tenantResolved && !tenantSecret) {
+      console.error(
+        `❌ [WhatsApp Webhook] Falta META_APP_SECRET_${tenantSlug.replace(/-/g, '_').toUpperCase()} para el número ${phoneNumberId}. Fail-closed.`,
+      );
+      return NextResponse.json({ error: 'Server configuration error: missing tenant secret' }, { status: 500 });
+    }
 
     // 🔒 Cyber Security: Enforce strict fail-closed HMAC for Meta Webhooks
     if (signatureHeader || isNativeMeta) {
@@ -83,12 +96,7 @@ export async function POST(request: Request) {
           return NextResponse.json({ error: 'Missing x-hub-signature-256 header' }, { status: 401 });
         }
 
-        let isValid = verifyMetaSignature(bodyText, signatureHeader, metaAppSecret);
-        // Algunas WABAs comparten app con la plataforma: si el secreto del tenant no
-        // valida, se prueba el global antes de rechazar.
-        if (!isValid && globalSecret && globalSecret !== metaAppSecret) {
-          isValid = verifyMetaSignature(bodyText, signatureHeader, globalSecret);
-        }
+        const isValid = verifyMetaSignature(bodyText, signatureHeader, metaAppSecret);
         if (!isValid) {
           console.warn(
             `🔒 [WhatsApp Webhook] Invalid HMAC signature or tampered body (tenant=${tenantSlug || 'desconocido'}, phoneId=${phoneNumberId || 'n/a'}).`,
