@@ -158,6 +158,9 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
 
   // Prueba de fondos (POF) desde la sala.
   const [pofStatus, setPofStatus] = useState<"none" | "declared" | "verified" | null>(null);
+  // Reenvío de la copia firmada por correo (por si el envío original falló).
+  const [resendBusy, setResendBusy] = useState(false);
+  const [resendMsg, setResendMsg] = useState<string | null>(null);
   const [pofEntity, setPofEntity] = useState("");
   const [pofFund, setPofFund] = useState("");
   const [pofAmount, setPofAmount] = useState("");
@@ -226,6 +229,32 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
       cancelled = true;
     };
   }, [rawToken, ndaStep, publicId]);
+
+  const resendSignedCopy = async () => {
+    if (!rawToken || rawToken === "creator-preview-token") {
+      setResendMsg("Necesitas tu enlace personal para pedir el reenvío.");
+      return;
+    }
+    setResendBusy(true);
+    setResendMsg(null);
+    try {
+      const res = await fetch(`/api/public/deals/${publicId}/resend`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: rawToken }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string; message?: string };
+      setResendMsg(
+        res.ok && data.ok
+          ? "Te enviamos de nuevo tu copia firmada. Revisa tu correo."
+          : data.message ?? "No se pudo reenviar. Intenta más tarde.",
+      );
+    } catch {
+      setResendMsg("Error de red al pedir el reenvío.");
+    } finally {
+      setResendBusy(false);
+    }
+  };
 
   /** Envío del POF. Sin compuerta: la usa tanto el formulario como la firma. */
   const sendPof = async (): Promise<boolean> => {
@@ -822,14 +851,29 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                       <p className="text-[11px] text-zinc-400">Protección legal y evidencia criptográfica verificada on-chain.</p>
                     </div>
                   </div>
-                  <a
-                    href={`/api/public/deals/${publicId}/nda/pdf`}
-                    download
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-200 text-[11px] font-mono hover:bg-emerald-500/20 transition-colors shrink-0"
-                  >
-                    <Download className="w-3 h-3" />
-                    DESCARGAR NDA (PDF)
-                  </a>
+                  <div className="flex flex-col items-end gap-1">
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => void resendSignedCopy()}
+                        disabled={resendBusy}
+                        title="Reenviar a tu correo la copia firmada"
+                        className="flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-[11px] font-mono text-zinc-200 transition-colors hover:bg-white/10 disabled:opacity-40"
+                      >
+                        {resendBusy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Mail className="w-3 h-3" />}
+                        REENVIAR COPIA
+                      </button>
+                      <a
+                        href={`/api/public/deals/${publicId}/nda/pdf`}
+                        download
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-200 text-[11px] font-mono hover:bg-emerald-500/20 transition-colors shrink-0"
+                      >
+                        <Download className="w-3 h-3" />
+                        DESCARGAR NDA (PDF)
+                      </a>
+                    </div>
+                    {resendMsg && <p className="text-[10px] font-mono text-zinc-400 max-w-[16rem] text-right">{resendMsg}</p>}
+                  </div>
                 </div>
               )}
 
