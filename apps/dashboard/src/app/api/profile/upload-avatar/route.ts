@@ -2,7 +2,6 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { put } from '@vercel/blob';
-import sharp from 'sharp';
 import { getAuth } from '@saasfly/auth-sdk';
 import { db } from '@saasfly/db';
 import { users, nexusCollaborators } from '@saasfly/db/schema';
@@ -203,20 +202,35 @@ export async function POST(request: NextRequest) {
     const safeWallet = typeof walletAddress === 'string' ? walletAddress : (collaboratorUserId ?? 'nexus');
     const walletShort = safeWallet.toLowerCase().slice(0, 8);
     const timestamp = Date.now();
-    const filename = `avatar_${walletShort}_${timestamp}.webp`;
+    const baseName = `avatar_${walletShort}_${timestamp}`;
 
-    // Process image: resize to 128x128, maintain aspect ratio, compress
-    const processedBuffer = await sharp(buffer)
-      .resize(128, 128, {
-        fit: 'contain', // Maintain aspect ratio
-        background: { r: 255, g: 255, b: 255, alpha: 0 }, // Transparent background
-        position: 'center' // Center the image
-      })
-      .webp({
-        quality: 85, // Balanced quality and file size
-        effort: 6 // More effort = smaller file
-      })
-      .toBuffer();
+    /**
+     * Proceso de imagen **tolerante**: `sharp` es un módulo nativo y en un
+     * despliegue construido en otra plataforma (p. ej. prebuilt desde macOS hacia
+     * linux) falta el binario. Importarlo arriba tumbaba la ruta entera con un
+     * 500 en HTML antes de ejecutar el handler. Aquí se intenta y, si no está, se
+     * sube la imagen original: el avatar funciona igual, sólo pesa más.
+     */
+    let processedBuffer = buffer;
+    try {
+      const sharp = (await import('sharp')).default;
+      processedBuffer = await sharp(buffer)
+        .resize(128, 128, {
+          fit: 'contain', // Maintain aspect ratio
+          background: { r: 255, g: 255, b: 255, alpha: 0 }, // Transparent background
+          position: 'center', // Center the image
+        })
+        .webp({
+          quality: 85, // Balanced quality and file size
+          effort: 6, // More effort = smaller file
+        })
+        .toBuffer();
+    } catch (sharpError: any) {
+      console.warn('[upload-avatar] sharp no disponible, se sube el original:', sharpError?.message || sharpError);
+    }
+
+    const extension = processedBuffer === buffer ? ((file.type || 'image/png').split('/')[1] ?? 'png') : 'webp';
+    const filename = `${baseName}.${extension}`;
 
     // Store image using Vercel Blob Storage
     console.log('Using Vercel Blob Storage for avatar upload');
@@ -230,7 +244,7 @@ export async function POST(request: NextRequest) {
       // Upload to Vercel Blob with explicit token
       const blob = await put(filename, processedBuffer, {
         access: 'public',
-        contentType: 'image/webp',
+        contentType: processedBuffer === buffer ? (file.type || 'image/png') : 'image/webp',
         token: process.env.BLOB_READ_WRITE_TOKEN
       });
 
