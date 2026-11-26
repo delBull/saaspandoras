@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import { db } from '@saasfly/db-core';
 import { nexusAccessRequests, nexusCollaborators } from '@saasfly/db-core/schema';
 import { eq } from '@saasfly/db-core';
-import { requireNexusAdmin } from '@saasfly/hermes-core';
+// Import directo: no arrastrar el barril de hermes-core al build de la ruta.
+import { requireNexusAdmin } from '@saasfly/hermes-core/src/nexus/collaborators-service';
 import { getNexusAuthContext } from '@saasfly/shared';
 import { ACCESS_MODULES, MODULE_PERMISSION_FIELD, type AccessModule } from '@/lib/nexus/access-modules';
 

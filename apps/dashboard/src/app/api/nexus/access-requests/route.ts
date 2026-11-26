@@ -3,7 +3,8 @@ import { getNexusAuthContext } from '@saasfly/shared';
 import { db } from '@saasfly/db-core';
 import { nexusAccessRequests, nexusCollaborators } from '@saasfly/db-core/schema';
 import { and, desc, eq } from '@saasfly/db-core';
-import { requireNexusAdmin } from '@saasfly/hermes-core';
+// Import directo: no arrastrar el barril de hermes-core al build de la ruta.
+import { requireNexusAdmin } from '@saasfly/hermes-core/src/nexus/collaborators-service';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

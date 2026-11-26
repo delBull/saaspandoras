@@ -11,12 +11,29 @@ volver a desplegar por git, sin depender de la cuota de uploads de la API.
 | Dato | Valor | Cómo se obtuvo |
 |---|---|---|
 | Memoria del contenedor | 8 GiB fijos (Hobby) | docs de Vercel |
-| Pico real del build (turbopack, heap 3584) | **7.24 GiB** | `/usr/bin/time -l`, build local |
+| Pico en el clone de producción | **4.98 GiB** | `/usr/bin/time -l`, HEAD `c2759c24` |
+| Pico **sin** la ruta de Instagram | **6.37 GiB** | mismo método, resultado contradictorio |
 | Rutas que compila la app | **845** | `app-path-routes-manifest.json` |
 | Tamaño de `.next` | 507 MB | `du -sh .next` |
-| Fallo en Vercel | `SIGKILL` + reporte OOM | logs de los deploys `f667e1b`, `c6ffd54` |
+| Fallo en Vercel | `SIGKILL` + reporte OOM | logs de `f667e1b`, `c6ffd54` |
 
-Margen actual: **0.76 GiB**. Cualquier ruta nueva lo agota.
+**Corrección importante:** la cifra de 7.24 GiB de la primera versión de este
+documento salió de un worktree con cambios sin commitear y **no es válida**.
+
+Quitar la ruta de Instagram dio **más** memoria que tenerla (6.37 vs 4.98 GiB):
+el RSS del árbol de procesos en macOS varía ±1.4 GiB entre corridas. **La
+medición local no sirve como criterio de aceptación**; sólo Vercel decide.
+
+### Causa raíz encontrada en el código
+
+`packages/hermes-core/src/channels/channel-vault.service.ts` importaba del
+**barril** (`from '..'`). La ruta de Instagram hace `import()` de ese servicio,
+así que arrastraba todo `hermes-core` al grafo de compilación. Los dos deploys
+que murieron tenían ese import; el último build exitoso no tenía la ruta.
+
+Arreglado: import directo desde `../knowledge/envelope-vault`. Igual las rutas
+nuevas de aprobaciones (antes `@saasfly/hermes-core`, ahora
+`.../src/nexus/collaborators-service`).
 
 **Meta:** pico ≤ **6.2 GiB** (1.8 GiB de margen), idealmente ≤ 6.0.
 
@@ -58,18 +75,17 @@ NODE_OPTIONS="--max-old-space-size=3584" /usr/bin/time -l npx next build --turbo
 - Sólo se valida en Vercel **una vez**, con un push (los builds por git **no**
   consumen la cuota `api-upload`).
 
-### Orden de experimentos
+### Orden de validación
 
 ```
-B0  baseline actual ......................... 7.24 GiB (ya medido)
-E1  L1 (cpus: 1) ............................ a medir
-E2  E1 + L2 ................................ a medir
-E3  E2 + L3 ................................ a medir
-E4  E3 + L4 (si hace falta) ................ a medir
+V0  fix del barril (ya aplicado)  → build local OK
+V1  validación en Vercel por git  → ÚNICO juez
+E1  si V1 falla: L1 (cpus: 1)
+E2  luego L2, E3 (L3), E4 (L4) y, último recurso, L5 (webpack)
 ```
 
-Si E3 baja de 6.2 GiB, se valida en Vercel y se para.
-Si no, se evalúa E4 y, como último recurso, L5 (webpack).
+La validación en Vercel entra por git, así que **no consume** la cuota
+`api-upload-free` que hoy bloquea los deploys prebuilt.
 
 ---
 

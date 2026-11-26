@@ -13,11 +13,14 @@
  */
 
 import crypto from 'crypto';
+// Import directo (no del barril `..`): este servicio lo usa la ruta del webhook
+// de Instagram, y pasar por el índice metía TODO hermes-core en su grafo de
+// compilación, inflando el build hasta el OOM del contenedor.
 import {
   KnowledgeEnvelopeVault,
-  EncryptedKnowledgeArtifact,
-  EncryptionContextAAD
-} from '..';
+  type EncryptedKnowledgeArtifact,
+  type EncryptionContextAAD,
+} from '../knowledge/envelope-vault';
 
 import type { ChannelType } from './channel-types';
 
