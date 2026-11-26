@@ -1028,3 +1028,63 @@ export function registerNftTools(executor: HermesToolExecutor): void {
 }
 
 
+
+/**
+ * 💰 Datos del proyecto para conversación (lectura, tenant-scoped)
+ *
+ * Los precios y las fases **existen y son reales**, pero cambian: no se escriben
+ * en el alma ni en el prompt. Hermes los consulta aquí cuando el prospecto
+ * pregunta, y responde con la fase vigente. Nunca se ofrecen sin que pregunten.
+ */
+export function registerProjectInfoTools(executor: HermesToolExecutor): void {
+  if (!executor) return;
+
+  executor.registerHandler('project_pricing', async (_params, context) => {
+    const callerOrg = String((context as any)?.organizationId || '').replace(/^org_/, '');
+    if (!callerOrg || callerOrg === 'unknown') {
+      throw new Error('PRICING_GATE_DENY: tenant identity required.');
+    }
+
+    const [project] = await db
+      .select({ id: projects.id, title: projects.title, w2eConfig: projects.w2eConfig })
+      .from(projects)
+      .where(or(eq(projects.organizationId, callerOrg), eq(projects.slug, callerOrg)))
+      .limit(1);
+
+    if (!project) throw new Error(`Tenant project not found for '${callerOrg}'`);
+
+    const cfg = (project.w2eConfig as any) || {};
+    const phasesRaw: any[] = Array.isArray(cfg.phases) ? cfg.phases : [];
+    const tiersRaw: any[] = Array.isArray(cfg.tiers) ? cfg.tiers : [];
+
+    const toPhase = (p: any) => ({
+      id: String(p.id ?? ''),
+      name: String(p.name ?? ''),
+      pricePerUnitUsd: Number(p.tokenPrice ?? 0) || null,
+      isActive: Boolean(p.isActive),
+      startDate: p.startDate ? String(p.startDate) : null,
+      // `lockUntilPrevious` significa que no abre hasta cerrar la anterior.
+      locked: Boolean(p.lockUntilPrevious),
+    });
+
+    const phases = phasesRaw.map(toPhase);
+    const active = phases.find((phase) => phase.isActive) ?? null;
+    const next = phases.find((phase) => !phase.isActive && !phase.locked) ?? null;
+
+    return {
+      project: project.title,
+      currency: 'USD',
+      activePhase: active,
+      nextPhase: next,
+      // Los niveles se devuelven sin umbrales internos ni cifras de inventario.
+      tiers: tiersRaw.map((t: any) => ({
+        name: String(t.name ?? ''),
+        perks: Array.isArray(t.perks) ? t.perks.map((perk: any) => String(perk)) : [],
+      })),
+      rule:
+        'Responde sólo si preguntan por precio o condiciones. Cita la fase vigente y aclara que las ' +
+        'condiciones se confirman en la sesión. No ofrezcas cifras de forma espontánea ni proyectes ' +
+        'apreciación, rendimientos o cronogramas.',
+    };
+  });
+}

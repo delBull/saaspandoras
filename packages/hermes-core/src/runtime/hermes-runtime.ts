@@ -123,10 +123,13 @@ export class HermesRuntime implements HermesCognitiveRuntime {
     // executive_assign_admin, executive_approve_payment) — Fail-closed gate
     // inside each handler; every call lands in the PlatformAuditLedger.
     import('./tools/executive-tool-registry')
-      .then(({ registerExecutiveTools, registerCrmTools, registerNftTools }) => {
+      .then(({ registerExecutiveTools, registerCrmTools, registerNftTools, registerProjectInfoTools }) => {
         registerExecutiveTools(this.toolExecutor);
         registerCrmTools(this.toolExecutor);
         registerNftTools(this.toolExecutor);
+        // Datos del proyecto (precios/fases/niveles) para consultar, no para
+        // recitar: la fuente es la config del tenant, no el prompt.
+        registerProjectInfoTools(this.toolExecutor);
       })
       .then(() => {
         console.log('[HermesRuntime] K11-EXEC executive + CRM + NFT tools registered.');
