@@ -61,6 +61,31 @@ async function main() {
     return;
   }
 
+  /**
+   * Pre-flight: el token debe ser válido **para esa cuenta**. Guardar un token
+   * que no corresponde deja el canal en un estado que sólo falla cuando llega
+   * un comentario real, y Meta no permite reintentar la respuesta privada.
+   * Con Instagram Login, `user_id` es el id de la cuenta profesional.
+   */
+  const probeUrl = `${apiBase}/me?fields=user_id,username,account_type&access_token=${encodeURIComponent(accessToken)}`;
+  const probeRes = await fetch(probeUrl).catch(() => null);
+  const probe: any = probeRes ? await probeRes.json().catch(() => ({})) : {};
+
+  if (!probeRes?.ok) {
+    console.error('❌ Meta rechazó el token:', probe?.error?.message || `HTTP ${probeRes?.status ?? 'sin respuesta'}`);
+    console.error('   Este script espera un token de Instagram Login (graph.instagram.com) con');
+    console.error('   instagram_business_basic + instagram_business_manage_messages.');
+    process.exit(1);
+  }
+
+  const probeId = String(probe?.user_id || probe?.id || '').trim();
+  if (probeId && probeId !== igUserId) {
+    console.error(`❌ El token pertenece a la cuenta ${probeId}, no a ${igUserId}.`);
+    process.exit(1);
+  }
+
+  console.log(`✓ Token válido para @${probe.username || igUserId} (${probe.account_type || 'cuenta profesional'}).`);
+
   const dto = await tenantChannelService.connectChannel(
     project.organizationId,
     'script:connect-instagram-channel',

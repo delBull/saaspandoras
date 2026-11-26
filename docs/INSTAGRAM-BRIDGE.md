@@ -53,6 +53,25 @@ Permisos necesarios en la app:
 | `instagram_business_manage_messages` | enviar la respuesta privada / DM |
 | `instagram_content_publish` | publicar piezas del community manager |
 
+### 2.1 Los dos caminos de Meta (elegir uno)
+
+| | Instagram Login | Facebook Login |
+|---|---|---|
+| Host | `graph.instagram.com/v21.0` | `graph.facebook.com/v21.0` |
+| Requiere Página de Facebook | **no** | **sí** (la cuenta IG cuelga de la Página) |
+| Scopes | `instagram_business_basic`, `instagram_business_manage_comments`, `instagram_business_manage_messages`, `instagram_business_content_publish` | `instagram_basic`, `instagram_manage_comments`, `instagram_business_manage_messages`, `instagram_content_publish` |
+| Cómo se obtiene | App Dashboard → Instagram → *API setup with Instagram login* → **Generate token** | OAuth de Facebook + `GET /me/accounts` |
+
+**Para el puente hace falta `instagram_business_manage_messages`** (o
+`instagram_business_manage_messages` en Instagram Login): es la única forma de
+enviar la respuesta privada. Un token con `instagram_manage_comments` **no**
+basta: puede responder en público, no por DM.
+
+Si `GET /me/accounts` devuelve `{"data":[]}`, el token no tiene Páginas y por
+tanto no hay cuenta de Instagram que resolver por esa vía: hay que generar el
+token con **Instagram Login**.
+
+
 ## 3. Variables de entorno (por tenant)
 
 | Variable | Ejemplo | Notas |
@@ -135,6 +154,9 @@ curl -i "https://dash.pandoras.finance/api/v1/external/instagram/webhook?hub.mod
 | 200 con `tenant: null` | la cuenta no está vinculada: correr el script de conexión |
 | `SKIPPED_NO_CREDENTIALS` | falta token de Instagram o el número de WhatsApp del tenant |
 | `FAILED` 400 de Meta | el comentario tiene más de 7 días, o ya se respondió una vez |
+| `FAILED` 403 al enviar | al token le falta `instagram_business_manage_messages` |
+| El script dice `Invalid OAuth access token` | el token es de Facebook Login y se está usando contra `graph.instagram.com` (o al revés) |
+| `GET /me/accounts` vacío | el token no tiene Páginas: hay que usar Instagram Login |
 
 ## 7. Límites conocidos
 
