@@ -3694,6 +3694,8 @@ export const nexusDealRooms = pgTable("nexus_deal_rooms", {
    * Si está en false, la sala no pide POF y el OM se libera con NDA firmado.
    */
   pofEnabled: boolean("pof_enabled").notNull().default(false),
+  /** Ocultar del listado sin borrar (demo, pruebas, deals cerrados). */
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
   // Multi-collaborator isolation & sharing
   createdBy: text("created_by"),
   /** Deal Pod al que pertenece esta sala (opcional). */

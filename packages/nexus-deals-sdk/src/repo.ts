@@ -10,7 +10,7 @@ import {
   nexusDealSigners,
   nexusNdaAcceptances,
 } from "@saasfly/db-core";
-import { eq, and, or, desc, ne } from "@saasfly/db-core";
+import { eq, and, or, desc, ne, isNull } from "@saasfly/db-core";
 import type { SignerInput, DealKind } from "./types";
 import { newRoomId, generatePublicId, defaultSections } from "./types";
 import { sendDealRoomActionRequiredAlert, sendDealRoomChainedReleaseAlert, sendSignatureAlert } from "./discord";
@@ -36,6 +36,9 @@ export interface CreateRoomInput {
 
 export async function listRooms() {
   return db.query.nexusDealRooms.findMany({
+    // Las salas archivadas (demo, pruebas, deals cerrados) no se listan en la
+    // consola: siguen en la base para auditoría, pero fuera del trabajo diario.
+    where: isNull(nexusDealRooms.archivedAt),
     orderBy: [desc(nexusDealRooms.updatedAt)],
     with: {
       sections: { orderBy: (s, { asc }) => [asc(s.code)] },
