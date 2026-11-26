@@ -77,7 +77,8 @@ token con **Instagram Login**.
 | Variable | Ejemplo | Notas |
 |---|---|---|
 | `META_IG_USER_ID_<SLUG>` | `17841400000000001` | cuenta receptora (`entry[0].id`); alternativa a la integración del portal |
-| `META_APP_SECRET_<SLUG>` | — | **obligatorio** en producción; sin él la ruta responde 500 |
+| `META_IG_APP_SECRET_<SLUG>` | — | **Instagram app secret** (Instagram Login). Se usa primero: Meta lo emite distinto del app secret de Facebook |
+| `META_APP_SECRET_<SLUG>` | — | secreto compartido (el de WhatsApp); se usa si no hay uno específico de Instagram. Sin ninguno de los dos la ruta responde **500** fail-closed |
 | `META_IG_ACCESS_TOKEN_<SLUG>` | `IGAA...` | token de larga duración |
 | `META_IG_API_BASE_<SLUG>` | `https://graph.instagram.com/v21.0` | Instagram Login; usa `graph.facebook.com` si hay Página vinculada |
 | `INSTAGRAM_WEBHOOK_VERIFY_TOKEN` | cadena inventada | o `INSTAGRAM_WEBHOOK_VERIFY_TOKEN_<SLUG>`; también acepta `META_WEBHOOK_VERIFY_TOKEN` |

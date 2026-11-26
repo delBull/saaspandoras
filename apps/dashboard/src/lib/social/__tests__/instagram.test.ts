@@ -272,6 +272,16 @@ describe('resolveInstagramIdentity', () => {
     expect(await resolveInstagramIdentity('')).toBeNull();
   });
 
+  it('usa el Instagram app secret propio cuando existe', async () => {
+    process.env.META_IG_APP_SECRET_SNARAI = 'secreto-instagram';
+    const identity = await resolveInstagramIdentity('17841400000000001');
+    expect(identity).toMatchObject({
+      appSecret: 'secreto-instagram',
+      secretSource: 'META_IG_APP_SECRET_SNARAI',
+    });
+    delete process.env.META_IG_APP_SECRET_SNARAI;
+  });
+
   it('no usa el secreto global para un tenant', async () => {
     delete process.env.META_APP_SECRET_SNARAI;
     process.env.META_APP_SECRET = 'secreto-plataforma';

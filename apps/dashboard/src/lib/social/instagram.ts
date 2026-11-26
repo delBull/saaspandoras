@@ -279,14 +279,27 @@ export async function resolveInstagramIdentity(igUserId: string): Promise<Instag
       community.igApiBase ||
       GRAPH,
   ).replace(/\/$/, '');
-  const secretEnvName = isPlatform
-    ? 'META_APP_SECRET'
-    : `META_APP_SECRET_${envSuffix(tenantSlug)}`;
-  const appSecret = (
-    process.env[secretEnvName] ||
-    (isPlatform ? process.env.WHATSAPP_APP_SECRET : '') ||
-    ''
-  ).trim();
+  /**
+   * Instagram Login firma los webhooks con el **Instagram app secret**, que en
+   * Meta es distinto del app secret de Facebook (el que usa WhatsApp). Si se
+   * reutilizara `META_APP_SECRET_<SLUG>` para ambos, conectar Instagram
+   * rompería la validación de WhatsApp: por eso se busca primero el secreto
+   * propio de Instagram y sólo después el compartido.
+   */
+  const secretCandidates = isPlatform
+    ? ['META_APP_SECRET', 'WHATSAPP_APP_SECRET']
+    : [`META_IG_APP_SECRET_${envSuffix(tenantSlug)}`, `META_APP_SECRET_${envSuffix(tenantSlug)}`];
+
+  let secretEnvName = secretCandidates[0];
+  let appSecret = '';
+  for (const name of secretCandidates) {
+    const value = (process.env[name] || '').trim();
+    if (value) {
+      appSecret = value;
+      secretEnvName = name;
+      break;
+    }
+  }
 
   return {
     igUserId: id,

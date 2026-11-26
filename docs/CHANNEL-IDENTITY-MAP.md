@@ -64,8 +64,11 @@ opcional y cualquiera podía hacerse pasar por Telegram.
 4. Cuenta de plataforma (`META_IG_USER_ID`) → `pandoras`.
 5. Sin coincidencia → **null**: se responde 200 sin procesar (no se inventa tenant).
 
-**Firma:** HMAC con el app secret del tenant dueño de la cuenta. Si la cuenta es de
-un tenant y falta `META_APP_SECRET_<SLUG>` → 500 fail-closed; nunca se usa el global.
+**Firma:** HMAC con el app secret del tenant dueño de la cuenta. Orden:
+`META_IG_APP_SECRET_<SLUG>` → `META_APP_SECRET_<SLUG>`; si no hay ninguno → 500
+fail-closed, nunca el global. El secreto propio de Instagram existe porque
+Instagram Login firma con un secreto distinto al de Facebook: reutilizar el de
+WhatsApp rompería la validación de WhatsApp.
 
 **Respuesta:** una sola respuesta privada por comentario (Meta lo impone) y DM a
 DM. El texto sólo contiene el puente a WhatsApp del tenant
