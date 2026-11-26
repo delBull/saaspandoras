@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { CheckCircle, XCircle, Shield, AlertCircle, Clock, UserCircle, Activity } from 'lucide-react';
+import { AccessRequestsInbox } from './AccessRequestsInbox';
 
 export interface ApprovalRequest {
   id: string;
@@ -63,6 +64,9 @@ export function OperationsApprovalsTab() {
 
   return (
     <div className="p-5 overflow-y-auto flex-1 space-y-6">
+      {/* Accesos a módulos (Developer Hub, Deal Rooms, Settings…) */}
+      <AccessRequestsInbox />
+
       {/* Header Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border border-amber-500/20 bg-amber-500/[0.04]">
         <div>
