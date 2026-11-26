@@ -21,7 +21,9 @@ import crypto from 'node:crypto';
 import { db } from '@saasfly/db-core';
 import { and, eq } from '@saasfly/db-core';
 import { projects, socialDmLog, tenantSocialIntegrations } from '@saasfly/db-core/schema';
-import { parseDmKeyword } from '@saasfly/hermes-core';
+// Import directo (no el barrel de `@saasfly/hermes-core`): esta ruta compila más
+// rápido y `dm-keyword` es puro (sin DB ni red).
+import { parseDmKeyword } from '@saasfly/hermes-core/src/channels/dm-keyword';
 
 const GRAPH = 'https://graph.instagram.com/v21.0';
 const PLATFORM_SLUG = 'pandoras';
@@ -336,7 +338,9 @@ export async function resolveInstagramCredentials(
         .limit(1);
 
       if (row?.encryptedPayload) {
-        const { channelVaultAdapter } = await import('@saasfly/hermes-core');
+        // Import puntual del vault: evita arrastrar el barrel completo al
+        // compilar la ruta cuando no hay credenciales cifradas.
+        const { channelVaultAdapter } = await import('@saasfly/hermes-core/src/channels/channel-vault.service');
         const decrypted = await channelVaultAdapter.decryptCredentials(
           canonicalOrgId,
           row.id,
