@@ -172,6 +172,25 @@ export async function afterSignature(params: {
     console.warn("[afterSignature] PDF generation failed:", err?.message || err);
   }
 
+  /**
+   * ¿Hay que pedirle la POF en este correo? Sólo si el deal la exige y el
+   * firmante **no** la subió junto con su firma. Si ya la adjuntó, pedirla otra
+   * vez es doble fricción (y fue justo lo que pasó en Patria: la subió en el
+   * panel y el correo se la volvió a pedir).
+   */
+  let pofSubmitted = false;
+  try {
+    const [signerRow] = await db
+      .select({ pofStatus: nexusDealSigners.pofStatus })
+      .from(nexusDealSigners)
+      .where(and(eq(nexusDealSigners.roomId, room.id), eq(nexusDealSigners.email, email)))
+      .limit(1);
+    pofSubmitted = signerRow?.pofStatus === "declared" || signerRow?.pofStatus === "verified";
+  } catch (err: any) {
+    console.warn("[afterSignature] no se pudo leer el POF del firmante:", err?.message || err);
+  }
+  const pofPending = Boolean(room.pofEnabled) && !pofSubmitted;
+
   // 2-bis. Documentación del proyecto (dossier, planos, etc.) que el NDA desbloquea.
   const projectDocs = await loadProjectDocuments(room.podId);
 
@@ -199,12 +218,14 @@ export async function afterSignature(params: {
         ...(projectDocs.titles.length > 0
           ? [`Documentación del proyecto adjunta a este correo: ${projectDocs.titles.join(", ")}.`]
           : []),
-        room.pofEnabled
+        pofPending
           ? "Falta tu manifestación de fondos (POF): súbela en la sala para liberar el memorándum."
-          : "El equipo revisará la documentación y te compartirá el siguiente paso.",
+          : pofSubmitted && room.pofEnabled
+            ? "Recibimos tu prueba de fondos: el memorándum se libera en cuanto se verifique."
+            : "El equipo revisará la documentación y te compartirá el siguiente paso.",
         "Un miembro del equipo te contactará en un plazo de 24 a 48 horas hábiles.",
       ],
-      pofRequired: Boolean(room.pofEnabled),
+      pofRequired: pofPending,
       pofUrl: `${base}/deal/${room.publicId}`,
       registered: { name, email, phone: params.phone || null },
     });

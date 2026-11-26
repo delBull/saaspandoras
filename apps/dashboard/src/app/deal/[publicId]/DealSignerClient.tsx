@@ -833,7 +833,15 @@ export default function DealSignerClient({ publicId, room, initialEmail, rawToke
                 </div>
               )}
 
-              {unlocked && room.pofEnabled && (ndaSigned || ndaStep === "signed") && rawToken && rawToken !== "creator-preview-token" && (
+              {unlocked &&
+                room.pofEnabled &&
+                // La POF se captura UNA vez: en el panel de firma mientras haya que
+                // firmar. Esta zona central es sólo el estado posterior, para que no
+                // convivan las dos subidas (fue lo que duplicó la firma de Patria).
+                ndaStep !== "required" &&
+                ndaStep !== "loading" &&
+                rawToken &&
+                rawToken !== "creator-preview-token" && (
                 <div className="mb-4 rounded-xl border border-sky-500/25 bg-sky-500/[0.04] p-4 print:hidden">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <p className="text-[11px] font-mono uppercase tracking-widest text-sky-300">
