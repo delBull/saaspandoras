@@ -75,7 +75,7 @@ export default function WaitlistEmail({
 
                 {projectName === "S'Narai" && (
                   <Text className="text-zinc-700 text-sm leading-relaxed m-0 mb-4">
-                    <strong>Acceso Exclusivo:</strong> Puedes descargar el <Link href="https://dash.pandoras.finance/docs/narai_anteproyecto.pdf" className="text-blue-600 underline font-bold">Narai Private Dossier</Link> para profundizar en la visión y números del proyecto.
+                    <strong>Documentación:</strong> si quieres revisar el proyecto a detalle, entra a la <Link href="https://dash.pandoras.finance/pitch/snarai" className="text-blue-600 underline font-bold">documentación de S'Narai</Link>. La información sensible se comparte con el acuerdo de confidencialidad firmado.
                   </Text>
                 )}
               </Section>

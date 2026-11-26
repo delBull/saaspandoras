@@ -73,7 +73,7 @@ export const ExploreStep1Email = ({
 
             {(projectSlug === 'narai' || projectSlug === 'snarai') && (
               <Text className="text-black text-[14px] leading-[24px] mt-4">
-                <strong>Acceso Exclusivo:</strong> También puedes descargar el <Link href="https://dash.pandoras.finance/docs/narai_anteproyecto.pdf" className="text-blue-600 underline">Narai Private Dossier</Link> para ver los detalles técnicos y financieros del proyecto.
+                <strong>Documentación:</strong> puedes revisar el proyecto en la <Link href="https://dash.pandoras.finance/pitch/snarai" className="text-blue-600 underline">documentación de S'Narai</Link>. La información sensible se comparte con el acuerdo de confidencialidad firmado.
               </Text>
             )}
 
