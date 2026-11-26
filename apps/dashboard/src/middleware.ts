@@ -189,6 +189,11 @@ export function middleware(request: NextRequest) {
       '/api/admin': { requests: 150, windowMs: 60 * 1000 },
       '/api/whatsapp/webhook': { requests: 5000, windowMs: 60 * 60 * 1000 },
       '/api/whatsapp/preapply': { requests: 5000, windowMs: 60 * 60 * 1000 },
+      // Webhooks de Meta: un pico de comentarios/DMs no puede devolver 429 (Meta
+      // reintenta y, aunque el dedupe lo absorbe, el evento se degrada). Se mide
+      // igual que el webhook de WhatsApp.
+      '/api/v1/external/instagram/webhook': { requests: 5000, windowMs: 60 * 60 * 1000 },
+      '/api/v1/external/whatsapp/webhook': { requests: 5000, windowMs: 60 * 60 * 1000 },
       default: { requests: 200, windowMs: 15 * 60 * 1000 },
     };
 
@@ -266,6 +271,8 @@ export function middleware(request: NextRequest) {
       '/api/admin': { requests: 150, windowMs: 60 * 1000 },
       '/api/whatsapp/webhook': { requests: 5000, windowMs: 60 * 60 * 1000 },
       '/api/whatsapp/preapply': { requests: 5000, windowMs: 60 * 60 * 1000 },
+      '/api/v1/external/instagram/webhook': { requests: 5000, windowMs: 60 * 60 * 1000 },
+      '/api/v1/external/whatsapp/webhook': { requests: 5000, windowMs: 60 * 60 * 1000 },
       default: { requests: 200, windowMs: 15 * 60 * 1000 },
     };
     const limitConfig = Object.entries(rateLimits).find(([path]) => pathname.startsWith(path))?.[1] || rateLimits.default;

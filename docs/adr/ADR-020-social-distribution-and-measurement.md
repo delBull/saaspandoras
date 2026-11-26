@@ -202,6 +202,38 @@ publicación → /l/<code> → /join/<slug> (datos + consentimiento) → CRM →
 Eso define el contenido: explicar el modelo (Título de Propiedad, estancias anuales), mostrar obra
 real y resolver objeciones. No memes, no frases de IA, no promesas de rentabilidad.
 
+### 2.8 Entrada inversa: comentario/DM → WhatsApp
+
+**Decisión:** Instagram es un **puente**, no un canal conversacional. Un comentario o un DM con la
+palabra clave recibe **una** respuesta privada con el enlace de WhatsApp del tenant; la conversación
+—con alma, conocimiento y política de claims— ocurre en WhatsApp.
+
+```
+comentario/DM "SNARAI <código>"  →  respuesta privada (1 por comentario)
+                                 →  wa.me/<número del tenant>?text=SNARAI <código>
+                                 →  WhatsApp del tenant  →  lead con atribución
+```
+
+Reglas:
+
+1. **Sin palabra clave no hay respuesta.** La palabra clave sólo cuenta en los primeros tokens.
+2. **Una sola respuesta privada por comentario** (límite de Meta, ventana de 7 días) y DM a DM
+   (24 h). No se reintenta con otro texto: si falla, se cierra o se responde en público.
+3. **Idempotencia por `(network, external_id)`** en `social_dm_log`: un reintento de Meta no puede
+   producir un segundo DM. El registro deja estado (`SENT`, `SKIPPED_NO_KEYWORD`,
+   `SKIPPED_NO_CREDENTIALS`, `DUPLICATE`, `FAILED`) para poder auditar.
+4. **Identidad por la cuenta receptora** (`entry[0].id`), nunca por un campo del payload. La firma
+   HMAC se valida con el app secret **de esa cuenta**; si el tenant no tiene secreto, la ruta falla
+   cerrada (500) en vez de aceptar el global.
+5. **Nada se promete en Instagram.** El DM no cotiza, no explica el modelo ni proyecta: sólo entrega
+   el enlace. Todo lo sensible vive en WhatsApp, donde hay política de claims.
+6. **El número destino es dato del tenant** (`extraConfig.community.whatsappNumber`), no una
+   constante: un tenant nuevo hereda el flujo cambiando su configuración.
+
+Implementación: `apps/dashboard/src/app/api/v1/external/instagram/webhook/route.ts`,
+`apps/dashboard/src/lib/social/instagram.ts`, migración `0124`, y el detalle operativo en
+`docs/INSTAGRAM-BRIDGE.md`.
+
 ## 3. Multi-tenant
 
 - Todo se resuelve por `canonicalOrgId`; jamás por un `tenantId` del cliente.
@@ -225,7 +257,8 @@ real y resolver objeciones. No memes, no frases de IA, no promesas de rentabilid
 |---|---|---|
 | 0 | Cookie `nx_src`, `/join/<slug>`, `src` en checkout | ✅ implementado |
 | 0.5 | Whitelist por tenant (publisher + lector) — prerrequisito del hub | pendiente |
-| 1 | `FacebookPagePublisher` + `InstagramPublisher` + registro | pendiente (credenciales) |
+| 1 | `FacebookPagePublisher` + `InstagramPublisher` + registro | ✅ implementado (pendiente credenciales) |
+| 1-bis | Puente IG comentario/DM → WhatsApp (respuesta privada + idempotencia) | ✅ implementado §2.8 (pendiente alta de cuenta y webhook en Meta) |
 | 2 | A2A `media.publish.channel:*` real + aprobación multi-red | pendiente |
 | 3 | Media: biblioteca de assets por tenant y `media.image.create` opcional | pendiente |
 | 4 | Hub multi-tenant (categoría + rol por tenant + prueba de fuga) | pendiente |
