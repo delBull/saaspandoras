@@ -4934,6 +4934,39 @@ export const nexusCollaborators = pgTable("nexus_collaborators", {
 
 export type NexusCollaborator = typeof nexusCollaborators.$inferSelect;
 
+/**
+ * Solicitudes de acceso a módulos de Nexus (migración 0125).
+ *
+ * Bandeja única: Developer Hub, Deal Rooms, Settings, Academy… Antes el botón de
+ * solicitud sólo mandaba un webhook a Discord y no quedaba registro, así que no
+ * había nada que aprobar. Aprobar una solicitud otorga el permiso del módulo en
+ * `nexus_collaborators.permissions`.
+ */
+export const nexusAccessRequests = pgTable("nexus_access_requests", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  collaboratorId: integer("collaborator_id").notNull(),
+  email: varchar("email", { length: 255 }).notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  role: varchar("role", { length: 32 }).notNull().default("COLLABORATOR"),
+  /** developer | dealRoom | settings | academy | cohorts … */
+  module: varchar("module", { length: 64 }).notNull(),
+  message: text("message"),
+  status: varchar("status", { length: 16 }).notNull().default("PENDING"),
+  requestedAt: timestamp("requested_at", { withTimezone: true }).defaultNow().notNull(),
+  decidedAt: timestamp("decided_at", { withTimezone: true }),
+  decidedBy: varchar("decided_by", { length: 255 }),
+  decisionNote: text("decision_note"),
+}, (t) => ({
+  pendingUq: uniqueIndex("nexus_access_requests_pending_uq")
+    .on(t.email, t.module)
+    .where(sql`status = 'PENDING'`),
+  statusIdx: index("nexus_access_requests_status_idx").on(t.status, t.requestedAt),
+  collabIdx: index("nexus_access_requests_collab_idx").on(t.collaboratorId, t.requestedAt),
+}));
+
+export type NexusAccessRequest = typeof nexusAccessRequests.$inferSelect;
+
+
 export const nexusActionRequests = pgTable("nexus_action_requests", {
   id: serial("id").primaryKey(),
   actionToken: varchar("action_token", { length: 255 }).notNull().unique(),
