@@ -83,14 +83,18 @@ token con **Instagram Login**.
 | `INSTAGRAM_WEBHOOK_VERIFY_TOKEN` | cadena inventada | o `INSTAGRAM_WEBHOOK_VERIFY_TOKEN_<SLUG>`; también acepta `META_WEBHOOK_VERIFY_TOKEN` |
 | `COMMUNITY_WHATSAPP_NUMBER_<SLUG>` | `18336529213` | respaldo del número del tenant |
 
-El número de WhatsApp y la cuenta de Instagram **también** se pueden fijar como
-datos del tenant (sin tocar código ni redeploy):
+El número de WhatsApp, la cuenta de Instagram y el host de la API **también** se
+pueden fijar como datos del tenant (sin tocar código ni redeploy). `igApiBase`
+decide el camino: `graph.instagram.com` (Instagram Login) o
+`graph.facebook.com` (Facebook Login). El token **nunca** va aquí.
 
 ```json
 {
   "extraConfig": {
     "community": {
-      "igUserId": "17841400000000001",
+      "igUserId": "17841425380042995",
+      "igHandle": "snaraibucerias",
+      "igApiBase": "https://graph.facebook.com/v21.0",
       "whatsappNumber": "+1 833 652-9213"
     }
   }

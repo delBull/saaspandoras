@@ -49,6 +49,8 @@ export interface InstagramIdentity {
   tenantSlug: string;
   /** Organización canónica del tenant (nunca viene del payload). */
   canonicalOrgId: string | null;
+  /** Host de la Graph API para esta cuenta (Instagram Login o Facebook Login). */
+  apiBase: string;
   /** App secret con el que se debe validar la firma. */
   appSecret: string;
   /** Nombre de la variable usada (nunca el valor). */
@@ -261,6 +263,20 @@ export async function resolveInstagramIdentity(igUserId: string): Promise<Instag
   if (!tenant && !isPlatform) return null;
 
   const tenantSlug = tenant?.slug || PLATFORM_SLUG;
+
+  /**
+   * El host no se adivina: un token de Facebook Login no funciona contra
+   * `graph.instagram.com` (y al revés). Se resuelve por entorno o por el dato
+   * del tenant, y el default es el camino de Instagram Login.
+   */
+  const community = (tenant?.extraConfig as any)?.community || {};
+  const apiBase = String(
+    (isPlatform
+      ? process.env.META_IG_API_BASE
+      : process.env[`META_IG_API_BASE_${envSuffix(tenantSlug)}`]) ||
+      community.igApiBase ||
+      GRAPH,
+  ).replace(/\/$/, '');
   const secretEnvName = isPlatform
     ? 'META_APP_SECRET'
     : `META_APP_SECRET_${envSuffix(tenantSlug)}`;
@@ -274,6 +290,7 @@ export async function resolveInstagramIdentity(igUserId: string): Promise<Instag
     igUserId: id,
     tenantSlug,
     canonicalOrgId: tenant?.organizationId ?? null,
+    apiBase,
     appSecret,
     secretSource: secretEnvName,
     isPlatform,
@@ -299,7 +316,7 @@ export async function resolveCommunityWhatsAppNumber(tenantSlug: string): Promis
 
 /** Credenciales de envío del tenant: integración cifrada o entorno. */
 export async function resolveInstagramCredentials(
-  identity: Pick<InstagramIdentity, 'tenantSlug' | 'canonicalOrgId' | 'igUserId' | 'isPlatform'>,
+  identity: Pick<InstagramIdentity, 'tenantSlug' | 'canonicalOrgId' | 'igUserId' | 'isPlatform' | 'apiBase'>,
 ): Promise<{ igUserId: string; accessToken: string; apiBase: string } | null> {
   const { tenantSlug, canonicalOrgId, igUserId, isPlatform } = identity;
 
@@ -332,7 +349,7 @@ export async function resolveInstagramCredentials(
           return {
             igUserId: String(creds.igUserId || igUserId),
             accessToken: token,
-            apiBase: String(creds.apiBase || GRAPH).replace(/\/$/, ''),
+            apiBase: String(creds.apiBase || identity.apiBase || GRAPH).replace(/\/$/, ''),
           };
         }
       }
@@ -349,13 +366,7 @@ export async function resolveInstagramCredentials(
 
   if (!token) return null;
 
-  const apiBase = String(
-    isPlatform
-      ? process.env.META_IG_API_BASE || GRAPH
-      : process.env[`META_IG_API_BASE_${envSuffix(tenantSlug)}`] || GRAPH,
-  ).replace(/\/$/, '');
-
-  return { igUserId, accessToken: token, apiBase };
+  return { igUserId, accessToken: token, apiBase: identity.apiBase };
 }
 
 // ─── Idempotencia ───────────────────────────────────────────────────────────

@@ -35,6 +35,7 @@ const identity = {
   igUserId: '17841400000000001',
   tenantSlug: 'snarai',
   canonicalOrgId: '9079ecf5-2162-4078-bddf-66b607e2d32f',
+  apiBase: 'https://graph.instagram.com/v21.0',
   appSecret: 'secreto-snarai',
   secretSource: 'META_APP_SECRET_SNARAI',
   isPlatform: false,

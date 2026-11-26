@@ -62,29 +62,33 @@ async function main() {
   }
 
   /**
-   * Pre-flight: el token debe ser válido **para esa cuenta**. Guardar un token
-   * que no corresponde deja el canal en un estado que sólo falla cuando llega
-   * un comentario real, y Meta no permite reintentar la respuesta privada.
-   * Con Instagram Login, `user_id` es el id de la cuenta profesional.
+   * Pre-flight: el token debe poder actuar **sobre esa cuenta**. Guardar un
+   * token que no corresponde deja el canal en un estado que sólo falla cuando
+   * llega un comentario real, y Meta no permite reintentar la respuesta privada.
+   *
+   * Se consulta el nodo de la cuenta (no `/me`): con Instagram Login `/me`
+   * devuelve `user_id`; con Facebook Login `/me` devuelve el **usuario de
+   * Facebook**, que nunca es el id de la cuenta de Instagram.
    */
-  const probeUrl = `${apiBase}/me?fields=user_id,username,account_type&access_token=${encodeURIComponent(accessToken)}`;
+  const probeUrl = `${apiBase}/${igUserId}?fields=id,username&access_token=${encodeURIComponent(accessToken)}`;
   const probeRes = await fetch(probeUrl).catch(() => null);
   const probe: any = probeRes ? await probeRes.json().catch(() => ({})) : {};
 
   if (!probeRes?.ok) {
     console.error('❌ Meta rechazó el token:', probe?.error?.message || `HTTP ${probeRes?.status ?? 'sin respuesta'}`);
-    console.error('   Este script espera un token de Instagram Login (graph.instagram.com) con');
-    console.error('   instagram_business_basic + instagram_business_manage_messages.');
+    console.error('   Revisa que el token corresponda al host de META_IG_API_BASE:');
+    console.error('   - Instagram Login  → https://graph.instagram.com/v21.0');
+    console.error('   - Facebook Login   → https://graph.facebook.com/v21.0');
     process.exit(1);
   }
 
-  const probeId = String(probe?.user_id || probe?.id || '').trim();
+  const probeId = String(probe?.id || '').trim();
   if (probeId && probeId !== igUserId) {
-    console.error(`❌ El token pertenece a la cuenta ${probeId}, no a ${igUserId}.`);
+    console.error(`❌ Meta devolvió la cuenta ${probeId}, no ${igUserId}.`);
     process.exit(1);
   }
 
-  console.log(`✓ Token válido para @${probe.username || igUserId} (${probe.account_type || 'cuenta profesional'}).`);
+  console.log(`✓ Token válido para @${probe.username || igUserId} (${igUserId}) vía ${apiBase}.`);
 
   const dto = await tenantChannelService.connectChannel(
     project.organizationId,

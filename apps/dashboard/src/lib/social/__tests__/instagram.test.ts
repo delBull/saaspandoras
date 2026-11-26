@@ -243,6 +243,7 @@ describe('resolveInstagramIdentity', () => {
     expect(identity).toMatchObject({
       tenantSlug: 'snarai',
       canonicalOrgId: '9079ecf5-2162-4078-bddf-66b607e2d32f',
+      apiBase: 'https://graph.instagram.com/v21.0',
       appSecret: 'secreto-snarai',
       secretSource: 'META_APP_SECRET_SNARAI',
       isPlatform: false,
@@ -295,6 +296,7 @@ const IDENTITY: InstagramIdentity = {
   igUserId: '17841400000000001',
   tenantSlug: 'snarai',
   canonicalOrgId: '9079ecf5-2162-4078-bddf-66b607e2d32f',
+  apiBase: 'https://graph.instagram.com/v21.0',
   appSecret: 'secreto-snarai',
   secretSource: 'META_APP_SECRET_SNARAI',
   isPlatform: false,
@@ -353,6 +355,23 @@ describe('handleInstagramEvent', () => {
     expect(outcome).toBe('SENT');
     const payload = JSON.parse((fetch as any).mock.calls[0][1].body);
     expect(payload.recipient).toEqual({ id: 'u-9' });
+  });
+
+  it('usa el host configurado por el tenant (Facebook Login)', async () => {
+    PROJECT_ROWS[0].extraConfig.community.igApiBase = 'https://graph.facebook.com/v21.0';
+
+    const identity = await resolveInstagramIdentity('17841400000000001');
+    expect(identity?.apiBase).toBe('https://graph.facebook.com/v21.0');
+
+    const outcome = await handleInstagramEvent({
+      identity: identity!,
+      event: { ...COMMENT, externalId: 'c-fb' },
+    });
+    expect(outcome).toBe('SENT');
+    expect((fetch as any).mock.calls[0][0])
+      .toBe('https://graph.facebook.com/v21.0/17841400000000001/messages');
+
+    delete PROJECT_ROWS[0].extraConfig.community.igApiBase;
   });
 
   it('no inventa credenciales: sin token no envía y lo registra', async () => {
