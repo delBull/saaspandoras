@@ -36,13 +36,36 @@ async function handler(req: Request, props: { params: Promise<{ projectId: strin
     const metadata = (projectRecord.w2eConfig as any) || {};
     const storedSecret = metadata?.botConfig?.webhookSecret || (projectSlug === 'snarai' ? process.env.TELEGRAM_SNARAI_WEBHOOK_SECRET : undefined);
 
-    // 1. Validate Telegram secret token (anti-forgery)
+    /**
+     * 1. Validación del secreto de Telegram (anti-falsificación).
+     *
+     * Fail-closed por tenant: si el proyecto TIENE un bot configurado (token en
+     * runtime config o `TELEGRAM_<SLUG>_BOT_TOKEN`), el secreto es obligatorio.
+     * Antes, sin secreto la ruta aceptaba cualquier POST: cualquiera podía
+     * hacerse pasar por Telegram y hablar con el Hermes de ese tenant.
+     */
+    const configuredBotToken =
+      (metadata?.botConfig?.telegramToken as string | undefined) ||
+      ((projectRecord.tenantRuntimeConfig as any)?.secrets?.telegramBotToken as string | undefined) ||
+      ((projectRecord.tenantRuntimeConfig as any)?.telegramBotToken as string | undefined) ||
+      process.env[`TELEGRAM_${projectSlug.toUpperCase().replace(/-/g, '_')}_BOT_TOKEN`] ||
+      (projectSlug === 'snarai' ? process.env.TELEGRAM_SNARAI_BOT_TOKEN : undefined);
+
+    const requestSecret = req.headers.get('x-telegram-bot-api-secret-token');
+
     if (storedSecret) {
-      const requestSecret = req.headers.get('x-telegram-bot-api-secret-token');
       if (!requestSecret || requestSecret !== storedSecret) {
         console.warn(`[Telegram Bot] Invalid secret token for project: ${projectSlug}`);
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }
+    } else if (configuredBotToken) {
+      console.error(
+        `❌ [Telegram Bot] El proyecto ${projectSlug} tiene bot pero no webhookSecret configurado. Fail-closed.`,
+      );
+      return NextResponse.json(
+        { error: "Webhook secret not configured for this bot" },
+        { status: 401 },
+      );
     }
 
     // COMMERCIAL GATE: Ensure tenant has an active Hermes license (flagship tenants like snarai and pandoras are exempt)

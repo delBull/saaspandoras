@@ -43,44 +43,25 @@ export async function POST(request: Request) {
     const isNativeMeta = body.object === 'whatsapp_business_account';
 
     /**
-     * Resolución del secreto por NÚMERO RECEPTOR.
-     *
-     * Meta manda al webhook de la WABA, no al del tenant: el `?tenant=` no existe
-     * y el secreto global es el de otra app, así que la firma fallaba siempre y el
-     * número de S'Narai no respondía ("Invalid HMAC signature").
+     * Identidad del número receptor. Hermes (plataforma) y S'Narai son apps de
+     * Meta distintas: el secreto de firma es el de la app dueña del número.
      */
-    const phoneNumberId = isNativeMeta
-      ? String(body?.entry?.[0]?.changes?.[0]?.value?.metadata?.phone_number_id || '')
-      : '';
-    let tenantSlug = targetTenant || '';
-    if (!tenantSlug && phoneNumberId) {
-      try {
-        const { WhatsAppDispatcher } = await import('@/lib/whatsapp/dispatcher');
-        const target = await WhatsAppDispatcher.resolveTargetByPhoneNumberId(phoneNumberId);
-        tenantSlug = target?.slug || '';
-      } catch (err: any) {
-        console.warn('[WhatsApp Webhook] No se pudo resolver el tenant por phone id:', err?.message || err);
+    const { resolveInboundIdentity, MissingTenantSecretError } = await import('@/lib/whatsapp/inbound-identity');
+
+    let identity;
+    try {
+      identity = await resolveInboundIdentity(body);
+    } catch (err: any) {
+      if (err instanceof MissingTenantSecretError) {
+        console.error(`❌ [WhatsApp Webhook] ${err.message}. Fail-closed.`);
+        return NextResponse.json({ error: 'Server configuration error: missing tenant secret' }, { status: 500 });
       }
+      throw err;
     }
 
-    const globalSecret = (process.env.META_APP_SECRET || process.env.WHATSAPP_APP_SECRET || '').trim();
-    const tenantSecret = tenantSlug
-      ? (process.env[`META_APP_SECRET_${tenantSlug.replace(/-/g, '_').toUpperCase()}`] || '').trim()
-      : '';
-    /**
-     * Hermes (plataforma) y S'Narai son **apps de Meta distintas**: número, token
-     * y app secret propios. Si el número resuelve a un tenant, su secreto es el
-     * único válido; el global sólo aplica cuando no hay tenant (número maestro o
-     * payload de bridge). Así una firma de otra app nunca se acepta por error.
-     */
-    const tenantResolved = Boolean(tenantSlug && tenantSlug !== 'pandoras');
-    let metaAppSecret = tenantResolved ? tenantSecret : (tenantSecret || globalSecret);
-    if (tenantResolved && !tenantSecret) {
-      console.error(
-        `❌ [WhatsApp Webhook] Falta META_APP_SECRET_${tenantSlug.replace(/-/g, '_').toUpperCase()} para el número ${phoneNumberId}. Fail-closed.`,
-      );
-      return NextResponse.json({ error: 'Server configuration error: missing tenant secret' }, { status: 500 });
-    }
+    const tenantSlug = targetTenant || identity.tenantSlug || '';
+    const phoneNumberId = identity.phoneNumberId;
+    const metaAppSecret = identity.appSecret;
 
     // 🔒 Cyber Security: Enforce strict fail-closed HMAC for Meta Webhooks
     if (signatureHeader || isNativeMeta) {

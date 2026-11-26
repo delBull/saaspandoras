@@ -11,33 +11,9 @@ import { verifyMetaSignature } from '@/lib/whatsapp/security';
 export async function POST(request: NextRequest) {
   try {
     const rawBody = await request.text();
-    const appSecret = (process.env.WHATSAPP_APP_SECRET || process.env.META_APP_SECRET || '').trim();
 
-    // 1. Cyber Security: Verify HMAC signature (Strict Fail-Closed)
-    let signature: string | null = null;
-    if (!appSecret) {
-      if (process.env.NODE_ENV === 'production') {
-        console.error('❌ [SIMPLE-WHATSAPP] WHATSAPP_APP_SECRET missing in production.');
-        return NextResponse.json(
-          { status: 'error', error: 'Server configuration error: WHATSAPP_APP_SECRET missing' },
-          { status: 500 }
-        );
-      }
-      console.warn('⚠️ [SIMPLE-WHATSAPP] Non-production environment missing WHATSAPP_APP_SECRET. Proceeding constrained.');
-    } else {
-      signature = request.headers.get('x-hub-signature-256');
-      if (!signature) {
-        console.warn('🔒 [SIMPLE-WHATSAPP] Cabecera X-Hub-Signature-256 ausente.');
-        return NextResponse.json({ status: 'unauthorized', error: 'Missing x-hub-signature-256 header' }, { status: 401 });
-      }
-
-      const isValid = verifyMetaSignature(rawBody, signature, appSecret);
-      if (!isValid) {
-        console.warn('🔒 [SIMPLE-WHATSAPP] Firma X-Hub-Signature-256 inválida o payload alterado.');
-        return NextResponse.json({ status: 'unauthorized', error: 'Invalid HMAC signature' }, { status: 401 });
-      }
-    }
-
+    // 1. Parse primero: necesitamos el phone_number_id para saber de qué APP es
+    //    el mensaje (Hermes plataforma y cada tenant usan apps de Meta distintas).
     let payload: any;
     try {
       payload = JSON.parse(rawBody);
@@ -45,7 +21,40 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ status: 'bad_request', error: 'Invalid JSON payload' }, { status: 400 });
     }
 
-    // Verificar que es un mensaje de WhatsApp válido
+    const { resolveInboundIdentity, MissingTenantSecretError } = await import('@/lib/whatsapp/inbound-identity');
+
+    let identity;
+    try {
+      identity = await resolveInboundIdentity(payload);
+    } catch (err: any) {
+      if (err instanceof MissingTenantSecretError) {
+        console.error(`❌ [SIMPLE-WHATSAPP] ${err.message}. Fail-closed.`);
+        return NextResponse.json({ status: 'error', error: 'Server configuration error: missing tenant secret' }, { status: 500 });
+      }
+      throw err;
+    }
+
+    // 2. Firma HMAC con el secreto de la app dueña del número.
+    if (!identity.appSecret) {
+      if (process.env.NODE_ENV === 'production') {
+        console.error('❌ [SIMPLE-WHATSAPP] Sin app secret configurado (fail-closed).');
+        return NextResponse.json({ status: 'error', error: 'Server configuration error: missing secret' }, { status: 500 });
+      }
+      console.warn('⚠️ [SIMPLE-WHATSAPP] Non-production environment missing app secret. Proceeding constrained.');
+    } else {
+      const signature = request.headers.get('x-hub-signature-256');
+      if (!signature) {
+        console.warn(`🔒 [SIMPLE-WHATSAPP] Cabecera X-Hub-Signature-256 ausente (tenant=${identity.tenantSlug ?? 'n/a'}, phoneId=${identity.phoneNumberId || 'n/a'}).`);
+        return NextResponse.json({ status: 'unauthorized', error: 'Missing x-hub-signature-256 header' }, { status: 401 });
+      }
+
+      const isValid = verifyMetaSignature(rawBody, signature, identity.appSecret);
+      if (!isValid) {
+        console.warn(`🔒 [SIMPLE-WHATSAPP] Firma inválida (secreto ${identity.secretSource}, tenant=${identity.tenantSlug ?? 'n/a'}).`);
+        return NextResponse.json({ status: 'unauthorized', error: 'Invalid HMAC signature' }, { status: 401 });
+      }
+    }
+
     const changeValue = payload.entry?.[0]?.changes?.[0]?.value;
     if (!changeValue) {
       return NextResponse.json({ status: 'ignored' });
@@ -61,8 +70,8 @@ export async function POST(request: NextRequest) {
 
     const result = await WhatsAppDispatcher.dispatch(payload, {
       rawBody,
-      hubSignature: signature || undefined,
-      appSecret: appSecret || undefined,
+      hubSignature: request.headers.get('x-hub-signature-256') || undefined,
+      appSecret: identity.appSecret || undefined,
     });
     return NextResponse.json(result);
 
