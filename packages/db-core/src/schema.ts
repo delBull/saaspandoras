@@ -4968,6 +4968,72 @@ export const nexusAccessRequests = pgTable("nexus_access_requests", {
 
 export type NexusAccessRequest = typeof nexusAccessRequests.$inferSelect;
 
+/**
+ * Identidad de agente por colaborador (ADR-021, migración 0127).
+ *
+ * El agente cuelga de la identidad del colaborador (no es un modelo paralelo):
+ * su clave se valida por petición y su delegación es intersección con los
+ * permisos efectivos de esa persona, con expiración y aprobación del owner.
+ */
+export const agentKeys = pgTable("agent_keys", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  collaboratorId: integer("collaborator_id").notNull(),
+  canonicalOrgId: varchar("canonical_org_id", { length: 256 }).notNull().default("pandoras"),
+  label: varchar("label", { length: 120 }).notNull(),
+  /** Primeros caracteres, para reconocer la clave sin exponerla. */
+  keyPrefix: varchar("key_prefix", { length: 24 }).notNull(),
+  /** SHA-256 del secreto. El valor en claro se muestra una sola vez. */
+  keyHash: varchar("key_hash", { length: 64 }).notNull().unique(),
+  /** ACTIVE | SUSPENDED | REVOKED */
+  status: varchar("status", { length: 16 }).notNull().default("ACTIVE"),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+  createdBy: varchar("created_by", { length: 255 }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  revokeReason: text("revoke_reason"),
+}, (t) => ({
+  collabIdx: index("agent_keys_collab_idx").on(t.collaboratorId, t.createdAt),
+  statusIdx: index("agent_keys_status_idx").on(t.status),
+}));
+
+export const agentDelegations = pgTable("agent_delegations", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  agentKeyId: uuid("agent_key_id").notNull().references(() => agentKeys.id, { onDelete: "cascade" }),
+  collaboratorId: integer("collaborator_id").notNull(),
+  /** Módulos concedidos (subconjunto de los permisos del colaborador). */
+  capabilities: jsonb("capabilities").$type<string[]>().notNull().default([]),
+  /** { pods: string[], rooms: string[], projects: string[] } */
+  scope: jsonb("scope").$type<Record<string, string[]>>().notNull().default({}),
+  /** PENDING | ACTIVE | SUSPENDED | REVOKED */
+  status: varchar("status", { length: 16 }).notNull().default("PENDING"),
+  requestedBy: varchar("requested_by", { length: 255 }).notNull(),
+  approvedBy: varchar("approved_by", { length: 255 }),
+  approvedAt: timestamp("approved_at", { withTimezone: true }),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  revokeReason: text("revoke_reason"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  keyIdx: index("agent_delegations_key_idx").on(t.agentKeyId, t.createdAt),
+  statusIdx: index("agent_delegations_status_idx").on(t.status),
+}));
+
+export const agentLimits = pgTable("agent_limits", {
+  agentKeyId: uuid("agent_key_id").primaryKey().references(() => agentKeys.id, { onDelete: "cascade" }),
+  maxMutationsPerHour: integer("max_mutations_per_hour").notNull().default(60),
+  maxOutboundMessagesPerDay: integer("max_outbound_messages_per_day").notNull().default(50),
+  /** Acciones que siempre piden confirmación humana aunque estén delegadas. */
+  requireApprovalFor: jsonb("require_approval_for").$type<string[]>().notNull().default(["deal.sign", "payment.*", "publish.*"]),
+  autoSuspendOnAnomaly: boolean("auto_suspend_on_anomaly").notNull().default(true),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export type AgentKey = typeof agentKeys.$inferSelect;
+export type AgentDelegation = typeof agentDelegations.$inferSelect;
+export type AgentLimits = typeof agentLimits.$inferSelect;
+
+
 
 export const nexusActionRequests = pgTable("nexus_action_requests", {
   id: serial("id").primaryKey(),

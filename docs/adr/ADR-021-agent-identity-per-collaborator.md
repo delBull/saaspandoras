@@ -1,6 +1,6 @@
 # ADR-021 · Identidad de agente por colaborador (Developer Hub)
 
-**Estado:** propuesta para aprobación
+**Estado:** fases 1-2 implementadas (`0127`); fases 3-5 pendientes
 **Contexto:** Nexus es una superficie **sólo para colaboradores**: no hay clientes ni
 terceros dentro. El siguiente paso es que cada colaborador (empezando por el COO)
 opere con **su propia IA**, igual que Marco opera con la suya, pero **con su
@@ -205,11 +205,11 @@ Colaboración interna sobre **S'Narai**, **Forge** y los deal pods que vengan:
 
 ## 7. Fases
 
-| Fase | Alcance | Depende de |
+| Fase | Alcance | Estado |
 |---|---|---|
-| 0 | Bandeja de aprobaciones (`nexus_access_requests`, migración 0125 ya aplicada) | — |
-| 1 | `agent_keys` + `agent_delegations` + emisión y revocación | fase 0 |
-| 2 | Gate de ejecución: capability + delegación + scope + límites | fase 1 |
+| 0 | Bandeja de aprobaciones (`nexus_access_requests`, migración 0125) | ✅ |
+| 1 | `agent_keys` + `agent_delegations` + emisión y revocación (`0127`) | ✅ |
+| 2 | Gate de ejecución: capability + delegación + scope + límites (`resolveAgentContext`) | ✅ |
 | 3 | `resource_shares` (pod/room/project) con aprobación del owner | fase 2 |
 | 4 | Developer Hub role-aware + "conectar mi IA" | fase 1 |
 | 5 | Auto-suspensión por anomalía y panel de límites | fase 2 |

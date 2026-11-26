@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getNexusAuthContext } from "@saasfly/shared";
 import { Terminal, Code, BookOpen, Blocks, BrainCircuit, Database, ShieldCheck, CheckCircle2 } from "lucide-react";
 import { RequestDeveloperDocsButton } from "./RequestDeveloperDocsButton";
+import { AgentAccessPanel } from "@/components/nexus/AgentAccessPanel";
 
 export default async function NexusDevelopersPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
   const resolvedSearchParams = await searchParams;
@@ -44,6 +45,9 @@ export default async function NexusDevelopersPage({ searchParams }: { searchPara
 
   return (
     <div className="p-6 md:p-8 max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700 space-y-12">
+      {/* ADR-021: identidad de agente del colaborador (sólo con acceso al hub) */}
+      <AgentAccessPanel isAdmin={auth.role === 'SUPER_ADMIN' || auth.role === 'ADMIN'} />
+
       <div className="flex flex-col gap-2">
         <h1 className="text-3xl md:text-4xl font-black tracking-tighter text-white">
           Developer Hub & A2A SDK
