@@ -31,18 +31,6 @@ export async function POST(request: Request) {
 
     const bodyText = await request.text();
     
-    // Dynamic Secret Resolution: Check for tenant-specific secret first (e.g., META_APP_SECRET_SNARAI)
-    let metaAppSecret = '';
-    if (targetTenant) {
-      const tenantEnvKey = `META_APP_SECRET_${targetTenant.replace(/-/g, '_').toUpperCase()}`;
-      metaAppSecret = process.env[tenantEnvKey] || '';
-    }
-    
-    // Fallback to global secret if tenant specific is not found
-    if (!metaAppSecret) {
-      metaAppSecret = (process.env.META_APP_SECRET || process.env.WHATSAPP_APP_SECRET || '').trim();
-    }
-    
     const signatureHeader = request.headers.get('x-hub-signature-256');
 
     let body: any;
@@ -53,6 +41,33 @@ export async function POST(request: Request) {
     }
 
     const isNativeMeta = body.object === 'whatsapp_business_account';
+
+    /**
+     * Resolución del secreto por NÚMERO RECEPTOR.
+     *
+     * Meta manda al webhook de la WABA, no al del tenant: el `?tenant=` no existe
+     * y el secreto global es el de otra app, así que la firma fallaba siempre y el
+     * número de S'Narai no respondía ("Invalid HMAC signature").
+     */
+    const phoneNumberId = isNativeMeta
+      ? String(body?.entry?.[0]?.changes?.[0]?.value?.metadata?.phone_number_id || '')
+      : '';
+    let tenantSlug = targetTenant || '';
+    if (!tenantSlug && phoneNumberId) {
+      try {
+        const { WhatsAppDispatcher } = await import('@/lib/whatsapp/dispatcher');
+        const target = await WhatsAppDispatcher.resolveTargetByPhoneNumberId(phoneNumberId);
+        tenantSlug = target?.slug || '';
+      } catch (err: any) {
+        console.warn('[WhatsApp Webhook] No se pudo resolver el tenant por phone id:', err?.message || err);
+      }
+    }
+
+    const globalSecret = (process.env.META_APP_SECRET || process.env.WHATSAPP_APP_SECRET || '').trim();
+    const tenantSecret = tenantSlug
+      ? (process.env[`META_APP_SECRET_${tenantSlug.replace(/-/g, '_').toUpperCase()}`] || '').trim()
+      : '';
+    let metaAppSecret = tenantSecret || globalSecret;
 
     // 🔒 Cyber Security: Enforce strict fail-closed HMAC for Meta Webhooks
     if (signatureHeader || isNativeMeta) {
@@ -68,9 +83,16 @@ export async function POST(request: Request) {
           return NextResponse.json({ error: 'Missing x-hub-signature-256 header' }, { status: 401 });
         }
 
-        const isValid = verifyMetaSignature(bodyText, signatureHeader, metaAppSecret);
+        let isValid = verifyMetaSignature(bodyText, signatureHeader, metaAppSecret);
+        // Algunas WABAs comparten app con la plataforma: si el secreto del tenant no
+        // valida, se prueba el global antes de rechazar.
+        if (!isValid && globalSecret && globalSecret !== metaAppSecret) {
+          isValid = verifyMetaSignature(bodyText, signatureHeader, globalSecret);
+        }
         if (!isValid) {
-          console.warn('🔒 [WhatsApp Webhook] Invalid HMAC signature or tampered body.');
+          console.warn(
+            `🔒 [WhatsApp Webhook] Invalid HMAC signature or tampered body (tenant=${tenantSlug || 'desconocido'}, phoneId=${phoneNumberId || 'n/a'}).`,
+          );
           return NextResponse.json({ error: 'Invalid HMAC signature' }, { status: 401 });
         }
       }
