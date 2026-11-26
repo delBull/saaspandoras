@@ -1,5 +1,75 @@
 // @ts-ignore
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+
+/**
+ * Estas pruebas verifican ROUTING (quién es jefe, colaborador o lead) y usan el
+ * runtime real con `respond` espiado. Lo único que no puede correr sin base de
+ * datos son los enriquecimientos (ficha de pod, nonce de replay, directorio).
+ * Se sustituyen por un doble encadenable: la lógica de permisos queda intacta y
+ * la prueba no toca Neon.
+ */
+function chainableDb() {
+  // Doble de base de datos para probar ROUTING sin Neon.
+  // - `returning()` devuelve la fila reclamada (si no, el dedupe cree que es duplicado).
+  // - La tabla de colaboradores devuelve a Oscar: es el caso que valida PATH-02.
+  const COLLAB = {
+    id: 1,
+    name: 'Oscar',
+    email: 'oscar@pandoras.finance',
+    role: 'MANAGER',
+    permissions: null,
+    whatsappPhone: '5213221051871',
+    canonicalOrgId: 'pandoras',
+    status: 'ACTIVE',
+    expiresAt: new Date(Date.now() + 86_400_000),
+  };
+
+  const isCollaboratorsTable = (table: any) => Boolean(table && 'whatsappPhone' in table);
+
+  function make(table?: any) {
+    const handler: ProxyHandler<any> = {
+      get(_target, prop) {
+        if (prop === 'then') return undefined;
+        switch (prop) {
+          case 'from':
+            return (t: any) => make(t);
+          case 'select':
+            return () => make(table);
+          case 'findFirst':
+            return async () => (isCollaboratorsTable(table) ? COLLAB : null);
+          case 'findMany':
+            return async () => (isCollaboratorsTable(table) ? [COLLAB] : []);
+          case 'returning':
+            return async () => [{ id: 'mock_row' }];
+          case 'limit':
+            return async () => (isCollaboratorsTable(table) ? [COLLAB] : []);
+          case 'offset':
+          case 'execute':
+            return async () => [];
+          case 'query':
+            return new Proxy({}, {
+              get: (_t, name) => ({
+                findFirst: async () => (name === 'nexusCollaborators' ? COLLAB : null),
+                findMany: async () => (name === 'nexusCollaborators' ? [COLLAB] : []),
+              }),
+            });
+          default:
+            return () => make(table);
+        }
+      },
+    };
+    return new Proxy({}, handler);
+  }
+
+  return make();
+}
+
+vi.mock('@saasfly/db', () => ({ db: chainableDb() }));
+vi.mock('@saasfly/db-core', async (importOriginal) => {
+  const actual = await importOriginal<any>();
+  return { ...actual, db: chainableDb() };
+});
+
 import { WhatsAppDispatcher } from '../dispatcher';
 import { getDefaultRuntime } from '@saasfly/hermes-core';
 

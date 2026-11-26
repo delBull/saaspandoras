@@ -1,5 +1,5 @@
-import { db } from "@saasfly/db";
-import { nexusDealPods, nexusPodContacts } from "@saasfly/db/schema";
+import { db } from "@saasfly/db-core";
+import { nexusDealPods, nexusPodContacts } from "@saasfly/db-core/schema";
 import { and, eq, sql } from "@saasfly/db-core";
 import { phonesShareIdentity } from "@saasfly/hermes-core";
 
@@ -53,16 +53,27 @@ export async function findPodContactByPhone(
   // SQL prefilter on the last 10 digits; the authoritative check is canonical
   // (country-aware) so a foreign number sharing those digits cannot read a
   // pod contact's context.
-  const candidates = await db
-    .select()
-    .from(nexusPodContacts)
-    .where(
-      and(
-        eq(nexusPodContacts.canonicalOrgId, orgId),
-        sql`right(regexp_replace(${nexusPodContacts.phone}, '[^0-9]', '', 'g'), 10) = right(${digits}, 10)`,
-      ),
-    )
-    .limit(5);
+  /**
+   * La ficha del pod es un **enriquecimiento**, no autoridad: si la base no
+   * responde se sigue sin ella (y se registra). Antes, un fallo aquí abortaba la
+   * respuesta de Hermes por completo.
+   */
+  let candidates: Array<typeof nexusPodContacts.$inferSelect> = [];
+  try {
+    candidates = await db
+      .select()
+      .from(nexusPodContacts)
+      .where(
+        and(
+          eq(nexusPodContacts.canonicalOrgId, orgId),
+          sql`right(regexp_replace(${nexusPodContacts.phone}, '[^0-9]', '', 'g'), 10) = right(${digits}, 10)`,
+        ),
+      )
+      .limit(5);
+  } catch (err: any) {
+    console.warn('[ContactWelcome] No se pudo leer la ficha del pod:', err?.message || err);
+    return null;
+  }
 
   const row = candidates.find((c) => c.phone && phonesShareIdentity(c.phone, digits));
 
