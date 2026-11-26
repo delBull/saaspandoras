@@ -5,6 +5,7 @@ import { Plus, Key, Eye, Copy, CheckCircle2, Trash2, Webhook, Bot, Server, Link 
 import { generateKeyAction, revokeKeyAction } from './actions';
 import { useRouter } from 'next/navigation';
 import { GlassCard } from '@/components/ui/glass-card';
+import { EndpointsCard } from './EndpointsCard';
 
 type Tab = 'API_KEYS' | 'WEBHOOKS' | 'AGENT';
 
@@ -258,6 +259,7 @@ export function DevelopersClient({ initialKeys, organizationSlug }: { initialKey
           </GlassCard>
         </div>
       )}
+          <EndpointsCard />
     </div>
   );
 }

@@ -1,6 +1,8 @@
 import React from 'react';
 import { MediaStudioDashboard } from '@/components/hermes-portal/media/MediaStudioDashboard';
 import { MediaLibrary } from './MediaLibrary';
+import { MediaComposer } from './MediaComposer';
+import { listTenantAssets } from '@/lib/media/tenant-assets';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,9 +23,15 @@ export default async function MediaStudioPage({
   params: Promise<{ organizationSlug: string }>;
 }) {
   const { organizationSlug } = await params;
+  // Assets para el compositor (si falla, el formulario sigue usable con URL manual).
+  const assets = await listTenantAssets(organizationSlug, 24).catch(() => []);
+
   return (
     <div className="space-y-6">
-      {/* Biblioteca primero: es de donde salen las URLs que usan las redes. */}
+      {/* Estudio: compone la pieza y la deja en la biblioteca. */}
+      <MediaComposer organizationSlug={organizationSlug} assets={assets} />
+
+      {/* Biblioteca: de donde salen las URLs que usan las redes. */}
       <MediaLibrary organizationSlug={organizationSlug} />
       <MediaStudioDashboard organizationSlug={organizationSlug} />
     </div>

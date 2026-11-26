@@ -273,8 +273,10 @@ export class SecurityAuditLogger {
       }
     }
 
-    // 4. Dispatch Discord & Telegram operational alerts if WARN or CRITICAL
-    if (input.severity === 'WARN' || input.severity === 'CRITICAL') {
+    // 4. Dispatch Discord & Telegram operational alerts if WARN or CRITICAL.
+    //    Hay WARN de calidad de datos que NO son incidentes de seguridad y se
+    //    repetían en cada mensaje (una alerta que sale siempre se ignora).
+    if ((input.severity === 'WARN' || input.severity === 'CRITICAL') && this.shouldDispatch(record)) {
       this.dispatchDiscordAlert(record);
     }
     if (input.severity === 'CRITICAL') {
@@ -282,6 +284,22 @@ export class SecurityAuditLogger {
     }
 
     return record;
+  }
+
+  /**
+   * Ruido conocido que se registra en auditoría pero no en Discord:
+   *  - NESTED_ENVELOPE_CONTENT: artefacto con doble cifrado (se omite del prompt).
+   *  - IPFS_FETCH_FAILED: el pin no respondió; se falla cerrado sin el pack.
+   * Son problemas de datos, no de seguridad, y se arreglan en su origen.
+   */
+  private static shouldDispatch(record: SecurityEventRecord): boolean {
+    if (record.severity === 'CRITICAL') return true;
+    const reason = String((record.metadata as Record<string, unknown> | null)?.reason ?? '');
+    if (record.eventType === 'RESOURCE_MISMATCH_BLOCKED' &&
+        (reason === 'NESTED_ENVELOPE_CONTENT' || reason === 'IPFS_FETCH_FAILED')) {
+      return false;
+    }
+    return true;
   }
 
   private static async dispatchTelegramAlert(record: SecurityEventRecord) {

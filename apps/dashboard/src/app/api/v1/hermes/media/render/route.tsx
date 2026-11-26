@@ -29,6 +29,7 @@ interface RenderRequest {
   goldLine?: unknown;
   body?: unknown;
   imageUrl?: unknown;
+  backgroundImage?: unknown;
   ctaLabel?: unknown;
   phone?: unknown;
   format?: unknown;
@@ -161,6 +162,11 @@ export async function POST(request: Request) {
     const kicker = typeof body.kicker === 'string' ? body.kicker.slice(0, 80) : null;
     const bodyText = typeof body.body === 'string' ? body.body.slice(0, 420) : null;
     const imageUrl = typeof body.imageUrl === 'string' && /^https:\/\//.test(body.imageUrl) ? body.imageUrl : null;
+    // statement/levels/cta aceptan foto de fondo; la portada usa imageUrl.
+    const backgroundImage =
+      typeof body.backgroundImage === 'string' && /^https:\/\//.test(body.backgroundImage)
+        ? body.backgroundImage
+        : null;
     const goldLine = Number.isInteger(body.goldLine) ? Number(body.goldLine) : null;
     const format = body.format === 'feed' ? 'feed' : 'portrait';
     const width = 1080;
@@ -198,6 +204,7 @@ export async function POST(request: Request) {
       kicker,
       body: bodyText,
       imageUrl,
+      backgroundImage,
       phone: typeof body.phone === 'string' ? body.phone : null,
       width,
       height,
