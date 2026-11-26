@@ -52,3 +52,20 @@ describe('Plan semanal', () => {
     expect(discord?.channel.startsWith('coffree-')).toBe(true);
   });
 });
+
+describe('Plan semanal · redes habilitadas', () => {
+  it('no propone Facebook si no está habilitado (S\'Narai hoy)', () => {
+    const plan = buildWeeklyPlan({ tenantId: 'snarai', now: lunes, hasAssets: true });
+    expect(plan.items.some((i) => i.platform === 'facebook')).toBe(false);
+  });
+
+  it('si se habilita Facebook explícitamente, aparece', () => {
+    const plan = buildWeeklyPlan({
+      tenantId: 'snarai',
+      now: lunes,
+      hasAssets: true,
+      platforms: ['discord', 'instagram', 'facebook'],
+    });
+    expect(plan.items.some((i) => i.platform === 'facebook')).toBe(true);
+  });
+});

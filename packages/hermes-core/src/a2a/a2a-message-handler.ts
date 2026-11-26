@@ -821,6 +821,7 @@ export class A2AMessageHandler {
           .filter((d) => d.status === 'REJECTED' && d.reason)
           .map((d) => String(d.reason)),
         hasAssets: payload.hasAssets === true,
+        platforms: Array.isArray(payload.platforms) ? (payload.platforms as any) : undefined,
       });
 
       return {

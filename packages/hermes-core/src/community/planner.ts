@@ -30,6 +30,11 @@ export interface PlannerSignals {
   repeatedRejectionReasons?: string[];
   /** ¿Hay assets reales cargados? Sin ellos no se propone Instagram. */
   hasAssets?: boolean;
+  /**
+   * Redes habilitadas para el tenant. Por defecto Discord + Instagram:
+   * Facebook está implementado pero apagado (ADR-020 §2.6).
+   */
+  platforms?: PlannerPlatform[];
 }
 
 export interface PlanItem {
@@ -68,10 +73,14 @@ export function buildWeeklyPlan(signals: PlannerSignals): WeeklyPlan {
   const items: PlanItem[] = [];
   const notes: string[] = [];
   const pending = new Set((signals.pendingChannels ?? []).map((c) => c.toLowerCase()));
+  const enabled = new Set<PlannerPlatform>(
+    signals.platforms && signals.platforms.length > 0 ? signals.platforms : ['discord', 'instagram'],
+  );
   const reasons = (signals.repeatedRejectionReasons ?? []).join(' ').toLowerCase();
 
   const push = (item: PlanItem) => {
     if (items.length >= 3) return;
+    if (!enabled.has(item.platform)) return;
     if (pending.has(item.channel.toLowerCase())) return;
     if (items.some((existing) => existing.platform === item.platform)) return;
     items.push(item);
