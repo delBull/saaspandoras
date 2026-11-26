@@ -52,6 +52,15 @@ const nextConfig = {
     // NODE_OPTIONS; en una máquina de 8 GB eso duplica el pico y el contenedor
     // mata el build con SIGKILL (OOM del contenedor, no del heap).
     webpackBuildWorker: false,
+    /**
+     * El build corre con `next build --turbopack`, y turbopack **ignora** las dos
+     * opciones de memoria de arriba (son de webpack). Sin presupuesto propio,
+     * turbopack crecía sin límite y el contenedor lo mataba con SIGKILL:
+     *   "Next.js build worker exited with code: null and signal: SIGKILL"
+     *   "At least one Out of Memory (OOM) event was detected during the build"
+     * 3 GB deja el resto del contenedor para el heap de Node (`--max-old-space-size=3584`).
+     */
+    turbopackMemoryLimit: 3 * 1024 * 1024 * 1024,
     // Fix Next.js 14+ barrel file imports for client and icon libraries
     optimizePackageImports: [
       'lucide-react',
