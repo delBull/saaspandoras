@@ -48,11 +48,52 @@ opcional y cualquiera podía hacerse pasar por Telegram.
 | Lector | `DISCORD_READER_TOKEN` (sólo lectura, 66560) | mismo prefijo, sólo lectura |
 | Avisos | webhook del tenant (`tenant_notification_channels`) | `leads` · `approvals` · `alerts` |
 
+## Instagram (comentarios y DMs)
+
+| Superficie | Credencial | Ruta | Dueño |
+|---|---|---|---|
+| App de Meta (plataforma) | `META_IG_USER_ID` + `META_APP_SECRET` + `META_IG_ACCESS_TOKEN` | `/api/v1/external/instagram/webhook` | `pandoras` |
+| S'Narai | `META_IG_USER_ID_SNARAI` **o** integración en portal (<code>tenant_social_integrations</code>, canal `instagram`) + `META_APP_SECRET_SNARAI` + `META_IG_ACCESS_TOKEN_SNARAI` | idem | `snarai` |
+
+**Resolución del tenant (por la cuenta receptora, nunca por un campo del payload):**
+
+1. `tenant_social_integrations` con `channel='instagram'` y `metadata.igUserId` = `entry[0].id`
+   (lo que se conecta desde el portal o con `apps/dashboard/scripts/connect-instagram-channel.ts`).
+2. `projects.extraConfig.community.igUserId`.
+3. `META_IG_USER_ID_<SLUG>`.
+4. Cuenta de plataforma (`META_IG_USER_ID`) → `pandoras`.
+5. Sin coincidencia → **null**: se responde 200 sin procesar (no se inventa tenant).
+
+**Firma:** HMAC con el app secret del tenant dueño de la cuenta. Si la cuenta es de
+un tenant y falta `META_APP_SECRET_<SLUG>` → 500 fail-closed; nunca se usa el global.
+
+**Respuesta:** una sola respuesta privada por comentario (Meta lo impone) y DM a
+DM. El texto sólo contiene el puente a WhatsApp del tenant
+(`extraConfig.community.whatsappNumber`, con respaldo en
+`COMMUNITY_WHATSAPP_NUMBER_<SLUG>`). La conversación **no** se sostiene en
+Instagram: ahí no hay alma, ni conocimiento, ni política de claims.
+
+**Idempotencia:** `social_dm_log` con índice único `(network, external_id)`
+(migración `0124`). Un reintento de Meta no envía un segundo DM.
+
 ## Cómo verificar rápido
 
 ```sql
 -- ¿qué número pertenece a qué tenant?
 select slug from projects where tenant_runtime_config->'secrets'->>'whatsappPhoneId' = '<phone_id>';
+```
+
+```sql
+-- ¿qué cuenta de Instagram pertenece a qué tenant?
+select tenant_id, metadata->>'igUserId' as ig_user_id, status
+from tenant_social_integrations
+where channel = 'instagram';
+
+-- ¿qué pasó con los DMs/comentarios de Instagram?
+select kind, status, count(*), max(created_at)
+from social_dm_log
+group by 1, 2
+order by 4 desc;
 ```
 
 ```bash

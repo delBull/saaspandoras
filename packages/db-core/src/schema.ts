@@ -5131,6 +5131,26 @@ export const hermesTenantNotifications = pgTable("hermes_tenant_notifications", 
 }));
 
 /**
+ * Registro de mensajes directos por red (ADR-020 §2.4-bis).
+ *
+ * Meta permite una sola respuesta privada por comentario: el índice único
+ * `(network, external_id)` impide que un reintento del webhook envíe dos DMs.
+ */
+export const socialDmLog = pgTable("social_dm_log", {
+  id: varchar("id", { length: 64 }).primaryKey(),
+  canonicalOrgId: varchar("canonical_org_id", { length: 255 }).notNull(),
+  network: varchar("network", { length: 32 }).notNull(),
+  externalId: varchar("external_id", { length: 255 }).notNull(),
+  kind: varchar("kind", { length: 32 }).notNull(),
+  status: varchar("status", { length: 24 }).notNull(),
+  detail: text("detail"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  externalUq: uniqueIndex("social_dm_log_external_uq").on(t.network, t.externalId),
+  orgIdx: index("social_dm_log_org_idx").on(t.canonicalOrgId, t.createdAt),
+}));
+
+/**
  * Biblioteca de medios por tenant (ADR-020 §2.3-bis).
  *
  * Instagram publica con una **URL https pública**, no con un archivo. Esta tabla

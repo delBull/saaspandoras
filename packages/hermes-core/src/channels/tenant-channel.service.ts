@@ -51,6 +51,14 @@ export const CHANNEL_CATALOG: ChannelCapabilityCatalogItem[] = [
     defaultCapabilities: ['text', 'markdown'],
     connectionType: 'DIRECT_SECRET',
   },
+  {
+    channel: 'instagram',
+    displayName: 'Instagram (cuenta profesional)',
+    description:
+      'Publicación de piezas y respuesta privada a comentarios/DMs desde la cuenta profesional del tenant.',
+    defaultCapabilities: ['text', 'image'],
+    connectionType: 'DIRECT_SECRET',
+  },
 ];
 
 export interface SanitizedChannelDTO {
@@ -175,6 +183,22 @@ export class TenantChannelService {
       if (!apiKey || typeof apiKey !== 'string' || apiKey.trim().length < 8) {
         throw new Error('[TenantChannelService] Newsletter API key is required and must be valid.');
       }
+    } else if (input.channel === 'instagram') {
+      /**
+       * Instagram trabaja con cuenta profesional: `igUserId` es el id numérico
+       * de la cuenta (el que llega como `entry[0].id` en el webhook) y el token
+       * es de larga duración. El `apiBase` define el camino usado (Instagram
+       * Login → `graph.instagram.com`; Facebook Login → `graph.facebook.com`).
+       */
+      const igUserId = String(input.credentials?.igUserId || '').trim();
+      const accessToken = String(input.credentials?.accessToken || '').trim();
+
+      if (!/^\d{5,}$/.test(igUserId)) {
+        throw new Error('[TenantChannelService] Instagram igUserId is required and must be numeric.');
+      }
+      if (accessToken.length < 20) {
+        throw new Error('[TenantChannelService] Instagram accessToken is required.');
+      }
     }
 
     const integrationId = crypto.randomUUID();
@@ -195,6 +219,15 @@ export class TenantChannelService {
           sanitizedMetadata[k] = v;
         }
       }
+    }
+
+    /**
+     * El webhook de Instagram identifica la cuenta por `entry[0].id`, así que el
+     * `igUserId` debe quedar en metadata (dato público de enrutamiento, no
+     * secreto) para resolver el tenant sin descifrar credenciales de todos.
+     */
+    if (input.channel === 'instagram') {
+      sanitizedMetadata.igUserId = String(input.credentials?.igUserId || '').trim();
     }
 
     // Encrypt secrets using certified KnowledgeEnvelopeVault primitive
