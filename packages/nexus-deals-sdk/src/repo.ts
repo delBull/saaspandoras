@@ -10,7 +10,7 @@ import {
   nexusDealSigners,
   nexusNdaAcceptances,
 } from "@saasfly/db-core";
-import { eq, and, or, desc } from "@saasfly/db-core";
+import { eq, and, or, desc, ne } from "@saasfly/db-core";
 import type { SignerInput, DealKind } from "./types";
 import { newRoomId, generatePublicId, defaultSections } from "./types";
 import { sendDealRoomActionRequiredAlert, sendDealRoomChainedReleaseAlert, sendSignatureAlert } from "./discord";
@@ -420,20 +420,39 @@ async function syncRoomSignStatus(roomId: string) {
 }
 
 export async function markMagicSent(roomId: string, email: string) {
+  /**
+   * Nunca regresa a MAGIC_SENT a quien ya firmó: reenviar el magic link (o
+   * re-aprobar una solicitud de acceso) dejaba al firmante con `signed_at` pero
+   * status MAGIC_SENT, y la consola escondía el botón de entrega del OM y todos
+   * los pasos posteriores a la firma.
+   */
   await db
     .update(nexusDealSigners)
     .set({
       status: "MAGIC_SENT",
       tokenExpiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     })
-    .where(and(eq(nexusDealSigners.roomId, roomId), eq(nexusDealSigners.email, email)));
+    .where(
+      and(
+        eq(nexusDealSigners.roomId, roomId),
+        eq(nexusDealSigners.email, email),
+        ne(nexusDealSigners.status, "SIGNED"),
+      ),
+    );
 }
 
 export async function markViewed(roomId: string, email: string) {
+  // Igual que markMagicSent: mirar el documento no revierte una firma.
   await db
     .update(nexusDealSigners)
     .set({ status: "VIEWED" })
-    .where(and(eq(nexusDealSigners.roomId, roomId), eq(nexusDealSigners.email, email)));
+    .where(
+      and(
+        eq(nexusDealSigners.roomId, roomId),
+        eq(nexusDealSigners.email, email),
+        ne(nexusDealSigners.status, "SIGNED"),
+      ),
+    );
 }
 
 export async function signRoom(
