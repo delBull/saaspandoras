@@ -139,48 +139,88 @@ function LevelsRow({ brand, images }: { brand: BrandKit; images?: string[] | nul
     type: 'div',
     props: {
       style: { display: 'flex', gap: 14, marginTop: 8 },
-      children: LEVELS.map((level) => ({
-        type: 'div',
-        props: {
-          style: {
-            display: 'flex',
-            flexDirection: 'column' as const,
-            gap: 8,
-            flex: 1,
-            border: `1px solid ${brand.gold}88`,
-            borderRadius: 16,
-            padding: 18,
-            background: 'rgba(10,21,31,0.72)',
-            overflow: 'hidden' as const,
-          },
-          children: [
-            ...(images?.[LEVELS.indexOf(level)]
-              ? [
-                  {
-                    type: 'img',
-                    props: {
-                      src: images[LEVELS.indexOf(level)],
-                      width: 190,
-                      height: 210,
-                      style: { objectFit: 'cover' as const, borderRadius: 12, marginBottom: 6 },
+      children: LEVELS.map((level, index) => {
+        const image = images?.[index];
+        return {
+          type: 'div',
+          props: {
+            style: {
+              display: 'flex',
+              flexDirection: 'column' as const,
+              justifyContent: 'flex-end',
+              flex: 1,
+              height: 420,
+              border: `1px solid ${brand.gold}88`,
+              borderRadius: 18,
+              padding: 18,
+              overflow: 'hidden' as const,
+              position: 'relative' as const,
+              background: '#0C1A26',
+            },
+            children: [
+              ...(image
+                ? [
+                    {
+                      type: 'img',
+                      props: {
+                        src: image,
+                        width: 222,
+                        height: 420,
+                        style: {
+                          position: 'absolute' as const,
+                          top: 0,
+                          left: 0,
+                          width: 222,
+                          height: 420,
+                          objectFit: 'cover' as const,
+                        },
+                      },
                     },
+                    {
+                      type: 'div',
+                      props: {
+                        style: {
+                          position: 'absolute' as const,
+                          top: 0,
+                          left: 0,
+                          width: 222,
+                          height: 420,
+                          background:
+                            'linear-gradient(180deg, rgba(10,21,31,0.15) 0%, rgba(10,21,31,0.55) 55%, rgba(10,21,31,0.95) 100%)',
+                        },
+                      },
+                    },
+                  ]
+                : []),
+              {
+                type: 'span',
+                props: {
+                  style: {
+                    fontSize: 23,
+                    color: brand.gold,
+                    fontFamily: FONT_BODY,
+                    fontWeight: 600,
+                    position: 'relative' as const,
                   },
-                ]
-              : []),
-            {
-              type: 'span',
-              props: {
-                style: { fontSize: 22, color: brand.gold, fontFamily: FONT_BODY, fontWeight: 600 },
-                children: level,
+                  children: level,
+                },
               },
-            },
-            {
-              type: 'span',
-              props: { style: { fontSize: 15, color: brand.muted, fontFamily: FONT_BODY }, children: 'Nivel de participación' },
-            },
-          ],
-        },
-      })),
+              {
+                type: 'span',
+                props: {
+                  style: {
+                    fontSize: 15,
+                    color: '#D8E0E8',
+                    fontFamily: FONT_BODY,
+                    position: 'relative' as const,
+                  },
+                  children: 'Nivel de participación',
+                },
+              },
+            ],
+          },
+        };
+      }),
     },
   };
 }
@@ -260,8 +300,10 @@ export function buildTemplateElement(props: TemplateProps) {
           left: 0,
           width,
           height,
+          // Velo en diagonal con caída al centro: ilumina la foto en la zona del
+          // titular y oscurece donde va el texto. Un velo uniforme la deja mate.
           background:
-            'linear-gradient(160deg, rgba(10,21,31,0.96) 0%, rgba(10,21,31,0.80) 55%, rgba(10,21,31,0.95) 100%)',
+            'linear-gradient(155deg, rgba(10,21,31,0.88) 0%, rgba(10,21,31,0.62) 45%, rgba(10,21,31,0.94) 100%)',
         },
       },
     });
@@ -330,9 +372,9 @@ export function buildTemplateElement(props: TemplateProps) {
                       type: 'span',
                       props: {
                         style: {
-                          fontSize: 27,
+                          fontSize: 28,
                           lineHeight: 1.5,
-                          color: brand.muted,
+                          color: '#E9EEF3',
                           maxWidth: 780,
                           fontFamily: FONT_BODY,
                         },

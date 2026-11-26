@@ -30,6 +30,7 @@ interface RenderRequest {
   body?: unknown;
   imageUrl?: unknown;
   backgroundImage?: unknown;
+  cardImages?: unknown;
   ctaLabel?: unknown;
   phone?: unknown;
   format?: unknown;
@@ -163,6 +164,11 @@ export async function POST(request: Request) {
     const bodyText = typeof body.body === 'string' ? body.body.slice(0, 420) : null;
     const imageUrl = typeof body.imageUrl === 'string' && /^https:\/\//.test(body.imageUrl) ? body.imageUrl : null;
     // statement/levels/cta aceptan foto de fondo; la portada usa imageUrl.
+    const cardImages = Array.isArray(body.cardImages)
+      ? (body.cardImages as unknown[])
+          .filter((url): url is string => typeof url === 'string' && /^https:\/\//.test(url))
+          .slice(0, 4)
+      : null;
     const backgroundImage =
       typeof body.backgroundImage === 'string' && /^https:\/\//.test(body.backgroundImage)
         ? body.backgroundImage
@@ -205,6 +211,7 @@ export async function POST(request: Request) {
       body: bodyText,
       imageUrl,
       backgroundImage,
+      cardImages,
       phone: typeof body.phone === 'string' ? body.phone : null,
       width,
       height,
