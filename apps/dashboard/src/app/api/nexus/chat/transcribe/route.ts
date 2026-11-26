@@ -5,23 +5,29 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
-/** Límite de la API de transcripción de OpenAI. */
+/** Límite de audio aceptado (una nota de voz no debería acercarse). */
 const MAX_AUDIO_BYTES = 25 * 1024 * 1024;
+const DEFAULT_MODEL = 'lfm3-audio';
+const DEFAULT_TIMEOUT_MS = 45_000;
 
-const DEFAULT_MODEL = 'whisper-1';
-const DEFAULT_LANGUAGE = 'es';
+const TRANSCRIBE_PROMPT =
+  'Transcribe el audio exactamente como se dice, en español. Devuelve únicamente la ' +
+  'transcripción, sin comillas, sin etiquetas y sin comentarios.';
 
 /**
  * 🎙️ POST /api/nexus/chat/transcribe
  *
- * Transcribe una nota de voz del chat interno de Nexus (Whisper).
+ * Transcribe una nota de voz del chat interno de Nexus.
+ *
+ * Motor: **Ollama** con un modelo de audio (`lfm3-audio` por defecto). Sin
+ * proveedores externos: si el servidor de Ollama no responde, la ruta falla con
+ * un código explícito en vez de inventar texto.
  *
  * Invariantes:
- *  - Requiere sesión Nexus válida: la transcripción no es un endpoint público.
- *  - Sin `OPENAI_API_KEY` responde 503 con código explícito: nunca devuelve un
- *    texto vacío como si hubiera funcionado.
- *  - El audio no se persiste: se manda al proveedor y se descarta.
- *  - Límite de tamaño fail-closed (25 MB).
+ *  - Requiere sesión Nexus (no es un endpoint público).
+ *  - El audio no se persiste: viaja al servidor de inferencia y se descarta.
+ *  - Límite de tamaño fail-closed.
+ *  - Timeout propio: un Ollama colgado no deja la petición abierta.
  */
 export async function POST(req: Request) {
   const auth = await getNexusAuthContext(req.headers);
@@ -29,13 +35,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: 'UNAUTHORIZED' }, { status: 401 });
   }
 
-  const apiKey = (process.env.OPENAI_API_KEY || '').trim();
-  if (!apiKey) {
-    return NextResponse.json(
-      { ok: false, error: 'TRANSCRIPTION_NOT_CONFIGURED', message: 'Falta OPENAI_API_KEY.' },
-      { status: 503 },
-    );
-  }
+  const baseUrl = (
+    process.env.TRANSCRIBE_BASE_URL ||
+    process.env.OLLAMA_BASE_URL ||
+    'http://127.0.0.1:11434'
+  ).replace(/\/$/, '');
+  const model = (process.env.TRANSCRIBE_MODEL || process.env.OLLAMA_TRANSCRIBE_MODEL || DEFAULT_MODEL).trim();
+  const apiKey = (process.env.TRANSCRIBE_API_KEY || process.env.OLLAMA_API_KEY || '').trim();
 
   let form: FormData | null = null;
   try {
@@ -58,40 +64,75 @@ export async function POST(req: Request) {
     );
   }
 
-  const model = (process.env.OPENAI_TRANSCRIBE_MODEL || DEFAULT_MODEL).trim();
-  const language = (process.env.OPENAI_TRANSCRIBE_LANGUAGE || DEFAULT_LANGUAGE).trim();
+  const bytes = Buffer.from(await audio.arrayBuffer());
+  const timeoutMs = Number(process.env.TRANSCRIBE_TIMEOUT_MS || DEFAULT_TIMEOUT_MS);
 
   try {
-    const { default: OpenAI, toFile } = await import('openai');
-    const client = new OpenAI({ apiKey, timeout: 30_000 });
-
-    const buffer = Buffer.from(await audio.arrayBuffer());
-    const name = audio.type?.includes('mp4') ? 'voice.mp4' : 'voice.webm';
-    const upload = await toFile(buffer, name, { type: audio.type || 'audio/webm' });
-
-    const result = await client.audio.transcriptions.create({
-      file: upload,
-      model,
-      language,
+    const res = await fetch(`${baseUrl}/api/chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
+      },
+      body: JSON.stringify({
+        model,
+        stream: false,
+        options: { temperature: 0 },
+        messages: [
+          {
+            role: 'user',
+            content: TRANSCRIBE_PROMPT,
+            // Ollama no tiene API de audio: si el base64 empieza con la cabecera
+            // RIFF/WAVE dentro de `images`, lo enruta al encoder de audio del
+            // modelo. Debe ser WAV 16 kHz mono (lo convierte el navegador).
+            images: [bytes.toString('base64')],
+          },
+        ],
+      }),
+      cache: 'no-store',
+      signal: AbortSignal.timeout(timeoutMs),
     });
 
-    const text = String((result as { text?: string })?.text || '').trim();
+    const payload = (await res.json().catch(() => ({}))) as {
+      message?: { content?: string };
+      error?: string;
+    };
+
+    if (!res.ok) {
+      const detail = String(payload?.error || '').slice(0, 160);
+      console.warn(`[nexus/chat/transcribe] Ollama ${res.status} (${model}): ${detail || 'sin detalle'}`);
+      return NextResponse.json(
+        { ok: false, error: res.status === 404 ? 'MODEL_NOT_FOUND' : 'TRANSCRIPTION_FAILED', model },
+        { status: 502 },
+      );
+    }
+
+    const text = cleanTranscript(payload?.message?.content);
     if (!text) {
-      return NextResponse.json({ ok: false, error: 'EMPTY_TRANSCRIPTION' }, { status: 502 });
+      return NextResponse.json({ ok: false, error: 'EMPTY_TRANSCRIPTION', model }, { status: 502 });
     }
 
     return NextResponse.json({ ok: true, text, model });
   } catch (err: unknown) {
-    const e = err as { status?: number; message?: string };
-    // Sólo metadatos: nunca el audio ni el texto transcrito.
+    const name = (err as { name?: string })?.name;
+    const isTimeout = name === 'TimeoutError' || name === 'AbortError';
+    // Sólo metadatos: nunca el audio ni el texto.
     console.warn(
-      `[nexus/chat/transcribe] fallo del proveedor (status=${e?.status ?? 'n/a'}, bytes=${audio.size}): ${e?.message?.slice(0, 160) ?? 'sin detalle'}`,
+      `[nexus/chat/transcribe] sin respuesta de ${baseUrl} (${isTimeout ? 'timeout' : 'error de red'}, ${audio.size} bytes)`,
     );
-
-    const status = e?.status === 429 ? 429 : 502;
     return NextResponse.json(
-      { ok: false, error: status === 429 ? 'PROVIDER_RATE_LIMIT' : 'TRANSCRIPTION_FAILED' },
-      { status },
+      { ok: false, error: isTimeout ? 'TRANSCRIPTION_TIMEOUT' : 'PROVIDER_UNREACHABLE', model },
+      { status: 504 },
     );
   }
+}
+
+/** Quita comillas, prefijos y saltos sobrantes que agrega el modelo. */
+export function cleanTranscript(raw: unknown): string {
+  let text = String(raw ?? '').trim();
+  if (!text) return '';
+
+  text = text.replace(/^(transcripci[oó]n|transcript)\s*:\s*/i, '').trim();
+  text = text.replace(/^["“'«]+|["”'»]+$/g, '').trim();
+  return text.replace(/\s+/g, ' ');
 }

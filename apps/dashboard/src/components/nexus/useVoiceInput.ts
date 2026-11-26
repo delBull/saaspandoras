@@ -11,6 +11,7 @@
  * al navegador.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { blobToWav16k } from '@/lib/nexus/wav';
 
 export type VoiceInputState = 'idle' | 'recording' | 'transcribing';
 
@@ -86,8 +87,18 @@ export function useVoiceInput({ onTranscript, onError }: UseVoiceInputOptions) {
     async (blob: Blob) => {
       setState('transcribing');
       try {
+        // Ollama sólo entiende WAV 16 kHz mono con cabecera RIFF: se convierte aquí,
+        // porque en el servidor no hay ffmpeg ni CPU para remuestrear por petición.
+        let wav: Blob;
+        try {
+          wav = await blobToWav16k(blob);
+        } catch {
+          onError('No se pudo procesar el audio en este navegador.');
+          return;
+        }
+
         const form = new FormData();
-        form.append('audio', blob, blob.type.includes('mp4') ? 'voice.mp4' : 'voice.webm');
+        form.append('audio', wav, 'voice.wav');
 
         const res = await fetch('/api/nexus/chat/transcribe', { method: 'POST', body: form });
         const data = (await res.json().catch(() => ({}))) as { ok?: boolean; text?: string; error?: string };
