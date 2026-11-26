@@ -6,6 +6,7 @@ import { ChevronUp, ChevronDown, Loader2, MonitorPlay, PhoneOff, X, BookOpen, No
 import { findPresentation } from "@/lib/nexus/presentations-catalog";
 import { MeetClosedScreen } from "./MeetClosedScreen";
 import { shortMeetingPath, shareOrCopyMeeting } from "@/lib/meet/meeting-links";
+import { HoverTips } from "@/components/ui/hover-tips";
 
 interface SovereignMeetRoomProps {
     roomName: string; // JaaS room name — appId prefix is added internally
@@ -782,6 +783,7 @@ export function SovereignMeetRoom({
             {/* Host dock vertical: no cubre la parte superior del deck */}
             {isHost && !loading && !frameError && (
                 <div className="absolute left-2 top-1/2 z-30 -translate-y-1/2 sm:left-3">
+                <HoverTips side="right">
                     {dockOpen ? (
                         <div className="flex max-h-[82vh] w-[3.6rem] flex-col items-stretch gap-1.5 overflow-y-auto rounded-2xl border border-white/10 bg-black/55 p-1.5 shadow-2xl backdrop-blur-md">
                             <div className="flex w-full items-center justify-between px-1">
@@ -792,7 +794,7 @@ export function SovereignMeetRoom({
                                     type="button"
                                     onClick={() => setDockOpen(false)}
                                     className="text-zinc-500 hover:text-white"
-                                    title="Ocultar controles"
+                                    data-tip="Ocultar controles"
                                     aria-label="Ocultar controles"
                                 >
                                     <PanelLeftClose className="h-4 w-4" />
@@ -806,7 +808,7 @@ export function SovereignMeetRoom({
                                         disabled={deckBusy || meetingEnded}
                                         onClick={() => updateDeck({ open: !deckState.open, slide: safeSlide })}
                                         className="flex w-full items-center justify-center gap-2 rounded-lg border border-lime-400/50 bg-lime-500 px-2 py-2 text-[10px] font-bold uppercase tracking-wider text-black transition-colors hover:bg-lime-400 disabled:opacity-50 justify-center px-2"
-                                        title={deckState.open ? "Ocultar deck para todos" : "Presentar deck para todos"}
+                                        data-tip={deckState.open ? "Ocultar deck para todos" : "Presentar deck para todos"}
                                     >
                                         <MonitorPlay className="h-4 w-4 shrink-0" />
                                         <span className="hidden">
@@ -821,7 +823,7 @@ export function SovereignMeetRoom({
                                                 disabled={deckBusy || safeSlide === 0}
                                                 onClick={() => updateDeck({ slide: Math.max(safeSlide - 1, 0) })}
                                                 className="rounded-md p-1.5 text-white hover:bg-white/10 disabled:opacity-40"
-                                                title="Slide anterior"
+                                                data-tip="Slide anterior"
                                             >
                                                 <ChevronUp className="h-4 w-4" />
                                             </button>
@@ -833,7 +835,7 @@ export function SovereignMeetRoom({
                                                 disabled={deckBusy || safeSlide >= maxSlideIndex}
                                                 onClick={() => updateDeck({ slide: Math.min(safeSlide + 1, maxSlideIndex) })}
                                                 className="rounded-md p-1.5 text-white hover:bg-white/10 disabled:opacity-40"
-                                                title="Slide siguiente"
+                                                data-tip="Slide siguiente"
                                             >
                                                 <ChevronDown className="h-4 w-4" />
                                             </button>
@@ -857,7 +859,7 @@ export function SovereignMeetRoom({
                                             ? "border-red-400/60 bg-red-500/30 text-red-100"
                                             : "border-white/10 bg-white/[0.04] text-zinc-300 hover:bg-white/10 hover:text-white"
                                     }`}
-                                    title={
+                                    data-tip={
                                         recording
                                             ? "Detener grabación. El audio se sube solo para generar el resumen."
                                             : "Grabar la reunión (comparte la pestaña con audio) para la minuta"
@@ -887,7 +889,7 @@ export function SovereignMeetRoom({
                                         ? "border-emerald-400/50 bg-emerald-500/30 text-emerald-100"
                                         : "border-white/10 bg-white/[0.04] text-zinc-300 hover:bg-white/10 hover:text-white"
                                 }`}
-                                title="Minuta y grabación (solo host)"
+                                data-tip="Minuta y grabación (solo host)"
                             >
                                 <ClipboardList className="h-3.5 w-3.5 shrink-0" />
                                 <span className="hidden">Minuta</span>
@@ -905,7 +907,7 @@ export function SovereignMeetRoom({
                                         ? "border-sky-400/50 bg-sky-500/30 text-sky-100"
                                         : "border-white/10 bg-white/[0.04] text-zinc-300 hover:bg-white/10 hover:text-white"
                                 }`}
-                                title="Contexto de la sesión (solo host)"
+                                data-tip="Contexto de la sesión (solo host)"
                             >
                                 <NotebookPen className="h-3.5 w-3.5 shrink-0" />
                                 <span className="hidden">Contexto</span>
@@ -924,7 +926,7 @@ export function SovereignMeetRoom({
                                             ? "border-purple-400/50 bg-purple-500/30 text-purple-100"
                                             : "border-white/10 bg-white/[0.04] text-zinc-300 hover:bg-white/10 hover:text-white"
                                     }`}
-                                    title="Guión del presentador"
+                                    data-tip="Guión del presentador"
                                 >
                                     <BookOpen className="h-3.5 w-3.5 shrink-0" />
                                     <span className="hidden">Guión</span>
@@ -950,7 +952,7 @@ export function SovereignMeetRoom({
                                     }
                                 }}
                                 className="flex w-full items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-2 py-2 text-[10px] font-mono uppercase tracking-wider text-zinc-300 transition-colors hover:bg-white/10 hover:text-white justify-center px-2"
-                                title="Copiar enlace genérico de la sala"
+                                data-tip="Copiar enlace genérico de la sala"
                             >
                                 {linkCopied ? (
                                     <Check className="h-4 w-4 shrink-0 text-emerald-400" />
@@ -975,7 +977,7 @@ export function SovereignMeetRoom({
                                     }
                                 }}
                                 className="flex w-full items-center justify-center gap-2 rounded-lg border border-amber-500/25 bg-amber-500/10 px-2 py-2 text-[10px] font-mono uppercase tracking-wider text-amber-200 transition-colors hover:bg-amber-500/20 justify-center px-2"
-                                title="Silenciar a todos. Para bloquear el auto-desmuteo, usa el diálogo nativo de Jitsi (Mute everyone → desmarcar 'Permitir que se desmuteen')."
+                                data-tip="Silenciar a todos. Para bloquear el auto-desmuteo, usa el diálogo nativo de Jitsi (Mute everyone → desmarcar 'Permitir que se desmuteen')."
                             >
                                 <MicOff className="h-3.5 w-3.5 shrink-0" />
                                 <span className="hidden">Silenciar</span>
@@ -987,7 +989,7 @@ export function SovereignMeetRoom({
                                     disabled={ending || meetingEnded}
                                     onClick={() => setShowEndConfirm(true)}
                                     className="flex w-full items-center justify-center gap-2 rounded-lg bg-red-600/90 px-2 py-2 text-[10px] font-bold uppercase tracking-wider text-white transition-colors hover:bg-red-500 disabled:opacity-50 justify-center px-2"
-                                    title="Finaliza la reunión y encola el seguimiento por email"
+                                    data-tip="Finaliza la reunión y encola el seguimiento por email"
                                 >
                                     <PhoneOff className="h-4 w-4 shrink-0" />
                                     <span className="hidden">
@@ -1001,12 +1003,13 @@ export function SovereignMeetRoom({
                             type="button"
                             onClick={() => setDockOpen(true)}
                             className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-black/55 text-zinc-300 shadow-xl backdrop-blur-md transition-colors hover:text-white"
-                            title="Mostrar controles"
+                            data-tip="Mostrar controles"
                             aria-label="Mostrar controles"
                         >
                             <PanelLeftOpen className="h-4 w-4" />
                         </button>
                     )}
+                </HoverTips>
                 </div>
             )}
 
