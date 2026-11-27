@@ -76,31 +76,87 @@ export class InstagramPublisher implements IChannelPublisher {
       : payload.text;
 
     try {
-      // 1. Contenedor
-      const containerRes = await fetch(`${graph}/${igUserId}/media`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image_url: imageUrl, caption, access_token: accessToken }),
-      });
-      const container = await containerRes.json().catch(() => ({}));
+      /**
+       * Instagram exige un contenedor por imagen y, para un carrusel, un
+       * contenedor padre que los agrupe. Antes sólo se publicaba `mediaUrls[0]`,
+       * así que un carrusel de 4 slides salía como una sola imagen.
+       */
+      const images = (payload.mediaUrls ?? []).filter((url) => /^https:\/\//i.test(String(url))).slice(0, 10);
+      let creationId: string | null = null;
 
-      if (!containerRes.ok || !container?.id) {
-        const mapped = mapError(containerRes.status);
-        return {
-          success: false,
-          channel: this.channel,
-          idempotencyKey: payload.idempotencyKey,
-          errorCode: mapped.errorCode,
-          errorMessage: `Instagram (contenedor): ${container?.error?.message || `HTTP ${containerRes.status}`}`,
-          retryable: mapped.retryable,
-        };
+      if (images.length > 1) {
+        const children: string[] = [];
+        for (const child of images) {
+          const childRes = await fetch(`${graph}/${igUserId}/media`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ image_url: child, is_carousel_item: true, access_token: accessToken }),
+          });
+          const childData = await childRes.json().catch(() => ({}));
+          if (!childRes.ok || !childData?.id) {
+            const mapped = mapError(childRes.status);
+            return {
+              success: false,
+              channel: this.channel,
+              idempotencyKey: payload.idempotencyKey,
+              errorCode: mapped.errorCode,
+              errorMessage: `Instagram (carrusel · slide): ${childData?.error?.message || `HTTP ${childRes.status}`}`,
+              retryable: mapped.retryable,
+            };
+          }
+          children.push(childData.id);
+        }
+
+        const carouselRes = await fetch(`${graph}/${igUserId}/media`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            media_type: 'CAROUSEL',
+            children: children.join(','),
+            caption,
+            access_token: accessToken,
+          }),
+        });
+        const carousel = await carouselRes.json().catch(() => ({}));
+        if (!carouselRes.ok || !carousel?.id) {
+          const mapped = mapError(carouselRes.status);
+          return {
+            success: false,
+            channel: this.channel,
+            idempotencyKey: payload.idempotencyKey,
+            errorCode: mapped.errorCode,
+            errorMessage: `Instagram (carrusel): ${carousel?.error?.message || `HTTP ${carouselRes.status}`}`,
+            retryable: mapped.retryable,
+          };
+        }
+        creationId = carousel.id;
+      } else {
+        const containerRes = await fetch(`${graph}/${igUserId}/media`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image_url: images[0], caption, access_token: accessToken }),
+        });
+        const container = await containerRes.json().catch(() => ({}));
+
+        if (!containerRes.ok || !container?.id) {
+          const mapped = mapError(containerRes.status);
+          return {
+            success: false,
+            channel: this.channel,
+            idempotencyKey: payload.idempotencyKey,
+            errorCode: mapped.errorCode,
+            errorMessage: `Instagram (contenedor): ${container?.error?.message || `HTTP ${containerRes.status}`}`,
+            retryable: mapped.retryable,
+          };
+        }
+        creationId = container.id;
       }
 
       // 2. Publicación
       const publishRes = await fetch(`${graph}/${igUserId}/media_publish`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ creation_id: container.id, access_token: accessToken }),
+        body: JSON.stringify({ creation_id: creationId, access_token: accessToken }),
       });
       const published = await publishRes.json().catch(() => ({}));
 
