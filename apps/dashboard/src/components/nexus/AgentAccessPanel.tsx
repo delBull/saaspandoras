@@ -203,6 +203,16 @@ export function AgentAccessPanel({ isAdmin }: { isAdmin: boolean }) {
     days: 30,
   });
   const [shareBusy, setShareBusy] = useState(false);
+  const [agentProposals, setAgentProposals] = useState<Array<{
+    id: string;
+    action: string;
+    resourceType: string;
+    resourceId: string;
+    proposedBy: string;
+    collaboratorName: string | null;
+    collaboratorEmail: string | null;
+    createdAt: string;
+  }>>([]);
 
   const loadShares = useCallback(async () => {
     if (!isAdmin) return;
@@ -213,6 +223,12 @@ export function AgentAccessPanel({ isAdmin }: { isAdmin: boolean }) {
       ]);
       const sharesData = (await sharesRes.json().catch(() => ({}))) as { ok?: boolean; shares?: any[] };
       if (sharesData.ok && Array.isArray(sharesData.shares)) setShares(sharesData.shares);
+
+      const proposalsRes = await fetch('/api/nexus/agent/actions', { cache: 'no-store', headers: authHeaders() });
+      const proposalsData = (await proposalsRes.json().catch(() => ({}))) as { ok?: boolean; proposals?: any[] };
+      if (proposalsData.ok && Array.isArray(proposalsData.proposals)) {
+        setAgentProposals(proposalsData.proposals);
+      }
 
       const collabData = (await collabRes.json().catch(() => ({}))) as { collaborators?: any[] };
       const list = Array.isArray(collabData.collaborators) ? collabData.collaborators : [];
@@ -274,6 +290,24 @@ export function AgentAccessPanel({ isAdmin }: { isAdmin: boolean }) {
       await loadShares();
     } catch {
       setError('Error de red al revocar.');
+    }
+  };
+
+  const decideProposal = async (id: string, decision: 'APPROVE' | 'REJECT') => {
+    try {
+      const res = await fetch(`/api/nexus/agent/actions/${id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({ decision }),
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        setError(data.error ?? 'No se pudo registrar la decisión.');
+        return;
+      }
+      await loadShares();
+    } catch {
+      setError('Error de red al decidir la propuesta.');
     }
   };
 
@@ -520,6 +554,52 @@ export function AgentAccessPanel({ isAdmin }: { isAdmin: boolean }) {
           </ul>
         </div>
       )}
+      {/* Admin: propuestas de agentes (escritura gobernada) */}
+      {isAdmin && agentProposals.length > 0 && (
+        <div className="mt-6 rounded-xl border border-sky-500/25 bg-sky-500/[0.04] p-3">
+          <p className="text-[11px] font-mono uppercase text-sky-300">
+            Propuestas de agentes · requieren tu decisión
+          </p>
+          <p className="mt-1 text-[11px] text-zinc-500">
+            El agente propone; nada se ejecuta solo. Aprobar registra la decisión: la
+            mutación se aplica desde el flujo normal del recurso.
+          </p>
+          <ul className="mt-2 space-y-2">
+            {agentProposals.map((prop) => (
+              <li key={prop.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/10 bg-black/30 px-3 py-2">
+                <div className="min-w-0">
+                  <p className="text-[11px] text-white">
+                    <span className="font-mono text-sky-300">{prop.action}</span>
+                    <span className="text-zinc-500"> · {prop.resourceType} </span>
+                    <span className="font-mono text-amber-200">{prop.resourceId}</span>
+                  </p>
+                  <p className="text-[10px] font-mono text-zinc-500">
+                    {prop.collaboratorName ?? prop.collaboratorEmail} · clave “{prop.proposedBy}” ·{' '}
+                    {new Date(prop.createdAt).toLocaleString('es-MX')}
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void decideProposal(prop.id, 'APPROVE')}
+                    className="rounded-md border border-emerald-500/40 bg-emerald-500/15 px-2 py-1 text-[10px] font-bold text-emerald-200"
+                  >
+                    APROBAR
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void decideProposal(prop.id, 'REJECT')}
+                    className="rounded-md border border-rose-500/40 bg-rose-500/10 px-2 py-1 text-[10px] font-bold text-rose-200"
+                  >
+                    RECHAZAR
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* Admin: recursos compartidos con aprobación del dueño */}
       {isAdmin && (
         <div className="mt-6 rounded-xl border border-amber-500/25 bg-amber-500/[0.04] p-3">

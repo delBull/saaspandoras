@@ -7,12 +7,13 @@
  */
 import { db } from '@saasfly/db-core';
 import {
+  agentActionProposals,
   agentKeys,
   agentDelegations,
   agentLimits,
   nexusCollaborators,
 } from '@saasfly/db-core/schema';
-import { and, desc, eq } from '@saasfly/db-core';
+import { and, desc, eq, gt } from '@saasfly/db-core';
 import {
   AGENT_KEY_DEFAULT_DAYS,
   createAgentKey,
@@ -35,6 +36,7 @@ export interface AgentContext {
   limits: {
     maxMutationsPerHour: number;
     requireApprovalFor: string[];
+    autoSuspendOnAnomaly: boolean;
   };
 }
 
@@ -252,6 +254,7 @@ export async function resolveAgentContext(
     limits: {
       maxMutationsPerHour: limits?.maxMutationsPerHour ?? 60,
       requireApprovalFor,
+      autoSuspendOnAnomaly: limits?.autoSuspendOnAnomaly ?? true,
     },
   };
 }
@@ -288,5 +291,55 @@ export async function findCollaborator(id: number) {
     .from(nexusCollaborators)
     .where(eq(nexusCollaborators.id, id))
     .limit(1);
+  return row ?? null;
+}
+
+/** Propuestas creadas por esta clave en la última hora (límite de la fase 5). */
+export async function countRecentProposals(agentKeyId: string): Promise<number> {
+  const since = new Date(Date.now() - 60 * 60 * 1000);
+  const rows = await db
+    .select({ id: agentActionProposals.id })
+    .from(agentActionProposals)
+    .where(
+      and(
+        eq(agentActionProposals.agentKeyId, agentKeyId),
+        gt(agentActionProposals.createdAt, since),
+      ),
+    )
+    .limit(500);
+  return rows.length;
+}
+
+/** Suspende una clave (emergencia o exceso de límite). */
+export async function suspendAgentKey(agentKeyId: string, reason: string) {
+  await db
+    .update(agentKeys)
+    .set({ status: 'SUSPENDED', revokeReason: reason.slice(0, 300) })
+    .where(eq(agentKeys.id, agentKeyId));
+}
+
+/** Registra la propuesta del agente (nunca ejecuta). */
+export async function proposeAgentAction(input: {
+  context: AgentContext;
+  action: string;
+  resourceType: string;
+  resourceId: string;
+  payload: Record<string, unknown>;
+}) {
+  const [row] = await db
+    .insert(agentActionProposals)
+    .values({
+      agentKeyId: input.context.agentKeyId,
+      delegationId: input.context.delegationId,
+      collaboratorId: input.context.collaboratorId,
+      action: input.action,
+      resourceType: input.resourceType,
+      resourceId: input.resourceId,
+      payload: input.payload,
+      status: 'PENDING',
+      proposedBy: input.context.label,
+    })
+    .returning();
+
   return row ?? null;
 }

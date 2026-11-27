@@ -5065,6 +5065,38 @@ export const resourceShares = pgTable("resource_shares", {
 
 export type ResourceShare = typeof resourceShares.$inferSelect;
 
+/**
+ * Propuesta de un agente (ADR-021, migración 0129).
+ *
+ * El agente **no ejecuta**: propone. Un humano aprueba o rechaza. El conteo por
+ * hora sobre esta tabla es el límite operativo de la fase 5.
+ */
+export const agentActionProposals = pgTable("agent_action_proposals", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  agentKeyId: uuid("agent_key_id").notNull().references(() => agentKeys.id, { onDelete: "cascade" }),
+  delegationId: uuid("delegation_id"),
+  collaboratorId: integer("collaborator_id").notNull(),
+  /** deal.update_status | pod.add_contact | … */
+  action: varchar("action", { length: 64 }).notNull(),
+  /** pod | room | project */
+  resourceType: varchar("resource_type", { length: 24 }).notNull(),
+  resourceId: varchar("resource_id", { length: 128 }).notNull(),
+  payload: jsonb("payload").$type<Record<string, unknown>>().notNull().default({}),
+  /** PENDING | APPROVED | REJECTED | EXPIRED */
+  status: varchar("status", { length: 16 }).notNull().default("PENDING"),
+  proposedBy: varchar("proposed_by", { length: 255 }).notNull(),
+  decidedBy: varchar("decided_by", { length: 255 }),
+  decidedAt: timestamp("decided_at", { withTimezone: true }),
+  decisionNote: text("decision_note"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  statusIdx: index("agent_action_proposals_status_idx").on(t.status, t.createdAt),
+  keyIdx: index("agent_action_proposals_key_idx").on(t.agentKeyId, t.createdAt),
+}));
+
+export type AgentActionProposal = typeof agentActionProposals.$inferSelect;
+
+
 
 
 
