@@ -3,6 +3,7 @@ import { EnvelopeService } from '@/lib/deal-signing/envelope-service';
 import { db } from '@saasfly/db';
 import { dealEnvelopes } from '@saasfly/db/schema';
 import { eq, and, desc } from "@saasfly/db-core";
+import { checkRateLimit, clientIpFromHeaders } from '@saasfly/hermes-core';
 
 export const dynamic = 'force-dynamic';
 
@@ -98,6 +99,22 @@ export async function POST(req: NextRequest) {
  */
 export async function GET(req: NextRequest) {
   try {
+    /**
+     * Este endpoint es público (lo usa el portal de firma), así que no se puede
+     * cerrar sin romper el flujo. Lo que sí se corrige:
+     *  - límite por IP,
+     *  - proyección explícita: antes devolvía `select()` completo, es decir
+     *    firmantes (correos), hashes y CIDs de todos los sobres.
+     */
+    const ip = clientIpFromHeaders(req.headers as any) || 'anon';
+    const rl = checkRateLimit(`envelopes-get:${ip}`, 60, 60_000);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { success: false, error: 'RATE_LIMITED', message: 'Too many requests.' },
+        { status: 429 },
+      );
+    }
+
     const { searchParams } = new URL(req.url);
     const organizationId = searchParams.get('organizationId');
     const status = searchParams.get('status');
@@ -111,7 +128,16 @@ export async function GET(req: NextRequest) {
     }
 
     const query = db
-      .select()
+      .select({
+        id: dealEnvelopes.id,
+        organizationId: dealEnvelopes.organizationId,
+        title: dealEnvelopes.title,
+        status: dealEnvelopes.status,
+        signingPolicy: dealEnvelopes.signingPolicy,
+        createdAt: dealEnvelopes.createdAt,
+        completedAt: dealEnvelopes.completedAt,
+        expiresAt: dealEnvelopes.expiresAt,
+      })
       .from(dealEnvelopes)
       .orderBy(desc(dealEnvelopes.createdAt))
       .limit(50);
