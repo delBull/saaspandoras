@@ -2,14 +2,13 @@ name: Cron Jobs
 
 on:
   schedule:
-    - cron: '*/15 * * * *'  # Recordatorios de reunión (24 h / 1 h antes)
-    - cron: '*/30 * * * *'  # Webhooks and fast background jobs (cada 30 min en vez de cada 5 min)
+    - cron: '0 * * * *'    # Recordatorios de reunión + webhooks rápidos (cada hora)
     - cron: '0 */2 * * *'   # Marketing, agendas, reminders y nexus (cada 2 horas en vez de cada 15 min)
     - cron: '0 */6 * * *'   # Gas checks, workflows pesados y reconciliaciones (cada 6 horas)
 
 jobs:
   dispatch-webhooks:
-    if: github.event.schedule == '*/30 * * * *'
+    if: github.event.schedule == '0 * * * *'
     runs-on: ubuntu-latest
     steps:
       - name: Call dispatch-webhooks
@@ -19,7 +18,7 @@ jobs:
             "https://pandoras.finance/api/cron/dispatch-webhooks"
 
   process-approvals:
-    if: github.event.schedule == '*/30 * * * *'
+    if: github.event.schedule == '0 * * * *'
     runs-on: ubuntu-latest
     steps:
       - name: Call process-approvals
@@ -29,7 +28,7 @@ jobs:
             "https://pandoras.finance/api/cron/process-approvals"
 
   process-webhooks:
-    if: github.event.schedule == '*/30 * * * *'
+    if: github.event.schedule == '0 * * * *'
     runs-on: ubuntu-latest
     steps:
       - name: Call process-webhooks
@@ -69,7 +68,7 @@ jobs:
             "https://dash.pandoras.finance/api/cron/scheduling-reminders"
 
   meeting-reminders:
-    if: github.event.schedule == '*/15 * * * *'
+    if: github.event.schedule == '0 * * * *'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -166,7 +165,7 @@ jobs:
             "https://dash.pandoras.finance/api/cron/subscription-lifecycle"
 
   ipfs-repin:
-    if: github.event.schedule == '*/30 * * * *'
+    if: github.event.schedule == '0 * * * *'
     runs-on: ubuntu-latest
     steps:
       - name: Re-fijar artefactos del vault (seguro IPFS)

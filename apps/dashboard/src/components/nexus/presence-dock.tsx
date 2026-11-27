@@ -183,9 +183,16 @@ export function PresenceDock({ hidden = false }: { hidden?: boolean }) {
     };
 
     void checkUnread();
+    /**
+     * Fluid CPU: cada tick es una invocación de función. 8 s con la consola
+     * abierta todo el día son miles de invocaciones. 30 s y se pausa cuando la
+     * pestaña no está visible (nadie está mirando el badge).
+     */
+    const UNREAD_POLL_MS = 30_000;
     const unreadInterval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.hidden) return;
       void checkUnread();
-    }, 8000);
+    }, UNREAD_POLL_MS);
 
     return () => {
       isMounted = false;
@@ -236,10 +243,12 @@ export function PresenceDock({ hidden = false }: { hidden?: boolean }) {
 
     void fetchMessages();
 
-    // Auto-refresh messages every 6 seconds while the modal is open
+    // Auto-refresh del chat: 15 s y se pausa si la pestaña está oculta.
+    const CHAT_POLL_MS = 15_000;
     const chatInterval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.hidden) return;
       void fetchMessages();
-    }, 6000);
+    }, CHAT_POLL_MS);
 
     return () => {
       isMounted = false;

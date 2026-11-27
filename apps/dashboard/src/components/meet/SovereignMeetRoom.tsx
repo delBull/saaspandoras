@@ -273,7 +273,11 @@ export function SovereignMeetRoom({
         const startPolling = () => {
             if (interval || cancelled) return;
             void pollOnce();
-            interval = setInterval(pollOnce, PRESENTATION_POLL_MS);
+            // Sólo cuando el fallback hace falta y la pestaña está visible.
+            interval = setInterval(() => {
+                if (typeof document !== 'undefined' && document.hidden) return;
+                void pollOnce();
+            }, PRESENTATION_POLL_MS);
         };
 
         // Estado inicial + meta del deck (el SSE solo transporta cambios de slide).
