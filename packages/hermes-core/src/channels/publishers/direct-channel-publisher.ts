@@ -67,6 +67,95 @@ export class DirectChannelPublisher {
   /**
    * Publishes content directly to an external channel using tenant-owned credentials from the vault.
    */
+  /**
+   * Publica con **credenciales explícitas** (sin vault).
+   *
+   * Existe porque un tenant puede tener su cuenta resuelta por entorno
+   * (`META_IG_*_<SLUG>`) aunque no exista la fila cifrada en
+   * `tenant_social_integrations`. Se mantienen los mismos gates que
+   * `publishToChannel`: idempotencia obligatoria, política de trial y capability.
+   */
+  public async publishWithCredentials(
+    canonicalOrgId: string,
+    channel: ChannelType,
+    credentials: Record<string, unknown>,
+    payload: PublicationPayload,
+    opts?: { accountHandle?: string; metadata?: Record<string, unknown> },
+  ): Promise<PublicationReceipt> {
+    if (!payload?.idempotencyKey || !payload.idempotencyKey.trim()) {
+      return {
+        success: false,
+        channel,
+        idempotencyKey: 'missing',
+        errorCode: 'PROVIDER_PAYLOAD_INVALID',
+        errorMessage: 'idempotencyKey is required on all direct publishing operations.',
+        retryable: false,
+      };
+    }
+    if (!canonicalOrgId) {
+      return {
+        success: false,
+        channel,
+        idempotencyKey: payload.idempotencyKey,
+        errorCode: 'PROVIDER_AUTH_INVALID',
+        errorMessage: 'canonicalOrgId is required.',
+        retryable: false,
+      };
+    }
+
+    const scopedIdempotencyKey = `${canonicalOrgId}:${payload.idempotencyKey}`;
+    const cached = this.idempotencyStore.get(scopedIdempotencyKey);
+    if (cached) return cached;
+
+    try {
+      await HermesTrialPolicyService.assertTrialMutationAllowed(canonicalOrgId);
+      const confirmedPubs = HermesTrialPolicyService.getConfirmedDistributionCount(canonicalOrgId);
+      await HermesTrialPolicyService.checkSoftwareQuota(canonicalOrgId, 'distribution', confirmedPubs);
+    } catch (trialErr: any) {
+      return {
+        success: false,
+        channel,
+        idempotencyKey: payload.idempotencyKey,
+        errorCode: trialErr?.name === 'HermesTrialExpiredError' ? 'PROVIDER_AUTH_EXPIRED' : 'PROVIDER_RATE_LIMIT',
+        errorMessage: trialErr?.message || 'Trial policy restriction violated.',
+        retryable: false,
+      };
+    }
+
+    const publisher = this.publishers.get(channel);
+    if (!publisher) {
+      return {
+        success: false,
+        channel,
+        idempotencyKey: payload.idempotencyKey,
+        errorCode: 'INTERNAL_ERROR',
+        errorMessage: `No active publisher registered for channel '${channel}'.`,
+        retryable: false,
+      };
+    }
+
+    const receipt = await publisher.publish(credentials, payload, {
+      canonicalOrgId,
+      integrationId: `env:${channel}`,
+      accountHandle: opts?.accountHandle ?? `env:${channel}`,
+      metadata: opts?.metadata ?? {},
+    });
+
+    this.idempotencyStore.set(scopedIdempotencyKey, receipt);
+    if (receipt.success) {
+      HermesTrialPolicyService.recordConfirmedDistribution(canonicalOrgId);
+      try {
+        await HermesTrialTimelineService.recordEvent(canonicalOrgId, 'DISTRIBUTION_EXECUTED', {
+          metadata: { channel, integrationId: `env:${channel}`, externalPostId: receipt.externalPostId },
+        });
+      } catch (timelineErr) {
+        console.warn('[DirectChannelPublisher] Notice recording timeline event:', timelineErr);
+      }
+    }
+    setTimeout(() => this.idempotencyStore.delete(scopedIdempotencyKey), 10 * 60 * 1000);
+    return receipt;
+  }
+
   public async publishToChannel(
     canonicalOrgId: string,
     integrationId: string,

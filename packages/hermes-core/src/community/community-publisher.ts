@@ -16,7 +16,8 @@
  *    log de seguridad.
  */
 import { db } from '@saasfly/db-core';
-import { communityProposals, tenantSocialIntegrations } from '@saasfly/db-core/schema';
+import { communityProposals, projects, tenantSocialIntegrations } from '@saasfly/db-core/schema';
+import { buildInstagramEnvCredentials, type PlatformCredentials } from './platform-credentials';
 import { and, eq } from '@saasfly/db-core';
 import { SecurityAuditLogger } from '../runtime/security-audit-logger';
 import { validateCommunityPost } from './community-gateway';
@@ -29,11 +30,15 @@ const isDiscordPost = (post: { platform?: string }) => (post.platform ?? 'discor
  * Integración CONNECTED del tenant para esa red. El `channel` del post es el
  * handle; si no coincide con ninguno, se usa la primera cuenta conectada.
  */
+type IntegrationRef =
+  | { kind: 'vault'; id: string }
+  | { kind: 'env'; credentials: PlatformCredentials; handle: string };
+
 async function resolveSocialIntegration(
   canonicalOrgId: string,
   platform: string,
   handle: string,
-): Promise<string | null> {
+): Promise<IntegrationRef | null> {
   const rows = await db
     .select({ id: tenantSocialIntegrations.id, accountHandle: tenantSocialIntegrations.accountHandle })
     .from(tenantSocialIntegrations)
@@ -45,10 +50,40 @@ async function resolveSocialIntegration(
     .limit(10);
 
   const first = rows[0];
-  if (!first) return null;
-  const wanted = String(handle || '').replace(/^@/, '').toLowerCase();
-  const match = rows.find((row) => String(row.accountHandle || '').replace(/^@/, '').toLowerCase() === wanted);
-  return (match ?? first).id;
+  if (first) {
+    const wanted = String(handle || '').replace(/^@/, '').toLowerCase();
+    const match = rows.find((row) => String(row.accountHandle || '').replace(/^@/, '').toLowerCase() === wanted);
+    return { kind: 'vault', id: (match ?? first).id };
+  }
+
+  /**
+   * Sin fila cifrada: Instagram puede resolverse por entorno, igual que el
+   * webhook (`META_IG_*_<SLUG>` + `extraConfig.community`). Así publicar no
+   * depende de tener la KEK del vault a mano.
+   */
+  if (platform !== 'instagram') return null;
+
+  try {
+    const [project] = await db
+      .select({ slug: projects.slug, extraConfig: projects.extraConfig })
+      .from(projects)
+      .where(eq(projects.organizationId, canonicalOrgId))
+      .limit(1);
+
+    if (!project?.slug) return null;
+
+    const community = ((project.extraConfig as any)?.community ?? null) as
+      | { igUserId?: string; igApiBase?: string }
+      | null;
+
+    const credentials = buildInstagramEnvCredentials({ slug: project.slug, community });
+    if (!credentials) return null;
+
+    return { kind: 'env', credentials, handle: String(handle || '@instagram') };
+  } catch (err: any) {
+    console.warn('[community-publisher] No se pudo resolver credenciales por entorno:', err?.message || err);
+    return null;
+  }
 }
 
 const API = 'https://discord.com/api/v10';
@@ -194,18 +229,29 @@ export async function publishCommunityProposal(input: {
     if (!isDiscordPost(post)) {
       const platform = String(post.platform);
       try {
-        const integrationId = await resolveSocialIntegration(proposal.canonicalOrgId, platform, post.channel);
-        if (!integrationId) {
+        const integration = await resolveSocialIntegration(proposal.canonicalOrgId, platform, post.channel);
+        if (!integration) {
           errors.push(`${post.channel}: cuenta de ${platform} no conectada`);
           continue;
         }
 
-        const receipt = await directPublisher!.publishToChannel(proposal.canonicalOrgId, integrationId, {
+        const target = integration.kind === 'vault' ? integration.id : 'env';
+        const publicationPayload = {
           text: post.text,
           mediaUrls: post.imageUrl ? [post.imageUrl] : [],
-          contentType: post.imageUrl ? 'image' : 'text',
-          idempotencyKey: `${proposal.id}:${platform}:${integrationId}`,
-        });
+          contentType: (post.imageUrl ? 'image' : 'text') as 'image' | 'text',
+          idempotencyKey: `${proposal.id}:${platform}:${target}`,
+        };
+
+        const receipt = integration.kind === 'vault'
+          ? await directPublisher!.publishToChannel(proposal.canonicalOrgId, integration.id, publicationPayload)
+          : await directPublisher!.publishWithCredentials(
+              proposal.canonicalOrgId,
+              platform as any,
+              integration.credentials as unknown as Record<string, unknown>,
+              publicationPayload,
+              { accountHandle: integration.handle },
+            );
 
         if (!receipt.success) {
           errors.push(`${post.channel}: ${receipt.errorCode}${receipt.errorMessage ? ` — ${receipt.errorMessage}` : ''}`);
