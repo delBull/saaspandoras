@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { MarketingEngine } from '@/lib/marketing/engine';
+import { countWorkableLeads } from '@/lib/marketing/growth-engine/engine-service';
 
 export async function GET(req: NextRequest) {
     // 1. Authenticate Cron (Bearer token, x-cron-secret or URL secret param)
@@ -18,6 +19,25 @@ export async function GET(req: NextRequest) {
     }
 
     try {
+        /**
+         * Fluid CPU: este cron corre cada 2 h. Antes ejecutaba los dos motores
+         * siempre, aunque no hubiera nada vencido ni leads por evaluar. Se cuenta
+         * primero (dos counts indexados) y si no hay trabajo se sale en milisegundos.
+         */
+        const [dueExecutions, workableLeads] = await Promise.all([
+            MarketingEngine.countDueExecutions(),
+            countWorkableLeads(),
+        ]);
+
+        if (dueExecutions === 0 && workableLeads === 0) {
+            return NextResponse.json({
+                ok: true,
+                skipped: 'sin trabajo pendiente',
+                dueExecutions,
+                workableLeads,
+            });
+        }
+
         // 2. Run Legacy Engine
         console.log('🚀 [CRON] Starting Legacy Marketing Automation Check...');
         const result = await MarketingEngine.processDueExecutions();

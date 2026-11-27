@@ -8,7 +8,7 @@
 
 import { db } from '@saasfly/db-core';
 import { marketingLeads, installedProducts, schedulingBookings, schedulingSlots } from '@saasfly/db-core/schema';
-import { eq, and, lte, gte } from "@saasfly/db-core";
+import { eq, and, lte, gte, sql } from "@saasfly/db-core";
 import { HermesEventBus } from './event-bus';
 import { sendEmail } from '@saasfly/shared';
 
@@ -21,6 +21,24 @@ export class AutonomousWorkflowEngine {
 
     // Five days ago timestamp
     const fiveDaysAgo = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000);
+
+    /**
+     * Fluid CPU: primero se cuenta con el mismo criterio (índice por status) y
+     * sólo si hay trabajo se hidratan las filas y se recorre el bucle de envíos.
+     */
+    const [inactiveCount] = await db
+      .select({ total: sql<number>`count(*)::int` })
+      .from(marketingLeads)
+      .where(
+        and(
+          eq(marketingLeads.status, 'active'),
+          lte(marketingLeads.updatedAt, fiveDaysAgo),
+        ),
+      );
+
+    if (Number(inactiveCount?.total ?? 0) === 0) {
+      return { processed: 0, skipped: true };
+    }
 
     const inactiveLeads = await db.query.marketingLeads.findMany({
       where: and(

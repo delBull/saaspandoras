@@ -1,6 +1,6 @@
 import { db } from "@saasfly/db-core";
 import { marketingExecutions, marketingCampaigns, clients, users, projects, marketingLeads, hermesCognitiveProfiles } from "@saasfly/db-core";
-import { eq, and, lte, sql } from "@saasfly/db-core";
+import { eq, and, lte, sql, count } from "@saasfly/db-core";
 import { sendEmail } from "@/lib/email/client";
 import { sendWhatsAppMessage } from "@saasfly/shared";
 // import { renderToStaticMarkup } from "react-dom/server";
@@ -70,6 +70,18 @@ export class MarketingEngine {
         }).returning();
 
         return execution;
+    }
+
+    /** Cuenta barata de ejecuciones vencidas (sin hidratar filas). */
+    static async countDueExecutions(): Promise<number> {
+        const [row] = await db
+            .select({ total: count() })
+            .from(marketingExecutions)
+            .where(and(
+                eq(marketingExecutions.status, 'active'),
+                lte(marketingExecutions.nextRunAt, new Date()),
+            ));
+        return Number(row?.total ?? 0);
     }
 
     static async processDueExecutions() {

@@ -1,6 +1,6 @@
 import { db } from '@saasfly/db';
 import { marketingLeadEvents, marketingLeads } from '@saasfly/db/schema';
-import { eq, desc, inArray } from "@saasfly/db-core";
+import { eq, desc, inArray, count } from "@saasfly/db-core";
 import { GrowthEvent } from './types';
 import { computeBehavioralMetrics, resolveGrowthAction } from './engine';
 import { executeGrowthActions } from './actions';
@@ -80,7 +80,21 @@ export async function processGrowthEvent(
  * Processes all active leads to trigger time-based actions.
  * Recommended interval: Every 6-12 hours via Cron.
  */
+/** Cuenta barata de leads con trabajo pendiente (índice por status). */
+export async function countWorkableLeads(): Promise<number> {
+    const [row] = await db
+        .select({ total: count() })
+        .from(marketingLeads)
+        .where(inArray(marketingLeads.status, ['active', 'nurturing', 'whitelisted', 'scheduled']));
+    return Number(row?.total ?? 0);
+}
+
 export async function processHeartbeat() {
+    // Fluid CPU: si no hay leads que evaluar, ni se hidratan ni se recorren.
+    if ((await countWorkableLeads()) === 0) {
+        return { processed: 0, errors: 0, skipped: true as const };
+    }
+
     console.log("💓 [Growth OS] Starting Heartbeat Processing...");
     let processed = 0;
     let errors = 0;
