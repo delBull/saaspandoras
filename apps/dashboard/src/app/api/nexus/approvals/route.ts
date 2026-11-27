@@ -128,6 +128,9 @@ export async function GET(request: Request) {
               channel: String(post.channel ?? ''),
               text: String(post.text ?? ''),
               ...(post.imageUrl ? { imageUrl: String(post.imageUrl) } : {}),
+              ...(Array.isArray(post.imageUrls) && post.imageUrls.length > 0
+                ? { imageUrls: post.imageUrls.map(String) }
+                : {}),
               ...(post.platform ? { platform: String(post.platform) } : {}),
             })),
           ]),

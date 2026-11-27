@@ -12,7 +12,7 @@ interface Approval {
   resourceScope: string;
   proposerName: string;
   createdAt: string;
-  posts?: Array<{ channel: string; text: string; imageUrl?: string; platform?: string }>;
+  posts?: Array<{ channel: string; text: string; imageUrl?: string; imageUrls?: string[]; platform?: string }>;
 }
 
 const KIND_LABEL: Record<string, string> = {
@@ -168,6 +168,26 @@ export default function ApprovalsClient({
                         #{index + 1} · {post.platform ? `${post.platform} · ` : ''}
                         {String(post.channel).replace(/^#/, '')}
                       </p>
+                      {Array.isArray(post.imageUrls) && post.imageUrls.length > 0 && (
+                        <div className="mt-2 grid grid-cols-4 gap-1">
+                          {post.imageUrls.slice(0, 8).map((url, slide) => (
+                            <a
+                              key={url}
+                              href={url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="relative overflow-hidden rounded border border-white/10"
+                              title={`Slide ${slide + 1}`}
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={url} alt={`Slide ${slide + 1}`} className="h-20 w-full object-cover" loading="lazy" />
+                              <span className="absolute bottom-0 right-0 bg-black/70 px-1 text-[9px] font-mono text-white">
+                                {slide + 1}
+                              </span>
+                            </a>
+                          ))}
+                        </div>
+                      )}
                       {post.imageUrl && (
                         // Previsualización real: lo que se va a publicar, no una descripción.
                         <a

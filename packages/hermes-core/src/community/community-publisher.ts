@@ -236,10 +236,23 @@ export async function publishCommunityProposal(input: {
         }
 
         const target = integration.kind === 'vault' ? integration.id : 'env';
+
+        /**
+         * Un post puede traer una imagen, un carrusel (varias) o un video. El
+         * publicador decide el camino: imagen simple, CAROUSEL o REELS.
+         */
+        const mediaUrls = Array.isArray((post as any).imageUrls) && (post as any).imageUrls.length > 0
+          ? ((post as any).imageUrls as string[]).filter((url) => /^https:\/\//i.test(String(url)))
+          : post.imageUrl
+            ? [post.imageUrl]
+            : [];
+        const isVideo =
+          (post as any).video === true || mediaUrls.some((url) => /\.(mp4|mov|webm)(\?|$)/i.test(url));
+
         const publicationPayload = {
           text: post.text,
-          mediaUrls: post.imageUrl ? [post.imageUrl] : [],
-          contentType: (post.imageUrl ? 'image' : 'text') as 'image' | 'text',
+          mediaUrls,
+          contentType: (isVideo ? 'video' : mediaUrls.length > 0 ? 'image' : 'text') as 'video' | 'image' | 'text',
           idempotencyKey: `${proposal.id}:${platform}:${target}`,
         };
 

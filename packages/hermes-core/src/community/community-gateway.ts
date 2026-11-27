@@ -59,6 +59,10 @@ export interface CommunityPostInput {
   platform?: CommunityPlatform;
   /** Imagen opcional (https). Se publica como embed. */
   imageUrl?: string;
+  /** Carrusel: 2–10 URLs https. */
+  imageUrls?: string[];
+  /** Pieza de video (reel). */
+  video?: boolean;
   /**
    * Código de atribución (`/l/<code>`) asignado por el servidor al proponer.
    * No lo envía el cliente: sirve para cruzar publicación → clics → leads.

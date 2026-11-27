@@ -4385,6 +4385,10 @@ export const communityProposals = pgTable("community_proposals", {
     text: string;
     platform?: 'discord' | 'instagram' | 'facebook';
     imageUrl?: string;
+    /** Varias imágenes = carrusel (2–10). `imageUrl` se mantiene por compatibilidad. */
+    imageUrls?: string[];
+    /** true cuando la pieza es video (reel). */
+    video?: boolean;
     code?: string;
   }>>().notNull(),
   approvalId: varchar("approval_id", { length: 64 }),
