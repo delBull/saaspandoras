@@ -87,7 +87,48 @@ export async function GET(request: Request) {
     
     const orgId = auth.canonicalOrgId || 'pandoras';
     const approvals = await getApprovals(orgId);
-    return NextResponse.json({ approvals });
+
+    /**
+     * Las aprobaciones de contenido necesitan **verse**: texto, plataforma e
+     * imagen/carrusel. Sin esto, el aprobador decidía a ciegas sobre un post que
+     * no podía previsualizar.
+     */
+    const communityApprovalIds = approvals
+      .filter((a) => typeof a.what === 'string' && a.what.startsWith('community.publish_post:'))
+      .map((a) => a.id);
+
+    let postsByApproval = new Map<string, Array<{ channel: string; text: string; imageUrl?: string; platform?: string }>>();
+    if (communityApprovalIds.length > 0) {
+      const { db } = await import('@saasfly/db-core');
+      const { communityProposals } = await import('@saasfly/db-core/schema');
+      const { inArray } = await import('@saasfly/db-core');
+
+      const rows = await db
+        .select({ approvalId: communityProposals.approvalId, posts: communityProposals.posts })
+        .from(communityProposals)
+        .where(inArray(communityProposals.approvalId, communityApprovalIds));
+
+      postsByApproval = new Map(
+        rows
+          .filter((row) => row.approvalId)
+          .map((row) => [
+            String(row.approvalId),
+            (row.posts ?? []).map((post) => ({
+              channel: String(post.channel ?? ''),
+              text: String(post.text ?? ''),
+              ...(post.imageUrl ? { imageUrl: String(post.imageUrl) } : {}),
+              ...(post.platform ? { platform: String(post.platform) } : {}),
+            })),
+          ]),
+      );
+    }
+
+    return NextResponse.json({
+      approvals: approvals.map((a) => ({
+        ...a,
+        ...(postsByApproval.has(a.id) ? { posts: postsByApproval.get(a.id) } : {}),
+      })),
+    });
   } catch (err: any) {
     console.error("[Approvals] GET Error:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });

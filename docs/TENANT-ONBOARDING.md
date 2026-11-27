@@ -44,8 +44,10 @@ post → /l/<code> (cookie nx_src) → /pitch/<slug> → /join/<slug> (consentim
 
 | Pieza | Cómo |
 |---|---|
-| Media | `/portal/<slug>/media` → biblioteca (Vercel Blob) + render de plantillas |
-| Plantillas | `POST /api/v1/hermes/media/render` con el brand kit |
+| Media | `/portal/<slug>/media` → biblioteca del tenant (`tenant_media_assets`, respaldada por Vercel Blob) + render de plantillas |
+| Plantillas | `POST /api/v1/hermes/media/render`; el brand kit sale de `projects.tenantRuntimeConfig.brandConfig` (fuente canónica, la misma del correo) |
+| Formatos | imagen simple, **carrusel (2–10 slides)** y **Reels** (video https; el publicador espera el procesamiento de Meta) |
+| Palabra clave | `extraConfig.community.keyword` → respaldo `COMMUNITY_DM_KEYWORD` → default `SNARAI` |
 | Propuesta | `community-agent propose --platform=instagram --image=<url>` |
 | Aprobación | `/approvals` (una tarjeta, multi-red) |
 | Publicación | `DirectChannelPublisher` (credenciales cifradas por tenant) |

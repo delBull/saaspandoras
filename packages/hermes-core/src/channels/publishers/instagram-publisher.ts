@@ -59,14 +59,18 @@ export class InstagramPublisher implements IChannelPublisher {
       };
     }
 
-    const imageUrl = payload.mediaUrls?.find((url) => /^https:\/\//i.test(url));
-    if (!imageUrl) {
+    const httpsMedia = (payload.mediaUrls ?? []).filter((url) => /^https:\/\//i.test(String(url)));
+    const isVideo = payload.contentType === 'video';
+
+    if (httpsMedia.length === 0) {
       return {
         success: false,
         channel: this.channel,
         idempotencyKey: payload.idempotencyKey,
         errorCode: 'PROVIDER_PAYLOAD_INVALID',
-        errorMessage: 'Instagram requiere una imagen https pública.',
+        errorMessage: isVideo
+          ? 'Instagram Reels requiere un video https público.'
+          : 'Instagram requiere una imagen https pública.',
         retryable: false,
       };
     }
@@ -81,10 +85,79 @@ export class InstagramPublisher implements IChannelPublisher {
        * contenedor padre que los agrupe. Antes sólo se publicaba `mediaUrls[0]`,
        * así que un carrusel de 4 slides salía como una sola imagen.
        */
-      const images = (payload.mediaUrls ?? []).filter((url) => /^https:\/\//i.test(String(url))).slice(0, 10);
+      const images = httpsMedia.slice(0, 10);
       let creationId: string | null = null;
 
-      if (images.length > 1) {
+      if (isVideo) {
+        /**
+         * Reels: Meta exige crear el contenedor con `media_type=REELS` y esperar
+         * a que el video se procese (`FINISHED`) antes de publicar. Publicar un
+         * contenedor en `IN_PROGRESS` devuelve error.
+         */
+        const reelRes = await fetch(`${graph}/${igUserId}/media`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            media_type: 'REELS',
+            video_url: images[0],
+            caption,
+            share_to_feed: true,
+            access_token: accessToken,
+          }),
+        });
+        const reel = await reelRes.json().catch(() => ({}));
+        if (!reelRes.ok || !reel?.id) {
+          const mapped = mapError(reelRes.status);
+          return {
+            success: false,
+            channel: this.channel,
+            idempotencyKey: payload.idempotencyKey,
+            errorCode: mapped.errorCode,
+            errorMessage: `Instagram (reel): ${reel?.error?.message || `HTTP ${reelRes.status}`}`,
+            retryable: mapped.retryable,
+          };
+        }
+
+        // Espera acotada: 12 intentos × 5 s = 1 minuto como máximo.
+        const pollDelayMs = Number(process.env.IG_REELS_POLL_DELAY_MS ?? 5000);
+        const maxAttempts = 12;
+        let ready = false;
+        for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+          const statusRes = await fetch(
+            `${graph}/${reel.id}?fields=status_code&access_token=${encodeURIComponent(accessToken)}`,
+          );
+          const statusData = await statusRes.json().catch(() => ({}));
+          const status = String(statusData?.status_code || '');
+
+          if (status === 'FINISHED') { ready = true; break; }
+          if (status === 'ERROR' || status === 'EXPIRED') {
+            return {
+              success: false,
+              channel: this.channel,
+              idempotencyKey: payload.idempotencyKey,
+              errorCode: 'PROVIDER_PAYLOAD_INVALID',
+              errorMessage: `Instagram (reel): el video quedó en ${status}.`,
+              retryable: false,
+            };
+          }
+          if (attempt < maxAttempts - 1) {
+            await new Promise((resolve) => setTimeout(resolve, pollDelayMs));
+          }
+        }
+
+        if (!ready) {
+          return {
+            success: false,
+            channel: this.channel,
+            idempotencyKey: payload.idempotencyKey,
+            errorCode: 'PROVIDER_NETWORK_ERROR',
+            errorMessage: 'Instagram (reel): el video sigue procesándose; reintenta en unos minutos.',
+            retryable: true,
+          };
+        }
+
+        creationId = reel.id;
+      } else if (images.length > 1) {
         const children: string[] = [];
         for (const child of images) {
           const childRes = await fetch(`${graph}/${igUserId}/media`, {

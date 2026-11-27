@@ -12,7 +12,7 @@ interface Approval {
   resourceScope: string;
   proposerName: string;
   createdAt: string;
-  posts?: Array<{ channel: string; text: string }>;
+  posts?: Array<{ channel: string; text: string; imageUrl?: string; platform?: string }>;
 }
 
 const KIND_LABEL: Record<string, string> = {
@@ -165,9 +165,27 @@ export default function ApprovalsClient({
                   {approval.posts.map((post, index) => (
                     <div key={index} className="rounded-lg border border-white/10 bg-black/30 p-3">
                       <p className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">
-                        #{index + 1} · #{post.channel}
+                        #{index + 1} · {post.platform ? `${post.platform} · ` : ''}
+                        {String(post.channel).replace(/^#/, '')}
                       </p>
-                      <p className="mt-1 whitespace-pre-wrap text-[12px] leading-relaxed text-zinc-300">
+                      {post.imageUrl && (
+                        // Previsualización real: lo que se va a publicar, no una descripción.
+                        <a
+                          href={post.imageUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-2 block overflow-hidden rounded-md border border-white/10"
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={post.imageUrl}
+                            alt={`Pieza ${index + 1} de la propuesta`}
+                            className="h-48 w-full object-cover sm:h-56"
+                            loading="lazy"
+                          />
+                        </a>
+                      )}
+                      <p className="mt-2 whitespace-pre-wrap text-[12px] leading-relaxed text-zinc-300">
                         {post.text}
                       </p>
                     </div>

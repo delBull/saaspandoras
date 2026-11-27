@@ -312,6 +312,22 @@ export async function resolveInstagramIdentity(igUserId: string): Promise<Instag
   };
 }
 
+/**
+ * Palabra clave del tenant para entrar por DM/comentario.
+ *
+ * Orden: `extraConfig.community.keyword` → `COMMUNITY_DM_KEYWORD` → default del
+ * parser (`SNARAI`). Otro tenant usa la suya sin tocar código.
+ */
+export async function resolveCommunityKeyword(tenantSlug: string): Promise<string | undefined> {
+  const slug = String(tenantSlug || '').toLowerCase();
+  const rows = await loadProjects();
+  const row = rows.find((item) => item.slug === slug);
+  const configured = String(((row?.extraConfig as any)?.community?.keyword) || '').trim();
+  if (configured) return configured;
+  const envKeyword = String(process.env.COMMUNITY_DM_KEYWORD || '').trim();
+  return envKeyword || undefined;
+}
+
 /** Número de WhatsApp al que se manda a la persona (dato del tenant). */
 export async function resolveCommunityWhatsAppNumber(tenantSlug: string): Promise<string | null> {
   const slug = String(tenantSlug || '').toLowerCase();
@@ -469,7 +485,8 @@ export async function handleInstagramEvent(input: {
 }): Promise<'SENT' | 'SKIPPED_NO_KEYWORD' | 'SKIPPED_NO_CREDENTIALS' | 'DUPLICATE' | 'FAILED'> {
   const { identity, event } = input;
 
-  const match = parseDmKeyword(event.text);
+  const keyword = await resolveCommunityKeyword(identity.tenantSlug);
+  const match = parseDmKeyword(event.text, keyword);
   if (!match.matched) return 'SKIPPED_NO_KEYWORD';
 
   const ownerKey = identity.canonicalOrgId || identity.tenantSlug;
@@ -502,6 +519,7 @@ export async function handleInstagramEvent(input: {
 
   const rows = await loadProjects();
   const project = rows.find((row) => row.slug === identity.tenantSlug);
+
 
   const text = buildDmText({
     projectTitle: project?.title || identity.tenantSlug,
