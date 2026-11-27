@@ -184,6 +184,99 @@ export function AgentAccessPanel({ isAdmin }: { isAdmin: boolean }) {
     }
   };
 
+  // ── Recursos compartidos (admin) ────────────────────────────────────────────
+  const [collabOptions, setCollabOptions] = useState<Array<{ id: number; name: string; email: string }>>([]);
+  const [shares, setShares] = useState<Array<{
+    id: string;
+    resourceType: string;
+    resourceId: string;
+    capabilities: string[];
+    collaboratorName: string | null;
+    collaboratorEmail: string | null;
+    expiresAt: string | null;
+  }>>([]);
+  const [shareForm, setShareForm] = useState({
+    collaboratorId: '',
+    resourceType: 'pod',
+    resourceId: '',
+    capabilities: ['dealRoom'] as string[],
+    days: 30,
+  });
+  const [shareBusy, setShareBusy] = useState(false);
+
+  const loadShares = useCallback(async () => {
+    if (!isAdmin) return;
+    try {
+      const [sharesRes, collabRes] = await Promise.all([
+        fetch('/api/nexus/agent/shares', { cache: 'no-store', headers: authHeaders() }),
+        fetch('/api/nexus/collaborators/list', { cache: 'no-store', headers: authHeaders() }),
+      ]);
+      const sharesData = (await sharesRes.json().catch(() => ({}))) as { ok?: boolean; shares?: any[] };
+      if (sharesData.ok && Array.isArray(sharesData.shares)) setShares(sharesData.shares);
+
+      const collabData = (await collabRes.json().catch(() => ({}))) as { collaborators?: any[] };
+      const list = Array.isArray(collabData.collaborators) ? collabData.collaborators : [];
+      setCollabOptions(
+        list.map((c: any) => ({ id: Number(c.id ?? c.collaboratorId), name: c.name ?? c.email, email: c.email }))
+          .filter((c: any) => Number.isFinite(c.id)),
+      );
+    } catch {
+      /* se reintenta con RECARGAR */
+    }
+  }, [isAdmin]);
+
+  useEffect(() => {
+    void loadShares();
+  }, [loadShares]);
+
+  const createShare = async () => {
+    setShareBusy(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/nexus/agent/shares', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({
+          collaboratorId: Number(shareForm.collaboratorId),
+          resourceType: shareForm.resourceType,
+          resourceId: shareForm.resourceId.trim(),
+          capabilities: shareForm.capabilities,
+          days: shareForm.days,
+        }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
+      if (!res.ok || !data.ok) {
+        setError(data.error ?? 'No se pudo compartir el recurso.');
+        return;
+      }
+      setShareForm((prev) => ({ ...prev, resourceId: '' }));
+      await loadShares();
+    } catch {
+      setError('Error de red al compartir el recurso.');
+    } finally {
+      setShareBusy(false);
+    }
+  };
+
+  const revokeShare = async (id: string) => {
+    if (!window.confirm('¿Revocar el acceso a este recurso?')) return;
+    try {
+      const res = await fetch(`/api/nexus/agent/shares/${id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({}),
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        setError(data.error ?? 'No se pudo revocar.');
+        return;
+      }
+      await loadShares();
+    } catch {
+      setError('Error de red al revocar.');
+    }
+  };
+
   const pending = delegations.filter((d) => d.status === 'PENDING');
 
   return (
@@ -425,6 +518,84 @@ export function AgentAccessPanel({ isAdmin }: { isAdmin: boolean }) {
               </li>
             ))}
           </ul>
+        </div>
+      )}
+      {/* Admin: recursos compartidos con aprobación del dueño */}
+      {isAdmin && (
+        <div className="mt-6 rounded-xl border border-amber-500/25 bg-amber-500/[0.04] p-3">
+          <p className="text-[11px] font-mono uppercase text-amber-300">
+            Recursos compartidos · aprobados por el dueño
+          </p>
+          <p className="mt-1 text-[11px] text-zinc-500">
+            Concede a un colaborador un pod, sala o proyecto concreto. Sin esto, el
+            scope de su delegación no le abre recursos ajenos.
+          </p>
+
+          <div className="mt-3 grid gap-2 sm:grid-cols-5">
+            <select
+              value={shareForm.collaboratorId}
+              onChange={(e) => setShareForm((p) => ({ ...p, collaboratorId: e.target.value }))}
+              className="rounded-lg border border-white/10 bg-black/40 px-2 py-1.5 text-[11px] text-white"
+            >
+              <option value="">Colaborador…</option>
+              {collabOptions.map((c) => (
+                <option key={c.id} value={c.id}>{c.name} · {c.email}</option>
+              ))}
+            </select>
+            <select
+              value={shareForm.resourceType}
+              onChange={(e) => setShareForm((p) => ({ ...p, resourceType: e.target.value }))}
+              className="rounded-lg border border-white/10 bg-black/40 px-2 py-1.5 text-[11px] text-white"
+            >
+              <option value="pod">Deal Pod</option>
+              <option value="room">Deal Room</option>
+              <option value="project">Proyecto</option>
+            </select>
+            <input
+              value={shareForm.resourceId}
+              onChange={(e) => setShareForm((p) => ({ ...p, resourceId: e.target.value }))}
+              placeholder={shareForm.resourceType === 'room' ? 'PDR-XXXX' : 'slug o código'}
+              className="rounded-lg border border-white/10 bg-black/40 px-2 py-1.5 text-[11px] text-white"
+            />
+            <select
+              value={shareForm.capabilities[0]}
+              onChange={(e) => setShareForm((p) => ({ ...p, capabilities: [e.target.value] }))}
+              className="rounded-lg border border-white/10 bg-black/40 px-2 py-1.5 text-[11px] text-white"
+            >
+              <option value="dealRoom">Deal Rooms</option>
+              <option value="developer">Developer Hub</option>
+            </select>
+            <button
+              type="button"
+              onClick={() => void createShare()}
+              disabled={shareBusy || !shareForm.collaboratorId || !shareForm.resourceId.trim()}
+              className="rounded-lg bg-amber-500 px-3 py-1.5 text-[11px] font-bold text-black hover:bg-amber-400 disabled:opacity-40"
+            >
+              {shareBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'COMPARTIR'}
+            </button>
+          </div>
+
+          {shares.length > 0 && (
+            <ul className="mt-3 space-y-1.5">
+              {shares.map((s) => (
+                <li key={s.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/10 bg-black/20 px-3 py-1.5">
+                  <span className="text-[11px] text-zinc-300">
+                    <strong className="text-white">{s.collaboratorName ?? s.collaboratorEmail}</strong>
+                    <span className="text-zinc-500"> · {s.resourceType} </span>
+                    <span className="font-mono text-amber-200">{s.resourceId}</span>
+                    <span className="text-zinc-500"> · {s.capabilities.join(', ')}</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => void revokeShare(s.id)}
+                    className="rounded-md border border-rose-500/40 bg-rose-500/10 px-2 py-1 text-[10px] font-bold text-rose-200"
+                  >
+                    REVOCAR
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       )}
     </section>
