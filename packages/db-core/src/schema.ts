@@ -5033,6 +5033,39 @@ export type AgentKey = typeof agentKeys.$inferSelect;
 export type AgentDelegation = typeof agentDelegations.$inferSelect;
 export type AgentLimits = typeof agentLimits.$inferSelect;
 
+/**
+ * Recurso compartido con un colaborador, aprobado por **el dueño del recurso**
+ * (ADR-021 fase 3, migración 0128).
+ *
+ * Sin share, un agente sólo ve lo público: el scope de su delegación no basta
+ * para operar un pod o una sala que no le pertenecen.
+ */
+export const resourceShares = pgTable("resource_shares", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  /** pod | room | project */
+  resourceType: varchar("resource_type", { length: 24 }).notNull(),
+  /** id interno o code/publicId del recurso. */
+  resourceId: varchar("resource_id", { length: 128 }).notNull(),
+  ownerOrgId: varchar("owner_org_id", { length: 256 }).notNull(),
+  sharedWithCollabId: integer("shared_with_collab_id").notNull(),
+  capabilities: jsonb("capabilities").$type<string[]>().notNull().default([]),
+  /** ACTIVE | REVOKED | EXPIRED */
+  status: varchar("status", { length: 16 }).notNull().default("ACTIVE"),
+  approvedBy: varchar("approved_by", { length: 255 }).notNull(),
+  approvedAt: timestamp("approved_at", { withTimezone: true }).defaultNow().notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  revokeReason: text("revoke_reason"),
+}, (t) => ({
+  uniqueActive: uniqueIndex("resource_shares_unique")
+    .on(t.resourceType, t.resourceId, t.sharedWithCollabId)
+    .where(sql`status = 'ACTIVE'`),
+  collabIdx: index("resource_shares_collab_idx").on(t.sharedWithCollabId, t.status),
+}));
+
+export type ResourceShare = typeof resourceShares.$inferSelect;
+
+
 
 
 export const nexusActionRequests = pgTable("nexus_action_requests", {
