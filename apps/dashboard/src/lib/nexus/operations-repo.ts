@@ -34,11 +34,21 @@ export async function getTasks(canonicalOrgId: string, assigneeCollaboratorId?: 
   return query;
 }
 
-export async function getApprovals(canonicalOrgId: string) {
+/**
+ * Aprobaciones de una organización, por **ámbito**.
+ *
+ * `internal` = operación de Pandora's (accesos, agentes, deal pods).
+ * `tenant`   = media y publicaciones del tenant (Growth OS del tenant).
+ * `deal`     = NDA/POF/OM de un deal pod.
+ */
+export async function getApprovals(
+  canonicalOrgId: string,
+  scope: 'internal' | 'tenant' | 'deal' = 'internal',
+) {
   return db
     .select()
     .from(nexusApprovals)
-    .where(eq(nexusApprovals.canonicalOrgId, canonicalOrgId))
+    .where(and(eq(nexusApprovals.canonicalOrgId, canonicalOrgId), eq(nexusApprovals.scope, scope)))
     .orderBy(desc(nexusApprovals.createdAt));
 }
 

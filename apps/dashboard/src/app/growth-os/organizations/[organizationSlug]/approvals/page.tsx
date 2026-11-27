@@ -51,6 +51,8 @@ export default async function ApprovalsPage({ params }: { params: Promise<{ orga
       .where(and(
         inArray(nexusApprovals.canonicalOrgId, orgKeys.length > 0 ? orgKeys : [organizationSlug]),
         eq(nexusApprovals.status, 'PENDING'),
+        // Ámbito tenant: la operación interna (accesos, agentes) se ve en Nexus.
+        eq(nexusApprovals.scope, 'tenant'),
       ))
       .orderBy(desc(nexusApprovals.createdAt))
       .limit(50);

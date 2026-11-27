@@ -86,7 +86,18 @@ export async function GET(request: Request) {
     }
     
     const orgId = auth.canonicalOrgId || 'pandoras';
-    const approvals = await getApprovals(orgId);
+
+    /**
+     * La consola de Nexus es para **operación interna**. Las aprobaciones del
+     * tenant (media/redes) se revisan en el Growth OS del tenant, no aquí.
+     */
+    const requestedScope = new URL(request.url).searchParams.get('scope') ?? 'internal';
+    const scope = (['internal', 'tenant', 'deal'].includes(requestedScope) ? requestedScope : 'internal') as
+      | 'internal'
+      | 'tenant'
+      | 'deal';
+
+    const approvals = await getApprovals(orgId, scope);
 
     /**
      * Las aprobaciones de contenido necesitan **verse**: texto, plataforma e

@@ -6058,6 +6058,8 @@ export const nexusApprovalStatusEnum = pgEnum("nexus_approval_status", [
 export const nexusApprovals = pgTable("nexus_approvals", {
   id: varchar("id", { length: 64 }).primaryKey(), // APP-1042
   canonicalOrgId: varchar("canonical_org_id", { length: 256 }).notNull(),
+  /** internal | tenant | deal — separa operación interna de la del tenant. */
+  scope: varchar("scope", { length: 16 }).notNull().default("internal"),
   actionToken: varchar("action_token", { length: 512 }).notNull().unique(),
   
   proposerId: integer("proposer_id").references(() => nexusCollaborators.id, { onDelete: 'set null' }),

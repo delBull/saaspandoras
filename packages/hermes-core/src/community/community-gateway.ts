@@ -446,6 +446,8 @@ export async function createCommunityProposal(input: {
     why: (input.intent || `Propuesta de ${input.posts.length} publicación(es) de comunidad`).slice(0, 500),
     resourceScope: `project:${input.projectId}|posts:${input.posts.length}`.slice(0, 256),
     capabilityRequired: COMMUNITY_CAPABILITIES.PROPOSE_PUBLISH,
+    // Media/redes del tenant: se aprueba en el Growth OS del tenant, no en Nexus.
+    scope: 'tenant',
     riskLevel: warnings.length > 0 ? 'HIGH' : 'MEDIUM',
     status: 'PENDING',
     nextAction: 'PUBLISH_COMMUNITY_POST',
