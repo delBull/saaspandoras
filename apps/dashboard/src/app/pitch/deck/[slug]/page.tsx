@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { DeckRenderer } from "@/components/presentation/DeckRenderer";
 import { getDeck } from "@/lib/nexus/deck-repository";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
 
 /**
  * Deck servido desde base de datos (CMS soberano).

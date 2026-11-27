@@ -22,7 +22,7 @@ import { SetupCompletionWidget } from '@/components/ecosystem/SetupCompletionWid
 import { setupProgressService } from '@saasfly/shared';
 import { resolveTenantExperienceContext } from '@/lib/mesh/tenant-experience-context';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 3600;
 
 interface EcosystemPageProps {
   params: Promise<{ organizationSlug: string }>;

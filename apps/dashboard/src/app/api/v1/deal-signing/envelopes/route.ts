@@ -33,21 +33,76 @@ export async function POST(req: NextRequest) {
     const thresholdM = formData.get('thresholdM') ? parseInt(formData.get('thresholdM') as string, 10) : undefined;
     const signersRaw = formData.get('signers') as string | null;
 
+    /**
+     * Portal público: se acepta tráfico de fuera, pero con topes duros para que
+     * no se convierta en un servicio de almacenamiento ajeno.
+     */
+    const ip = clientIpFromHeaders(req.headers as any) || 'anon';
+    const perIp = checkRateLimit(`envelopes-create:${ip}`, 10, 60 * 60 * 1000);
+    if (!perIp.allowed) {
+      return NextResponse.json(
+        { success: false, error: 'RATE_LIMITED', message: 'Demasiadas solicitudes. Intenta más tarde.' },
+        { status: 429 },
+      );
+    }
+
+    const MAX_PDF_BYTES = 10 * 1024 * 1024;
+
     if (!file) {
       return NextResponse.json(
         { success: false, error: 'MISSING_FILE', message: 'PDF file is mandatory.' },
         { status: 400 }
       );
     }
-    if (!title) {
+    if (file.size === 0 || file.size > MAX_PDF_BYTES) {
       return NextResponse.json(
-        { success: false, error: 'MISSING_TITLE', message: 'title is mandatory.' },
+        { success: false, error: 'FILE_TOO_LARGE', message: `El PDF debe pesar entre 1 byte y ${MAX_PDF_BYTES / 1024 / 1024} MB.` },
+        { status: 413 },
+      );
+    }
+    if (file.type && file.type !== 'application/pdf') {
+      return NextResponse.json(
+        { success: false, error: 'INVALID_MIME', message: 'Solo se aceptan PDF.' },
+        { status: 415 },
+      );
+    }
+    // Cabecera real del archivo: el content-type del cliente no es autoridad.
+    const head = Buffer.from(await file.slice(0, 5).arrayBuffer()).toString('latin1');
+    if (!head.startsWith('%PDF-')) {
+      return NextResponse.json(
+        { success: false, error: 'INVALID_PDF', message: 'El archivo no es un PDF válido.' },
+        { status: 415 },
+      );
+    }
+
+    if (!title || title.trim().length < 3 || title.length > 200) {
+      return NextResponse.json(
+        { success: false, error: 'INVALID_TITLE', message: 'El título debe tener entre 3 y 200 caracteres.' },
+        { status: 400 }
+      );
+    }
+    if (description && description.length > 2000) {
+      return NextResponse.json(
+        { success: false, error: 'DESCRIPTION_TOO_LONG', message: 'La descripción admite hasta 2000 caracteres.' },
         { status: 400 }
       );
     }
 
     // Auto-generate organization slug if not provided, based on company name or title
     const organizationId = organizationInput ? slugify(organizationInput) : slugify(title);
+
+    // Cuota por organización: un mismo negocio no puede inundar el sistema.
+    const quota = checkRateLimit(`envelopes-org:${organizationId}`, 20, 60 * 60 * 1000);
+    if (!quota.allowed) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'ORG_QUOTA_EXCEEDED',
+          message: 'Esta organización alcanzó su límite de sobres por hora.',
+        },
+        { status: 429 },
+      );
+    }
 
     let signers: any[] = [];
     try {
@@ -56,6 +111,34 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { success: false, error: 'INVALID_SIGNERS', message: 'Field [signers] must be a valid JSON array.' },
         { status: 400 }
+      );
+    }
+    if (!Array.isArray(signers) || signers.length > 20) {
+      return NextResponse.json(
+        { success: false, error: 'INVALID_SIGNERS', message: 'Se aceptan hasta 20 firmantes.' },
+        { status: 400 },
+      );
+    }
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    for (const signer of signers) {
+      const email = String(signer?.email ?? '').trim().toLowerCase();
+      if (!emailRe.test(email)) {
+        return NextResponse.json(
+          { success: false, error: 'INVALID_SIGNER', message: 'Cada firmante necesita un correo válido.' },
+          { status: 400 },
+        );
+      }
+    }
+    if (!['PARALLEL', 'SEQUENTIAL', 'M_OF_N'].includes(String(signingPolicy))) {
+      return NextResponse.json(
+        { success: false, error: 'INVALID_POLICY', message: 'signingPolicy debe ser PARALLEL, SEQUENTIAL o M_OF_N.' },
+        { status: 400 },
+      );
+    }
+    if (thresholdM !== undefined && (!Number.isInteger(thresholdM) || thresholdM < 1 || thresholdM > Math.max(1, signers.length))) {
+      return NextResponse.json(
+        { success: false, error: 'INVALID_THRESHOLD', message: 'thresholdM debe estar entre 1 y el número de firmantes.' },
+        { status: 400 },
       );
     }
 
