@@ -99,12 +99,28 @@ export function validateCommunityPost(post: CommunityPostInput): CommunityPostVa
     }
   }
 
-  if (post.imageUrl && !/^https:\/\//i.test(post.imageUrl)) {
-    violations.push('La imagen debe ser una URL https');
+  /**
+   * Media de la pieza: una imagen, un carrusel (2–10) o un video.
+   * Todas las URLs deben ser https: Instagram las descarga desde su servidor.
+   */
+  const images = (Array.isArray(post.imageUrls) ? post.imageUrls : []).filter(Boolean).map(String);
+  const allMedia = [...(post.imageUrl ? [post.imageUrl] : []), ...images];
+
+  for (const url of allMedia) {
+    if (!/^https:\/\//i.test(url)) {
+      violations.push('La media debe ser una URL https');
+      break;
+    }
+  }
+  if (images.length > 0 && (images.length < 2 || images.length > 10)) {
+    violations.push('Un carrusel lleva entre 2 y 10 imágenes');
   }
   // Instagram no permite publicaciones de sólo texto.
-  if (platform === 'instagram' && !post.imageUrl) {
+  if (platform === 'instagram' && allMedia.length === 0 && post.video !== true) {
     violations.push('Instagram requiere una imagen');
+  }
+  if (post.video === true && allMedia.length === 0) {
+    violations.push('Un reel requiere un video https');
   }
 
   for (const term of FORBIDDEN_TERMS) {
